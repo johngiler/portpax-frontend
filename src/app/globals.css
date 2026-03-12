@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f9fc;
+  --foreground: #0f172a;
+  /* Acento PortPax (isotype) */
+  --admin-accent: #3478b5;
+  --admin-accent-hover: #2c6a9d;
+  /* Fucsia para gradientes que combinan con el acento azul */
+  --admin-fuchsia: #b83d9e;
+  --admin-fuchsia-hover: #9d3387;
+  --admin-fuchsia-soft: #fdf2f9;
+  --admin-fuchsia-muted: rgba(184, 61, 158, 0.12);
+  --admin-gradient-fuchsia: linear-gradient(135deg, #fdf2f9 0%, #f8e8f4 35%, #eef4fb 70%, #e7eff9 100%);
+  --admin-sidebar: #f8fbff;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-border: #e7eef7;
+  --admin-card-shadow: 0 1px 1px rgb(15 23 42 / 0.04), 0 8px 24px -14px rgb(52 120 181 / 0.4);
+  --admin-card-shadow-hover: 0 2px 6px rgb(15 23 42 / 0.08), 0 22px 48px -22px rgb(52 120 181 / 0.55);
+  --admin-gradient-bg: linear-gradient(135deg, #f8fbff 0%, #eef4fb 45%, #e7eff9 100%);
+  --admin-gradient-header: linear-gradient(135deg, #f5f9ff 0%, #e8f0fa 52%, #dce8f7 100%);
 }
 
 @theme inline {
@@ -14,13 +31,176 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #090d14;
+    --foreground: #eef2ff;
+    /* Acento isotype más claro en dark */
+    --admin-accent: #60a5fa;
+    --admin-accent-hover: #93c5fd;
+    /* Fucsia en dark: más claro para contraste */
+    --admin-fuchsia: #e879f9;
+    --admin-fuchsia-hover: #f0abfc;
+    --admin-fuchsia-soft: #1a0d18;
+    --admin-fuchsia-muted: rgba(232, 121, 249, 0.15);
+    --admin-gradient-fuchsia: linear-gradient(135deg, #1a0d18 0%, #132038 40%, #0c1220 70%, #111b2e 100%);
+    --admin-sidebar: #0c1220;
+    --admin-surface: #0f1626;
+    --admin-surface-muted: #121b2d;
+    --admin-border: #1c2638;
+    --admin-card-shadow: 0 1px 1px rgb(0 0 0 / 0.35), 0 14px 34px -20px rgb(59 130 246 / 0.4);
+    --admin-card-shadow-hover: 0 2px 6px rgb(0 0 0 / 0.35), 0 26px 52px -24px rgb(59 130 246 / 0.55);
+    --admin-gradient-bg: linear-gradient(135deg, #090d14 0%, #0c1220 42%, #111b2e 100%);
+    --admin-gradient-header: linear-gradient(135deg, #0c1220 0%, #132038 50%, #1a2b47 100%);
   }
 }
 
 body {
-  background: var(--background);
+  background: var(--admin-gradient-bg);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Gradientes de botones (evitan que Tailwind no aplique var() en from/to) */
+.btn-primary-gradient {
+  background: linear-gradient(to bottom, var(--admin-accent) 0%, var(--admin-accent-hover) 100%);
+}
+.btn-secondary-gradient {
+  background: linear-gradient(to bottom, #ffffff 0%, #f4f4f5 100%);
+}
+.btn-secondary-gradient:hover {
+  background: linear-gradient(to bottom, #f4f4f5 0%, #e4e4e7 100%);
+}
+@media (prefers-color-scheme: dark) {
+  .btn-secondary-gradient {
+    background: linear-gradient(to bottom, #18181b 0%, #27272a 100%);
+  }
+  .btn-secondary-gradient:hover {
+    background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
+  }
+}
+
+/* Transiciones de navegación entre vistas */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: page-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-enter {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Transiciones de modales */
+@keyframes modal-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-backdrop-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes modal-panel-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes modal-panel-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+}
+.modal-backdrop-enter {
+  opacity: 0;
+  animation: modal-backdrop-enter 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.modal-backdrop-exit {
+  opacity: 1;
+  animation: modal-backdrop-exit 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.modal-panel-enter {
+  opacity: 0;
+  transform: scale(0.96) translateY(16px);
+  animation: modal-panel-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.modal-panel-exit {
+  opacity: 1;
+  animation: modal-panel-exit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop-enter,
+  .modal-backdrop-exit,
+  .modal-panel-enter,
+  .modal-panel-exit {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Paneles de menú dropdown (header): gradiente fucsia → azul marcado */
+.dropdown-panel {
+  background: linear-gradient(165deg, #fdf2f8 0%, #fce7f3 40%, #ede9fe 70%, #e0e7ff 100%);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--admin-card-shadow-hover);
+}
+@media (prefers-color-scheme: dark) {
+  .dropdown-panel {
+    background: linear-gradient(165deg, #251a28 0%, #1e1a2e 45%, #1a2342 75%, #0f1626 100%);
+    border-color: var(--admin-border);
+  }
+}
+
+/* Bloque Configuración del sidebar: toque fucsia → azul (discreto pero visible) */
+.sidebar-config-block {
+  background: linear-gradient(165deg, #fdf4f9 0%, #fae8f5 40%, #f0effa 75%, #eef2ff 100%);
+}
+@media (prefers-color-scheme: dark) {
+  .sidebar-config-block {
+    background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
+  }
+}
+
+/* Entrada del panel de menú dropdown */
+@keyframes dropdown-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dropdown-panel-enter {
+  animation: dropdown-panel-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-panel-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
