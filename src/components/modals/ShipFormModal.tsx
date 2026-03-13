@@ -85,15 +85,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
       title={isEdit ? "Editar barco" : "Nuevo barco"}
       panelClassName="max-w-2xl"
       footer={
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-full px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
-          >
-            Cancelar
-          </button>
-          <button
+        <button
             type="submit"
             form="ship-form"
             disabled={saving || !name.trim() || !shippingLineId}
@@ -101,7 +93,6 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
           >
             {saving ? "Guardando…" : isEdit ? "Guardar" : "Crear"}
           </button>
-        </>
       }
     >
       <form id="ship-form" onSubmit={handleSubmit}>

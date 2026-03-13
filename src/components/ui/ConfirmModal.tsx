@@ -9,7 +9,6 @@ type ConfirmModalProps = {
   title: string;
   message: string;
   confirmLabel?: string;
-  cancelLabel?: string;
   /** Si true, el botón de confirmar usa estilo peligro (rojo). */
   danger?: boolean;
 };
@@ -21,7 +20,6 @@ export default function ConfirmModal({
   title,
   message,
   confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
   danger = false,
 }: ConfirmModalProps) {
   function handleConfirm() {
@@ -36,15 +34,7 @@ export default function ConfirmModal({
       title={title}
       panelClassName="max-w-md"
       footer={
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-full px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
-          >
-            {cancelLabel}
-          </button>
-          <button
+        <button
             type="button"
             onClick={handleConfirm}
             className={
@@ -55,7 +45,6 @@ export default function ConfirmModal({
           >
             {confirmLabel}
           </button>
-        </>
       }
     >
       <p className="text-sm text-zinc-600 dark:text-zinc-300">{message}</p>

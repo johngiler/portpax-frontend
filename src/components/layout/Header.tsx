@@ -1,6 +1,14 @@
 "use client";
 
-import { Bell, CircleUser, HelpCircle, LogOut, MessageSquare, Settings, User } from "lucide-react";
+import {
+  Bell,
+  CircleUser,
+  HelpCircle,
+  LogOut,
+  MessageSquare,
+  Settings,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import DropdownMenu from "@/components/ui/DropdownMenu";
@@ -10,19 +18,54 @@ const iconBtnClass =
   "relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
 const NOTIFICATIONS_DUMMY = [
-  { id: "1", title: "Nueva escala asignada", body: "Muelle 2 — Caribbean Princess, 14:00", time: "Hace 5 min", unread: true },
-  { id: "2", title: "Barco llegó a puerto", body: "Port of Roatán — Harmony of the Seas", time: "Hace 1 h", unread: true },
-  { id: "3", title: "Actualización de tarifas", body: "Se aplicaron los nuevos precios de muellaje", time: "Ayer", unread: false },
+  {
+    id: "1",
+    title: "Nueva escala asignada",
+    body: "Muelle 2 — Caribbean Princess, 14:00",
+    time: "Hace 5 min",
+    unread: true,
+  },
+  {
+    id: "2",
+    title: "Barco llegó a puerto",
+    body: "Port of Roatán — Harmony of the Seas",
+    time: "Hace 1 h",
+    unread: true,
+  },
+  {
+    id: "3",
+    title: "Actualización de tarifas",
+    body: "Se aplicaron los nuevos precios de muellaje",
+    time: "Ayer",
+    unread: false,
+  },
 ];
 
 const MESSAGES_DUMMY = [
-  { id: "1", from: "Equipo PortPax", preview: "Recordatorio: cierre de manifiestos a las 18:00", time: "10:30" },
-  { id: "2", from: "Soporte", preview: "Tu solicitud de acceso a reportes fue aprobada.", time: "Ayer" },
-  { id: "3", from: "Sistema", preview: "Backup completado correctamente.", time: "Lun" },
+  {
+    id: "1",
+    from: "Equipo PortPax",
+    preview: "Recordatorio: cierre de manifiestos a las 18:00",
+    time: "10:30",
+  },
+  {
+    id: "2",
+    from: "Soporte",
+    preview: "Tu solicitud de acceso a reportes fue aprobada.",
+    time: "Ayer",
+  },
+  {
+    id: "3",
+    from: "Sistema",
+    preview: "Backup completado correctamente.",
+    time: "Lun",
+  },
 ];
 
 export default function Header() {
-  const [openMenu, setOpenMenu] = useState<"notifications" | "messages" | "user" | null>(null);
+  const [openMenu, setOpenMenu] = useState<
+    "notifications" | "messages" | "user" | null
+  >(null);
   const notificationCount = NOTIFICATIONS_DUMMY.filter((n) => n.unread).length;
 
   const closeAll = () => setOpenMenu(null);
@@ -42,7 +85,9 @@ export default function Header() {
         aria-hidden
       />
       <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
-        <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
+        <Link href="/" className="cursor-pointer" aria-label="Ir al Dashboard">
+          <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
+        </Link>
       </div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <DropdownMenu
@@ -68,7 +113,9 @@ export default function Header() {
         >
           <div className="dropdown-panel overflow-hidden">
             <div className="border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-700/70">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Notificaciones</h3>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Notificaciones
+              </h3>
               <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                 {notificationCount} sin leer
               </p>
@@ -81,12 +128,18 @@ export default function Header() {
                   className="flex w-full cursor-pointer flex-col gap-0.5 border-b border-zinc-100 px-4 py-3 text-left transition-colors hover:bg-[var(--admin-accent)]/10 dark:border-zinc-800 dark:hover:bg-[var(--admin-accent)]/15"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className={`text-sm font-medium ${n.unread ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400"}`}>
+                    <span
+                      className={`text-sm font-medium ${n.unread ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400"}`}
+                    >
                       {n.title}
                     </span>
-                    <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">{n.time}</span>
+                    <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      {n.time}
+                    </span>
                   </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{n.body}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {n.body}
+                  </p>
                 </button>
               ))}
             </div>
@@ -119,7 +172,9 @@ export default function Header() {
         >
           <div className="dropdown-panel overflow-hidden">
             <div className="border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-700/70">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Mensajes</h3>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Mensajes
+              </h3>
               <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                 Bandeja de entrada
               </p>
@@ -132,10 +187,16 @@ export default function Header() {
                   className="flex w-full cursor-pointer flex-col gap-0.5 border-b border-zinc-100 px-4 py-3 text-left transition-colors hover:bg-[var(--admin-accent)]/10 dark:border-zinc-800 dark:hover:bg-[var(--admin-accent)]/15"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{m.from}</span>
-                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500">{m.time}</span>
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      {m.from}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                      {m.time}
+                    </span>
                   </div>
-                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{m.preview}</p>
+                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                    {m.preview}
+                  </p>
                 </button>
               ))}
             </div>
@@ -158,9 +219,12 @@ export default function Header() {
         >
           <HelpCircle className="h-5 w-5" strokeWidth={1.5} />
         </button>
-        <div className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5" aria-hidden />
+        <div
+          className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5"
+          aria-hidden
+        />
         <span className="hidden rounded-full px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300 sm:inline md:px-3 md:py-1.5">
-          PortPax
+          admin
         </span>
 
         <DropdownMenu
@@ -181,8 +245,12 @@ export default function Header() {
         >
           <div className="dropdown-panel overflow-hidden py-2">
             <div className="border-b border-zinc-200/80 px-4 pb-3 dark:border-zinc-700/70">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Cuenta</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">usuario@portpax.local</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                Cuenta
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                usuario@portpax.local
+              </p>
             </div>
             <div className="py-1">
               <Link

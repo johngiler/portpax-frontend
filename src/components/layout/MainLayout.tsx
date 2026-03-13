@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { MainLayoutProvider, useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import Header from "./Header";
 import MainWithFilterMargin from "./MainWithFilterMargin";
@@ -30,11 +31,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <MainLayoutProvider>
-      <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
-        <Header />
-        <LayoutContent>{children}</LayoutContent>
-      </div>
-    </MainLayoutProvider>
+    <ConfirmProvider>
+      <MainLayoutProvider>
+        <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
+          <Header />
+          <LayoutContent>{children}</LayoutContent>
+        </div>
+      </MainLayoutProvider>
+    </ConfirmProvider>
   );
 }
