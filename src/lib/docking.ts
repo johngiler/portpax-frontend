@@ -16,7 +16,7 @@ export type DockingStats = {
   scales: number;
 };
 
-export type ShippingLine = { id: number; name: string; code: string };
+export type ShippingLine = { id: number; name: string; code: string; fee_tier: string };
 export type Port = { id: number; name: string; code: string };
 export type Berth = {
   id: number;
@@ -32,6 +32,7 @@ export type Ship = {
   shipping_line: number;
   shipping_line_name: string;
   name: string;
+  code: string;
   imo: string;
   capacity_pax: number | null;
   length_m: string | null;
@@ -103,6 +104,27 @@ export async function getShips(params?: ListParams): Promise<PaginatedResponse<S
 export async function getScales(params?: ListParams): Promise<PaginatedResponse<Scale>> {
   const res = await fetch(listUrl("api/scales/", params));
   if (!res.ok) throw new Error("Failed to fetch scales");
+  return res.json();
+}
+
+/** Tarifa portuaria por pasajero (puerto + fee_tier: RCL, NCL, MSC, CCL, VV, Others) */
+export type PortFeeRule = {
+  id: number;
+  port: number;
+  port_name: string;
+  fee_tier: string;
+  amount_per_pax_usd: string;
+  minimum_charge_usd: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  notes: string;
+};
+
+export async function getPortFeeRules(
+  params?: ListParams
+): Promise<PaginatedResponse<PortFeeRule>> {
+  const res = await fetch(listUrl("api/port-fee-rules/", params));
+  if (!res.ok) throw new Error("Failed to fetch port fee rules");
   return res.json();
 }
 

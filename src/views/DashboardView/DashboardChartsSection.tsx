@@ -18,12 +18,21 @@ import type { DockingStats, Scale, ScalesByMonth, ScalesByYear } from "@/lib/doc
 import { getDockingStats, getScales, getScalesByMonth, getScalesByYear } from "@/lib/docking";
 import DashboardChartsSkeleton from "./DashboardChartsSkeleton";
 
-const COLOR_ESCALAS = "#3478b5";
-const COLOR_PAX = "#0d9488";
-const COLOR_ESCALAS_YEAR = "#7c3aed";
-const COLOR_PAX_YEAR = "#d97706";
+const COLOR_ESCALAS = "#7ba3c9";
+const COLOR_PAX = "#5fb4a9";
+const COLOR_ESCALAS_YEAR = "#a78bc4";
+const COLOR_PAX_YEAR = "#d4a574";
 
-const PIE_COLORS = ["#3478b5", "#0d9488", "#d97706", "#7c3aed", "#059669", "#dc2626", "#64748b"];
+/** Paleta pastel moderna para gráficas de pastel */
+const PIE_COLORS = [
+  "#7ba3c9", /* azul pastel */
+  "#5fb4a9", /* teal pastel */
+  "#d4a574", /* melocotón */
+  "#a78bc4", /* lavanda */
+  "#6bbf8a", /* verde menta */
+  "#e08b8b", /* rosa pastel */
+  "#8b9bb4", /* gris azulado */
+];
 
 function aggregateScalesByPort(scales: Scale[]) {
   const byPort = new Map<string, { count: number; pax: number }>();
@@ -127,70 +136,37 @@ export default function DashboardChartsSection({
   return (
     <div className="mt-8 space-y-8">
       <div className="min-w-0 space-y-8">
-      {/* Resumen de métricas: gráfica lineal en lugar de tarjetas */}
+      {/* Resumen de métricas: tarjetas por periodo (más claro que gráfica lineal) */}
       {visibility.resumenMetricas && hasAnyKpi && kpiSummaryData.length > 0 && (
         <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
           <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Resumen de métricas
           </h3>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={kpiSummaryData} margin={{ top: 5, right: 50, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-700" />
-                <XAxis
-                  dataKey="period"
-                  tick={{ fontSize: 11, fill: "var(--foreground)", opacity: 0.7 }}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="left"
-                  tick={{ fontSize: 11, fill: "var(--foreground)", opacity: 0.7 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fontSize: 11, fill: "var(--foreground)", opacity: 0.7 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid var(--admin-accent)",
-                    background: "var(--background)",
-                  }}
-                  labelStyle={{ color: "var(--foreground)" }}
-                  formatter={(value: unknown, name?: unknown) => [
-                    String(name) === "pax_total" ? Number(value ?? 0).toLocaleString("es") : Number(value ?? 0),
-                    String(name) === "pax_total" ? "PAX" : "Escalas",
-                  ]}
-                  labelFormatter={(label) => String(label)}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="escalas"
-                  stroke={COLOR_ESCALAS}
-                  strokeWidth={2}
-                  dot={{ fill: COLOR_ESCALAS, r: 4 }}
-                  activeDot={{ r: 6 }}
-                  name="escalas"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="pax"
-                  stroke={COLOR_PAX}
-                  strokeWidth={2}
-                  dot={{ fill: COLOR_PAX, r: 4 }}
-                  activeDot={{ r: 6 }}
-                  name="pax_total"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {kpiSummaryData.map((row) => (
+              <div
+                key={row.period}
+                className="flex flex-col rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
+              >
+                <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  {row.period}
+                </span>
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <div>
+                    <span className="text-2xl font-bold tabular-nums text-[var(--admin-accent)]">
+                      {row.escalas.toLocaleString("es")}
+                    </span>
+                    <span className="ml-1 text-sm text-zinc-500 dark:text-zinc-400">escalas</span>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold tabular-nums text-teal-600 dark:text-teal-400">
+                      {row.pax > 0 ? row.pax.toLocaleString("es") : "—"}
+                    </span>
+                    <span className="ml-1 text-sm text-zinc-500 dark:text-zinc-400">PAX</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -31,13 +31,13 @@ const navDocking = [
   { href: "/berths", label: "Muelles", icon: Anchor },
   { href: "/shipping-lines", label: "Navieras", icon: Building2 },
   { href: "/scales", label: "Escalas", icon: CalendarDays },
+  { href: "/rates", label: "Tarifas", icon: CircleDollarSign },
 ];
 
 const navComingSoon = [
   { href: "/operations", label: "Operaciones", icon: Cog },
   { href: "/passengers", label: "Pasajeros (PAX)", icon: Users },
   { href: "/billing", label: "Facturación", icon: FileText },
-  { href: "/rates", label: "Tarifas", icon: CircleDollarSign },
   { href: "/reports", label: "Reportes", icon: BarChart3 },
 ];
 
