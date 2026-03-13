@@ -160,7 +160,7 @@ export default function Header() {
         </button>
         <div className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5" aria-hidden />
         <span className="hidden rounded-full px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300 sm:inline md:px-3 md:py-1.5">
-          Admin
+          PortPax
         </span>
 
         <DropdownMenu
@@ -181,12 +181,12 @@ export default function Header() {
         >
           <div className="dropdown-panel overflow-hidden py-2">
             <div className="border-b border-zinc-200/80 px-4 pb-3 dark:border-zinc-700/70">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Admin</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">admin@portpax.local</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Cuenta</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">usuario@portpax.local</p>
             </div>
             <div className="py-1">
               <Link
-                href="/configuracion"
+                href="/configuration"
                 onClick={closeAll}
                 className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)] dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
               >
@@ -194,7 +194,7 @@ export default function Header() {
                 Mi perfil
               </Link>
               <Link
-                href="/configuracion"
+                href="/configuration"
                 onClick={closeAll}
                 className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)] dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
               >

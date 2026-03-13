@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
-import { useAdminLayout, useAdminLayoutOptional } from "@/contexts/AdminLayoutContext";
+import { useMainLayout, useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
 
 type FilterSidebarProps = {
@@ -13,7 +13,7 @@ type FilterSidebarProps = {
  * No renderiza nada; el layout muestra el FilterSidebar a la derecha con este contenido.
  */
 export function FilterSidebarContent({ children }: { children: React.ReactNode }) {
-  const { setFilterContent } = useAdminLayout();
+  const { setFilterContent } = useMainLayout();
   useLayoutEffect(() => {
     setFilterContent(children);
     return () => setFilterContent(null);
@@ -27,7 +27,7 @@ export function FilterSidebarContent({ children }: { children: React.ReactNode }
  * - Expandido: mismo ancho que sidebar principal expandido (w-64)
  */
 export default function FilterSidebar({ children }: FilterSidebarProps) {
-  const layout = useAdminLayoutOptional();
+  const layout = useMainLayoutOptional();
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
 

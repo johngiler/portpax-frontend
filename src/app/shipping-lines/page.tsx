@@ -1,5 +1,5 @@
-import ShippingLinesPage from "@/pages/admin/ShippingLinesPage";
+import ShippingLinesView from "@/views/ShippingLinesView";
 
 export default function ShippingLinesRoute() {
-  return <ShippingLinesPage />;
+  return <ShippingLinesView />;
 }

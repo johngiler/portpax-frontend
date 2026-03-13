@@ -1,5 +1,5 @@
-import BerthsPage from "@/pages/admin/BerthsPage";
+import BerthsView from "@/views/BerthsView";
 
 export default function BerthsRoute() {
-  return <BerthsPage />;
+  return <BerthsView />;
 }

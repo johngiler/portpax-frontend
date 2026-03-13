@@ -1,9 +1,5 @@
-import DashboardPage from "@/pages/admin/DashboardPage";
+import DashboardView from "@/views/DashboardView";
 
-/**
- * Ruta "/" — admin de PortPax (core de la app).
- * Otras rutas: /landing → pages/landing, etc.
- */
 export default function Home() {
-  return <DashboardPage />;
+  return <DashboardView />;
 }

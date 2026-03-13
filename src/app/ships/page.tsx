@@ -1,5 +1,5 @@
-import ShipsPage from "@/pages/admin/ShipsPage";
+import ShipsView from "@/views/ShipsView";
 
 export default function ShipsRoute() {
-  return <ShipsPage />;
+  return <ShipsView />;
 }

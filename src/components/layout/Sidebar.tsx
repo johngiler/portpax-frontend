@@ -32,11 +32,11 @@ const navDocking = [
 ];
 
 const navComingSoon = [
-  { href: "/operaciones", label: "Operaciones", icon: Cog },
-  { href: "/pasajeros", label: "Pasajeros (PAX)", icon: Users },
-  { href: "/facturacion", label: "Facturación", icon: FileText },
-  { href: "/tarifas", label: "Tarifas", icon: CircleDollarSign },
-  { href: "/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/operations", label: "Operaciones", icon: Cog },
+  { href: "/passengers", label: "Pasajeros (PAX)", icon: Users },
+  { href: "/billing", label: "Facturación", icon: FileText },
+  { href: "/rates", label: "Tarifas", icon: CircleDollarSign },
+  { href: "/reports", label: "Reportes", icon: BarChart3 },
 ];
 
 export default function Sidebar() {
@@ -65,7 +65,7 @@ export default function Sidebar() {
   };
 
   const isConfigActive =
-    pathname === "/configuracion" || pathname.startsWith("/configuracion");
+    pathname === "/configuration" || pathname.startsWith("/configuration");
 
   const linkBase =
     "relative flex cursor-pointer items-center rounded-lg text-sm font-medium transition-colors duration-200";
@@ -171,7 +171,7 @@ export default function Sidebar() {
       {/* Bloque Configuración fijo al pie del sidebar */}
       <div className="shrink-0 border-t border-[var(--admin-border)] bg-[var(--admin-sidebar)]/95 p-4 dark:bg-zinc-950/40">
         <Link
-          href="/configuracion"
+          href="/configuration"
           className={`relative flex cursor-pointer items-center rounded-lg py-2.5 text-sm font-medium transition-all duration-200 ${
             collapsed ? "justify-center px-0" : "gap-3 px-3"
           } ${

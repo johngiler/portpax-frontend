@@ -1,5 +1,5 @@
-import PortsPage from "@/pages/admin/PortsPage";
+import PortsView from "@/views/PortsView";
 
 export default function PortsRoute() {
-  return <PortsPage />;
+  return <PortsView />;
 }

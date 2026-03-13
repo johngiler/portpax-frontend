@@ -1,5 +1,5 @@
-import ScalesPage from "@/pages/admin/ScalesPage";
+import ScalesView from "@/views/ScalesView";
 
 export default function ScalesRoute() {
-  return <ScalesPage />;
+  return <ScalesView />;
 }
