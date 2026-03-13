@@ -1,9 +1,8 @@
 /**
  * Cliente API para conectar con el backend PortPax.
- * Base URL desde variable de entorno (local: http://localhost:8000).
  */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+import { API_BASE } from "./api-base";
 
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;

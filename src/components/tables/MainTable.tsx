@@ -56,9 +56,20 @@ export function MainTableRow({
   );
 }
 
-export function MainTableTd({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function MainTableTd({
+  children,
+  className = "",
+  title,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  title?: string;
+}) {
   return (
-    <td className={`px-5 py-3.5 text-sm text-zinc-700 dark:text-zinc-200 ${className}`}>
+    <td
+      className={`px-5 py-3.5 text-sm text-zinc-700 dark:text-zinc-200 ${className}`}
+      title={title}
+    >
       {children}
     </td>
   );

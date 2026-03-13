@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { API_BASE } from "@/lib/api-base";
 import type { DockingStats } from "@/lib/docking";
 import { getDockingStats } from "@/lib/docking";
 
@@ -38,7 +39,7 @@ export default function DashboardSection() {
           No se pudo cargar el resumen
         </p>
         <p className="mt-1 text-sm text-red-600/80 dark:text-red-500/80">
-          ¿Está el backend en marcha en {process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}?
+          ¿Está el backend en marcha en {API_BASE}?
         </p>
       </div>
     );
