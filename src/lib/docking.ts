@@ -2,10 +2,16 @@
  * Tipos y cliente API para el módulo Docking/Muellaje.
  */
 
+import { getAuthHeaders } from "./auth";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function url(path: string) {
   return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  return { ...getAuthHeaders(), ...(extra ?? {}) };
 }
 
 export type DockingStats = {
@@ -70,7 +76,7 @@ function listUrl(path: string, params?: ListParams): string {
 }
 
 export async function getDockingStats(): Promise<DockingStats> {
-  const res = await fetch(url("api/stats/"));
+  const res = await fetch(url("api/stats/"), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
 }
@@ -78,31 +84,31 @@ export async function getDockingStats(): Promise<DockingStats> {
 export async function getShippingLines(
   params?: ListParams
 ): Promise<PaginatedResponse<ShippingLine>> {
-  const res = await fetch(listUrl("api/shipping-lines/", params));
+  const res = await fetch(listUrl("api/shipping-lines/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch shipping lines");
   return res.json();
 }
 
 export async function getPorts(params?: ListParams): Promise<PaginatedResponse<Port>> {
-  const res = await fetch(listUrl("api/ports/", params));
+  const res = await fetch(listUrl("api/ports/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch ports");
   return res.json();
 }
 
 export async function getBerths(params?: ListParams): Promise<PaginatedResponse<Berth>> {
-  const res = await fetch(listUrl("api/berths/", params));
+  const res = await fetch(listUrl("api/berths/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch berths");
   return res.json();
 }
 
 export async function getShips(params?: ListParams): Promise<PaginatedResponse<Ship>> {
-  const res = await fetch(listUrl("api/ships/", params));
+  const res = await fetch(listUrl("api/ships/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch ships");
   return res.json();
 }
 
 export async function getScales(params?: ListParams): Promise<PaginatedResponse<Scale>> {
-  const res = await fetch(listUrl("api/scales/", params));
+  const res = await fetch(listUrl("api/scales/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch scales");
   return res.json();
 }
@@ -123,7 +129,7 @@ export type PortFeeRule = {
 export async function getPortFeeRules(
   params?: ListParams
 ): Promise<PaginatedResponse<PortFeeRule>> {
-  const res = await fetch(listUrl("api/port-fee-rules/", params));
+  const res = await fetch(listUrl("api/port-fee-rules/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch port fee rules");
   return res.json();
 }
@@ -145,13 +151,13 @@ export type ScalesByYear = {
 };
 
 export async function getScalesByMonth(): Promise<ScalesByMonth[]> {
-  const res = await fetch(url("api/metrics/scales-by-month/"));
+  const res = await fetch(url("api/metrics/scales-by-month/"), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch scales by month");
   return res.json();
 }
 
 export async function getScalesByYear(): Promise<ScalesByYear[]> {
-  const res = await fetch(url("api/metrics/scales-by-year/"));
+  const res = await fetch(url("api/metrics/scales-by-year/"), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch scales by year");
   return res.json();
 }
@@ -162,7 +168,7 @@ export type ShippingLinePayload = { name: string; code?: string };
 export async function createShippingLine(payload: ShippingLinePayload): Promise<ShippingLine> {
   const res = await fetch(url("api/shipping-lines/"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -175,7 +181,7 @@ export async function createShippingLine(payload: ShippingLinePayload): Promise<
 export async function updateShippingLine(id: number, payload: Partial<ShippingLinePayload>): Promise<ShippingLine> {
   const res = await fetch(url(`api/shipping-lines/${id}/`), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Error al actualizar naviera");
@@ -183,7 +189,7 @@ export async function updateShippingLine(id: number, payload: Partial<ShippingLi
 }
 
 export async function deleteShippingLine(id: number): Promise<void> {
-  const res = await fetch(url(`api/shipping-lines/${id}/`), { method: "DELETE" });
+  const res = await fetch(url(`api/shipping-lines/${id}/`), { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error("Error al eliminar naviera");
 }
 
@@ -193,7 +199,7 @@ export type PortPayload = { name: string; code?: string };
 export async function createPort(payload: PortPayload): Promise<Port> {
   const res = await fetch(url("api/ports/"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -206,7 +212,7 @@ export async function createPort(payload: PortPayload): Promise<Port> {
 export async function updatePort(id: number, payload: Partial<PortPayload>): Promise<Port> {
   const res = await fetch(url(`api/ports/${id}/`), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Error al actualizar puerto");
@@ -214,7 +220,7 @@ export async function updatePort(id: number, payload: Partial<PortPayload>): Pro
 }
 
 export async function deletePort(id: number): Promise<void> {
-  const res = await fetch(url(`api/ports/${id}/`), { method: "DELETE" });
+  const res = await fetch(url(`api/ports/${id}/`), { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error("Error al eliminar puerto");
 }
 
@@ -230,7 +236,7 @@ export type BerthPayload = {
 export async function createBerth(payload: BerthPayload): Promise<Berth> {
   const res = await fetch(url("api/berths/"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -243,7 +249,7 @@ export async function createBerth(payload: BerthPayload): Promise<Berth> {
 export async function updateBerth(id: number, payload: Partial<BerthPayload>): Promise<Berth> {
   const res = await fetch(url(`api/berths/${id}/`), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Error al actualizar muelle");
@@ -251,7 +257,7 @@ export async function updateBerth(id: number, payload: Partial<BerthPayload>): P
 }
 
 export async function deleteBerth(id: number): Promise<void> {
-  const res = await fetch(url(`api/berths/${id}/`), { method: "DELETE" });
+  const res = await fetch(url(`api/berths/${id}/`), { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error("Error al eliminar muelle");
 }
 
@@ -268,7 +274,7 @@ export type ShipPayload = {
 export async function createShip(payload: ShipPayload): Promise<Ship> {
   const res = await fetch(url("api/ships/"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -281,7 +287,7 @@ export async function createShip(payload: ShipPayload): Promise<Ship> {
 export async function updateShip(id: number, payload: Partial<ShipPayload>): Promise<Ship> {
   const res = await fetch(url(`api/ships/${id}/`), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Error al actualizar barco");
@@ -289,6 +295,6 @@ export async function updateShip(id: number, payload: Partial<ShipPayload>): Pro
 }
 
 export async function deleteShip(id: number): Promise<void> {
-  const res = await fetch(url(`api/ships/${id}/`), { method: "DELETE" });
+  const res = await fetch(url(`api/ships/${id}/`), { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error("Error al eliminar barco");
 }

@@ -10,7 +10,9 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import PortPaxLogo from "./PortPaxLogo";
 
@@ -63,6 +65,8 @@ const MESSAGES_DUMMY = [
 ];
 
 export default function Header() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [openMenu, setOpenMenu] = useState<
     "notifications" | "messages" | "user" | null
   >(null);
@@ -71,6 +75,12 @@ export default function Header() {
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "notifications" | "messages" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
+
+  const handleLogout = () => {
+    closeAll();
+    logout();
+    router.push("/login");
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 overflow-visible px-4 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:h-16 sm:px-6">
@@ -249,7 +259,7 @@ export default function Header() {
                 Cuenta
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                usuario@portpax.local
+                {user?.email || user?.username || "—"}
               </p>
             </div>
             <div className="py-1">
@@ -273,6 +283,7 @@ export default function Header() {
             <div className="border-t border-zinc-200/80 pt-1 dark:border-zinc-700/70">
               <button
                 type="button"
+                onClick={handleLogout}
                 className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-zinc-400 dark:hover:bg-red-500/15 dark:hover:text-red-400"
               >
                 <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
