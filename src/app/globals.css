@@ -204,3 +204,34 @@ body {
     transform: none;
   }
 }
+
+/* Scrollbars: finos y semitransparentes en toda la app */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(15 23 42 / 0.25) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(15 23 42 / 0.2);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(15 23 42 / 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.15);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.3);
+  }
+}
