@@ -15,11 +15,15 @@ import MainTable, {
 import BerthFormModal from "@/components/modals/BerthFormModal";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 
 export default function BerthsView() {
+  const PAGE_SIZE = 20;
   const [list, setList] = useState<Berth[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [ports, setPorts] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +32,30 @@ export default function BerthsView() {
   const [filterPort, setFilterPort] = useState<number | "">("");
   const [filterName, setFilterName] = useState("");
 
-  const fetchList = useCallback(() => {
-    getBerths()
-      .then(setList)
+  const fetchList = useCallback((p?: number) => {
+    const pageToFetch = p ?? page;
+    getBerths({ page: pageToFetch, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getBerths()
-      .then(setList)
+    setLoading(true);
+    getBerths({ page, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getPorts()
-      .then((p) => setPorts(p.map((x) => ({ id: x.id, name: x.name }))))
+    getPorts({ page_size: 100 })
+      .then((r) => setPorts(r.results.map((x) => ({ id: x.id, name: x.name }))))
       .catch(() => setPorts([]));
   }, []);
 
@@ -71,7 +83,7 @@ export default function BerthsView() {
 
   const handleDelete = useCallback(
     (item: Berth) => {
-      deleteBerth(item.id).then(fetchList).catch((e) => setError(e instanceof Error ? e.message : "Error"));
+      deleteBerth(item.id).then(() => fetchList()).catch((e) => setError(e instanceof Error ? e.message : "Error"));
     },
     [fetchList]
   );
@@ -125,8 +137,8 @@ export default function BerthsView() {
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {filteredList.length === list.length
-                ? `${list.length} muelle${list.length !== 1 ? "s" : ""}`
-                : `${filteredList.length} de ${list.length} muelles`}
+                ? `${totalCount} muelle${totalCount !== 1 ? "s" : ""}`
+                : `${filteredList.length} de ${totalCount} muelles (filtro en página)`}
             </p>
           </div>
           <button
@@ -173,6 +185,13 @@ export default function BerthsView() {
             </MainTableBody>
           </table>
         </MainTable>
+        <TablePagination
+          page={page}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          label="muelles"
+        />
         <BerthFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

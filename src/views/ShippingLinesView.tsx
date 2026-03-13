@@ -15,29 +15,41 @@ import MainTable, {
 import ShippingLineFormModal from "@/components/modals/ShippingLineFormModal";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import { FormField } from "@/components/ui/FormField";
 
 export default function ShippingLinesView() {
+  const PAGE_SIZE = 20;
   const [list, setList] = useState<ShippingLine[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ShippingLine | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
 
-  const fetchList = useCallback(() => {
-    getShippingLines()
-      .then(setList)
+  const fetchList = useCallback((p?: number) => {
+    const pageToFetch = p ?? page;
+    getShippingLines({ page: pageToFetch, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getShippingLines()
-      .then(setList)
+    setLoading(true);
+    getShippingLines({ page, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   const openCreate = () => {
     setEditing(null);
@@ -50,7 +62,7 @@ export default function ShippingLinesView() {
 
   const handleDelete = useCallback(
     (item: ShippingLine) => {
-      deleteShippingLine(item.id).then(fetchList).catch((e) => setError(e instanceof Error ? e.message : "Error"));
+      deleteShippingLine(item.id).then(() => fetchList()).catch((e) => setError(e instanceof Error ? e.message : "Error"));
     },
     [fetchList]
   );
@@ -105,8 +117,8 @@ export default function ShippingLinesView() {
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {filteredList.length === list.length
-                ? `${list.length} naviera${list.length !== 1 ? "s" : ""}`
-                : `${filteredList.length} de ${list.length} navieras`}
+                ? `${totalCount} naviera${totalCount !== 1 ? "s" : ""}`
+                : `${filteredList.length} de ${totalCount} navieras (filtro en página)`}
             </p>
           </div>
           <button
@@ -151,6 +163,13 @@ export default function ShippingLinesView() {
             </MainTableBody>
           </table>
         </MainTable>
+        <TablePagination
+          page={page}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          label="navieras"
+        />
         <ShippingLineFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

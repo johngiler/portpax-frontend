@@ -15,29 +15,41 @@ import MainTable, {
 import PortFormModal from "@/components/modals/PortFormModal";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import { FormField } from "@/components/ui/FormField";
 
 export default function PortsView() {
+  const PAGE_SIZE = 20;
   const [ports, setPorts] = useState<Port[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Port | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
 
-  const fetchList = useCallback(() => {
-    getPorts()
-      .then(setPorts)
+  const fetchList = useCallback((p?: number) => {
+    const pageToFetch = p ?? page;
+    getPorts({ page: pageToFetch, page_size: PAGE_SIZE })
+      .then((r) => {
+        setPorts(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getPorts()
-      .then(setPorts)
+    setLoading(true);
+    getPorts({ page, page_size: PAGE_SIZE })
+      .then((r) => {
+        setPorts(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   const openCreate = () => {
     setEditing(null);
@@ -50,7 +62,7 @@ export default function PortsView() {
 
   const handleDelete = useCallback(
     (item: Port) => {
-      deletePort(item.id).then(fetchList).catch((e) => setError(e instanceof Error ? e.message : "Error"));
+      deletePort(item.id).then(() => fetchList()).catch((e) => setError(e instanceof Error ? e.message : "Error"));
     },
     [fetchList]
   );
@@ -105,8 +117,8 @@ export default function PortsView() {
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {filteredPorts.length === ports.length
-                ? `${ports.length} puerto${ports.length !== 1 ? "s" : ""}`
-                : `${filteredPorts.length} de ${ports.length} puertos`}
+                ? `${totalCount} puerto${totalCount !== 1 ? "s" : ""}`
+                : `${filteredPorts.length} de ${totalCount} puertos (filtro en página)`}
             </p>
           </div>
           <button
@@ -151,6 +163,13 @@ export default function PortsView() {
             </MainTableBody>
           </table>
         </MainTable>
+        <TablePagination
+          page={page}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          label="puertos"
+        />
         <PortFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

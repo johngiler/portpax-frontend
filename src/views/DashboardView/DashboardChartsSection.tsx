@@ -65,12 +65,12 @@ export default function DashboardChartsSection({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getScalesByMonth(), getScalesByYear(), getDockingStats(), getScales()])
+    Promise.all([getScalesByMonth(), getScalesByYear(), getDockingStats(), getScales({ page_size: 500 })])
       .then(([byMonth, byYear, s, sc]) => {
         setData(byMonth);
         setDataByYear(byYear);
         setStats(s);
-        setScales(sc);
+        setScales(sc.results);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));

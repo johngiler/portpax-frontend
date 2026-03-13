@@ -15,11 +15,15 @@ import MainTable, {
 import ShipFormModal from "@/components/modals/ShipFormModal";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 
 export default function ShipsView() {
+  const PAGE_SIZE = 20;
   const [ships, setShips] = useState<Ship[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [lines, setLines] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +32,30 @@ export default function ShipsView() {
   const [filterNaviera, setFilterNaviera] = useState<number | "">("");
   const [filterName, setFilterName] = useState("");
 
-  const fetchList = useCallback(() => {
-    getShips()
-      .then(setShips)
+  const fetchList = useCallback((p?: number) => {
+    const pageToFetch = p ?? page;
+    getShips({ page: pageToFetch, page_size: PAGE_SIZE })
+      .then((r) => {
+        setShips(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getShips()
-      .then(setShips)
+    setLoading(true);
+    getShips({ page, page_size: PAGE_SIZE })
+      .then((r) => {
+        setShips(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
-    getShippingLines()
-      .then((list) => setLines(list.map((l) => ({ id: l.id, name: l.name }))))
+    getShippingLines({ page_size: 100 })
+      .then((r) => setLines(r.results.map((l) => ({ id: l.id, name: l.name }))))
       .catch(() => setLines([]));
   }, []);
 
@@ -70,7 +82,7 @@ export default function ShipsView() {
 
   const handleDelete = useCallback(
     (item: Ship) => {
-      deleteShip(item.id).then(fetchList).catch((e) => setError(e instanceof Error ? e.message : "Error"));
+      deleteShip(item.id).then(() => fetchList()).catch((e) => setError(e instanceof Error ? e.message : "Error"));
     },
     [fetchList]
   );
@@ -126,8 +138,8 @@ export default function ShipsView() {
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {filteredShips.length === ships.length
-                ? `${ships.length} barco${ships.length !== 1 ? "s" : ""}`
-                : `${filteredShips.length} de ${ships.length} barcos`}
+                ? `${totalCount} barco${totalCount !== 1 ? "s" : ""}`
+                : `${filteredShips.length} de ${totalCount} barcos (filtro en página)`}
             </p>
           </div>
           <button
@@ -176,6 +188,13 @@ export default function ShipsView() {
             </MainTableBody>
           </table>
         </MainTable>
+        <TablePagination
+          page={page}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          label="barcos"
+        />
         <ShipFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

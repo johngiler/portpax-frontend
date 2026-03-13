@@ -31,7 +31,7 @@ export default function BerthFormModal({ open, onClose, edit, onSuccess }: Props
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) getPorts().then(setPorts).catch(() => setPorts([]));
+    if (open) getPorts({ page_size: 100 }).then((r) => setPorts(r.results)).catch(() => setPorts([]));
   }, [open]);
 
   const isEdit = edit != null;

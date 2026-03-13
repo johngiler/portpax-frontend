@@ -13,22 +13,30 @@ import MainTable, {
   MainTableTh,
 } from "@/components/tables/MainTable";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
+import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import { FormField } from "@/components/ui/FormField";
 
 export default function ScalesView() {
+  const PAGE_SIZE = 20;
   const [list, setList] = useState<Scale[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterPort, setFilterPort] = useState("");
   const [filterShip, setFilterShip] = useState("");
 
   useEffect(() => {
-    getScales()
-      .then(setList)
+    setLoading(true);
+    getScales({ page, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   const filteredList = useMemo(() => {
     let out = list;
@@ -89,8 +97,8 @@ export default function ScalesView() {
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             {filteredList.length === list.length
-              ? `${list.length} escala${list.length !== 1 ? "s" : ""}`
-              : `${filteredList.length} de ${list.length} escalas`}
+              ? `${totalCount} escala${totalCount !== 1 ? "s" : ""}`
+              : `${filteredList.length} de ${totalCount} escalas (filtro en página)`}
           </p>
         </div>
         <MainTable>
@@ -123,6 +131,13 @@ export default function ScalesView() {
             </MainTableBody>
           </table>
         </MainTable>
+        <TablePagination
+          page={page}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          label="escalas"
+        />
       </div>
     </>
   );

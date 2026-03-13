@@ -32,7 +32,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) getShippingLines().then(setLines).catch(() => setLines([]));
+    if (open) getShippingLines({ page_size: 100 }).then((r) => setLines(r.results)).catch(() => setLines([]));
   }, [open]);
 
   const isEdit = edit != null;

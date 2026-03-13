@@ -49,38 +49,59 @@ export type Scale = {
   pax_count: number | null;
 };
 
+export type ListParams = { page?: number; page_size?: number };
+
+export type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
+function listUrl(path: string, params?: ListParams): string {
+  const full = url(path);
+  if (!params?.page && params?.page_size == null) return full;
+  const sep = full.includes("?") ? "&" : "?";
+  const parts: string[] = [];
+  if (params.page != null) parts.push(`page=${params.page}`);
+  if (params.page_size != null) parts.push(`page_size=${params.page_size}`);
+  return parts.length ? `${full}${sep}${parts.join("&")}` : full;
+}
+
 export async function getDockingStats(): Promise<DockingStats> {
   const res = await fetch(url("api/stats/"));
   if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
 }
 
-export async function getShippingLines(): Promise<ShippingLine[]> {
-  const res = await fetch(url("api/shipping-lines/"));
+export async function getShippingLines(
+  params?: ListParams
+): Promise<PaginatedResponse<ShippingLine>> {
+  const res = await fetch(listUrl("api/shipping-lines/", params));
   if (!res.ok) throw new Error("Failed to fetch shipping lines");
   return res.json();
 }
 
-export async function getPorts(): Promise<Port[]> {
-  const res = await fetch(url("api/ports/"));
+export async function getPorts(params?: ListParams): Promise<PaginatedResponse<Port>> {
+  const res = await fetch(listUrl("api/ports/", params));
   if (!res.ok) throw new Error("Failed to fetch ports");
   return res.json();
 }
 
-export async function getBerths(): Promise<Berth[]> {
-  const res = await fetch(url("api/berths/"));
+export async function getBerths(params?: ListParams): Promise<PaginatedResponse<Berth>> {
+  const res = await fetch(listUrl("api/berths/", params));
   if (!res.ok) throw new Error("Failed to fetch berths");
   return res.json();
 }
 
-export async function getShips(): Promise<Ship[]> {
-  const res = await fetch(url("api/ships/"));
+export async function getShips(params?: ListParams): Promise<PaginatedResponse<Ship>> {
+  const res = await fetch(listUrl("api/ships/", params));
   if (!res.ok) throw new Error("Failed to fetch ships");
   return res.json();
 }
 
-export async function getScales(): Promise<Scale[]> {
-  const res = await fetch(url("api/scales/"));
+export async function getScales(params?: ListParams): Promise<PaginatedResponse<Scale>> {
+  const res = await fetch(listUrl("api/scales/", params));
   if (!res.ok) throw new Error("Failed to fetch scales");
   return res.json();
 }
