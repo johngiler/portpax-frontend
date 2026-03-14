@@ -12,6 +12,7 @@ const HERO_IMAGES = [
   "/images/login-cruise-bg.png",
   "/images/login-cruise-bg-2.png",
   "/images/login-cruise-bg-3.png",
+  "/images/login-cruise-bg-4.png",
 ] as const;
 
 const HERO_TEXTS = [
@@ -29,6 +30,11 @@ const HERO_TEXTS = [
     short: "Una plataforma. Todo el puerto.",
     headline: "Desde la terminal hasta el último pasajero. Bienvenido a la gestión portuaria que integra todo.",
     subtitle: "PortPax Management System.",
+  },
+  {
+    short: "Cada escala, bajo control.",
+    headline: "Cada llegada y salida, cada barco en ruta. Visibilidad total para tu operación portuaria.",
+    subtitle: "Mar abierto. Un solo sistema.",
   },
 ] as const;
 
