@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
+  images: { unoptimized: true },
   env: {
     // Build producción: inyectar URL API (no depender de .env que puede faltar).
     NEXT_PUBLIC_API_URL:

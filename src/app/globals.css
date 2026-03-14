@@ -205,6 +205,48 @@ body {
   }
 }
 
+/* Login hero: transición de texto al cambiar de imagen */
+@keyframes hero-text-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hero-text-enter {
+  animation: hero-text-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-text-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Login: fondo tipo vórtice (azul + fucsia, estilo cintas suaves) */
+.login-vortex {
+  background-color: #f4f8fc;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 85% 15%, rgba(184, 61, 158, 0.18), transparent 55%),
+    radial-gradient(ellipse 90% 120% at 75% 55%, rgba(52, 120, 181, 0.2), transparent 50%),
+    radial-gradient(ellipse 100% 70% at 15% 85%, rgba(184, 61, 158, 0.12), transparent 45%),
+    conic-gradient(from 200deg at 72% 35%, rgba(251, 146, 60, 0.08), rgba(232, 121, 249, 0.12), rgba(59, 130, 246, 0.14), rgba(184, 61, 158, 0.1));
+}
+@media (prefers-color-scheme: dark) {
+  .login-vortex {
+    background-color: #0a0f18;
+    background-image:
+      radial-gradient(ellipse 120% 80% at 85% 15%, rgba(232, 121, 249, 0.15), transparent 55%),
+      radial-gradient(ellipse 90% 120% at 75% 55%, rgba(59, 130, 246, 0.18), transparent 50%),
+      radial-gradient(ellipse 100% 70% at 15% 85%, rgba(232, 121, 249, 0.1), transparent 45%),
+      conic-gradient(from 200deg at 72% 35%, rgba(251, 146, 60, 0.06), rgba(232, 121, 249, 0.1), rgba(96, 165, 250, 0.12), rgba(232, 121, 249, 0.08));
+  }
+}
+
 /* Scrollbars: finos y semitransparentes en toda la app */
 * {
   scrollbar-width: thin;
