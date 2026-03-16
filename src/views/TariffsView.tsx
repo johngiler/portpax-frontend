@@ -15,6 +15,7 @@ import MainTable, {
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import PageHeader from "@/components/layout/PageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 
 const FEE_TIER_LABELS: Record<string, string> = {
@@ -115,17 +116,19 @@ export default function TariffsView() {
         />
       </FilterSidebarContent>
       <div>
-        <div className="mb-8">
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            <CircleDollarSign className="h-7 w-7 text-[var(--admin-accent)]" strokeWidth={1.5} />
-            Tarifas portuarias
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {filteredList.length === list.length
-              ? `${totalCount} tarifa${totalCount !== 1 ? "s" : ""} (USD por pasajero)`
-              : `${filteredList.length} de ${totalCount} (filtro en página)`}
-          </p>
-        </div>
+        <PageHeader>
+          <div>
+            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              <CircleDollarSign className="h-7 w-7 text-[var(--admin-accent)]" strokeWidth={1.5} />
+              Tarifas portuarias
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              {filteredList.length === list.length
+                ? `${totalCount} tarifa${totalCount !== 1 ? "s" : ""} (USD por pasajero)`
+                : `${filteredList.length} de ${totalCount} (filtro en página)`}
+            </p>
+          </div>
+        </PageHeader>
         <MainTable>
           <table className="w-full min-w-[theme(spacing.96)]">
             <MainTableHeader>

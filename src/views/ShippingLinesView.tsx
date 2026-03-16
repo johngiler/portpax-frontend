@@ -17,6 +17,7 @@ import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import PageHeader from "@/components/layout/PageHeader";
 import { FormField } from "@/components/ui/FormField";
 
 export default function ShippingLinesView() {
@@ -109,7 +110,7 @@ export default function ShippingLinesView() {
         />
       </FilterSidebarContent>
       <div className="min-w-0 flex-1">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <PageHeader>
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               <Building2 className="h-7 w-7 text-[var(--admin-accent)]" strokeWidth={1.5} />
@@ -129,7 +130,7 @@ export default function ShippingLinesView() {
             <Plus className="h-4 w-4" strokeWidth={2} />
             Nueva naviera
           </button>
-        </div>
+        </PageHeader>
         <MainTable>
           <table className="w-full min-w-[theme(spacing.96)]">
             <MainTableHeader>
