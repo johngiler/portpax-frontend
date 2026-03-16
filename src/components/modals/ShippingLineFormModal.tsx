@@ -4,7 +4,17 @@ import { useState, useEffect } from "react";
 import type { ShippingLine } from "@/lib/docking";
 import { createShippingLine, updateShippingLine } from "@/lib/docking";
 import Modal from "@/components/ui/Modal";
-import { FormField } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+
+const FEE_TIER_OPTIONS = [
+  { value: "", label: "Sin tier" },
+  { value: "RCL", label: "Royal Caribbean / Celebrity" },
+  { value: "NCL", label: "Norwegian / Oceania / Regent" },
+  { value: "MSC", label: "MSC" },
+  { value: "CCL", label: "Carnival / Costa" },
+  { value: "VV", label: "Virgin Voyages" },
+  { value: "Others", label: "Otros" },
+];
 
 type Props = {
   open: boolean;
@@ -16,6 +26,7 @@ type Props = {
 export default function ShippingLineFormModal({ open, onClose, edit, onSuccess }: Props) {
   const [name, setName] = useState(edit?.name ?? "");
   const [code, setCode] = useState(edit?.code ?? "");
+  const [feeTier, setFeeTier] = useState(edit?.fee_tier ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +36,7 @@ export default function ShippingLineFormModal({ open, onClose, edit, onSuccess }
     if (open) {
       setName(edit?.name ?? "");
       setCode(edit?.code ?? "");
+      setFeeTier(edit?.fee_tier ?? "");
       setError(null);
     }
   }, [open, edit]);
@@ -35,9 +47,17 @@ export default function ShippingLineFormModal({ open, onClose, edit, onSuccess }
     setSaving(true);
     try {
       if (isEdit) {
-        await updateShippingLine(edit.id, { name: name.trim(), code: code.trim() || undefined });
+        await updateShippingLine(edit.id, {
+          name: name.trim(),
+          code: code.trim() || undefined,
+          fee_tier: feeTier.trim() || undefined,
+        });
       } else {
-        await createShippingLine({ name: name.trim(), code: code.trim() || undefined });
+        await createShippingLine({
+          name: name.trim(),
+          code: code.trim() || undefined,
+          fee_tier: feeTier.trim() || undefined,
+        });
       }
       onSuccess();
       onClose();
@@ -73,6 +93,15 @@ export default function ShippingLineFormModal({ open, onClose, edit, onSuccess }
         )}
         <FormField label="Nombre" name="name" value={name} onChange={setName} required />
         <FormField label="Código" name="code" value={code} onChange={setCode} placeholder="Ej. CCL" />
+        <FormFieldSelect<string>
+          label="Tier (tarifas portuarias)"
+          name="fee_tier"
+          value={feeTier}
+          onChange={setFeeTier}
+          options={FEE_TIER_OPTIONS}
+          optionLabel="Sin tier"
+          emptyValue=""
+        />
       </form>
     </Modal>
   );

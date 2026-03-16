@@ -53,6 +53,7 @@ export type Scale = {
   berth_name: string | null;
   date: string;
   pax_count: number | null;
+  crew_count?: number | null;
 };
 
 export type ListParams = { page?: number; page_size?: number };
@@ -133,6 +134,55 @@ export async function getPortFeeRules(
   return res.json();
 }
 
+export type PortFeeRulePayload = {
+  port: number;
+  fee_tier: string;
+  amount_per_pax_usd: string | number;
+  minimum_charge_usd?: string | number | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  notes?: string;
+};
+
+export async function createPortFeeRule(payload: PortFeeRulePayload): Promise<PortFeeRule> {
+  const body = {
+    ...payload,
+    amount_per_pax_usd: String(payload.amount_per_pax_usd),
+    minimum_charge_usd: payload.minimum_charge_usd != null && payload.minimum_charge_usd !== "" ? String(payload.minimum_charge_usd) : null,
+  };
+  const res = await fetch(url("api/port-fee-rules/"), {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(typeof err === "object" && err && "detail" in err ? String(err.detail) : "Error al crear tarifa");
+  }
+  return res.json();
+}
+
+export async function updatePortFeeRule(id: number, payload: Partial<PortFeeRulePayload>): Promise<PortFeeRule> {
+  const body: Record<string, unknown> = { ...payload };
+  if (payload.amount_per_pax_usd != null) body.amount_per_pax_usd = String(payload.amount_per_pax_usd);
+  if (payload.minimum_charge_usd !== undefined) body.minimum_charge_usd = payload.minimum_charge_usd != null && payload.minimum_charge_usd !== "" ? String(payload.minimum_charge_usd) : null;
+  const res = await fetch(url(`api/port-fee-rules/${id}/`), {
+    method: "PATCH",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(typeof err === "object" && err && "detail" in err ? String(err.detail) : "Error al actualizar tarifa");
+  }
+  return res.json();
+}
+
+export async function deletePortFeeRule(id: number): Promise<void> {
+  const res = await fetch(url(`api/port-fee-rules/${id}/`), { method: "DELETE", headers: authHeaders() });
+  if (!res.ok) throw new Error("Error al eliminar tarifa");
+}
+
 /** Métricas por mes para gráficas */
 export type ScalesByMonth = {
   year: number;
@@ -162,7 +212,7 @@ export async function getScalesByYear(): Promise<ScalesByYear[]> {
 }
 
 // ——— CRUD: Navieras ———
-export type ShippingLinePayload = { name: string; code?: string };
+export type ShippingLinePayload = { name: string; code?: string; fee_tier?: string };
 
 export async function createShippingLine(payload: ShippingLinePayload): Promise<ShippingLine> {
   const res = await fetch(url("api/shipping-lines/"), {
@@ -264,6 +314,7 @@ export async function deleteBerth(id: number): Promise<void> {
 export type ShipPayload = {
   shipping_line: number;
   name: string;
+  code?: string;
   imo?: string;
   capacity_pax?: number | null;
   length_m?: number | string | null;

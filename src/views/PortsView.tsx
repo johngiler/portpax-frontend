@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Port } from "@/lib/docking";
 import { deletePort, getPorts } from "@/lib/docking";
 import MainTable, {
+  AccordionTableRow,
   MainTableBody,
   MainTableEmpty,
   MainTableHeader,
-  MainTableRow,
   MainTableTd,
   MainTableTh,
 } from "@/components/tables/MainTable";
@@ -145,7 +145,25 @@ export default function PortsView() {
                 </MainTableEmpty>
               ) : (
                 filteredPorts.map((p) => (
-                  <MainTableRow key={p.id}>
+                  <AccordionTableRow
+                    key={p.id}
+                    colSpan={3}
+                    expandContent={
+                      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Puerto
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                            {p.name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            Código: {p.code || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
                     <MainTableTd className="font-medium text-zinc-900 dark:text-zinc-50">
                       {p.name}
                     </MainTableTd>
@@ -158,7 +176,7 @@ export default function PortsView() {
                         deleteLabel="este puerto"
                       />
                     </MainTableTd>
-                  </MainTableRow>
+                  </AccordionTableRow>
                 ))
               )}
             </MainTableBody>

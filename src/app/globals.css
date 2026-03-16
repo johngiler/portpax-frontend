@@ -349,6 +349,64 @@ body {
   }
 }
 
+/* Sidebar: cuadros superpuestos en bottom-left (colores waves, escalonado) */
+.sidebar-square {
+  position: absolute;
+  border-radius: 10px;
+  opacity: 0.7;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+.sidebar-square-1 {
+  bottom: 4px;
+  left: 4px;
+  width: 72px;
+  height: 72px;
+  background: #d4e6f6;
+  transform: rotate(-6deg);
+}
+.sidebar-square-2 {
+  bottom: 32px;
+  left: 38px;
+  width: 64px;
+  height: 64px;
+  background: #c8dff2;
+  transform: rotate(4deg);
+}
+.sidebar-square-3 {
+  bottom: 62px;
+  left: 8px;
+  width: 56px;
+  height: 56px;
+  background: #b8d4ef;
+  transform: rotate(-3deg);
+}
+.sidebar-square-4 {
+  bottom: 48px;
+  left: 78px;
+  width: 52px;
+  height: 52px;
+  background: #e0eef9;
+  transform: rotate(8deg);
+}
+@media (prefers-color-scheme: dark) {
+  .sidebar-square {
+    opacity: 0.6;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  }
+  .sidebar-square-1 {
+    background: #1a2740;
+  }
+  .sidebar-square-2 {
+    background: #162033;
+  }
+  .sidebar-square-3 {
+    background: #131d2e;
+  }
+  .sidebar-square-4 {
+    background: rgba(59, 130, 246, 0.18);
+  }
+}
+
 /* Main: banda de ondas + gradiente solo en la parte superior */
 .main-waves-top {
   position: relative;
@@ -392,6 +450,39 @@ body {
         #162033 90%,
         transparent 100%
       );
+  }
+}
+
+/* Acordeón en filas de tabla: animación de altura y contenido responsive */
+.table-accordion-detail-row td {
+  border-bottom: 1px solid var(--admin-border);
+  vertical-align: top;
+}
+.table-accordion-expand-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease-out;
+}
+.table-accordion-detail-row[data-open="true"] .table-accordion-expand-wrapper {
+  grid-template-rows: 1fr;
+}
+.table-accordion-expand-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.table-accordion-expand-content {
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--admin-surface-muted);
+  border-top: 1px solid var(--admin-border);
+  /* Contenedor flexible: en poco ancho el contenido se apila en columna */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-start;
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-accordion-expand-wrapper {
+    transition: none;
   }
 }
 

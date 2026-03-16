@@ -24,6 +24,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
   const [lines, setLines] = useState<ShippingLine[]>([]);
   const [shippingLineId, setShippingLineId] = useState<number>(edit?.shipping_line ?? 0);
   const [name, setName] = useState(edit?.name ?? "");
+  const [code, setCode] = useState(edit?.code ?? "");
   const [imo, setImo] = useState(edit?.imo ?? "");
   const [capacityPax, setCapacityPax] = useState<number | "">(edit?.capacity_pax ?? "");
   const [lengthM, setLengthM] = useState<number | "">(toNum(edit?.length_m));
@@ -41,6 +42,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
     if (open) {
       setShippingLineId(edit?.shipping_line ?? lines[0]?.id ?? 0);
       setName(edit?.name ?? "");
+      setCode(edit?.code ?? "");
       setImo(edit?.imo ?? "");
       setCapacityPax(edit?.capacity_pax ?? "");
       setLengthM(toNum(edit?.length_m));
@@ -57,6 +59,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
       const payload = {
         shipping_line: shippingLineId,
         name: name.trim(),
+        code: code.trim() || undefined,
         imo: imo.trim() || undefined,
         capacity_pax: capacityPax === "" ? null : Number(capacityPax),
         length_m: lengthM === "" ? null : Number(lengthM),
@@ -112,6 +115,7 @@ export default function ShipFormModal({ open, onClose, edit, onSuccess }: Props)
           required
         />
         <FormField label="Nombre del barco" name="name" value={name} onChange={setName} required />
+        <FormField label="Código" name="code" value={code} onChange={setCode} placeholder="Ej. HAL ZUIDERDAM" />
         <FormField label="IMO" name="imo" value={imo} onChange={setImo} placeholder="Ej. 9744001" />
         <FormField
           label="Capacidad PAX"

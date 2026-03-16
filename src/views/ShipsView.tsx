@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Ship } from "@/lib/docking";
 import { deleteShip, getShips, getShippingLines } from "@/lib/docking";
 import MainTable, {
+  AccordionTableRow,
   MainTableBody,
   MainTableEmpty,
   MainTableHeader,
-  MainTableRow,
   MainTableTd,
   MainTableTh,
 } from "@/components/tables/MainTable";
@@ -168,7 +168,55 @@ export default function ShipsView() {
                 </MainTableEmpty>
               ) : (
                 filteredShips.map((s) => (
-                  <MainTableRow key={s.id}>
+                  <AccordionTableRow
+                    key={s.id}
+                    colSpan={5}
+                    expandContent={
+                      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Identificación
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                            {s.name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            Código: {s.code || "—"}
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            IMO: {s.imo || "—"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Naviera
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                            {s.shipping_line_name || "—"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Capacidad PAX
+                          </p>
+                          <p className="mt-1 text-lg font-semibold tabular-nums text-[var(--admin-accent)]">
+                            {s.capacity_pax ?? "—"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Dimensiones
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                            Eslora: {s.length_m != null ? `${s.length_m} m` : "—"}
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            Calado: {s.draft_m != null ? `${s.draft_m} m` : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
                     <MainTableTd className="font-medium text-zinc-900 dark:text-zinc-50">
                       {s.name}
                     </MainTableTd>
@@ -183,7 +231,7 @@ export default function ShipsView() {
                         deleteLabel="este barco"
                       />
                     </MainTableTd>
-                  </MainTableRow>
+                  </AccordionTableRow>
                 ))
               )}
             </MainTableBody>

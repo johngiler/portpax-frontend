@@ -1,19 +1,21 @@
 "use client";
 
-import { CircleDollarSign } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CircleDollarSign, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PortFeeRule } from "@/lib/docking";
-import { getPortFeeRules } from "@/lib/docking";
+import { deletePortFeeRule, getPortFeeRules } from "@/lib/docking";
 import MainTable, {
+  AccordionTableRow,
   MainTableBody,
   MainTableEmpty,
   MainTableHeader,
-  MainTableRow,
   MainTableTd,
   MainTableTh,
 } from "@/components/tables/MainTable";
+import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePageSkeleton from "@/components/tables/TablePageSkeleton";
 import TablePagination from "@/components/tables/TablePagination";
+import TariffFormModal from "@/components/modals/TariffFormModal";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import PageHeader from "@/components/layout/PageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
@@ -46,6 +48,19 @@ export default function TariffsView() {
   const [error, setError] = useState<string | null>(null);
   const [filterPort, setFilterPort] = useState("");
   const [filterTier, setFilterTier] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<PortFeeRule | null>(null);
+  const [viewOnly, setViewOnly] = useState(false);
+
+  const fetchList = useCallback((p?: number) => {
+    const pageToFetch = p ?? page;
+    getPortFeeRules({ page: pageToFetch, page_size: PAGE_SIZE })
+      .then((r) => {
+        setList(r.results);
+        setTotalCount(r.count);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Error"));
+  }, [page]);
 
   useEffect(() => {
     setLoading(true);
@@ -57,6 +72,28 @@ export default function TariffsView() {
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
   }, [page]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setViewOnly(false);
+    setModalOpen(true);
+  };
+  const openEdit = (item: PortFeeRule) => {
+    setEditing(item);
+    setViewOnly(false);
+    setModalOpen(true);
+  };
+  const openView = (item: PortFeeRule) => {
+    setEditing(item);
+    setViewOnly(true);
+    setModalOpen(true);
+  };
+  const handleDelete = useCallback(
+    (item: PortFeeRule) => {
+      deletePortFeeRule(item.id).then(() => fetchList()).catch((e) => setError(e instanceof Error ? e.message : "Error"));
+    },
+    [fetchList]
+  );
 
   const filteredList = useMemo(() => {
     let out = list;
@@ -76,7 +113,7 @@ export default function TariffsView() {
   ];
 
   if (loading) {
-    return <TablePageSkeleton columns={5} withButton={false} />;
+    return <TablePageSkeleton columns={5} withButton />;
   }
 
   if (error) {
@@ -128,6 +165,14 @@ export default function TariffsView() {
                 : `${filteredList.length} de ${totalCount} (filtro en página)`}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="btn-primary-gradient flex cursor-pointer items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all hover:brightness-105 hover:shadow-[0_8px_22px_-14px_rgba(52,120,181,0.7)]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Nueva tarifa
+          </button>
         </PageHeader>
         <MainTable>
           <table className="w-full min-w-[theme(spacing.96)]">
@@ -136,18 +181,61 @@ export default function TariffsView() {
               <MainTableTh>Tier</MainTableTh>
               <MainTableTh className="tabular-nums">USD / PAX</MainTableTh>
               <MainTableTh>Vigencia</MainTableTh>
-              <MainTableTh>Notas</MainTableTh>
+              <MainTableTh className="w-28">Notas</MainTableTh>
+              <MainTableTh className="w-28">Acciones</MainTableTh>
             </MainTableHeader>
             <MainTableBody>
               {filteredList.length === 0 ? (
-                <MainTableEmpty colSpan={5}>
+                <MainTableEmpty colSpan={6}>
                   {list.length === 0
                     ? "No hay tarifas cargadas. Ejecuta en backend: python manage.py load_port_fees"
                     : "Ninguna tarifa coincide con los filtros."}
                 </MainTableEmpty>
               ) : (
                 filteredList.map((r) => (
-                  <MainTableRow key={r.id}>
+                  <AccordionTableRow
+                    key={r.id}
+                    colSpan={6}
+                    expandContent={
+                      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Puerto y tier
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                            {r.port_name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-[var(--admin-accent)]">
+                            {r.fee_tier} — {FEE_TIER_LABELS[r.fee_tier] ?? r.fee_tier}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Tarifa y vigencia
+                          </p>
+                          <p className="mt-1 text-lg font-semibold tabular-nums text-[var(--admin-accent)]">
+                            $ {Number(r.amount_per_pax_usd).toFixed(2)} / PAX
+                          </p>
+                          {r.minimum_charge_usd != null && r.minimum_charge_usd !== "" && (
+                            <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                              Mín. $ {Number(r.minimum_charge_usd).toFixed(2)}
+                            </p>
+                          )}
+                          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            {formatDate(r.valid_from)} → {formatDate(r.valid_to)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3 sm:col-span-2 lg:col-span-1">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Notas
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                            {r.notes || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
                     <MainTableTd className="font-medium text-zinc-900 dark:text-zinc-50">
                       {r.port_name}
                     </MainTableTd>
@@ -166,7 +254,15 @@ export default function TariffsView() {
                     <MainTableTd className="max-w-[theme(spacing.64)] truncate text-sm text-zinc-500 dark:text-zinc-400" title={r.notes || undefined}>
                       {r.notes || "—"}
                     </MainTableTd>
-                  </MainTableRow>
+                    <MainTableTd>
+                      <TableActionButtons
+                        onView={() => openView(r)}
+                        onEdit={() => openEdit(r)}
+                        onDelete={() => handleDelete(r)}
+                        deleteLabel="esta tarifa"
+                      />
+                    </MainTableTd>
+                  </AccordionTableRow>
                 ))
               )}
             </MainTableBody>
@@ -178,6 +274,13 @@ export default function TariffsView() {
           pageSize={PAGE_SIZE}
           onPageChange={setPage}
           label="tarifas"
+        />
+        <TariffFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          edit={editing}
+          viewOnly={viewOnly}
+          onSuccess={fetchList}
         />
       </div>
     </>

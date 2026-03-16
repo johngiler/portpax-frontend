@@ -19,6 +19,7 @@ type FormFieldProps = {
   required?: boolean;
   min?: number;
   step?: string;
+  disabled?: boolean;
 };
 
 export function FormField({
@@ -32,6 +33,7 @@ export function FormField({
   required,
   min,
   step,
+  disabled,
 }: FormFieldProps) {
   return (
     <div className="mb-4">
@@ -58,6 +60,7 @@ export function FormField({
         required={required}
         min={min}
         step={step}
+        disabled={disabled}
         aria-invalid={!!error}
         aria-describedby={error ? `${name}-error` : undefined}
       />
@@ -80,6 +83,7 @@ export function FormFieldSelect<T extends string | number>({
   emptyValue,
   required,
   error,
+  disabled,
 }: {
   label: string;
   name: string;
@@ -91,6 +95,7 @@ export function FormFieldSelect<T extends string | number>({
   emptyValue?: T;
   required?: boolean;
   error?: string;
+  disabled?: boolean;
 }) {
   const handleChange = (selected: { value: T; label: string } | null) => {
     if (!selected) {
@@ -194,6 +199,7 @@ export function FormFieldSelect<T extends string | number>({
         isClearable={!!optionLabel || emptyValue !== undefined}
         placeholder={optionLabel ?? "Seleccionar..."}
         aria-invalid={!!error}
+        isDisabled={disabled}
         menuPortalTarget={typeof window !== "undefined" ? document.body : null}
       />
       {error && (

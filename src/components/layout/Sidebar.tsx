@@ -88,7 +88,18 @@ export default function Sidebar() {
         collapsed ? "w-16" : "w-64"
       }`}
     >
-      <nav className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+      {/* Fondo decorativo: cuadros superpuestos en bottom-left (colores waves, escalonado) */}
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 z-0 h-36 w-36 overflow-visible"
+        aria-hidden
+      >
+        <span className="sidebar-square sidebar-square-1" />
+        <span className="sidebar-square sidebar-square-2" />
+        <span className="sidebar-square sidebar-square-3" />
+        <span className="sidebar-square sidebar-square-4" />
+      </div>
+
+      <nav className="relative z-10 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
         {collapsed ? (
           <>
             <div className="flex flex-col gap-1.5 mb-6">
@@ -109,7 +120,10 @@ export default function Sidebar() {
                         aria-hidden
                       />
                     )}
-                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                    <Icon
+                      className="h-[18px] w-[18px] shrink-0"
+                      strokeWidth={2}
+                    />
                   </Link>
                 );
               })}
@@ -132,7 +146,10 @@ export default function Sidebar() {
                         aria-hidden
                       />
                     )}
-                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                    <Icon
+                      className="h-[18px] w-[18px] shrink-0"
+                      strokeWidth={2}
+                    />
                   </Link>
                 );
               })}
@@ -188,7 +205,9 @@ export default function Sidebar() {
                           className="h-[18px] w-[18px] shrink-0"
                           strokeWidth={2}
                         />
-                        <span className={isActive ? "pl-0.5" : ""}>{label}</span>
+                        <span className={isActive ? "pl-0.5" : ""}>
+                          {label}
+                        </span>
                       </Link>
                     );
                   })}
@@ -204,7 +223,9 @@ export default function Sidebar() {
                 onClick={() => setSectionComingSoonOpen((o) => !o)}
                 className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-500 transition-colors hover:bg-white/10 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                 aria-label={
-                  sectionComingSoonOpen ? "Colapsar sección" : "Expandir sección"
+                  sectionComingSoonOpen
+                    ? "Colapsar sección"
+                    : "Expandir sección"
                 }
                 title={sectionComingSoonOpen ? "Colapsar" : "Expandir"}
               >
@@ -243,7 +264,9 @@ export default function Sidebar() {
                           className="h-[18px] w-[18px] shrink-0"
                           strokeWidth={2}
                         />
-                        <span className={isActive ? "pl-0.5" : ""}>{label}</span>
+                        <span className={isActive ? "pl-0.5" : ""}>
+                          {label}
+                        </span>
                       </Link>
                     );
                   })}
@@ -271,8 +294,8 @@ export default function Sidebar() {
         )}
       </button>
 
-      {/* Bloque Configuración fijo al pie del sidebar */}
-      <div className="shrink-0 border-t border-[var(--admin-border)] bg-[var(--admin-sidebar)]/95 p-4 dark:bg-zinc-950/40">
+      {/* Bloque Configuración fijo al pie del sidebar (fondo transparente para que se vean los cuadros) */}
+      <div className="relative z-10 shrink-0 border-t border-[var(--admin-border)] p-4">
         <Link
           href="/configuration"
           className={`relative flex cursor-pointer items-center rounded-lg py-2.5 text-sm font-medium transition-all duration-200 ${

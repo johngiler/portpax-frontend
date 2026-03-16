@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { Scale } from "@/lib/docking";
 import { getScales } from "@/lib/docking";
 import MainTable, {
+  AccordionTableRow,
   MainTableBody,
   MainTableEmpty,
   MainTableHeader,
-  MainTableRow,
   MainTableTd,
   MainTableTh,
 } from "@/components/tables/MainTable";
@@ -120,7 +120,52 @@ export default function ScalesView() {
                 </MainTableEmpty>
               ) : (
                 filteredList.map((s) => (
-                  <MainTableRow key={s.id}>
+                  <AccordionTableRow
+                    key={s.id}
+                    colSpan={5}
+                    expandContent={
+                      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Barco
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                            {s.ship_name}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Puerto · Muelle
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                            {s.port_name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            {s.berth_name ?? "—"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            Fecha
+                          </p>
+                          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
+                            {s.date}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                            PAX · Tripulación
+                          </p>
+                          <p className="mt-1 text-sm font-semibold tabular-nums text-[var(--admin-accent)]">
+                            {s.pax_count ?? "—"} PAX
+                          </p>
+                          <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            {s.crew_count ?? "—"} tripulación
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
                     <MainTableTd className="font-medium text-zinc-900 dark:text-zinc-50">
                       {s.ship_name}
                     </MainTableTd>
@@ -128,7 +173,7 @@ export default function ScalesView() {
                     <MainTableTd>{s.berth_name ?? "—"}</MainTableTd>
                     <MainTableTd>{s.date}</MainTableTd>
                     <MainTableTd className="tabular-nums">{s.pax_count ?? "—"}</MainTableTd>
-                  </MainTableRow>
+                  </AccordionTableRow>
                 ))
               )}
             </MainTableBody>

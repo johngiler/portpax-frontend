@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { Anchor, Building2, CalendarDays, MapPin, Ship } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api-base";
 import type { DockingStats } from "@/lib/docking";
@@ -14,12 +16,17 @@ const CARD_COLORS = [
   "#059669",
 ];
 
-const cards: { key: keyof DockingStats; label: string; href: string }[] = [
-  { key: "shipping_lines", label: "Navieras", href: "/shipping-lines" },
-  { key: "ports", label: "Puertos", href: "/ports" },
-  { key: "berths", label: "Muelles", href: "/berths" },
-  { key: "ships", label: "Barcos", href: "/ships" },
-  { key: "scales", label: "Escalas", href: "/scales" },
+const cards: {
+  key: keyof DockingStats;
+  label: string;
+  href: string;
+  Icon: LucideIcon;
+}[] = [
+  { key: "shipping_lines", label: "Navieras", href: "/shipping-lines", Icon: Building2 },
+  { key: "ports", label: "Puertos", href: "/ports", Icon: MapPin },
+  { key: "berths", label: "Muelles", href: "/berths", Icon: Anchor },
+  { key: "ships", label: "Barcos", href: "/ships", Icon: Ship },
+  { key: "scales", label: "Escalas", href: "/scales", Icon: CalendarDays },
 ];
 
 export default function DashboardSection() {
@@ -47,24 +54,33 @@ export default function DashboardSection() {
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-      {cards.map(({ key, label, href }, i) => (
+      {cards.map(({ key, label, href, Icon }, i) => (
         <Link key={key} href={href} className="cursor-pointer">
           <div
-            className="group relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--admin-card-shadow-hover)] hover:border-zinc-300/80 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-zinc-700"
+            className="group relative flex items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--admin-card-shadow-hover)] hover:border-zinc-300/80 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-zinc-700"
             style={{
               borderTopWidth: "3px",
               borderTopColor: CARD_COLORS[i],
             }}
           >
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              {label}
-            </p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-              {stats ? stats[key] : "—"}
-            </p>
-            <span className="mt-2 inline-block text-xs font-medium text-[var(--admin-accent)] opacity-0 transition-opacity group-hover:opacity-100">
-              Ver listado →
-            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                {label}
+              </p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+                {stats ? stats[key] : "—"}
+              </p>
+              <span className="mt-2 inline-block text-xs font-medium text-[var(--admin-accent)] opacity-0 transition-opacity group-hover:opacity-100">
+                Ver listado →
+              </span>
+            </div>
+            <div
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500"
+              style={{ backgroundColor: `${CARD_COLORS[i]}18` }}
+              aria-hidden
+            >
+              <Icon className="h-5 w-5" style={{ color: CARD_COLORS[i] }} />
+            </div>
           </div>
         </Link>
       ))}
