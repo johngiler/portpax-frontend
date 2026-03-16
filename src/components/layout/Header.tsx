@@ -94,12 +94,22 @@ export default function Header() {
         style={{ background: "var(--admin-gradient-header)" }}
         aria-hidden
       />
+      {/* Cuadros decorativos top-right (z-0 para quedar detrás de menús) */}
+      <div
+        className="pointer-events-none absolute right-0 top-0 z-0 h-16 w-24 overflow-hidden sm:w-28"
+        aria-hidden
+      >
+        <span className="header-square header-square-1" />
+        <span className="header-square header-square-2" />
+        <span className="header-square header-square-3" />
+        <span className="header-square header-square-4" />
+      </div>
       <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
         <Link href="/" className="cursor-pointer" aria-label="Ir al Dashboard">
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
       </div>
-      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+      <div className="relative z-10 flex shrink-0 items-center gap-1 sm:gap-2">
         <DropdownMenu
           open={openMenu === "notifications"}
           onClose={closeAll}

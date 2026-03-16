@@ -407,6 +407,64 @@ body {
   }
 }
 
+/* Header: cuadros superpuestos en top-right (colores waves, un poco más grandes y marcados) */
+.header-square {
+  position: absolute;
+  border-radius: 8px;
+  opacity: 0.85;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+.header-square-1 {
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  background: #c8dff2;
+  transform: rotate(6deg);
+}
+.header-square-2 {
+  top: 14px;
+  right: 24px;
+  width: 34px;
+  height: 34px;
+  background: #b8d4ef;
+  transform: rotate(-4deg);
+}
+.header-square-3 {
+  top: 28px;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  background: #a8c9e8;
+  transform: rotate(3deg);
+}
+.header-square-4 {
+  top: 20px;
+  right: 46px;
+  width: 26px;
+  height: 26px;
+  background: #d4e6f6;
+  transform: rotate(-8deg);
+}
+@media (prefers-color-scheme: dark) {
+  .header-square {
+    opacity: 0.75;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  .header-square-1 {
+    background: #1a2740;
+  }
+  .header-square-2 {
+    background: #162033;
+  }
+  .header-square-3 {
+    background: #131d2e;
+  }
+  .header-square-4 {
+    background: rgba(59, 130, 246, 0.22);
+  }
+}
+
 /* Main: banda de ondas + gradiente solo en la parte superior */
 .main-waves-top {
   position: relative;

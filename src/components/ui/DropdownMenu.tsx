@@ -37,7 +37,7 @@ export default function DropdownMenu({
       {trigger}
       {open && (
         <div
-          className={`dropdown-panel-enter absolute top-full z-[100] mt-2 ${width} ${align === "right" ? "right-0" : "left-0"}`}
+          className={`dropdown-panel-enter absolute top-full z-[200] mt-2 ${width} ${align === "right" ? "right-0" : "left-0"}`}
           role="menu"
         >
           {children}
