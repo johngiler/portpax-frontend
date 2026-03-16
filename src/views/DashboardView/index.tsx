@@ -29,9 +29,12 @@ function DashboardFilters({
       setVisibility({
         cards: false,
         resumenMetricas: false,
-        distribucionCatalogo: false,
+        estimadoIngresos: false,
+        proximasEscalas: false,
         escalasPorPuerto: false,
         paxPorPuerto: false,
+        escalasPorNaviera: false,
+        escalasPorMuelle: false,
         escalasPorMes: false,
         paxPorMes: false,
         escalasPaxPorAno: false,
@@ -88,12 +91,23 @@ function DashboardFilters({
       <label className="flex cursor-pointer items-center gap-2 py-1">
         <input
           type="checkbox"
-          checked={visibility.distribucionCatalogo}
-          onChange={(e) => set("distribucionCatalogo", e.target.checked)}
+          checked={visibility.estimadoIngresos}
+          onChange={(e) => set("estimadoIngresos", e.target.checked)}
           className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
         />
-        <span className={`text-sm ${visibility.distribucionCatalogo ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
-          Distribución del catálogo
+        <span className={`text-sm ${visibility.estimadoIngresos ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
+          Estimado de ingresos
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-center gap-2 py-1">
+        <input
+          type="checkbox"
+          checked={visibility.proximasEscalas}
+          onChange={(e) => set("proximasEscalas", e.target.checked)}
+          className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+        />
+        <span className={`text-sm ${visibility.proximasEscalas ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
+          Próximas escalas
         </span>
       </label>
       <label className="flex cursor-pointer items-center gap-2 py-1">
@@ -116,6 +130,28 @@ function DashboardFilters({
         />
         <span className={`text-sm ${visibility.paxPorPuerto ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
           PAX por puerto
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-center gap-2 py-1">
+        <input
+          type="checkbox"
+          checked={visibility.escalasPorNaviera}
+          onChange={(e) => set("escalasPorNaviera", e.target.checked)}
+          className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+        />
+        <span className={`text-sm ${visibility.escalasPorNaviera ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
+          Escalas por naviera
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-center gap-2 py-1">
+        <input
+          type="checkbox"
+          checked={visibility.escalasPorMuelle}
+          onChange={(e) => set("escalasPorMuelle", e.target.checked)}
+          className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+        />
+        <span className={`text-sm ${visibility.escalasPorMuelle ? "font-medium text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}`}>
+          Escalas por muelle
         </span>
       </label>
       <label className="flex cursor-pointer items-center gap-2 py-1">

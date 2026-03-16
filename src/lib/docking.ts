@@ -47,6 +47,7 @@ export type Scale = {
   id: number;
   ship: number;
   ship_name: string;
+  shipping_line_name?: string;
   port: number;
   port_name: string;
   berth: number | null;
@@ -208,6 +209,19 @@ export async function getScalesByMonth(): Promise<ScalesByMonth[]> {
 export async function getScalesByYear(): Promise<ScalesByYear[]> {
   const res = await fetch(url("api/metrics/scales-by-year/"), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch scales by year");
+  return res.json();
+}
+
+/** Estimado de ingresos por muellaje (PAX × tarifa por puerto/tier) */
+export type RevenueEstimate = {
+  total_estimated_revenue_usd: number;
+  by_year: { year: number; estimated_revenue_usd: number }[];
+  by_month: { year: number; month: number; month_label: string; estimated_revenue_usd: number }[];
+};
+
+export async function getRevenueEstimate(): Promise<RevenueEstimate> {
+  const res = await fetch(url("api/metrics/revenue-estimate/"), { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch revenue estimate");
   return res.json();
 }
 

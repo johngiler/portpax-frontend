@@ -8,12 +8,14 @@ import { API_BASE } from "@/lib/api-base";
 import type { DockingStats } from "@/lib/docking";
 import { getDockingStats } from "@/lib/docking";
 
-const CARD_COLORS = [
-  "#3478b5",
-  "#0d9488",
-  "#d97706",
-  "#7c3aed",
-  "#059669",
+const CARD_COLORS = ["#3478b5", "#0d9488", "#d97706", "#7c3aed", "#059669"];
+/** RGBA para gradiente de cada card (mismo orden): azul, teal, ámbar, violeta, esmeralda */
+const CARD_GRADIENTS = [
+  "linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)",
+  "linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)",
+  "linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)",
+  "linear-gradient(160deg, rgba(124, 58, 237, 0.14) 0%, var(--background) 55%)",
+  "linear-gradient(160deg, rgba(5, 150, 105, 0.14) 0%, var(--background) 55%)",
 ];
 
 const cards: {
@@ -22,7 +24,12 @@ const cards: {
   href: string;
   Icon: LucideIcon;
 }[] = [
-  { key: "shipping_lines", label: "Navieras", href: "/shipping-lines", Icon: Building2 },
+  {
+    key: "shipping_lines",
+    label: "Navieras",
+    href: "/shipping-lines",
+    Icon: Building2,
+  },
   { key: "ports", label: "Puertos", href: "/ports", Icon: MapPin },
   { key: "berths", label: "Muelles", href: "/berths", Icon: Anchor },
   { key: "ships", label: "Barcos", href: "/ships", Icon: Ship },
@@ -61,6 +68,7 @@ export default function DashboardSection() {
             style={{
               borderTopWidth: "3px",
               borderTopColor: CARD_COLORS[i],
+              background: CARD_GRADIENTS[i],
             }}
           >
             <div className="min-w-0 flex-1">
