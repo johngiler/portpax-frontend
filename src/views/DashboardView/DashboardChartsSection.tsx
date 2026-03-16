@@ -19,17 +19,22 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight } from "lucide-react";
 import type {
+  BerthTimeline,
+  OperationsAlerts,
   RevenueEstimate,
   Scale,
   ScalesByMonth,
   ScalesByYear,
 } from "@/lib/docking";
 import {
+  getBerthTimeline,
+  getOperationsAlerts,
   getRevenueEstimate,
   getScales,
   getScalesByMonth,
   getScalesByYear,
 } from "@/lib/docking";
+import type { TimeRange } from "@/lib/timeRange";
 import DashboardChartsSkeleton from "./DashboardChartsSkeleton";
 import type { DashboardVisibility } from "@/types/dashboard";
 import { DEFAULT_DASHBOARD_VISIBILITY } from "@/types/dashboard";
@@ -175,6 +180,7 @@ function PieLegendColumn({
 
 type DashboardChartsSectionProps = {
   visibility?: Partial<DashboardVisibility>;
+  timeRange: TimeRange;
 };
 
 const cardClass =
@@ -195,31 +201,47 @@ const CARD_GRADIENT_EMERALD =
 
 export default function DashboardChartsSection({
   visibility: visibilityProp,
-}: DashboardChartsSectionProps = {}) {
+  timeRange,
+}: DashboardChartsSectionProps) {
   const visibility = { ...DEFAULT_DASHBOARD_VISIBILITY, ...visibilityProp };
   const [data, setData] = useState<ScalesByMonth[]>([]);
   const [dataByYear, setDataByYear] = useState<ScalesByYear[]>([]);
   const [scales, setScales] = useState<Scale[]>([]);
   const [revenue, setRevenue] = useState<RevenueEstimate | null>(null);
+  const [berthTimeline, setBerthTimeline] = useState<BerthTimeline | null>(null);
+  const [operationsAlerts, setOperationsAlerts] = useState<OperationsAlerts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     Promise.all([
       getScalesByMonth(),
       getScalesByYear(),
-      getScales({ page_size: 500 }),
+      getScales({
+        page_size: 500,
+        date_after: timeRange.date_from,
+        date_before: timeRange.date_to,
+      }),
       getRevenueEstimate().catch(() => null),
+      getBerthTimeline({
+        date_from: timeRange.date_from,
+        date_to: timeRange.date_to,
+      }).catch(() => null),
+      getOperationsAlerts({ date: timeRange.date_to }).catch(() => null),
     ])
-      .then(([byMonth, byYear, sc, rev]) => {
+      .then(([byMonth, byYear, sc, rev, timeline, alerts]) => {
         setData(byMonth);
         setDataByYear(byYear);
         setScales(sc.results);
         setRevenue(rev ?? null);
+        setBerthTimeline(timeline ?? null);
+        setOperationsAlerts(alerts ?? null);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [timeRange.date_from, timeRange.date_to]);
 
   const scalesByPort = useMemo(() => aggregateScalesByPort(scales), [scales]);
   const scalesByNaviera = useMemo(
@@ -284,6 +306,17 @@ export default function DashboardChartsSection({
       </div>
     );
   }
+
+  const formatTimelineDate = (d: string) => {
+    try {
+      return new Date(d + "T12:00:00").toLocaleDateString("es", {
+        day: "numeric",
+        month: "short",
+      });
+    } catch {
+      return d;
+    }
+  };
 
   return (
     <div className="mt-8 space-y-8">
@@ -1050,6 +1083,279 @@ export default function DashboardChartsSection({
               <CalendarDays className="h-4 w-4" />
               Ver todas las escalas
             </Link>
+          </div>
+        )}
+
+        {/* Alertas operativas: conflicto de muelle + exceso de pasajeros */}
+        {visibility.alertasOperativas && operationsAlerts && (
+          <div
+            className="w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80"
+            style={{ background: CARD_GRADIENT_AMBER }}
+          >
+            <div className="mb-4 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+              <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                Alertas operativas
+              </h3>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {new Date(operationsAlerts.date + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+            </div>
+            {operationsAlerts.berth_conflicts.length === 0 &&
+            operationsAlerts.passenger_overflows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                No hay alertas para esta fecha.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {operationsAlerts.berth_conflicts.length > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+                      Conflicto de muelle
+                    </h4>
+                    <ul className="space-y-2">
+                      {operationsAlerts.berth_conflicts.map((c) => (
+                        <li
+                          key={`${c.berth_id}-${c.date}`}
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 dark:border-red-900/50 dark:bg-red-950/30"
+                        >
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                            {c.port_name} · {c.berth_name}
+                          </span>
+                          <span className="text-zinc-500 dark:text-zinc-400">—</span>
+                          <span className="text-sm text-red-800 dark:text-red-300">
+                            {c.scales.map((s) => s.ship_name).join(", ")}
+                          </span>
+                          <Link
+                            href="/scales"
+                            className="ml-auto cursor-pointer text-xs font-medium text-[var(--admin-accent)] hover:underline"
+                          >
+                            Ver escalas
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {operationsAlerts.passenger_overflows.length > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                      Exceso de pasajeros
+                    </h4>
+                    <ul className="space-y-2">
+                      {operationsAlerts.passenger_overflows.map((o) => (
+                        <li
+                          key={o.scale_id}
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/30"
+                        >
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                            {o.ship_name}
+                          </span>
+                          <span className="text-zinc-500 dark:text-zinc-400">
+                            {o.port_name}
+                            {o.berth_name ? ` · ${o.berth_name}` : ""}
+                          </span>
+                          <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                            {o.pax_count.toLocaleString("es")} PAX &gt; {o.capacity.toLocaleString("es")}{" "}
+                            {o.capacity_type === "ship" ? "(cap. barco)" : "(cap. muelle)"}
+                          </span>
+                          <Link
+                            href="/scales"
+                            className="ml-auto cursor-pointer text-xs font-medium text-[var(--admin-accent)] hover:underline"
+                          >
+                            Ver escala
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mapa del puerto: estado de muelles hoy (Dock → barco actual o libre) */}
+        {visibility.mapaPuerto && berthTimeline && (
+          <div
+            className="w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80"
+            style={{ background: CARD_GRADIENT_BLUE }}
+          >
+            <div className="mb-4 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+              <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                Mapa del puerto
+              </h3>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                Estado de muelles hoy · Ocupado / Libre
+              </p>
+            </div>
+            {berthTimeline.berths.length === 0 ? (
+              <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                No hay muelles registrados.
+              </p>
+            ) : (
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {berthTimeline.berths.map((b) => {
+                  const todaySlot = b.days[0];
+                  const isOccupied = todaySlot && todaySlot.scales.length > 0;
+                  const isConflict = todaySlot?.has_conflict ?? false;
+                  const shipLabel =
+                    isOccupied && todaySlot.scales[0]
+                      ? todaySlot.scales[0].ship_name
+                      : null;
+                  const paxLabel =
+                    isOccupied &&
+                    todaySlot.scales[0]?.pax_count != null &&
+                    todaySlot.scales[0].pax_count > 0
+                      ? `${todaySlot.scales[0].pax_count} PAX`
+                      : null;
+                  return (
+                    <div
+                      key={b.berth_id}
+                      className={`cursor-default rounded-xl border p-4 transition-all duration-200 ${
+                        isConflict
+                          ? "border-red-300 bg-red-50/80 dark:border-red-900/50 dark:bg-red-950/30"
+                          : isOccupied
+                            ? "border-[var(--admin-accent)]/40 bg-[var(--admin-accent)]/8 dark:border-[var(--admin-accent)]/30 dark:bg-[var(--admin-accent)]/12"
+                            : "border-zinc-200/80 bg-zinc-50/60 dark:border-zinc-700 dark:bg-zinc-800/50"
+                      }`}
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        {b.port_name}
+                      </p>
+                      <p className="mt-0.5 font-semibold text-zinc-900 dark:text-zinc-50">
+                        {b.berth_name}
+                      </p>
+                      <div className="mt-3 min-h-[2.5rem]">
+                        {isConflict ? (
+                          <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 dark:bg-red-950/60 dark:text-red-300">
+                            Conflicto
+                          </span>
+                        ) : isOccupied && shipLabel ? (
+                          <div className="space-y-1">
+                            <p className="truncate text-sm font-medium text-[var(--admin-accent)]">
+                              {shipLabel}
+                            </p>
+                            {paxLabel && (
+                              <p className="text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+                                {paxLabel}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
+                            Libre
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Timeline / Gantt de muelles — al final, debajo de todas las cards */}
+        {visibility.timelineMuelles && berthTimeline && (
+          <div
+            className="w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80"
+            style={{ background: CARD_GRADIENT_TEAL }}
+          >
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+              <div>
+                <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  Timeline de muelles
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Barcos por muelle y día (14 días desde hoy). Detecta conflictos de atraque.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-[11px]">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[var(--admin-accent)]/60" aria-hidden />
+                  Ocupado
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500/70" aria-hidden />
+                  Conflicto
+                </span>
+                <span className="text-zinc-400 dark:text-zinc-500">— Libre</span>
+              </div>
+            </div>
+            {berthTimeline.berths.length === 0 ? (
+              <p className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                No hay muelles con escalas en el rango mostrado.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700/80">
+                <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="bg-zinc-100/80 dark:bg-zinc-800/80">
+                      <th className="sticky left-0 z-20 min-w-[160px] border-r border-zinc-200/80 py-3 pl-4 pr-3 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+                        Puerto · Muelle
+                      </th>
+                      {berthTimeline.dates.map((d) => (
+                        <th
+                          key={d}
+                          className="min-w-[80px] py-3 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
+                        >
+                          {formatTimelineDate(d)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {berthTimeline.berths.map((b, rowIdx) => (
+                      <tr
+                        key={b.berth_id}
+                        className={`border-b border-zinc-100/80 transition-colors last:border-b-0 hover:bg-zinc-50/60 dark:border-zinc-800 dark:hover:bg-zinc-800/40 ${
+                          rowIdx % 2 === 1 ? "bg-zinc-50/30 dark:bg-zinc-800/20" : ""
+                        }`}
+                      >
+                        <td
+                          className={`sticky left-0 z-10 min-w-[160px] border-r border-zinc-200/80 py-2.5 pl-4 pr-3 font-medium text-zinc-800 dark:border-zinc-700 dark:text-zinc-200 ${
+                            rowIdx % 2 === 1
+                              ? "bg-zinc-50/80 dark:bg-zinc-800/60"
+                              : "bg-white dark:bg-zinc-900/90"
+                          }`}
+                        >
+                          {b.port_name} · {b.berth_name}
+                        </td>
+                        {b.days.map((day) => (
+                          <td
+                            key={day.date}
+                            className="min-w-[80px] border-l border-zinc-100/80 py-2 px-1.5 text-center align-middle dark:border-zinc-700/50"
+                          >
+                            {day.has_conflict ? (
+                              <span
+                                className="inline-flex cursor-default items-center justify-center rounded-md bg-red-100 px-2 py-1 text-[11px] font-semibold text-red-800 dark:bg-red-950/50 dark:text-red-300"
+                                title={day.scales.map((s) => `${s.ship_name}${s.pax_count != null ? ` (${s.pax_count} PAX)` : ""}`).join(" · ")}
+                              >
+                                Conflicto
+                              </span>
+                            ) : day.scales.length > 0 ? (
+                              <span
+                                className="inline-block max-w-full truncate rounded-md bg-[var(--admin-accent)]/15 px-2 py-1 text-xs font-medium text-[var(--admin-accent)] transition-opacity hover:opacity-90 dark:bg-[var(--admin-accent)]/20"
+                                title={day.scales.map((s) => `${s.ship_name}${s.pax_count != null ? ` (${s.pax_count} PAX)` : ""}`).join(" · ")}
+                              >
+                                {day.scales[0].ship_name}
+                                {day.scales[0].pax_count != null && day.scales[0].pax_count > 0 ? (
+                                  <span className="ml-1 font-normal opacity-90">
+                                    ({day.scales[0].pax_count})
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-300 dark:text-zinc-600">—</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

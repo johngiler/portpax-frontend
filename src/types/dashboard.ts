@@ -1,5 +1,8 @@
 export type DashboardVisibility = {
   cards: boolean;
+  alertasOperativas: boolean;
+  mapaPuerto: boolean;
+  timelineMuelles: boolean;
   resumenMetricas: boolean;
   estimadoIngresos: boolean;
   proximasEscalas: boolean;
@@ -14,6 +17,9 @@ export type DashboardVisibility = {
 
 export const DEFAULT_DASHBOARD_VISIBILITY: DashboardVisibility = {
   cards: true,
+  alertasOperativas: true,
+  mapaPuerto: true,
+  timelineMuelles: true,
   resumenMetricas: true,
   estimadoIngresos: true,
   proximasEscalas: true,

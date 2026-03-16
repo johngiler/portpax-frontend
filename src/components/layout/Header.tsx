@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMainLayout } from "@/contexts/MainLayoutContext";
 import { useTheme } from "@/hooks/useTheme";
 import DropdownMenu from "@/components/ui/DropdownMenu";
+import GlobalSearch from "@/components/search/GlobalSearch";
 import PortPaxLogo from "./PortPaxLogo";
 
 const iconBtnClass =
@@ -122,11 +123,14 @@ export default function Header() {
             <Menu className="h-5 w-5" strokeWidth={1.5} />
           </button>
         )}
-        <Link href="/" className="cursor-pointer" aria-label="Ir al Dashboard">
+        <Link href="/" className="cursor-pointer shrink-0" aria-label="Ir al Dashboard">
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
       </div>
       <div className="relative z-10 flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="hidden sm:block">
+          <GlobalSearch />
+        </div>
         <button
           type="button"
           className={iconBtnClass}

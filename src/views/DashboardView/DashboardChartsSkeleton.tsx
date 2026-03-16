@@ -10,7 +10,7 @@ const cardTitleSkeletonClass =
 
 /**
  * Skeleton con la misma estructura que DashboardChartsSection:
- * Grid 3 cols (pie charts + bar por muelle) → Grid 2 cols (áreas por mes y por año) → Ingresos → Próximas escalas (tabla).
+ * Grid 3 cols → Grid 2 cols → Ingresos → Próximas escalas → Timeline de muelles (al final).
  */
 export default function DashboardChartsSkeleton() {
   return (
@@ -140,6 +140,80 @@ export default function DashboardChartsSkeleton() {
           <div className="mt-4 flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded" />
             <Skeleton className="h-4 w-40 rounded" />
+          </div>
+        </div>
+
+        {/* Alertas operativas */}
+        <div className={cardClass}>
+          <Skeleton className={`h-5 w-40 rounded ${cardTitleSkeletonClass}`} />
+          <Skeleton className="mt-2 h-3 w-56 rounded" />
+          <div className="mt-4 space-y-3">
+            <Skeleton className="h-4 w-32 rounded" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-4 w-36 rounded" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
+        </div>
+
+        {/* Mapa del puerto: grid de docks */}
+        <div className={cardClass}>
+          <Skeleton
+            className={`h-5 w-36 rounded ${cardTitleSkeletonClass}`}
+          />
+          <Skeleton className="mt-2 h-3 w-48 rounded" />
+          <div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="rounded-xl border border-zinc-200/80 p-4 dark:border-zinc-700">
+                <Skeleton className="h-3 w-16 rounded" />
+                <Skeleton className="mt-2 h-4 w-20 rounded" />
+                <Skeleton className="mt-3 h-4 w-24 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Timeline de muelles (al final) */}
+        <div className={cardClass}>
+          <div className="mb-4 flex justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+            <div>
+              <Skeleton className="h-5 w-44 rounded" />
+              <Skeleton className="mt-2 h-3 w-72 rounded" />
+            </div>
+            <div className="flex gap-4">
+              <Skeleton className="h-4 w-16 rounded" />
+              <Skeleton className="h-4 w-20 rounded" />
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
+            <table className="w-full min-w-[600px] border-collapse">
+              <thead>
+                <tr className="bg-zinc-100/80 dark:bg-zinc-800/80">
+                  <th className="py-3 pl-4 pr-3">
+                    <Skeleton className="h-3 w-28 rounded" />
+                  </th>
+                  {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <th key={i} className="min-w-[80px] py-3 px-2">
+                      <Skeleton className="mx-auto h-3 w-10 rounded" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i} className="border-b border-zinc-100 dark:border-zinc-800 last:border-b-0">
+                    <td className="py-2.5 pl-4 pr-3">
+                      <Skeleton className="h-4 w-36 rounded" />
+                    </td>
+                    {[1, 2, 3, 4, 5, 6, 7].map((j) => (
+                      <td key={j} className="min-w-[80px] py-2 px-1.5">
+                        <Skeleton className="mx-auto h-7 w-16 rounded-md" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

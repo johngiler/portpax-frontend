@@ -59,6 +59,11 @@ export type Scale = {
 
 export type ListParams = { page?: number; page_size?: number };
 
+export type ScalesListParams = ListParams & {
+  date_after?: string;
+  date_before?: string;
+};
+
 export type PaginatedResponse<T> = {
   count: number;
   next: string | null;
@@ -74,6 +79,17 @@ function listUrl(path: string, params?: ListParams): string {
   if (params.page != null) parts.push(`page=${params.page}`);
   if (params.page_size != null) parts.push(`page_size=${params.page_size}`);
   return parts.length ? `${full}${sep}${parts.join("&")}` : full;
+}
+
+function scalesListUrl(path: string, params?: ScalesListParams): string {
+  const full = url(path);
+  const parts: string[] = [];
+  if (params?.page != null) parts.push(`page=${params.page}`);
+  if (params?.page_size != null) parts.push(`page_size=${params.page_size}`);
+  if (params?.date_after) parts.push(`date_after=${encodeURIComponent(params.date_after)}`);
+  if (params?.date_before) parts.push(`date_before=${encodeURIComponent(params.date_before)}`);
+  if (parts.length === 0) return full;
+  return `${full}${full.includes("?") ? "&" : "?"}${parts.join("&")}`;
 }
 
 export async function getDockingStats(): Promise<DockingStats> {
@@ -108,8 +124,8 @@ export async function getShips(params?: ListParams): Promise<PaginatedResponse<S
   return res.json();
 }
 
-export async function getScales(params?: ListParams): Promise<PaginatedResponse<Scale>> {
-  const res = await fetch(listUrl("api/scales/", params), { headers: authHeaders() });
+export async function getScales(params?: ScalesListParams): Promise<PaginatedResponse<Scale>> {
+  const res = await fetch(scalesListUrl("api/scales/", params), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch scales");
   return res.json();
 }
@@ -222,6 +238,108 @@ export type RevenueEstimate = {
 export async function getRevenueEstimate(): Promise<RevenueEstimate> {
   const res = await fetch(url("api/metrics/revenue-estimate/"), { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch revenue estimate");
+  return res.json();
+}
+
+/** Indicadores operativos en tiempo real (hoy) */
+export type OperationsToday = {
+  date: string;
+  ships_in_port_today: number;
+  scales_today: number;
+  pax_today: number;
+  berths_occupied_today: number;
+  total_berths: number;
+  capacity_occupied_pct: number;
+};
+
+export async function getOperationsToday(): Promise<OperationsToday> {
+  const res = await fetch(url("api/metrics/operations-today/"), { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch operations today");
+  return res.json();
+}
+
+/** Timeline de muelles: barcos por muelle y día (Gantt por día) */
+export type BerthTimelineDay = {
+  date: string;
+  scales: { scale_id: number; ship_name: string; pax_count: number | null }[];
+  has_conflict: boolean;
+};
+
+export type BerthTimelineBerth = {
+  berth_id: number;
+  berth_name: string;
+  port_name: string;
+  days: BerthTimelineDay[];
+};
+
+export type BerthTimeline = {
+  dates: string[];
+  berths: BerthTimelineBerth[];
+};
+
+export async function getBerthTimeline(params?: {
+  date_from?: string;
+  date_to?: string;
+}): Promise<BerthTimeline> {
+  const sp = new URLSearchParams();
+  if (params?.date_from) sp.set("date_from", params.date_from);
+  if (params?.date_to) sp.set("date_to", params.date_to);
+  const qs = sp.toString();
+  const path = qs ? `api/metrics/berth-timeline/?${qs}` : "api/metrics/berth-timeline/";
+  const res = await fetch(url(path), { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch berth timeline");
+  return res.json();
+}
+
+/** Alertas operativas: conflictos de muelle y exceso de pasajeros */
+export type OperationsAlerts = {
+  date: string;
+  berth_conflicts: {
+    date: string;
+    berth_id: number;
+    berth_name: string;
+    port_name: string;
+    scales: { scale_id: number; ship_name: string }[];
+  }[];
+  passenger_overflows: {
+    scale_id: number;
+    ship_name: string;
+    port_name: string;
+    berth_name: string;
+    date: string;
+    pax_count: number;
+    capacity: number;
+    capacity_type: "ship" | "berth";
+  }[];
+};
+
+export async function getOperationsAlerts(params?: { date?: string }): Promise<OperationsAlerts> {
+  const sp = new URLSearchParams();
+  if (params?.date) sp.set("date", params.date);
+  const qs = sp.toString();
+  const path = qs ? `api/metrics/alerts/?${qs}` : "api/metrics/alerts/";
+  const res = await fetch(url(path), { headers: authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch alerts");
+  return res.json();
+}
+
+/** Resultados del buscador global */
+export type GlobalSearchResult = {
+  shipping_lines: { id: number; name: string; code: string }[];
+  ports: { id: number; name: string; code: string }[];
+  ships: { id: number; name: string; code: string; shipping_line_name: string | null }[];
+  scales: { id: number; date: string | null; ship_name: string; port_name: string }[];
+};
+
+export async function globalSearch(q: string): Promise<GlobalSearchResult> {
+  const query = q.trim();
+  if (query.length < 2) {
+    return { shipping_lines: [], ports: [], ships: [], scales: [] };
+  }
+  const res = await fetch(url(`api/search/?q=${encodeURIComponent(query)}`), {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Search failed");
   return res.json();
 }
 
