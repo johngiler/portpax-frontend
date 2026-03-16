@@ -6,13 +6,16 @@ import {
   HelpCircle,
   LogOut,
   MessageSquare,
+  Moon,
   Settings,
+  Sun,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import PortPaxLogo from "./PortPaxLogo";
 
@@ -72,6 +75,7 @@ export default function Header() {
   >(null);
   const notificationCount = NOTIFICATIONS_DUMMY.filter((n) => n.unread).length;
 
+  const { resolvedTheme, toggleTheme } = useTheme();
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "notifications" | "messages" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
@@ -110,6 +114,19 @@ export default function Header() {
         </Link>
       </div>
       <div className="relative z-10 flex shrink-0 items-center gap-1 sm:gap-2">
+        <button
+          type="button"
+          className={iconBtnClass}
+          aria-label={resolvedTheme === "dark" ? "Usar tema claro" : "Usar tema oscuro"}
+          title={resolvedTheme === "dark" ? "Tema claro" : "Tema oscuro"}
+          onClick={toggleTheme}
+        >
+          {resolvedTheme === "dark" ? (
+            <Sun className="h-5 w-5" strokeWidth={1.5} />
+          ) : (
+            <Moon className="h-5 w-5" strokeWidth={1.5} />
+          )}
+        </button>
         <DropdownMenu
           open={openMenu === "notifications"}
           onClose={closeAll}

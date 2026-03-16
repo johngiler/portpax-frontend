@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Hace que dark: se active con la clase .dark en html, igual que cuando el navegador aplica prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f6f9fc;
   --foreground: #0f172a;
@@ -89,6 +92,83 @@
   }
 }
 
+/* Tema forzado por el usuario (clase en <html>) tiene prioridad sobre prefers-color-scheme */
+html.light {
+  --background: #f6f9fc;
+  --foreground: #0f172a;
+  --admin-accent: #3478b5;
+  --admin-accent-hover: #2c6a9d;
+  --admin-fuchsia: #b83d9e;
+  --admin-fuchsia-hover: #9d3387;
+  --admin-fuchsia-soft: #fdf2f9;
+  --admin-fuchsia-muted: rgba(184, 61, 158, 0.12);
+  --admin-gradient-fuchsia: linear-gradient(
+    135deg,
+    #fdf2f9 0%,
+    #f8e8f4 35%,
+    #eef4fb 70%,
+    #e7eff9 100%
+  );
+  --admin-sidebar: #f8fbff;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-border: #e7eef7;
+  --admin-card-shadow:
+    0 1px 1px rgb(15 23 42 / 0.04), 0 8px 24px -14px rgb(52 120 181 / 0.4);
+  --admin-card-shadow-hover:
+    0 2px 6px rgb(15 23 42 / 0.08), 0 22px 48px -22px rgb(52 120 181 / 0.55);
+  --admin-gradient-bg: linear-gradient(
+    135deg,
+    #f8fbff 0%,
+    #eef4fb 45%,
+    #e7eff9 100%
+  );
+  --admin-gradient-header: linear-gradient(
+    135deg,
+    #f5f9ff 0%,
+    #e8f0fa 52%,
+    #dce8f7 100%
+  );
+}
+
+html.dark {
+  --background: #090d14;
+  --foreground: #eef2ff;
+  --admin-accent: #60a5fa;
+  --admin-accent-hover: #93c5fd;
+  --admin-fuchsia: #e879f9;
+  --admin-fuchsia-hover: #f0abfc;
+  --admin-fuchsia-soft: #1a0d18;
+  --admin-fuchsia-muted: rgba(232, 121, 249, 0.15);
+  --admin-gradient-fuchsia: linear-gradient(
+    135deg,
+    #1a0d18 0%,
+    #132038 40%,
+    #0c1220 70%,
+    #111b2e 100%
+  );
+  --admin-sidebar: #0c1220;
+  --admin-surface: #0f1626;
+  --admin-surface-muted: #121b2d;
+  --admin-border: #1c2638;
+  --admin-card-shadow:
+    0 1px 1px rgb(0 0 0 / 0.35), 0 14px 34px -20px rgb(59 130 246 / 0.4);
+  --admin-card-shadow-hover:
+    0 2px 6px rgb(0 0 0 / 0.35), 0 26px 52px -24px rgb(59 130 246 / 0.55);
+  --admin-gradient-bg: linear-gradient(
+    135deg,
+    #090d14 0%,
+    #0c1220 42%,
+    #111b2e 100%
+  );
+  --admin-gradient-header: linear-gradient(
+    135deg,
+    #0c1220 0%,
+    #132038 50%,
+    #1a2b47 100%
+  );
+}
+
 body {
   background: var(--admin-gradient-bg);
   color: var(--foreground);
@@ -116,6 +196,12 @@ body {
   .btn-secondary-gradient:hover {
     background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
   }
+}
+html.dark .btn-secondary-gradient {
+  background: linear-gradient(to bottom, #18181b 0%, #27272a 100%);
+}
+html.dark .btn-secondary-gradient:hover {
+  background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
 }
 
 /* Transiciones de navegación entre vistas */
@@ -230,6 +316,15 @@ body {
     border-color: var(--admin-border);
   }
 }
+html.dark .dropdown-panel {
+  background: linear-gradient(
+    160deg,
+    rgba(59, 130, 246, 0.2) 0%,
+    rgba(15, 22, 38, 0.98) 50%,
+    var(--background) 100%
+  );
+  border-color: var(--admin-border);
+}
 
 /* Tooltips de Recharts: fuente más pequeña y diseño coherente en todo el dashboard */
 .recharts-tooltip-wrapper {
@@ -262,6 +357,9 @@ body {
   .sidebar-config-block {
     background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
   }
+}
+html.dark .sidebar-config-block {
+  background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
 }
 
 /* Entrada del panel de menú dropdown */
@@ -363,6 +461,32 @@ body {
       );
   }
 }
+html.dark .login-vortex {
+  background-color: #0a0f18;
+  background-image:
+    radial-gradient(
+      ellipse 120% 80% at 85% 15%,
+      rgba(232, 121, 249, 0.15),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 90% 120% at 75% 55%,
+      rgba(59, 130, 246, 0.18),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 100% 70% at 15% 85%,
+      rgba(232, 121, 249, 0.1),
+      transparent 45%
+    ),
+    conic-gradient(
+      from 200deg at 72% 35%,
+      rgba(251, 146, 60, 0.06),
+      rgba(232, 121, 249, 0.1),
+      rgba(96, 165, 250, 0.12),
+      rgba(232, 121, 249, 0.08)
+    );
+}
 
 /* Sidebar: cuadros superpuestos en bottom-left (colores waves, escalonado) */
 .sidebar-square {
@@ -420,6 +544,22 @@ body {
   .sidebar-square-4 {
     background: rgba(59, 130, 246, 0.18);
   }
+}
+html.dark .sidebar-square {
+  opacity: 0.6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+html.dark .sidebar-square-1 {
+  background: #1a2740;
+}
+html.dark .sidebar-square-2 {
+  background: #162033;
+}
+html.dark .sidebar-square-3 {
+  background: #131d2e;
+}
+html.dark .sidebar-square-4 {
+  background: rgba(59, 130, 246, 0.18);
 }
 
 /* Header: cuadros superpuestos en top-right (colores waves, un poco más grandes y marcados) */
@@ -479,6 +619,22 @@ body {
     background: rgba(59, 130, 246, 0.22);
   }
 }
+html.dark .header-square {
+  opacity: 0.75;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+html.dark .header-square-1 {
+  background: #1a2740;
+}
+html.dark .header-square-2 {
+  background: #162033;
+}
+html.dark .header-square-3 {
+  background: #131d2e;
+}
+html.dark .header-square-4 {
+  background: rgba(59, 130, 246, 0.22);
+}
 
 /* Main: banda de ondas + gradiente solo en la parte superior */
 .main-waves-top {
@@ -524,6 +680,18 @@ body {
         transparent 100%
       );
   }
+}
+html.dark .main-waves-top::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 100' preserveAspectRatio='none'%3E%3Cpath fill='rgba(59,130,246,0.12)' d='M0 60 Q150 20 300 60 T600 60 T900 60 T1200 60 V100 H0 Z'/%3E%3Cpath fill='rgba(59,130,246,0.08)' d='M0 75 Q200 35 400 75 T800 75 T1200 75 V100 H0 Z'/%3E%3Cpath fill='rgba(96,165,250,0.05)' d='M0 85 Q250 45 500 85 T1000 85 T1200 85 V100 H0 Z'/%3E%3C/svg%3E"),
+    linear-gradient(
+      165deg,
+      #0a111a 0%,
+      #0e1725 45%,
+      #131d2e 70%,
+      #162033 90%,
+      transparent 100%
+    );
 }
 
 /* Acordeón en filas de tabla: animación de altura y contenido responsive */
@@ -588,4 +756,13 @@ body {
   *::-webkit-scrollbar-thumb:hover {
     background: rgb(255 255 255 / 0.3);
   }
+}
+html.dark * {
+  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+}
+html.dark *::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.15);
+}
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.3);
 }
