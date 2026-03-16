@@ -60,9 +60,13 @@ export default function DashboardSection() {
   }
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-5 grid-cols-2 lg:grid-cols-5">
       {cards.map(({ key, label, href, Icon }, i) => (
-        <Link key={key} href={href} className="cursor-pointer">
+        <Link
+          key={key}
+          href={href}
+          className={`cursor-pointer ${i === 4 ? "col-span-2 lg:col-span-1" : ""}`}
+        >
           <div
             className="group relative flex items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--admin-card-shadow-hover)] hover:border-zinc-300/80 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-zinc-700"
             style={{

@@ -91,7 +91,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
 
   return (
     <aside
-      className={`relative flex min-h-0 self-stretch shrink-0 flex-col border-l border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ${
+      className={`relative flex h-full min-h-0 shrink-0 flex-col border-l border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ${
         open
           ? "w-64 shadow-[var(--admin-card-shadow-hover)]"
           : "w-16 shadow-[var(--admin-card-shadow)]"
@@ -106,18 +106,20 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         onChange={handleFileChange}
       />
 
+      {/* Contenedor que hace scroll: flex-1 + min-h-0 para que el overflow funcione */}
       <nav
-        className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden ${open ? "p-4" : "px-2 pt-2"}`}
+        className={`flex min-h-0 flex-1 flex-col ${open ? "p-4" : "px-2 pt-2"}`}
       >
         {open ? (
           <>
-            <span className="mb-4 px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            <span className="shrink-0 mb-4 px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
               Filtros
             </span>
-            <div className="min-h-0 flex-1 pt-1">{children}</div>
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
+              {children}
 
-            {/* Importar / Exportar: solo en vistas con datos (sidebar visible) */}
-            <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
+              {/* Importar / Exportar: solo en vistas con datos (sidebar visible) */}
+              <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
               <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
                 Datos
               </span>
@@ -165,6 +167,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                   )}
                 </div>
               </div>
+            </div>
             </div>
           </>
         ) : (
