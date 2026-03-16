@@ -21,6 +21,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
+import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -43,6 +45,8 @@ const navComingSoon = [
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
+  const layout = useMainLayoutOptional();
+  const isMobileFromContext = layout?.isMobile ?? false;
   const [isMobile, setIsMobile] = useState(false);
   const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
   const [sectionDockingOpen, setSectionDockingOpen] = useState(true);
@@ -60,7 +64,11 @@ export default function Sidebar() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const collapsedByUser = userCollapsed !== null ? userCollapsed : isMobile;
+  const isMobileView = isMobile || isMobileFromContext;
+  const sidebarMobileOpen = layout?.sidebarMobileOpen ?? false;
+  const setSidebarMobileOpen = layout?.setSidebarMobileOpen ?? (() => {});
+
+  const collapsedByUser = userCollapsed !== null ? userCollapsed : isMobileView;
   const collapsed = collapsedByUser;
 
   const setCollapsed = (value: boolean | ((prev: boolean) => boolean)) => {
@@ -82,12 +90,14 @@ export default function Sidebar() {
   const linkInactiveSoon =
     "text-zinc-500 hover:bg-white/70 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-300";
 
-  return (
-    <aside
-      className={`relative flex min-h-0 shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ease-out ${
-        collapsed ? "w-16" : "w-64"
-      }`}
-    >
+  const closeMobileSidebar = () => setSidebarMobileOpen(false);
+
+  const asideClassName = `flex min-h-0 shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ease-out ${
+    isMobileView ? "w-64" : collapsed ? "w-16" : "w-64"
+  }`;
+
+  const sidebarInner = (
+    <>
       {/* Fondo decorativo: cuadros superpuestos en bottom-left (colores waves, escalonado) */}
       <div
         className="pointer-events-none absolute bottom-0 left-0 z-0 h-36 w-36 overflow-visible"
@@ -100,7 +110,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="relative z-10 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
-        {collapsed ? (
+        {(collapsed && !isMobileView) ? (
           <>
             <div className="flex flex-col gap-1.5 mb-6">
               {navDocking.map(({ href, label, icon: Icon }) => {
@@ -113,6 +123,7 @@ export default function Sidebar() {
                     href={href}
                     className={`${linkBase} ${linkCollapsed} ${isActive ? linkActive : linkInactive}`}
                     title={label}
+                    onClick={isMobileView ? closeMobileSidebar : undefined}
                   >
                     {isActive && (
                       <span
@@ -139,6 +150,7 @@ export default function Sidebar() {
                     href={href}
                     className={`${linkBase} ${linkCollapsed} ${isActive ? linkActive : linkInactiveSoon}`}
                     title={label}
+                    onClick={isMobileView ? closeMobileSidebar : undefined}
                   >
                     {isActive && (
                       <span
@@ -194,6 +206,7 @@ export default function Sidebar() {
                         href={href}
                         className={`${linkBase} ${linkExpanded} ${isActive ? linkActive : linkInactive}`}
                         title={label}
+                        onClick={isMobileView ? closeMobileSidebar : undefined}
                       >
                         {isActive && (
                           <span
@@ -253,6 +266,7 @@ export default function Sidebar() {
                         href={href}
                         className={`${linkBase} ${linkExpanded} ${isActive ? linkActive : linkInactiveSoon}`}
                         title={label}
+                        onClick={isMobileView ? closeMobileSidebar : undefined}
                       >
                         {isActive && (
                           <span
@@ -277,6 +291,76 @@ export default function Sidebar() {
         )}
       </nav>
 
+      {/* Bloque Configuración fijo al pie del sidebar (fondo transparente para que se vean los cuadros) */}
+      <div className="relative z-10 shrink-0 border-t border-[var(--admin-border)] p-4">
+        <Link
+          href="/configuration"
+          onClick={isMobileView ? closeMobileSidebar : undefined}
+          className={`relative flex cursor-pointer items-center rounded-lg py-2.5 text-sm font-medium transition-all duration-200 ${
+            collapsed && !isMobileView ? "justify-center px-0" : "gap-3 px-3"
+          } ${
+            isConfigActive
+              ? "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)] shadow-sm dark:bg-[var(--admin-accent)]/20"
+              : "text-zinc-600 hover:bg-white/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-50"
+          }`}
+          title={collapsed ? "Configuración" : undefined}
+        >
+          {isConfigActive && (
+            <span
+              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--admin-accent)]"
+              aria-hidden
+            />
+          )}
+          <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+          {(!collapsed || isMobileView) && (
+            <span className={isConfigActive ? "pl-0.5" : ""}>
+              Configuración
+            </span>
+          )}
+        </Link>
+      </div>
+    </>
+  );
+
+  if (isMobileView) {
+    return (
+      <>
+        {sidebarMobileOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-pointer bg-black/40 transition-opacity duration-200 md:hidden"
+            aria-label="Cerrar menú"
+            onClick={closeMobileSidebar}
+          />
+        )}
+        <aside
+          className={`fixed left-0 top-0 z-50 flex h-full flex-col ${asideClassName} transition-transform duration-200 ease-out md:hidden ${
+            sidebarMobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <header className="flex shrink-0 items-center border-b border-[var(--admin-border)] px-4 py-3">
+            <Link
+              href="/"
+              className="cursor-pointer"
+              aria-label="Ir al Dashboard"
+              onClick={closeMobileSidebar}
+            >
+              <PortPaxLogo showSlogan sloganClassName="hidden" />
+            </Link>
+          </header>
+          {sidebarInner}
+        </aside>
+        {/* En móvil el sidebar real es overlay; ocupamos 0 en el layout para que el contenido use todo el ancho */}
+        <div className="hidden w-0 shrink-0 md:block" aria-hidden />
+      </>
+    );
+  }
+
+  return (
+    <aside
+      className={`relative min-h-0 shrink-0 ${asideClassName}`}
+    >
+      {sidebarInner}
       {/* Flecha recoger/expandir: centrada en el borde entre sidebar y contenido */}
       <button
         type="button"
@@ -293,34 +377,6 @@ export default function Sidebar() {
           <ChevronLeft className="h-4 w-4" strokeWidth={2} />
         )}
       </button>
-
-      {/* Bloque Configuración fijo al pie del sidebar (fondo transparente para que se vean los cuadros) */}
-      <div className="relative z-10 shrink-0 border-t border-[var(--admin-border)] p-4">
-        <Link
-          href="/configuration"
-          className={`relative flex cursor-pointer items-center rounded-lg py-2.5 text-sm font-medium transition-all duration-200 ${
-            collapsed ? "justify-center px-0" : "gap-3 px-3"
-          } ${
-            isConfigActive
-              ? "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)] shadow-sm dark:bg-[var(--admin-accent)]/20"
-              : "text-zinc-600 hover:bg-white/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-50"
-          }`}
-          title={collapsed ? "Configuración" : undefined}
-        >
-          {isConfigActive && (
-            <span
-              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--admin-accent)]"
-              aria-hidden
-            />
-          )}
-          <Settings className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-          {!collapsed && (
-            <span className={isConfigActive ? "pl-0.5" : ""}>
-              Configuración
-            </span>
-          )}
-        </Link>
-      </div>
     </aside>
   );
 }

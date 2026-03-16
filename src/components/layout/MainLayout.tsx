@@ -17,6 +17,7 @@ type MainLayoutProps = { children: React.ReactNode };
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const layout = useMainLayoutOptional();
   const hasFilterSidebar = layout?.filterContent != null;
+  const isMobile = layout?.isMobile ?? false;
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -24,7 +25,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <MainWithFilterMargin>
         <PageTransition>{children}</PageTransition>
       </MainWithFilterMargin>
-      {hasFilterSidebar && <FilterSidebar>{layout!.filterContent}</FilterSidebar>}
+      {hasFilterSidebar && !isMobile && (
+        <FilterSidebar>{layout!.filterContent}</FilterSidebar>
+      )}
     </div>
   );
 }

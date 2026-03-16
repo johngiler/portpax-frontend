@@ -3,8 +3,8 @@
 import {
   Bell,
   CircleUser,
-  HelpCircle,
   LogOut,
+  Menu,
   MessageSquare,
   Moon,
   Settings,
@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMainLayout } from "@/contexts/MainLayoutContext";
 import { useTheme } from "@/hooks/useTheme";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import PortPaxLogo from "./PortPaxLogo";
@@ -76,6 +77,7 @@ export default function Header() {
   const notificationCount = NOTIFICATIONS_DUMMY.filter((n) => n.unread).length;
 
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "notifications" | "messages" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
@@ -109,6 +111,17 @@ export default function Header() {
         <span className="header-square header-square-4" />
       </div>
       <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
+        {isMobile && (
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100 md:hidden"
+            aria-label={sidebarMobileOpen ? "Cerrar menú" : "Abrir menú"}
+            title={sidebarMobileOpen ? "Cerrar menú" : "Abrir menú"}
+            onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
+          >
+            <Menu className="h-5 w-5" strokeWidth={1.5} />
+          </button>
+        )}
         <Link href="/" className="cursor-pointer" aria-label="Ir al Dashboard">
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
@@ -248,14 +261,6 @@ export default function Header() {
           </div>
         </DropdownMenu>
 
-        <button
-          type="button"
-          className={iconBtnClass}
-          aria-label="Ayuda"
-          title="Ayuda"
-        >
-          <HelpCircle className="h-5 w-5" strokeWidth={1.5} />
-        </button>
         <div
           className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5"
           aria-hidden
