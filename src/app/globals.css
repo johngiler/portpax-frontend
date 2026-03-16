@@ -50,8 +50,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Solo aplicar variables oscuras del sistema cuando el usuario no forzó tema claro */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #090d14;
     --foreground: #eef2ff;
     /* Acento isotype más claro en dark */
@@ -190,10 +191,10 @@ body {
   background: linear-gradient(to bottom, #f4f4f5 0%, #e4e4e7 100%);
 }
 @media (prefers-color-scheme: dark) {
-  .btn-secondary-gradient {
+  html:not(.light) .btn-secondary-gradient {
     background: linear-gradient(to bottom, #18181b 0%, #27272a 100%);
   }
-  .btn-secondary-gradient:hover {
+  html:not(.light) .btn-secondary-gradient:hover {
     background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
   }
 }
@@ -306,7 +307,7 @@ html.dark .btn-secondary-gradient:hover {
   box-shadow: var(--admin-card-shadow-hover);
 }
 @media (prefers-color-scheme: dark) {
-  .dropdown-panel {
+  html:not(.light) .dropdown-panel {
     background: linear-gradient(
       160deg,
       rgba(59, 130, 246, 0.2) 0%,
@@ -354,7 +355,7 @@ html.dark .dropdown-panel {
   );
 }
 @media (prefers-color-scheme: dark) {
-  .sidebar-config-block {
+  html:not(.light) .sidebar-config-block {
     background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
   }
 }
@@ -434,7 +435,7 @@ html.dark .sidebar-config-block {
     );
 }
 @media (prefers-color-scheme: dark) {
-  .login-vortex {
+  html:not(.light) .login-vortex {
     background-color: #0a0f18;
     background-image:
       radial-gradient(
@@ -528,20 +529,20 @@ html.dark .login-vortex {
   transform: rotate(8deg);
 }
 @media (prefers-color-scheme: dark) {
-  .sidebar-square {
+  html:not(.light) .sidebar-square {
     opacity: 0.6;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   }
-  .sidebar-square-1 {
+  html:not(.light) .sidebar-square-1 {
     background: #1a2740;
   }
-  .sidebar-square-2 {
+  html:not(.light) .sidebar-square-2 {
     background: #162033;
   }
-  .sidebar-square-3 {
+  html:not(.light) .sidebar-square-3 {
     background: #131d2e;
   }
-  .sidebar-square-4 {
+  html:not(.light) .sidebar-square-4 {
     background: rgba(59, 130, 246, 0.18);
   }
 }
@@ -602,20 +603,20 @@ html.dark .sidebar-square-4 {
   transform: rotate(-8deg);
 }
 @media (prefers-color-scheme: dark) {
-  .header-square {
+  html:not(.light) .header-square {
     opacity: 0.75;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
-  .header-square-1 {
+  html:not(.light) .header-square-1 {
     background: #1a2740;
   }
-  .header-square-2 {
+  html:not(.light) .header-square-2 {
     background: #162033;
   }
-  .header-square-3 {
+  html:not(.light) .header-square-3 {
     background: #131d2e;
   }
-  .header-square-4 {
+  html:not(.light) .header-square-4 {
     background: rgba(59, 130, 246, 0.22);
   }
 }
@@ -668,7 +669,7 @@ html.dark .header-square-4 {
   z-index: 0;
 }
 @media (prefers-color-scheme: dark) {
-  .main-waves-top::before {
+  html:not(.light) .main-waves-top::before {
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 100' preserveAspectRatio='none'%3E%3Cpath fill='rgba(59,130,246,0.12)' d='M0 60 Q150 20 300 60 T600 60 T900 60 T1200 60 V100 H0 Z'/%3E%3Cpath fill='rgba(59,130,246,0.08)' d='M0 75 Q200 35 400 75 T800 75 T1200 75 V100 H0 Z'/%3E%3Cpath fill='rgba(96,165,250,0.05)' d='M0 85 Q250 45 500 85 T1000 85 T1200 85 V100 H0 Z'/%3E%3C/svg%3E"),
       linear-gradient(
@@ -747,13 +748,13 @@ html.dark .main-waves-top::before {
   background: rgb(15 23 42 / 0.35);
 }
 @media (prefers-color-scheme: dark) {
-  * {
+  html:not(.light) * {
     scrollbar-color: rgb(255 255 255 / 0.2) transparent;
   }
-  *::-webkit-scrollbar-thumb {
+  html:not(.light) *::-webkit-scrollbar-thumb {
     background: rgb(255 255 255 / 0.15);
   }
-  *::-webkit-scrollbar-thumb:hover {
+  html:not(.light) *::-webkit-scrollbar-thumb:hover {
     background: rgb(255 255 255 / 0.3);
   }
 }
