@@ -1,15 +1,11 @@
 @import "tailwindcss";
-
-/* Hace que dark: se active con la clase .dark en html, igual que cuando el navegador aplica prefers-color-scheme */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #f6f9fc;
   --foreground: #0f172a;
-  /* Acento PortPax (isotype) */
   --admin-accent: #3478b5;
   --admin-accent-hover: #2c6a9d;
-  /* Fucsia para gradientes que combinan con el acento azul */
   --admin-fuchsia: #b83d9e;
   --admin-fuchsia-hover: #9d3387;
   --admin-fuchsia-soft: #fdf2f9;
@@ -50,15 +46,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Solo aplicar variables oscuras del sistema cuando el usuario no forzó tema claro */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     --background: #090d14;
     --foreground: #eef2ff;
-    /* Acento isotype más claro en dark */
     --admin-accent: #60a5fa;
     --admin-accent-hover: #93c5fd;
-    /* Fucsia en dark: más claro para contraste */
     --admin-fuchsia: #e879f9;
     --admin-fuchsia-hover: #f0abfc;
     --admin-fuchsia-soft: #1a0d18;
@@ -93,7 +86,6 @@
   }
 }
 
-/* Tema forzado por el usuario (clase en <html>) tiene prioridad sobre prefers-color-scheme */
 html.light {
   --background: #f6f9fc;
   --foreground: #0f172a;
@@ -176,7 +168,6 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Gradientes de botones (evitan que Tailwind no aplique var() en from/to) */
 .btn-primary-gradient {
   background: linear-gradient(
     to bottom,
@@ -205,7 +196,6 @@ html.dark .btn-secondary-gradient:hover {
   background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
 }
 
-/* Transiciones de navegación entre vistas */
 @keyframes page-enter {
   from {
     opacity: 0;
@@ -229,7 +219,6 @@ html.dark .btn-secondary-gradient:hover {
   }
 }
 
-/* Transiciones de modales */
 @keyframes modal-backdrop-enter {
   from {
     opacity: 0;
@@ -294,7 +283,6 @@ html.dark .btn-secondary-gradient:hover {
   }
 }
 
-/* Paneles de menú dropdown (header): misma familia de gradientes que las cards */
 .dropdown-panel {
   background: linear-gradient(
     160deg,
@@ -327,7 +315,6 @@ html.dark .dropdown-panel {
   border-color: var(--admin-border);
 }
 
-/* Tooltips de Recharts: fuente más pequeña y diseño coherente en todo el dashboard */
 .recharts-tooltip-wrapper {
   outline: none;
 }
@@ -344,7 +331,6 @@ html.dark .dropdown-panel {
   font-size: 11px !important;
 }
 
-/* Bloque Configuración del sidebar: toque fucsia → azul (discreto pero visible) */
 .sidebar-config-block {
   background: linear-gradient(
     165deg,
@@ -363,7 +349,6 @@ html.dark .sidebar-config-block {
   background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
 }
 
-/* Entrada del panel de menú dropdown */
 @keyframes dropdown-panel-enter {
   from {
     opacity: 0;
@@ -385,7 +370,6 @@ html.dark .sidebar-config-block {
   }
 }
 
-/* Login hero: transición de texto al cambiar de imagen */
 @keyframes hero-text-enter {
   from {
     opacity: 0;
@@ -407,7 +391,6 @@ html.dark .sidebar-config-block {
   }
 }
 
-/* Login: fondo tipo vórtice (azul + fucsia, estilo cintas suaves) */
 .login-vortex {
   background-color: #f4f8fc;
   background-image:
@@ -489,7 +472,6 @@ html.dark .login-vortex {
     );
 }
 
-/* Sidebar: cuadros superpuestos en bottom-left (colores waves, escalonado) */
 .sidebar-square {
   position: absolute;
   border-radius: 10px;
@@ -563,7 +545,6 @@ html.dark .sidebar-square-4 {
   background: rgba(59, 130, 246, 0.18);
 }
 
-/* Header: cuadros superpuestos en top-right (colores waves, un poco más grandes y marcados) */
 .header-square {
   position: absolute;
   border-radius: 8px;
@@ -695,7 +676,6 @@ html.dark .main-waves-top::before {
     );
 }
 
-/* Acordeón en filas de tabla: animación de altura y contenido responsive */
 .table-accordion-detail-row td {
   border-bottom: 1px solid var(--admin-border);
   vertical-align: top;
@@ -716,7 +696,6 @@ html.dark .main-waves-top::before {
   padding: 1rem 1.25rem 1.25rem;
   background: var(--admin-surface-muted);
   border-top: 1px solid var(--admin-border);
-  /* Contenedor flexible: en poco ancho el contenido se apila en columna */
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
@@ -728,7 +707,6 @@ html.dark .main-waves-top::before {
   }
 }
 
-/* Scrollbars: finos y semitransparentes en toda la app */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(15 23 42 / 0.25) transparent;
