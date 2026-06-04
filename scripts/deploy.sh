@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
 #
-# Deploy PortPax frontend to itm.portpax.com (shared server with rbcold).
-# Requires: npm, rsync, SSH key for portpax-frontend (~/.ssh/config).
-# Target: /home/git/itm/frontend/dist (nginx root for itm.portpax.com).
+# Deploy PortPax frontend to itm.portpax.com (DEV / Testing).
+# Requires: npm, rsync, SSH Host portpax-frontend (~/.ssh/config).
+# Target: /home/git/itm/frontend/dist
 #
 
 set -e
 
-# Resolve script dir and frontend root (allow running from frontend/ or repo root)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_DIR="$FRONTEND_DIR/out"
 REMOTE_HOST="portpax-frontend"
 REMOTE_PATH="/home/git/itm/frontend/dist"
+ENV_FILE="$FRONTEND_DIR/.env.dev"
 
 cd "$FRONTEND_DIR"
 
-# Next.js embeds NEXT_PUBLIC_* at build time; .env.production must have NEXT_PUBLIC_API_URL=https://api.portpax.com
-if [[ ! -f "$FRONTEND_DIR/.env.production" ]]; then
-  echo "[deploy] WARNING: .env.production not found; build may use localhost as API URL" >&2
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "[deploy] ERROR: $ENV_FILE not found. Copy .env.dev.template to .env.dev" >&2
+  exit 1
 fi
 
-echo "[deploy] Building (production)..."
+set -a
+# shellcheck source=/dev/null
+source "$ENV_FILE"
+set +a
+
+if [[ -z "${NEXT_PUBLIC_API_URL:-}" ]]; then
+  echo "[deploy] ERROR: NEXT_PUBLIC_API_URL not set in .env.dev" >&2
+  exit 1
+fi
+
+echo "[deploy] Building for DEV (NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL)..."
 NODE_ENV=production npm run build
 
 if [[ ! -d "$OUT_DIR" ]]; then
