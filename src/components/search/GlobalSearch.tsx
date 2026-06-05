@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
-import type { GlobalSearchResult } from "@/lib/docking";
-import { globalSearch } from "@/lib/docking";
+import { globalSearch } from "@/services/dashboardService";
+import type { GlobalSearchResult } from "@/types/search";
 
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;

@@ -18,14 +18,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight } from "lucide-react";
-import type {
-  BerthTimeline,
-  OperationsAlerts,
-  RevenueEstimate,
-  Scale,
-  ScalesByMonth,
-  ScalesByYear,
-} from "@/lib/docking";
 import {
   getBerthTimeline,
   getOperationsAlerts,
@@ -33,8 +25,16 @@ import {
   getScales,
   getScalesByMonth,
   getScalesByYear,
-} from "@/lib/docking";
-import type { TimeRange } from "@/lib/timeRange";
+} from "@/services/dashboardService";
+import type {
+  BerthTimeline,
+  OperationsAlerts,
+  RevenueEstimate,
+  Scale,
+  ScalesByMonth,
+  ScalesByYear,
+} from "@/types/dashboardMetrics";
+import type { TimeRange } from "@/utils/timeRange";
 import DashboardChartsSkeleton from "./DashboardChartsSkeleton";
 import type { DashboardVisibility } from "@/types/dashboard";
 import { DEFAULT_DASHBOARD_VISIBILITY } from "@/types/dashboard";

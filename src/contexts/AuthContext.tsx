@@ -15,8 +15,8 @@ import {
   getStoredAccessToken,
   login as apiLogin,
   setStoredTokens,
-  type UserMe,
-} from "@/lib/auth";
+} from "@/services/authService";
+import type { UserMe } from "@/types/auth";
 
 type AuthState = {
   user: UserMe | null;

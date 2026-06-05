@@ -7,7 +7,7 @@ import {
   getStoredTheme,
   setStoredTheme,
   type Theme,
-} from "@/lib/theme";
+} from "@/utils/theme";
 
 export function useTheme(): {
   resolvedTheme: Theme;

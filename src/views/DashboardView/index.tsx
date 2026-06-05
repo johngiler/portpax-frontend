@@ -6,13 +6,13 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import {
   loadDashboardPrefs,
   saveDashboardPrefs,
-} from "@/lib/dashboardPrefs";
+} from "@/utils/dashboardPrefs";
 import {
   getTimeRange,
   TIME_FILTER_LABELS,
   type TimeFilterPreset,
   type TimeRange,
-} from "@/lib/timeRange";
+} from "@/utils/timeRange";
 import DashboardChartsSection from "./DashboardChartsSection";
 import DashboardSection from "./DashboardSection";
 import {

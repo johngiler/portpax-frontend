@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Anchor, Building2, CalendarDays, MapPin, Ship } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api-base";
-import type { DockingStats, OperationsToday } from "@/lib/docking";
-import { getDockingStats, getOperationsToday } from "@/lib/docking";
+import { API_BASE } from "@/services/apiBase";
+import { getDockingStats, getOperationsToday } from "@/services/dashboardService";
+import type { DockingStats, OperationsToday } from "@/types/dashboardMetrics";
 
 const CARD_COLORS = ["#3478b5", "#0d9488", "#d97706", "#7c3aed", "#059669"];
 const CARD_GRADIENTS = [
