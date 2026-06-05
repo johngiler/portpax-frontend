@@ -18,22 +18,26 @@ const HERO_IMAGES = [
 const HERO_TEXTS = [
   {
     short: "Gestión de cruceros integrada.",
-    headline: "Toda la gestión de cruceros en una sola app integrada: muellaje, F&B, tours y operaciones en tiempo real.",
+    headline:
+      "Toda la gestión de cruceros en una sola app integrada: muellaje, F&B, tours y operaciones en tiempo real.",
     subtitle: "Para puertos y navieras.",
   },
   {
     short: "Operaciones en tiempo real.",
-    headline: "Muellaje, escalas y pasajeros en un solo lugar. Control total desde el primer atraque hasta el último.",
+    headline:
+      "Muellaje, escalas y pasajeros en un solo lugar. Control total desde el primer atraque hasta el último.",
     subtitle: "Puertos y terminales de cruceros.",
   },
   {
     short: "Una plataforma. Todo el puerto.",
-    headline: "Desde la terminal hasta el último pasajero. Bienvenido a la gestión portuaria que integra todo.",
+    headline:
+      "Desde la terminal hasta el último pasajero. Bienvenido a la gestión portuaria que integra todo.",
     subtitle: "PortPax Management System.",
   },
   {
     short: "Cada escala, bajo control.",
-    headline: "Cada llegada y salida, cada barco en ruta. Visibilidad total para tu operación portuaria.",
+    headline:
+      "Cada llegada y salida, cada barco en ruta. Visibilidad total para tu operación portuaria.",
     subtitle: "Mar abierto. Un solo sistema.",
   },
 ] as const;
@@ -50,7 +54,9 @@ export default function LoginView() {
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion || HERO_IMAGES.length <= 1) return;
     const id = setInterval(() => {
       setHeroIndex((i) => (i + 1) % HERO_IMAGES.length);
@@ -72,17 +78,18 @@ export default function LoginView() {
         router.replace("/");
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+        setError(
+          err instanceof Error ? err.message : "Error al iniciar sesión.",
+        );
       } finally {
         setSubmitting(false);
       }
     },
-    [login, username, password, router]
+    [login, username, password, router],
   );
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Móvil: carrusel de imágenes como banda superior */}
       <div className="relative h-44 w-full shrink-0 overflow-hidden lg:hidden">
         {HERO_IMAGES.map((src, i) => (
           <div
@@ -100,22 +107,26 @@ export default function LoginView() {
             />
           </div>
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" aria-hidden />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent"
+          aria-hidden
+        />
         <div className="absolute bottom-4 left-6 right-6">
           <span className="text-xl font-bold text-white drop-shadow-md">
             <span className="text-white/95">Port</span>
             <span style={{ color: "#93c5fd" }}>Pax</span>
           </span>
-          <p key={heroIndex} className="hero-text-enter mt-0.5 text-sm text-white/90">
+          <p
+            key={heroIndex}
+            className="hero-text-enter mt-0.5 text-sm text-white/90"
+          >
             {HERO_TEXTS[heroIndex].short}
           </p>
         </div>
       </div>
 
-      {/* Columna izquierda: fondo tipo vórtice (gradiente suave) + formulario en card */}
       <div className="login-vortex flex min-h-0 w-full flex-1 flex-col items-center justify-center px-6 py-10 lg:min-h-screen lg:w-[58%] lg:max-w-[680px] lg:shrink-0 lg:py-12 lg:px-14">
         <div className="w-full max-w-[420px] rounded-2xl border border-white/80 bg-white/70 p-8 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(52,120,181,0.2),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-sm dark:border-zinc-600/40 dark:bg-zinc-900/50 dark:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_8px_24px_-12px_rgba(59,130,246,0.15)]">
-          {/* Logo vertical: isotype + wordmark */}
           <div className="mb-8 flex flex-col items-center">
             <div className="mb-4 flex h-16 w-16 shrink-0 items-center justify-center sm:h-20 sm:w-20">
               <img
@@ -202,7 +213,6 @@ export default function LoginView() {
         </div>
       </div>
 
-      {/* Columna derecha: carrusel hero con transición entre imágenes */}
       <div className="relative hidden min-h-[320px] w-full flex-1 lg:block">
         {HERO_IMAGES.map((src, i) => (
           <div

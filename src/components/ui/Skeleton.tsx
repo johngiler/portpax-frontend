@@ -1,6 +1,5 @@
 /**
- * Skeleton para estados de carga. Usar en vistas que cargan datos del backend;
- * el skeleton debe replicar la estructura del contenido real.
+ * Skeleton for API-backed views. Mirror the real layout in a colocated *Skeleton.tsx.
  */
 export default function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -30,3 +29,6 @@ export function SkeletonText({ className = "", lines = 1 }: { className?: string
 export function SkeletonCircle({ className = "" }: { className?: string }) {
   return <Skeleton className={`rounded-full ${className}`} />;
 }
+
+/** Preferred import name per frontend design rules. */
+export { Skeleton as SkeletonLoader };

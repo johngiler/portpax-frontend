@@ -106,7 +106,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         onChange={handleFileChange}
       />
 
-      {/* Contenedor que hace scroll: flex-1 + min-h-0 para que el overflow funcione */}
       <nav
         className={`flex min-h-0 flex-1 flex-col ${open ? "p-4" : "px-2 pt-2"}`}
       >
@@ -118,56 +117,55 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
               {children}
 
-              {/* Importar / Exportar: solo en vistas con datos (sidebar visible) */}
               <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
-              <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                Datos
-              </span>
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={handleImportClick}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
-                  aria-label="Importar desde Excel/CSV"
-                  title="Importar desde Excel o CSV"
-                >
-                  <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
-                  <span>Importar</span>
-                </button>
-                <div className="relative" ref={exportMenuRef}>
+                <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Datos
+                </span>
+                <div className="flex flex-col gap-1">
                   <button
                     type="button"
-                    onClick={() => setExportOpen((v) => !v)}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
-                    aria-label="Exportar"
-                    aria-expanded={exportOpen}
-                    aria-haspopup="true"
-                    title="Exportar a Excel o CSV"
+                    onClick={handleImportClick}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                    aria-label="Importar desde Excel/CSV"
+                    title="Importar desde Excel o CSV"
                   >
-                    <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    <span>Exportar</span>
+                    <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    <span>Importar</span>
                   </button>
-                  {exportOpen && (
-                    <div
-                      className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1 shadow-lg dark:bg-zinc-800"
-                      role="menu"
+                  <div className="relative" ref={exportMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setExportOpen((v) => !v)}
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                      aria-label="Exportar"
+                      aria-expanded={exportOpen}
+                      aria-haspopup="true"
+                      title="Exportar a Excel o CSV"
                     >
-                      {exportOptions.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => handleExportOption(opt.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                      <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
+                      <span>Exportar</span>
+                    </button>
+                    {exportOpen && (
+                      <div
+                        className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1 shadow-lg dark:bg-zinc-800"
+                        role="menu"
+                      >
+                        {exportOptions.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => handleExportOption(opt.id)}
+                            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
           </>
         ) : (
@@ -236,7 +234,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         )}
       </nav>
 
-      {/* Logout fijo al pie (bottom 0) */}
       <div className="shrink-0 border-t border-[var(--admin-border)] p-4">
         {open ? (
           <button
@@ -262,7 +259,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         )}
       </div>
 
-      {/* Flecha espejo: centrada en borde interno, igual al sidebar izquierdo */}
       <button
         type="button"
         onClick={() => setFilterOpen(!open)}

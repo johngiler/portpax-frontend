@@ -10,13 +10,6 @@
   --admin-fuchsia-hover: #9d3387;
   --admin-fuchsia-soft: #fdf2f9;
   --admin-fuchsia-muted: rgba(184, 61, 158, 0.12);
-  --admin-gradient-fuchsia: linear-gradient(
-    135deg,
-    #fdf2f9 0%,
-    #f8e8f4 35%,
-    #eef4fb 70%,
-    #e7eff9 100%
-  );
   --admin-sidebar: #f8fbff;
   --admin-surface: #ffffff;
   --admin-surface-muted: #f8fafc;
@@ -56,13 +49,6 @@
     --admin-fuchsia-hover: #f0abfc;
     --admin-fuchsia-soft: #1a0d18;
     --admin-fuchsia-muted: rgba(232, 121, 249, 0.15);
-    --admin-gradient-fuchsia: linear-gradient(
-      135deg,
-      #1a0d18 0%,
-      #132038 40%,
-      #0c1220 70%,
-      #111b2e 100%
-    );
     --admin-sidebar: #0c1220;
     --admin-surface: #0f1626;
     --admin-surface-muted: #121b2d;
@@ -95,13 +81,6 @@ html.light {
   --admin-fuchsia-hover: #9d3387;
   --admin-fuchsia-soft: #fdf2f9;
   --admin-fuchsia-muted: rgba(184, 61, 158, 0.12);
-  --admin-gradient-fuchsia: linear-gradient(
-    135deg,
-    #fdf2f9 0%,
-    #f8e8f4 35%,
-    #eef4fb 70%,
-    #e7eff9 100%
-  );
   --admin-sidebar: #f8fbff;
   --admin-surface: #ffffff;
   --admin-surface-muted: #f8fafc;
@@ -133,13 +112,6 @@ html.dark {
   --admin-fuchsia-hover: #f0abfc;
   --admin-fuchsia-soft: #1a0d18;
   --admin-fuchsia-muted: rgba(232, 121, 249, 0.15);
-  --admin-gradient-fuchsia: linear-gradient(
-    135deg,
-    #1a0d18 0%,
-    #132038 40%,
-    #0c1220 70%,
-    #111b2e 100%
-  );
   --admin-sidebar: #0c1220;
   --admin-surface: #0f1626;
   --admin-surface-muted: #121b2d;
@@ -174,26 +146,6 @@ body {
     var(--admin-accent) 0%,
     var(--admin-accent-hover) 100%
   );
-}
-.btn-secondary-gradient {
-  background: linear-gradient(to bottom, #ffffff 0%, #f4f4f5 100%);
-}
-.btn-secondary-gradient:hover {
-  background: linear-gradient(to bottom, #f4f4f5 0%, #e4e4e7 100%);
-}
-@media (prefers-color-scheme: dark) {
-  html:not(.light) .btn-secondary-gradient {
-    background: linear-gradient(to bottom, #18181b 0%, #27272a 100%);
-  }
-  html:not(.light) .btn-secondary-gradient:hover {
-    background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
-  }
-}
-html.dark .btn-secondary-gradient {
-  background: linear-gradient(to bottom, #18181b 0%, #27272a 100%);
-}
-html.dark .btn-secondary-gradient:hover {
-  background: linear-gradient(to bottom, #27272a 0%, #3f3f46 100%);
 }
 
 @keyframes page-enter {
@@ -313,40 +265,6 @@ html.dark .dropdown-panel {
     var(--background) 100%
   );
   border-color: var(--admin-border);
-}
-
-.recharts-tooltip-wrapper {
-  outline: none;
-}
-.recharts-default-tooltip {
-  font-size: 11px !important;
-  line-height: 1.4;
-  padding: 6px 10px;
-}
-.recharts-default-tooltip .recharts-tooltip-label {
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-.recharts-default-tooltip .recharts-tooltip-item {
-  font-size: 11px !important;
-}
-
-.sidebar-config-block {
-  background: linear-gradient(
-    165deg,
-    #fdf4f9 0%,
-    #fae8f5 40%,
-    #f0effa 75%,
-    #eef2ff 100%
-  );
-}
-@media (prefers-color-scheme: dark) {
-  html:not(.light) .sidebar-config-block {
-    background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
-  }
-}
-html.dark .sidebar-config-block {
-  background: linear-gradient(165deg, #1a141c 0%, #161a28 45%, #0f1626 100%);
 }
 
 @keyframes dropdown-panel-enter {
@@ -618,7 +536,6 @@ html.dark .header-square-4 {
   background: rgba(59, 130, 246, 0.22);
 }
 
-/* Main: banda de ondas + gradiente solo en la parte superior */
 .main-waves-top {
   position: relative;
 }

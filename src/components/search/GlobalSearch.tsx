@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
-import { globalSearch } from "@/services/dashboardService";
+import { globalSearch } from "@/services/searchService";
 import type { GlobalSearchResult } from "@/types/search";
 
 const DEBOUNCE_MS = 300;

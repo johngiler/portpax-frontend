@@ -6,6 +6,8 @@ const labelClass =
   "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200";
 const inputClass =
   "w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-all focus:border-[var(--admin-accent)] focus:from-white focus:to-white focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:from-zinc-900 dark:focus:to-zinc-900";
+const inputErrorClass =
+  "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500 dark:focus:border-red-500 dark:focus:ring-red-500/25";
 const errorClass = "mt-1 text-xs font-medium text-red-600 dark:text-red-400";
 
 type FormFieldProps = {
@@ -56,7 +58,7 @@ export function FormField({
           onChange(v);
         }}
         placeholder={placeholder}
-        className={inputClass}
+        className={`${inputClass} ${error ? inputErrorClass : ""}`}
         required={required}
         min={min}
         step={step}
@@ -118,18 +120,24 @@ export function FormFieldSelect<T extends string | number>({
       ...base,
       minHeight: "42px",
       borderRadius: 6,
-      borderColor: state.isFocused
-        ? "var(--admin-accent)"
-        : "var(--admin-border)",
-      background:
-        "linear-gradient(to bottom, var(--admin-surface) 0%, var(--admin-surface-muted) 100%)",
-      boxShadow: state.isFocused
-        ? "0 0 0 2px color-mix(in srgb, var(--admin-accent) 20%, transparent)"
-        : "inset 0 1px 2px rgba(15,23,42,0.06)",
-      "&:hover": {
-        borderColor: state.isFocused
+      borderColor: error
+        ? "#ef4444"
+        : state.isFocused
           ? "var(--admin-accent)"
           : "var(--admin-border)",
+      background:
+        "linear-gradient(to bottom, var(--admin-surface) 0%, var(--admin-surface-muted) 100%)",
+      boxShadow: error
+        ? "0 0 0 2px color-mix(in srgb, #ef4444 20%, transparent)"
+        : state.isFocused
+          ? "0 0 0 2px color-mix(in srgb, var(--admin-accent) 20%, transparent)"
+          : "inset 0 1px 2px rgba(15,23,42,0.06)",
+      "&:hover": {
+        borderColor: error
+          ? "#ef4444"
+          : state.isFocused
+            ? "var(--admin-accent)"
+            : "var(--admin-border)",
       },
     }),
     valueContainer: (base) => ({

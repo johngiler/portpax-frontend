@@ -7,9 +7,7 @@ import {
   Menu,
   MessageSquare,
   Moon,
-  Settings,
   Sun,
-  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -101,7 +99,6 @@ export default function Header() {
         style={{ background: "var(--admin-gradient-header)" }}
         aria-hidden
       />
-      {/* Cuadros decorativos top-right (z-0 para quedar detrás de menús) */}
       <div
         className="pointer-events-none absolute right-0 top-0 z-0 h-16 w-24 overflow-hidden sm:w-28"
         aria-hidden
@@ -123,7 +120,11 @@ export default function Header() {
             <Menu className="h-5 w-5" strokeWidth={1.5} />
           </button>
         )}
-        <Link href="/" className="cursor-pointer shrink-0" aria-label="Ir al Dashboard">
+        <Link
+          href="/"
+          className="cursor-pointer shrink-0"
+          aria-label="Ir al Dashboard"
+        >
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
       </div>
@@ -134,7 +135,9 @@ export default function Header() {
         <button
           type="button"
           className={iconBtnClass}
-          aria-label={resolvedTheme === "dark" ? "Usar tema claro" : "Usar tema oscuro"}
+          aria-label={
+            resolvedTheme === "dark" ? "Usar tema claro" : "Usar tema oscuro"
+          }
           title={resolvedTheme === "dark" ? "Tema claro" : "Tema oscuro"}
           onClick={toggleTheme}
         >
@@ -297,24 +300,6 @@ export default function Header() {
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {user?.email || user?.username || "—"}
               </p>
-            </div>
-            <div className="py-1">
-              <Link
-                href="/configuration"
-                onClick={closeAll}
-                className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)] dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
-              >
-                <User className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-                Mi perfil
-              </Link>
-              <Link
-                href="/configuration"
-                onClick={closeAll}
-                className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)] dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
-              >
-                <Settings className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-                Configuración
-              </Link>
             </div>
             <div className="border-t border-zinc-200/80 pt-1 dark:border-zinc-700/70">
               <button
