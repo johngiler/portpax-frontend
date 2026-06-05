@@ -2,7 +2,7 @@
 #
 # Deploy PortPax frontend to itm.portpax.com (DEV / Testing).
 # Requires: npm, rsync, SSH Host portpax-frontend (~/.ssh/config).
-# Target: /home/git/itm/frontend/dist
+# Server repo path: /home/git/portpax — static export synced to /home/git/portpax/out
 #
 
 set -e
@@ -11,7 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_DIR="$FRONTEND_DIR/out"
 REMOTE_HOST="portpax-frontend"
-REMOTE_PATH="/home/git/itm/frontend/dist"
+REMOTE_REPO="/home/git/portpax"
+REMOTE_PATH="$REMOTE_REPO/out"
 ENV_FILE="$FRONTEND_DIR/.env.dev"
 
 cd "$FRONTEND_DIR"
@@ -40,7 +41,7 @@ if [[ ! -d "$OUT_DIR" ]]; then
 fi
 
 echo "[deploy] Creating remote directory (if needed)..."
-ssh "$REMOTE_HOST" "mkdir -p $REMOTE_PATH && chown -R git:git /home/git/itm 2>/dev/null || true"
+ssh "$REMOTE_HOST" "mkdir -p $REMOTE_PATH && chown -R git:git $REMOTE_REPO 2>/dev/null || true"
 
 echo "[deploy] Syncing out/ -> $REMOTE_HOST:$REMOTE_PATH"
 rsync -avz --delete -e ssh "$OUT_DIR/" "$REMOTE_HOST:$REMOTE_PATH/"
