@@ -119,7 +119,7 @@ export default function LoginView() {
           <div className="mb-8 flex flex-col items-center">
             <div className="mb-4 flex h-16 w-16 shrink-0 items-center justify-center sm:h-20 sm:w-20">
               <img
-                src="/logos/isotype-simple.svg"
+                src="/logos/isotype.svg"
                 alt=""
                 width={80}
                 height={80}

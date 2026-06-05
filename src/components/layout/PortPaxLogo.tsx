@@ -21,7 +21,7 @@ export default function PortPaxLogo({
     <div className={`flex items-center gap-2 sm:gap-3 ${className}`}>
       <div className="relative h-9 w-9 shrink-0 sm:h-12 sm:w-12">
         <img
-          src="/logos/isotype-simple.svg"
+          src="/logos/isotype.svg"
           alt=""
           width={48}
           height={48}
