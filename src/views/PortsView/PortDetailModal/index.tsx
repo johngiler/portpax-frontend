@@ -22,7 +22,7 @@ import {
 } from "@/services/catalogs/positionService";
 import type { Port, Position, PositionPayload } from "@/types/catalog";
 import { portDisplayName, positionTypeLabel } from "@/types/catalog";
-import PositionFormModal, { type PositionFormMode } from "./PositionFormModal";
+import PositionFormModal, { type PositionFormMode } from "@/views/PositionsView/PositionFormModal";
 
 type PortDetailModalProps = {
   open: boolean;
@@ -142,15 +142,18 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
               <MainTableTh>Código</MainTableTh>
               <MainTableTh>Tipo</MainTableTh>
               <MainTableTh>Muelle</MainTableTh>
-              <MainTableTh>LOA máx.</MainTableTh>
+              <MainTableTh>Eslora</MainTableTh>
+              <MainTableTh>Calado</MainTableTh>
+              <MainTableTh>Bitas</MainTableTh>
+              <MainTableTh>Defensas</MainTableTh>
               <MainTableTh>Estado</MainTableTh>
               <MainTableTh className="text-center">Acciones</MainTableTh>
             </MainTableHeader>
             <MainTableBody>
               {loading ? (
-                <MainTableEmpty colSpan={6}>Cargando…</MainTableEmpty>
+                <MainTableEmpty colSpan={8}>Cargando…</MainTableEmpty>
               ) : positions.length === 0 ? (
-                <MainTableEmpty colSpan={6}>Sin posiciones registradas.</MainTableEmpty>
+                <MainTableEmpty colSpan={8}>Sin posiciones registradas.</MainTableEmpty>
               ) : (
                 positions.map((position) => (
                   <MainTableRow key={position.id}>
@@ -160,6 +163,11 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                     <MainTableTd>
                       {position.max_loa_m != null ? `${position.max_loa_m} m` : "—"}
                     </MainTableTd>
+                    <MainTableTd>
+                      {position.min_draft_m != null ? `${position.min_draft_m} m` : "—"}
+                    </MainTableTd>
+                    <MainTableTd>{position.bollard_count ?? "—"}</MainTableTd>
+                    <MainTableTd>{position.fender_count ?? "—"}</MainTableTd>
                     <MainTableTd>
                       {position.out_of_service
                         ? "Fuera de servicio"
@@ -185,7 +193,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
       <PositionFormModal
         open={formOpen}
         mode={formMode}
-        portId={port.id}
+        lockedPortId={port.id}
         initial={editingPosition}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

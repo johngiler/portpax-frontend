@@ -5,15 +5,17 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import { fetchBerths } from "@/services/catalogs/berthService";
+import { fetchPorts } from "@/services/catalogs/portService";
 import type { Position, PositionPayload, PositionType } from "@/types/catalog";
-import { POSITION_TYPE_OPTIONS } from "@/types/catalog";
+import { POSITION_TYPE_OPTIONS, portDisplayName } from "@/types/catalog";
 
 export type PositionFormMode = "create" | "edit";
 
 type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
-  portId: number;
+  /** When set, port is fixed (e.g. port detail modal). */
+  lockedPortId?: number;
   initial?: Position | null;
   saving: boolean;
   onClose: () => void;
@@ -24,7 +26,7 @@ type FormState = PositionPayload;
 
 type FieldErrors = Partial<Record<keyof FormState, string>>;
 
-function emptyForm(portId: number): FormState {
+function emptyForm(portId = 0): FormState {
   return {
     port: portId,
     berth: null,
@@ -32,6 +34,8 @@ function emptyForm(portId: number): FormState {
     position_type: "pier",
     max_loa_m: null,
     min_draft_m: null,
+    bollard_count: null,
+    fender_count: null,
     out_of_service: false,
     is_projection: false,
     notes: "",
@@ -48,6 +52,8 @@ function positionToForm(position: Position): FormState {
     position_type: position.position_type,
     max_loa_m: position.max_loa_m != null ? Number(position.max_loa_m) : null,
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
+    bollard_count: position.bollard_count,
+    fender_count: position.fender_count,
     out_of_service: position.out_of_service,
     is_projection: position.is_projection,
     notes: position.notes,
@@ -58,6 +64,7 @@ function positionToForm(position: Position): FormState {
 
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {};
+  if (!form.port) errors.port = "Requerido";
   if (!form.code.trim()) errors.code = "Requerido";
   return errors;
 }
@@ -65,31 +72,52 @@ function validate(form: FormState): FieldErrors {
 export default function PositionFormModal({
   open,
   mode,
-  portId,
+  lockedPortId,
   initial,
   saving,
   onClose,
   onSubmit,
 }: PositionFormModalProps) {
-  const [form, setForm] = useState<FormState>(emptyForm(portId));
+  const [form, setForm] = useState<FormState>(emptyForm(lockedPortId ?? 0));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
 
   useEffect(() => {
     if (!open) return;
-    setForm(initial ? positionToForm(initial) : emptyForm(portId));
+    const defaultPort = lockedPortId ?? initial?.port ?? 0;
+    setForm(initial ? positionToForm(initial) : emptyForm(defaultPort));
     setErrors({});
-    fetchBerths({ port: portId, pageSize: 100 })
+    if (!lockedPortId) {
+      fetchPorts({ pageSize: 100 })
+        .then((data) =>
+          setPortOptions(
+            data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })),
+          ),
+        )
+        .catch(() => setPortOptions([]));
+    }
+  }, [open, initial, lockedPortId]);
+
+  useEffect(() => {
+    if (!open || !form.port) {
+      setBerthOptions([]);
+      return;
+    }
+    fetchBerths({ port: form.port, pageSize: 100 })
       .then((data) =>
         setBerthOptions(data.results.map((b) => ({ value: b.id, label: b.code }))),
       )
       .catch(() => setBerthOptions([]));
-  }, [open, initial, portId]);
+  }, [open, form.port]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "position_type" && value === "anchorage") {
+        next.berth = null;
+      }
+      if (key === "port") {
         next.berth = null;
       }
       return next;
@@ -111,6 +139,7 @@ export default function PositionFormModal({
     }
     await onSubmit({
       ...form,
+      port: lockedPortId ?? form.port,
       code: form.code.trim().toUpperCase(),
       berth: form.position_type === "anchorage" ? null : form.berth,
     });
@@ -141,6 +170,20 @@ export default function PositionFormModal({
       }
     >
       <form id="position-form" onSubmit={handleSubmit}>
+        {!lockedPortId && (
+          <FormFieldSelect<number>
+            label="Puerto"
+            name="port"
+            value={form.port}
+            onChange={(v) => setField("port", v)}
+            options={portOptions}
+            optionLabel="Seleccionar puerto…"
+            emptyValue={0}
+            required
+            error={errors.port}
+            disabled={mode === "edit"}
+          />
+        )}
         <FormField
           label="Código"
           name="code"
@@ -157,7 +200,7 @@ export default function PositionFormModal({
           onChange={(v) => setField("position_type", v)}
           options={POSITION_TYPE_OPTIONS}
         />
-        {form.position_type === "pier" && (
+        {form.position_type === "pier" && form.port > 0 && (
           <FormFieldSelect<number>
             label="Muelle"
             name="berth"
@@ -168,9 +211,12 @@ export default function PositionFormModal({
             emptyValue={0}
           />
         )}
-        <div className="grid gap-x-4 sm:grid-cols-2">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-400">
+          Características
+        </p>
+        <div className="mb-4 grid gap-x-4 sm:grid-cols-2">
           <FormField
-            label="LOA máx. (m)"
+            label="Eslora (m)"
             name="max_loa_m"
             type="number"
             step="0.01"
@@ -178,12 +224,28 @@ export default function PositionFormModal({
             onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
           />
           <FormField
-            label="Calado mín. (m)"
+            label="Calado (m)"
             name="min_draft_m"
             type="number"
             step="0.01"
             value={form.min_draft_m ?? ""}
             onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
+          />
+          <FormField
+            label="Bitas"
+            name="bollard_count"
+            type="number"
+            min={0}
+            value={form.bollard_count ?? ""}
+            onChange={(v) => setField("bollard_count", v === "" ? null : Number(v))}
+          />
+          <FormField
+            label="Defensas"
+            name="fender_count"
+            type="number"
+            min={0}
+            value={form.fender_count ?? ""}
+            onChange={(v) => setField("fender_count", v === "" ? null : Number(v))}
           />
           <FormField
             label="Orden"

@@ -199,7 +199,13 @@ export default function PortsView() {
                         {port.position_codes.join(", ")}
                       </button>
                     ) : (
-                      "—"
+                      <button
+                        type="button"
+                        onClick={() => openDetail(port)}
+                        className="cursor-pointer text-xs text-[var(--admin-accent)] hover:underline"
+                      >
+                        Gestionar
+                      </button>
                     )}
                   </MainTableTd>
                   <MainTableTd>

@@ -4,6 +4,8 @@ import type { Position, PositionPayload } from "@/types/catalog";
 const BASE = "api/catalogs/positions/";
 
 export type FetchPositionsParams = {
+  page?: number;
+  search?: string;
   port?: number;
   pageSize?: number;
 };
@@ -12,6 +14,8 @@ export async function fetchPositions(
   params: FetchPositionsParams = {},
 ): Promise<ApiListResponse<Position>> {
   const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.search?.trim()) query.set("search", params.search.trim());
   if (params.port) query.set("port", String(params.port));
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();

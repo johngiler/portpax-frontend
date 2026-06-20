@@ -81,12 +81,16 @@ export type Berth = {
 export type Position = {
   id: number;
   port: number;
+  port_name: string;
+  port_code: string;
   berth: number | null;
   berth_code: string | null;
   code: string;
   position_type: PositionType;
   max_loa_m: string | null;
   min_draft_m: string | null;
+  bollard_count: number | null;
+  fender_count: number | null;
   out_of_service: boolean;
   effective_from: string | null;
   effective_until: string | null;
@@ -105,6 +109,8 @@ export type PositionPayload = {
   position_type: PositionType;
   max_loa_m: number | null;
   min_draft_m: number | null;
+  bollard_count: number | null;
+  fender_count: number | null;
   out_of_service: boolean;
   is_projection: boolean;
   notes: string;

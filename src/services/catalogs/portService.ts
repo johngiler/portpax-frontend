@@ -6,6 +6,7 @@ const BASE = "api/catalogs/ports/";
 export type FetchPortsParams = {
   page?: number;
   search?: string;
+  pageSize?: number;
 };
 
 export async function fetchPorts(
@@ -14,6 +15,7 @@ export async function fetchPorts(
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Port>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
