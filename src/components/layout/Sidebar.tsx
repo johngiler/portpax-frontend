@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
+import { Anchor, ChevronLeft, ChevronRight, LayoutDashboard, MapPin, Ship } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,7 +9,12 @@ import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
 
-const navItems = [{ href: "/", label: "Dashboard", icon: LayoutDashboard }] as const;
+const navItems = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/ports", label: "Puertos", icon: MapPin },
+  { href: "/shipping-lines", label: "Navieras", icon: Anchor },
+  { href: "/vessels", label: "Barcos", icon: Ship },
+] as const;
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";

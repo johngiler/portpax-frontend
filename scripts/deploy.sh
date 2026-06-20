@@ -10,7 +10,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_DIR="$FRONTEND_DIR/out"
-REMOTE_HOST="portpax-frontend"
+REMOTE_HOST="webapp"
 REMOTE_REPO="/home/git/portpax"
 REMOTE_PATH="$REMOTE_REPO/out"
 ENV_FILE="$FRONTEND_DIR/.env.dev"
