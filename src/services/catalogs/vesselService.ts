@@ -6,6 +6,8 @@ const BASE = "api/catalogs/vessels/";
 export type FetchVesselsParams = {
   page?: number;
   search?: string;
+  shipping_line?: number;
+  pageSize?: number;
 };
 
 export async function fetchVessels(
@@ -14,6 +16,8 @@ export async function fetchVessels(
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Vessel>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
