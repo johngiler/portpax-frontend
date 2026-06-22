@@ -17,15 +17,21 @@ type PortDetailHeroProps = {
   onDelete: () => void;
 };
 
-const LOGO_SIZE_MIN = 48;
-const LOGO_SIZE_MAX = 120;
-const LOGO_SIZE_STUCK = 40;
+const LOGO_SIZE_MIN_EXPANDED = 48;
+const LOGO_SIZE_MAX_EXPANDED = 120;
+const LOGO_SIZE_MIN_STUCK = 32;
+const LOGO_SIZE_MAX_STUCK = 80;
+
+const LOGO_HEIGHT_RATIO = 0.98;
 
 const CARD_BASE_CLASS =
   "relative overflow-hidden border border-zinc-200/80 bg-gradient-to-br from-[var(--admin-accent)]/10 via-white to-zinc-50 backdrop-blur-md dark:border-zinc-800 dark:from-[var(--admin-accent)]/20 dark:via-zinc-900 dark:to-zinc-950";
 
-function clampLogoSize(height: number): number {
-  return Math.min(Math.max(Math.round(height), LOGO_SIZE_MIN), LOGO_SIZE_MAX);
+function clampLogoSize(textHeight: number, stuck: boolean): number {
+  const scaled = textHeight * LOGO_HEIGHT_RATIO;
+  const min = stuck ? LOGO_SIZE_MIN_STUCK : LOGO_SIZE_MIN_EXPANDED;
+  const max = stuck ? LOGO_SIZE_MAX_STUCK : LOGO_SIZE_MAX_EXPANDED;
+  return Math.min(Math.max(Math.round(scaled), min), max);
 }
 
 function getScrollParent(node: HTMLElement | null): HTMLElement | null {
@@ -46,24 +52,20 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
   const textRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prevStuckRef = useRef(false);
-  const [expandedLogoSize, setExpandedLogoSize] = useState(LOGO_SIZE_MIN);
+  const [logoSize, setLogoSize] = useState(LOGO_SIZE_MIN_EXPANDED);
   const [isStuck, setIsStuck] = useState(false);
   const [logoSizeTransition, setLogoSizeTransition] = useState(false);
   const shellTransition = useMotionSpring();
   const contentTransition = useMotionTransition(0.2);
 
-  const logoSize = isStuck ? LOGO_SIZE_STUCK : expandedLogoSize;
-
   useLayoutEffect(() => {
     setLogoSizeTransition(false);
-
-    if (isStuck) return;
 
     const el = textRef.current;
     if (!el) return;
 
     const syncLogoSize = () => {
-      setExpandedLogoSize(clampLogoSize(el.getBoundingClientRect().height));
+      setLogoSize(clampLogoSize(el.getBoundingClientRect().height, isStuck));
     };
 
     syncLogoSize();
@@ -142,19 +144,14 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                 <Link
                   href="/ports"
                   className={[
-                    "flex shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200/80 bg-white/80 text-zinc-600 transition-colors hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300",
+                    "flex shrink-0 cursor-pointer items-center justify-center self-center rounded-lg border border-zinc-200/80 bg-white/80 text-zinc-600 transition-colors hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300",
                     isStuck ? "h-8 w-8" : "mt-1 h-9 w-9",
                   ].join(" ")}
                   aria-label="Volver a puertos"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
-                <div
-                  className={[
-                    "flex min-w-0",
-                    isStuck ? "items-center gap-3" : "items-stretch gap-4",
-                  ].join(" ")}
-                >
+                <div className="flex min-w-0 items-stretch gap-3 sm:gap-4">
                   <div
                     className={[
                       "flex shrink-0 items-center justify-center overflow-hidden border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
