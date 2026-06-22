@@ -7,7 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CountryLabel from "@/components/ui/CountryLabel";
-import { useMotionSpring, useMotionTransition } from "@/lib/motionPresets";
+import { useMotionTransition } from "@/lib/motionPresets";
 import type { PortDetail } from "@/types/catalog";
 import { formatLargestVessel, portDisplayName, portStatusLabel } from "@/types/catalog";
 
@@ -49,19 +49,29 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
 
 export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHeroProps) {
   const largestVessel = formatLargestVessel(port);
-  const textRef = useRef<HTMLDivElement>(null);
+  const textCoreRef = useRef<HTMLDivElement>(null);
+  const textExpandedRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prevStuckRef = useRef(false);
   const [logoSize, setLogoSize] = useState(LOGO_SIZE_MIN_EXPANDED);
   const [isStuck, setIsStuck] = useState(false);
-  const [logoSizeTransition, setLogoSizeTransition] = useState(false);
-  const shellTransition = useMotionSpring();
-  const contentTransition = useMotionTransition(0.2);
+  const [animateSticky, setAnimateSticky] = useState(false);
+  const shellTransition = useMotionTransition(0.15);
+  const fadeTransition = useMotionTransition(0.12);
+
+  useEffect(() => {
+    if (prevStuckRef.current !== isStuck) {
+      setAnimateSticky(true);
+      prevStuckRef.current = isStuck;
+    }
+  }, [isStuck]);
 
   useLayoutEffect(() => {
-    setLogoSizeTransition(false);
+    setAnimateSticky(false);
+  }, [port.id]);
 
-    const el = textRef.current;
+  useLayoutEffect(() => {
+    const el = isStuck ? textCoreRef.current : textExpandedRef.current;
     if (!el) return;
 
     const syncLogoSize = () => {
@@ -83,14 +93,7 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
     largestVessel,
   ]);
 
-  useEffect(() => {
-    if (prevStuckRef.current !== isStuck) {
-      setLogoSizeTransition(true);
-      prevStuckRef.current = isStuck;
-    }
-  }, [isStuck]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -116,12 +119,11 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
   return (
     <>
       <div ref={sentinelRef} className="h-px w-full" aria-hidden />
-      <motion.div
+      <div
         className={[
           "sticky z-20",
           isStuck ? "-top-4 sm:-top-6 lg:-top-8" : "top-0",
         ].join(" ")}
-        transition={shellTransition}
       >
         <div className={isStuck ? "-mx-4 sm:-mx-6 lg:-mx-8" : ""}>
           <motion.div
@@ -135,6 +137,7 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
             <div
               className={[
                 "flex flex-col sm:flex-row sm:justify-between",
+                animateSticky ? "transition-[padding,gap] duration-150 ease-in-out" : "",
                 isStuck
                   ? "gap-3 p-3 sm:items-center sm:px-6 sm:py-3"
                   : "gap-6 p-6 sm:items-start sm:p-8",
@@ -156,7 +159,9 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                     className={[
                       "flex shrink-0 items-center justify-center overflow-hidden border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
                       isStuck ? "rounded-lg" : "rounded-2xl",
-                      logoSizeTransition ? "transition-[width,height] duration-200 ease-out" : "",
+                      animateSticky
+                        ? "transition-[width,height,border-radius] duration-150 ease-in-out"
+                        : "",
                     ].join(" ")}
                     style={{ width: logoSize, height: logoSize }}
                   >
@@ -176,61 +181,63 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                       </span>
                     )}
                   </div>
-                  <div ref={textRef} className="min-w-0 flex flex-col">
-                    <p
-                      className={[
-                        "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold uppercase text-[var(--admin-accent)]",
-                        isStuck ? "text-[10px] tracking-wide" : "text-xs tracking-widest",
-                      ].join(" ")}
-                    >
-                      <CountryLabel country={port.country} />
-                      {port.region ? <span>· {port.region}</span> : null}
-                    </p>
-                    <h1
-                      className={[
-                        "truncate font-bold tracking-tight text-zinc-900 dark:text-zinc-50",
-                        isStuck ? "text-base" : "mt-1 text-2xl",
-                      ].join(" ")}
-                    >
-                      {portDisplayName(port)}
-                    </h1>
-                    <div className={isStuck ? "mt-1 flex flex-wrap gap-1.5" : "mt-2 flex flex-wrap gap-2"}>
-                      <span
+                  <div ref={textExpandedRef} className="min-w-0 flex flex-col">
+                    <div ref={textCoreRef}>
+                      <p
                         className={[
-                          "rounded-full bg-[var(--admin-accent)]/10 font-medium text-[var(--admin-accent)]",
-                          isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                          "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold uppercase text-[var(--admin-accent)]",
+                          isStuck ? "text-[10px] tracking-wide" : "text-xs tracking-widest",
                         ].join(" ")}
                       >
-                        {portStatusLabel(port.status)}
-                      </span>
-                      <span
+                        <CountryLabel country={port.country} />
+                        {port.region ? <span>· {port.region}</span> : null}
+                      </p>
+                      <h1
                         className={[
-                          "rounded-full bg-zinc-100 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
-                          isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                          "truncate font-bold tracking-tight text-zinc-900 dark:text-zinc-50",
+                          isStuck ? "text-base" : "mt-1 text-2xl",
                         ].join(" ")}
                       >
-                        {port.position_count} posiciones
-                      </span>
-                      {port.bollard_total > 0 && (
+                        {portDisplayName(port)}
+                      </h1>
+                      <div className={isStuck ? "mt-1 flex flex-wrap gap-1.5" : "mt-2 flex flex-wrap gap-2"}>
+                        <span
+                          className={[
+                            "rounded-full bg-[var(--admin-accent)]/10 font-medium text-[var(--admin-accent)]",
+                            isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                          ].join(" ")}
+                        >
+                          {portStatusLabel(port.status)}
+                        </span>
                         <span
                           className={[
                             "rounded-full bg-zinc-100 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
                             isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
                           ].join(" ")}
                         >
-                          {port.bollard_total} bitas
+                          {port.position_count} posiciones
                         </span>
-                      )}
+                        {port.bollard_total > 0 && (
+                          <span
+                            className={[
+                              "rounded-full bg-zinc-100 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+                              isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                            ].join(" ")}
+                          >
+                            {port.bollard_total} bitas
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <AnimatePresence initial={false}>
                       {!isStuck && (
                         <motion.p
                           key="largest-vessel"
-                          initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                          animate={{ opacity: 1, height: "auto", marginTop: 12 }}
-                          exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                          transition={contentTransition}
-                          className="flex items-center gap-1.5 overflow-hidden text-sm text-zinc-600 dark:text-zinc-400"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={fadeTransition}
+                          className="mt-3 flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400"
                         >
                           <Ship
                             className="h-4 w-4 shrink-0 text-[var(--admin-accent)]"
@@ -274,7 +281,7 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
             </div>
           </motion.div>
         </div>
-      </motion.div>
+      </div>
     </>
   );
 }
