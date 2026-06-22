@@ -2,10 +2,11 @@
 
 import { ImagePlus } from "lucide-react";
 import { useRef, useState } from "react";
-import { filterImageFiles } from "@/lib/imageFiles";
+import { filterImageFiles, hasOversizedImageFiles } from "@/lib/imageFiles";
 
 type ImageDropZoneProps = {
   onFiles: (files: File[]) => void | Promise<void>;
+  onReject?: (reason: "oversized" | "invalid") => void;
   disabled?: boolean;
   busy?: boolean;
   label?: string;
@@ -17,6 +18,7 @@ type ImageDropZoneProps = {
 
 export default function ImageDropZone({
   onFiles,
+  onReject,
   disabled = false,
   busy = false,
   label = "Agregar fotos",
@@ -31,8 +33,18 @@ export default function ImageDropZone({
   const inactive = disabled || busy;
 
   async function processFiles(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    if (hasOversizedImageFiles(fileList)) {
+      onReject?.("oversized");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     let files = filterImageFiles(fileList);
-    if (!files.length) return;
+    if (!files.length) {
+      onReject?.("invalid");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     if (!multiple) files = files.slice(0, 1);
     await onFiles(files);
     if (inputRef.current) inputRef.current.value = "";

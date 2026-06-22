@@ -1,7 +1,9 @@
 "use client";
 
 import { Info } from "lucide-react";
+import { useEffect, useState } from "react";
 import ViewSection from "@/components/layout/ViewSection";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { buildPortMapEmbedUrl, parsePortCoordinates } from "@/lib/portMapEmbed";
 import type { PortDetail } from "@/types/catalog";
 import { formatCoord, formatMeters } from "@/types/catalog";
@@ -20,17 +22,31 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function PortMapEmbed({ lat, lng }: { lat: number; lng: number }) {
+  const [loaded, setLoaded] = useState(false);
   const mapUrl = buildPortMapEmbedUrl(lat, lng);
 
+  useEffect(() => {
+    setLoaded(false);
+  }, [lat, lng]);
+
   return (
-    <div className="h-full min-h-[280px] overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800">
+    <div
+      className="relative h-full min-h-[280px] overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800"
+      aria-busy={!loaded}
+    >
+      {!loaded && (
+        <div className="absolute inset-0" role="status" aria-label="Cargando mapa">
+          <Skeleton className="h-full min-h-[280px] rounded-xl" />
+        </div>
+      )}
       <iframe
         title="Ubicación del puerto en Google Maps"
         src={mapUrl}
-        className="h-full min-h-[280px] w-full"
+        className={`h-full min-h-[280px] w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
         allowFullScreen
+        onLoad={() => setLoaded(true)}
       />
     </div>
   );

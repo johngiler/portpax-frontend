@@ -6,6 +6,7 @@ import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
 import { ApiError } from "@/services/apiClient";
+import { IMAGE_FILE_REJECT_MESSAGES } from "@/lib/imageFiles";
 import { createPortImage, deletePortImage } from "@/services/catalogs/portImageService";
 import type { PortImage } from "@/types/catalog";
 
@@ -25,6 +26,10 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
     () => images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
     [images],
   );
+
+  function handleReject(reason: "oversized" | "invalid") {
+    setError(IMAGE_FILE_REJECT_MESSAGES[reason]);
+  }
 
   async function handleFiles(files: File[]) {
     setUploading(true);
@@ -77,6 +82,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
             className="mb-4"
             busy={uploading}
             onFiles={handleFiles}
+            onReject={handleReject}
             hint="Arrastra varias imágenes o haz clic para seleccionar archivos"
           />
           <p className="text-sm text-zinc-500">Sin imágenes en la galería.</p>
@@ -117,7 +123,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
             ))}
           </div>
 
-          <ImageDropZone compact busy={uploading} onFiles={handleFiles} hint="" />
+          <ImageDropZone compact busy={uploading} onFiles={handleFiles} onReject={handleReject} hint="" />
         </>
       )}
 
