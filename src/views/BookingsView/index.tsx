@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { CalendarDays, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
@@ -10,6 +10,10 @@ import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import TablePagination from "@/components/tables/TablePagination";
 import { ApiError } from "@/services/apiClient";
 import { fetchBookings } from "@/services/bookings/bookingService";
+import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchVessels } from "@/services/catalogs/vesselService";
+import { portDisplayName } from "@/types/catalog";
 import type { BookingStatus } from "@/types/booking";
 import BookingFilters from "./BookingFilters";
 import BookingsList from "./BookingsList";
@@ -28,8 +32,64 @@ export default function BookingsView() {
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingStatus | "">("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [portFilter, setPortFilter] = useState(0);
+  const [appliedPortFilter, setAppliedPortFilter] = useState(0);
+  const [shippingLineFilter, setShippingLineFilter] = useState(0);
+  const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
+  const [vesselFilter, setVesselFilter] = useState(0);
+  const [appliedVesselFilter, setAppliedVesselFilter] = useState(0);
+  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [shippingLineOptions, setShippingLineOptions] = useState<{ value: number; label: string }[]>(
+    [],
+  );
+  const [allVessels, setAllVessels] = useState<{ value: number; label: string; lineId: number }[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPorts({ pageSize: 100 })
+      .then((data) =>
+        setPortOptions(
+          data.results
+            .filter((port) => port.is_active)
+            .map((port) => ({ value: port.id, label: portDisplayName(port) })),
+        ),
+      )
+      .catch(() => setPortOptions([]));
+
+    fetchShippingLines({ pageSize: 200 })
+      .then((data) =>
+        setShippingLineOptions(
+          data.results
+            .filter((line) => line.is_active)
+            .map((line) => ({ value: line.id, label: line.name })),
+        ),
+      )
+      .catch(() => setShippingLineOptions([]));
+
+    fetchVessels({ pageSize: 500 })
+      .then((data) =>
+        setAllVessels(
+          data.results
+            .filter((vessel) => vessel.is_active)
+            .map((vessel) => ({
+              value: vessel.id,
+              label: vessel.name,
+              lineId: vessel.shipping_line,
+            })),
+        ),
+      )
+      .catch(() => setAllVessels([]));
+  }, []);
+
+  const vesselOptions = useMemo(() => {
+    if (shippingLineFilter > 0) {
+      return allVessels.filter((vessel) => vessel.lineId === shippingLineFilter);
+    }
+    return allVessels;
+  }, [allVessels, shippingLineFilter]);
 
   const loadBookings = useCallback(async () => {
     setLoading(true);
@@ -39,6 +99,9 @@ export default function BookingsView() {
         page,
         search: appliedSearch,
         status: appliedStatusFilter,
+        port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+        shipping_line: appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+        vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
       });
       setBookings(data.results);
       setTotalCount(data.count);
@@ -51,7 +114,14 @@ export default function BookingsView() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedSearch, appliedStatusFilter]);
+  }, [
+    page,
+    appliedSearch,
+    appliedStatusFilter,
+    appliedPortFilter,
+    appliedShippingLineFilter,
+    appliedVesselFilter,
+  ]);
 
   useEffect(() => {
     loadBookings();
@@ -60,6 +130,9 @@ export default function BookingsView() {
   function applyFilters() {
     setAppliedSearch(search.trim());
     setAppliedStatusFilter(statusFilter);
+    setAppliedPortFilter(portFilter);
+    setAppliedShippingLineFilter(shippingLineFilter);
+    setAppliedVesselFilter(vesselFilter);
     setPage(1);
   }
 
@@ -68,10 +141,21 @@ export default function BookingsView() {
     setAppliedStatusFilter("");
     setSearch("");
     setAppliedSearch("");
+    setPortFilter(0);
+    setAppliedPortFilter(0);
+    setShippingLineFilter(0);
+    setAppliedShippingLineFilter(0);
+    setVesselFilter(0);
+    setAppliedVesselFilter(0);
     setPage(1);
   }
 
-  const hasActiveFilters = appliedStatusFilter !== "" || appliedSearch !== "";
+  const hasActiveFilters =
+    appliedStatusFilter !== "" ||
+    appliedSearch !== "" ||
+    appliedPortFilter > 0 ||
+    appliedShippingLineFilter > 0 ||
+    appliedVesselFilter > 0;
 
   return (
     <>
@@ -79,8 +163,17 @@ export default function BookingsView() {
         <BookingFilters
           status={statusFilter}
           search={search}
+          portFilter={portFilter}
+          shippingLineFilter={shippingLineFilter}
+          vesselFilter={vesselFilter}
+          portOptions={portOptions}
+          shippingLineOptions={shippingLineOptions}
+          vesselOptions={vesselOptions}
           onStatusChange={setStatusFilter}
           onSearchChange={setSearch}
+          onPortFilterChange={setPortFilter}
+          onShippingLineFilterChange={setShippingLineFilter}
+          onVesselFilterChange={setVesselFilter}
           onApply={applyFilters}
         />
       </FilterSidebarContent>

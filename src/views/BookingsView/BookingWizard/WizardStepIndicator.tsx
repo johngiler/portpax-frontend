@@ -95,7 +95,7 @@ export default function WizardStepIndicator({
                 </button>
                 <span
                   className={[
-                    "mt-1.5 hidden text-center text-xs font-medium sm:block",
+                    "mt-1.5 block text-center text-[10px] font-medium leading-tight sm:text-xs",
                     isActive
                       ? "text-[var(--admin-accent)]"
                       : isComplete

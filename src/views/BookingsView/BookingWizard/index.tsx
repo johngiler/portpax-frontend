@@ -15,6 +15,9 @@ import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
+import type { Booking } from "@/types/booking";
+import BookingWizardSuccess from "./BookingWizardSuccess";
+import WizardSelectionSummary from "./WizardSelectionSummary";
 import WizardStepIndicator from "./WizardStepIndicator";
 import DatesStep from "./steps/DatesStep";
 import PortStep from "./steps/PortStep";
@@ -74,7 +77,7 @@ export default function BookingWizard() {
 
   const [viewError, setViewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [successCount, setSuccessCount] = useState<number | null>(null);
+  const [createdBookings, setCreatedBookings] = useState<Booking[] | null>(null);
 
   const selectedPort = ports.find((p) => p.id === form.portId) ?? null;
   const selectedLine = lines.find((l) => l.id === form.shippingLineId) ?? null;
@@ -200,7 +203,7 @@ export default function BookingWizard() {
         call_dates: form.callDates,
         notes: form.notes,
       });
-      setSuccessCount(created.length);
+      setCreatedBookings(created);
     } catch (err) {
       setViewError(
         err instanceof ApiError ? err.message : "No se pudieron crear las reservas.",
@@ -210,36 +213,17 @@ export default function BookingWizard() {
     }
   }
 
-  if (successCount !== null) {
+  if (createdBookings !== null) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-zinc-200/80 bg-white p-8 text-center shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-          <span className="text-2xl font-bold">{successCount}</span>
-        </div>
-        <h2 className="mt-4 text-xl font-bold text-zinc-900 dark:text-zinc-50">
-          Reservas creadas
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Se generaron {successCount} código{successCount === 1 ? "" : "s"} de reserva en un solo
-          paquete.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <DefaultButton type="button" onClick={() => router.push("/bookings")}>
-            Ver reservas
-          </DefaultButton>
-          <button
-            type="button"
-            onClick={() => {
-              setForm(emptyBookingWizardForm());
-              setStep("port");
-              setSuccessCount(null);
-            }}
-            className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            Nueva reserva
-          </button>
-        </div>
-      </div>
+      <BookingWizardSuccess
+        bookings={createdBookings}
+        onViewAll={() => router.push("/bookings")}
+        onNewBooking={() => {
+          setForm(emptyBookingWizardForm());
+          setStep("port");
+          setCreatedBookings(null);
+        }}
+      />
     );
   }
 
@@ -253,6 +237,13 @@ export default function BookingWizard() {
         currentStep={step}
         maxReachableIndex={reachable}
         onStepClick={goToStep}
+      />
+
+      <WizardSelectionSummary
+        port={selectedPort}
+        line={selectedLine}
+        vessel={selectedVessel}
+        dateCount={form.callDates.length}
       />
 
       <div className="rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[var(--admin-card-shadow)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 sm:p-8">
@@ -301,7 +292,12 @@ export default function BookingWizard() {
               />
             )}
             {step === "dates" && (
-              <DatesStep selectedDates={form.callDates} onChange={(d) => setForm((p) => ({ ...p, callDates: d }))} />
+              <DatesStep
+                portId={form.portId}
+                vesselId={form.vesselId}
+                selectedDates={form.callDates}
+                onChange={(d) => setForm((p) => ({ ...p, callDates: d }))}
+              />
             )}
             {step === "review" && (
               <ReviewStep

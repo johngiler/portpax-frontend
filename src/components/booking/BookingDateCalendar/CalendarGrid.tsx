@@ -15,6 +15,7 @@ type CalendarGridProps = {
   todayIso: string;
   minIso: string;
   selectedSet: Set<string>;
+  occupiedSet: Set<string>;
   onDayClick: (cell: CalendarCell) => void;
 };
 
@@ -26,6 +27,7 @@ export default function CalendarGrid({
   todayIso,
   minIso,
   selectedSet,
+  occupiedSet,
   onDayClick,
 }: CalendarGridProps) {
   const transition = useMotionTransition(0.2);
@@ -51,8 +53,9 @@ export default function CalendarGrid({
           >
             {weeks.flat().map((cell) => {
               const isSelected = selectedSet.has(cell.iso);
+              const isOccupied = occupiedSet.has(cell.iso) && !isSelected;
               const isToday = cell.iso === todayIso;
-              const isDisabled = cell.iso < minIso;
+              const isDisabled = cell.iso < minIso || isOccupied;
 
               return (
                 <motion.button
@@ -65,7 +68,9 @@ export default function CalendarGrid({
                     "relative flex h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-medium transition-colors",
                     !cell.isCurrentMonth && !isSelected ? "opacity-45" : "",
                     isDisabled
-                      ? "cursor-not-allowed text-zinc-300 dark:text-zinc-600"
+                      ? isOccupied
+                        ? "cursor-not-allowed bg-amber-50/80 text-amber-700/70 line-through dark:bg-amber-950/20 dark:text-amber-400/70"
+                        : "cursor-not-allowed text-zinc-300 dark:text-zinc-600"
                       : isSelected
                         ? "text-white shadow-md shadow-[var(--admin-accent)]/25"
                         : "text-zinc-700 hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)] dark:text-zinc-200 dark:hover:bg-[var(--admin-accent)]/15",
@@ -73,7 +78,11 @@ export default function CalendarGrid({
                       ? "ring-2 ring-[var(--admin-accent)]/30 ring-inset"
                       : "",
                   ].join(" ")}
-                  aria-label={formatIsoDateLabel(cell.iso)}
+                  aria-label={
+                    isOccupied
+                      ? `${formatIsoDateLabel(cell.iso)} — ya reservada`
+                      : formatIsoDateLabel(cell.iso)
+                  }
                   aria-pressed={isSelected}
                 >
                   {isSelected && (

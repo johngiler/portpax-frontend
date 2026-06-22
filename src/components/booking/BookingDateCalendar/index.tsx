@@ -14,7 +14,9 @@ import SelectedDatesList from "./SelectedDatesList";
 type BookingDateCalendarProps = {
   selectedDates: string[];
   onChange: (dates: string[]) => void;
+  occupiedDates?: string[];
   minDate?: string;
+  loadingOccupied?: boolean;
 };
 
 function todayIso(): string {
@@ -25,7 +27,9 @@ function todayIso(): string {
 export default function BookingDateCalendar({
   selectedDates,
   onChange,
+  occupiedDates = [],
   minDate,
+  loadingOccupied = false,
 }: BookingDateCalendarProps) {
   const today = todayIso();
   const min = minDate ?? today;
@@ -39,6 +43,7 @@ export default function BookingDateCalendar({
   );
 
   const selectedSet = useMemo(() => new Set(selectedDates), [selectedDates]);
+  const occupiedSet = useMemo(() => new Set(occupiedDates), [occupiedDates]);
 
   function setView(year: number, monthIndex: number, navDirection: number) {
     setDirection(navDirection);
@@ -86,10 +91,15 @@ export default function BookingDateCalendar({
             Calendario
           </p>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Marca uno o varios días · usa los selectores para cambiar mes y año
+            Marca uno o varios días · los tachados ya tienen escala
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {loadingOccupied ? (
+            <span className="rounded-full bg-zinc-200/80 px-3 py-1 text-xs font-medium text-zinc-500 dark:bg-zinc-800">
+              Cargando…
+            </span>
+          ) : null}
           {selectedDates.length > 0 ? (
             <button
               type="button"
@@ -121,6 +131,7 @@ export default function BookingDateCalendar({
         todayIso={today}
         minIso={min}
         selectedSet={selectedSet}
+        occupiedSet={occupiedSet}
         onDayClick={toggleDate}
       />
 
