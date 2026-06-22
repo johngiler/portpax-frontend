@@ -19,8 +19,8 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
             key={i}
             className="overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-zinc-800"
           >
-            <div className="aspect-[4/3] animate-pulse bg-zinc-200/80 dark:bg-zinc-800" />
-            <div className="space-y-2 p-2.5">
+            <div className="aspect-[5/4] animate-pulse bg-zinc-200/80 dark:bg-zinc-800" />
+            <div className="space-y-2 p-3">
               <div className="h-3.5 w-full animate-pulse rounded bg-zinc-200/80 dark:bg-zinc-800" />
               <div className="h-2.5 w-2/3 animate-pulse rounded bg-zinc-200/60 dark:bg-zinc-800/80" />
             </div>
@@ -62,7 +62,7 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
             )}
             <div
               className={[
-                "relative flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950",
+                "relative flex aspect-[5/4] items-center justify-center bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950",
                 selected ? "from-[var(--admin-accent)]/20" : "",
               ].join(" ")}
             >
@@ -72,33 +72,30 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
                   aria-hidden
                 />
               )}
-              <span
-                className={[
-                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors overflow-hidden",
-                  selected
-                    ? "bg-[var(--admin-accent)] text-white"
-                    : "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]",
-                ].join(" ")}
-              >
-                {vessel.logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={vessel.logo} alt="" className="h-full w-full object-contain p-1" />
-                ) : (
+              {vessel.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={vessel.logo}
+                  alt=""
+                  className="max-h-[70%] max-w-[75%] relative z-[1] object-contain transition-transform duration-200 group-hover:scale-105"
+                />
+              ) : (
+                <span className="relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
                   <Ship className="h-5 w-5" strokeWidth={2} />
-                )}
-              </span>
+                </span>
+              )}
               {selected && (
                 <span
-                  className="absolute left-2 top-2 z-[2] flex h-7 w-7 items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-md"
+                  className="absolute left-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-md shadow-[var(--admin-accent)]/40"
                   aria-hidden
                 >
-                  <Check className="h-4 w-4" strokeWidth={2.5} />
+                  <Check className="h-5 w-5" strokeWidth={2.5} />
                 </span>
               )}
             </div>
             <div
               className={[
-                "relative z-[1] flex flex-col gap-1 p-2.5 sm:p-3",
+                "relative z-[1] flex flex-col gap-1 p-3",
                 selected
                   ? "bg-[var(--admin-accent)]/10 dark:bg-[var(--admin-accent)]/15"
                   : "bg-white dark:bg-zinc-900/80",
