@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 type ViewStatCardProps = {
   label: string;
@@ -7,6 +8,7 @@ type ViewStatCardProps = {
   icon: LucideIcon;
   accentColor: string;
   gradient: string;
+  href?: string;
 };
 
 /** KPI / summary card used in dashboard and list views. */
@@ -17,10 +19,16 @@ export default function ViewStatCard({
   icon: Icon,
   accentColor,
   gradient,
+  href,
 }: ViewStatCardProps) {
-  return (
+  const card = (
     <div
-      className="relative flex min-h-[130px] items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80"
+      className={[
+        "relative flex min-h-[130px] items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80",
+        href
+          ? "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+          : "",
+      ].join(" ")}
       style={{
         borderTopWidth: "3px",
         borderTopColor: accentColor,
@@ -45,4 +53,14 @@ export default function ViewStatCard({
       </div>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block no-underline">
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }

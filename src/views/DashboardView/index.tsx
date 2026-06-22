@@ -1,56 +1,24 @@
 "use client";
 
 import {
-  CalendarDays,
+  Anchor,
   ClipboardList,
-  Info,
   LayoutDashboard,
   MapPin,
   Ship,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import TimeRangeFilters from "@/components/filters/TimeRangeFilters";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import ViewSection from "@/components/layout/ViewSection";
 import ViewStatCard from "@/components/layout/ViewStatCard";
+import { ApiError } from "@/services/apiClient";
 import { getTimeRange, type TimeFilterPreset } from "@/utils/timeRange";
 import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
-
-const STAT_CARDS = [
-  {
-    label: "Bookings",
-    description: "Fase 1 — por conectar",
-    icon: ClipboardList,
-    color: "#3478b5",
-    gradient:
-      "linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)",
-  },
-  {
-    label: "Puertos",
-    description: "Catálogos — por conectar",
-    icon: MapPin,
-    color: "#0d9488",
-    gradient:
-      "linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)",
-  },
-  {
-    label: "Escalas",
-    description: "Operación — por conectar",
-    icon: CalendarDays,
-    color: "#d97706",
-    gradient:
-      "linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)",
-  },
-  {
-    label: "Barcos",
-    description: "Catálogos — por conectar",
-    icon: Ship,
-    color: "#7c3aed",
-    gradient:
-      "linear-gradient(160deg, rgba(124, 58, 237, 0.14) 0%, var(--background) 55%)",
-  },
-] as const;
+import DashboardUpcomingSection from "./DashboardUpcomingSection";
+import DashboardViewSkeleton from "./DashboardViewSkeleton";
+import { loadDashboardSummary, type DashboardSummary } from "./loadDashboardSummary";
 
 function defaultCustomFrom(): string {
   const d = new Date();
@@ -60,11 +28,28 @@ function defaultCustomFrom(): string {
 
 const defaultCustomTo = (): string => new Date().toISOString().slice(0, 10);
 
+function formatBookingBreakdown(summary: DashboardSummary): string {
+  const parts: string[] = [];
+  if (summary.bookingsRequested > 0) {
+    parts.push(`${summary.bookingsRequested} solicitadas`);
+  }
+  if (summary.bookingsConfirmed > 0) {
+    parts.push(`${summary.bookingsConfirmed} confirmadas`);
+  }
+  if (summary.bookingsCancelled > 0) {
+    parts.push(`${summary.bookingsCancelled} canceladas`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : "Sin reservas en el período";
+}
+
 export default function DashboardView() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>("7d");
   const [customDateFrom, setCustomDateFrom] = useState(defaultCustomFrom);
   const [customDateTo, setCustomDateTo] = useState(defaultCustomTo);
   const [hasLoadedPrefs, setHasLoadedPrefs] = useState(false);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [viewError, setViewError] = useState<string | null>(null);
 
   useEffect(() => {
     const prefs = loadViewTimePrefs();
@@ -78,13 +63,83 @@ export default function DashboardView() {
 
   const timeRange = useMemo(
     () => getTimeRange(timeFilter, customDateFrom, customDateTo),
-    [timeFilter, customDateFrom, customDateTo]
+    [timeFilter, customDateFrom, customDateTo],
   );
 
   useEffect(() => {
     if (!hasLoadedPrefs) return;
     saveViewTimePrefs({ timeFilter, customDateFrom, customDateTo });
   }, [hasLoadedPrefs, timeFilter, customDateFrom, customDateTo]);
+
+  const loadSummary = useCallback(async () => {
+    setLoading(true);
+    setViewError(null);
+    try {
+      const data = await loadDashboardSummary(timeRange);
+      setSummary(data);
+    } catch (err) {
+      setViewError(
+        err instanceof ApiError ? err.message : "No se pudo cargar el resumen del dashboard.",
+      );
+      setSummary(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [timeRange]);
+
+  useEffect(() => {
+    if (!hasLoadedPrefs) return;
+    loadSummary();
+  }, [hasLoadedPrefs, loadSummary]);
+
+  if (!hasLoadedPrefs || (loading && !summary)) {
+    return <DashboardViewSkeleton />;
+  }
+
+  const statCards = summary
+    ? [
+        {
+          label: "Reservas",
+          value: summary.bookingsTotal,
+          description: formatBookingBreakdown(summary),
+          icon: ClipboardList,
+          color: "#3478b5",
+          gradient:
+            "linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)",
+          href: "/bookings",
+        },
+        {
+          label: "Puertos",
+          value: summary.portsTotal,
+          description: "Puertos en catálogo",
+          icon: MapPin,
+          color: "#0d9488",
+          gradient:
+            "linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)",
+          href: "/ports",
+        },
+        {
+          label: "Navieras",
+          value: summary.shippingLinesTotal,
+          description: "Marcas operativas",
+          icon: Anchor,
+          color: "#d97706",
+          gradient:
+            "linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)",
+          href: "/shipping-lines",
+        },
+        {
+          label: "Barcos",
+          value: summary.vesselsTotal,
+          description: "Flota registrada",
+          icon: Ship,
+          color: "#7c3aed",
+          gradient:
+            "linear-gradient(160deg, rgba(124, 58, 237, 0.14) 0%, var(--background) 55%)",
+          href: "/shipping-lines",
+        },
+      ]
+    : [];
 
   return (
     <>
@@ -103,36 +158,35 @@ export default function DashboardView() {
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="Plantilla base — los módulos se irán habilitando según las fases del proyecto."
+        description="Resumen operativo de reservas y catálogos del período seleccionado."
       />
 
+      {viewError && (
+        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+      )}
+
       <div className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {STAT_CARDS.map(({ label, description, icon, color, gradient }) => (
+        {statCards.map(({ label, description, icon, color, gradient, href, value }) => (
           <ViewStatCard
             key={label}
             label={label}
-            value="—"
+            value={value}
             description={description}
             icon={icon}
             accentColor={color}
             gradient={gradient}
+            href={href}
           />
         ))}
       </div>
 
-      <ViewSection
-        icon={Info}
-        title="Bienvenido a PortPax"
-        description="Punto de entrada mientras se implementa la Fase 1 (Booking)."
-      >
-        <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          El layout, header, sidebar y panel de filtros permanecen como plantilla para las
-          vistas que se agreguen conforme avance el backend.
-        </p>
-        <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
-          Período seleccionado: {timeRange.date_from} → {timeRange.date_to}
-        </p>
-      </ViewSection>
+      {summary && (
+        <DashboardUpcomingSection
+          bookings={summary.upcomingBookings}
+          dateFrom={timeRange.date_from}
+          dateTo={timeRange.date_to}
+        />
+      )}
     </>
   );
 }

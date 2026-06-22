@@ -10,6 +10,10 @@ export type FetchBookingsParams = {
   shipping_line?: number;
   vessel?: number;
   status?: BookingStatus | "";
+  call_date_from?: string;
+  call_date_to?: string;
+  ordering?: string;
+  pageSize?: number;
 };
 
 export async function fetchBookings(
@@ -22,6 +26,10 @@ export async function fetchBookings(
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.status) query.set("status", params.status);
+  if (params.call_date_from) query.set("call_date_from", params.call_date_from);
+  if (params.call_date_to) query.set("call_date_to", params.call_date_to);
+  if (params.ordering) query.set("ordering", params.ordering);
+  if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Booking>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
