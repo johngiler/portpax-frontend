@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Pencil, Ship, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CountryLabel from "@/components/ui/CountryLabel";
@@ -17,11 +17,16 @@ type PortDetailHeroProps = {
   onDelete: () => void;
 };
 
-const LOGO_SIZE_EXPANDED = 72;
+const LOGO_SIZE_MIN = 48;
+const LOGO_SIZE_MAX = 120;
 const LOGO_SIZE_STUCK = 40;
 
 const CARD_BASE_CLASS =
   "relative overflow-hidden border border-zinc-200/80 bg-gradient-to-br from-[var(--admin-accent)]/10 via-white to-zinc-50 backdrop-blur-md dark:border-zinc-800 dark:from-[var(--admin-accent)]/20 dark:via-zinc-900 dark:to-zinc-950";
+
+function clampLogoSize(height: number): number {
+  return Math.min(Math.max(Math.round(height), LOGO_SIZE_MIN), LOGO_SIZE_MAX);
+}
 
 function getScrollParent(node: HTMLElement | null): HTMLElement | null {
   if (!node) return null;
@@ -38,12 +43,50 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
 
 export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHeroProps) {
   const largestVessel = formatLargestVessel(port);
+  const textRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const prevStuckRef = useRef(false);
+  const [expandedLogoSize, setExpandedLogoSize] = useState(LOGO_SIZE_MIN);
   const [isStuck, setIsStuck] = useState(false);
+  const [logoSizeTransition, setLogoSizeTransition] = useState(false);
   const shellTransition = useMotionSpring();
   const contentTransition = useMotionTransition(0.2);
 
-  const logoSize = isStuck ? LOGO_SIZE_STUCK : LOGO_SIZE_EXPANDED;
+  const logoSize = isStuck ? LOGO_SIZE_STUCK : expandedLogoSize;
+
+  useLayoutEffect(() => {
+    setLogoSizeTransition(false);
+
+    if (isStuck) return;
+
+    const el = textRef.current;
+    if (!el) return;
+
+    const syncLogoSize = () => {
+      setExpandedLogoSize(clampLogoSize(el.getBoundingClientRect().height));
+    };
+
+    syncLogoSize();
+    const observer = new ResizeObserver(syncLogoSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [
+    isStuck,
+    port.id,
+    port.name,
+    port.commercial_name,
+    port.status,
+    port.position_count,
+    port.bollard_total,
+    largestVessel,
+  ]);
+
+  useEffect(() => {
+    if (prevStuckRef.current !== isStuck) {
+      setLogoSizeTransition(true);
+      prevStuckRef.current = isStuck;
+    }
+  }, [isStuck]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -89,8 +132,10 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
           >
             <div
               className={[
-                "flex flex-col sm:flex-row sm:items-center sm:justify-between",
-                isStuck ? "gap-3 p-3 sm:px-6 sm:py-3" : "gap-6 p-6 sm:p-8",
+                "flex flex-col sm:flex-row sm:justify-between",
+                isStuck
+                  ? "gap-3 p-3 sm:items-center sm:px-6 sm:py-3"
+                  : "gap-6 p-6 sm:items-start sm:p-8",
               ].join(" ")}
             >
               <div className={isStuck ? "flex min-w-0 items-center gap-3" : "flex min-w-0 items-start gap-5"}>
@@ -106,14 +151,17 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                 </Link>
                 <div
                   className={[
-                    "flex min-w-0 items-center",
-                    isStuck ? "gap-3" : "gap-4",
+                    "flex min-w-0",
+                    isStuck ? "items-center gap-3" : "items-stretch gap-4",
                   ].join(" ")}
                 >
-                  <motion.div
-                    className="flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    animate={{ width: logoSize, height: logoSize }}
-                    transition={shellTransition}
+                  <div
+                    className={[
+                      "flex shrink-0 items-center justify-center overflow-hidden border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
+                      isStuck ? "rounded-lg" : "rounded-2xl",
+                      logoSizeTransition ? "transition-[width,height] duration-200 ease-out" : "",
+                    ].join(" ")}
+                    style={{ width: logoSize, height: logoSize }}
                   >
                     {port.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -125,13 +173,13 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                     ) : (
                       <span
                         className="font-bold text-[var(--admin-accent)]/40"
-                        style={{ fontSize: isStuck ? 16 : 26 }}
+                        style={{ fontSize: Math.max(logoSize * 0.38, 14) }}
                       >
                         {port.name.charAt(0)}
                       </span>
                     )}
-                  </motion.div>
-                  <div className="min-w-0 flex flex-col">
+                  </div>
+                  <div ref={textRef} className="min-w-0 flex flex-col">
                     <p
                       className={[
                         "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold uppercase text-[var(--admin-accent)]",
@@ -203,7 +251,12 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                   </div>
                 </div>
               </div>
-              <div className="flex shrink-0 flex-wrap gap-2 self-start sm:justify-end sm:self-center">
+              <div
+                className={[
+                  "flex shrink-0 flex-wrap gap-2 justify-end",
+                  isStuck ? "self-center sm:self-center" : "w-full self-end sm:w-auto sm:self-start",
+                ].join(" ")}
+              >
                 <DefaultButton type="button" onClick={onEdit}>
                   <span className="inline-flex items-center gap-2">
                     <Pencil className="h-4 w-4" />
