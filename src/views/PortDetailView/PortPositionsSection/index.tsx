@@ -39,9 +39,11 @@ function PositionCard({
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
+  const images = position.images ?? [];
+
   const viewerImages = useMemo(
-    () => position.images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
-    [position.images],
+    () => images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
+    [images],
   );
 
   function openViewer(index: number) {
@@ -52,7 +54,7 @@ function PositionCard({
   async function handleUpload(files: File[]) {
     setUploading(true);
     try {
-      const needsCover = !position.cover_image && position.images.length === 0;
+      const needsCover = !position.cover_image && images.length === 0;
       for (let i = 0; i < files.length; i += 1) {
         await createPositionImage(position.id, files[i], {
           isCover: needsCover && i === 0,
@@ -70,9 +72,9 @@ function PositionCard({
   }
 
   function resolveCoverImageId(): number | null {
-    if (!position.images.length) return null;
-    const cover = position.images.find((img) => img.image === position.cover_image);
-    return (cover ?? position.images[0]).id;
+    if (!images.length) return null;
+    const cover = images.find((img) => img.image === position.cover_image);
+    return (cover ?? images[0]).id;
   }
 
   async function handleDeleteCoverImage() {
@@ -88,7 +90,7 @@ function PositionCard({
             <button
               type="button"
               onClick={() => {
-                const coverIndex = position.images.findIndex((img) => img.image === position.cover_image);
+                const coverIndex = images.findIndex((img) => img.image === position.cover_image);
                 openViewer(coverIndex >= 0 ? coverIndex : 0);
               }}
               className="h-full w-full cursor-pointer"
@@ -155,9 +157,9 @@ function PositionCard({
             </button>
           </div>
         </div>
-        {position.images.length > 1 && (
+        {images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {position.images.map((img, index) => (
+            {images.map((img, index) => (
               <div key={img.id} className="relative shrink-0">
                 <button
                   type="button"

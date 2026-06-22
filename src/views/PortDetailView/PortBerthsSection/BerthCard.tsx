@@ -21,9 +21,11 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
+  const images = berth.images ?? [];
+
   const viewerImages = useMemo(
-    () => berth.images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
-    [berth.images],
+    () => images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
+    [images],
   );
 
   function openViewer(index: number) {
@@ -34,7 +36,7 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
   async function handleUpload(files: File[]) {
     setUploading(true);
     try {
-      const needsCover = !berth.cover_image && berth.images.length === 0;
+      const needsCover = !berth.cover_image && images.length === 0;
       for (let i = 0; i < files.length; i += 1) {
         await createBerthImage(berth.id, files[i], { isCover: needsCover && i === 0 });
       }
@@ -50,9 +52,9 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
   }
 
   function resolveCoverImageId(): number | null {
-    if (!berth.images.length) return null;
-    const cover = berth.images.find((img) => img.image === berth.cover_image);
-    return (cover ?? berth.images[0]).id;
+    if (!images.length) return null;
+    const cover = images.find((img) => img.image === berth.cover_image);
+    return (cover ?? images[0]).id;
   }
 
   async function handleDeleteCoverImage() {
@@ -70,7 +72,7 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
             <button
               type="button"
               onClick={() => {
-                const coverIndex = berth.images.findIndex((img) => img.image === berth.cover_image);
+                const coverIndex = images.findIndex((img) => img.image === berth.cover_image);
                 openViewer(coverIndex >= 0 ? coverIndex : 0);
               }}
               className="h-full w-full cursor-pointer"
@@ -141,9 +143,9 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
           </div>
         </dl>
 
-        {berth.images.length > 1 && (
+        {images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {berth.images.map((img, index) => (
+            {images.map((img, index) => (
               <div key={img.id} className="relative shrink-0">
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactCountryFlag } from "react-country-flag";
+import CountryFlag from "@/components/ui/CountryFlag";
 import { countryToIso2 } from "@/lib/countryCode";
 
 type CountryLabelProps = {
@@ -17,12 +17,9 @@ export default function CountryLabel({
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>
       {iso2 ? (
-        <ReactCountryFlag
-          countryCode={iso2}
-          svg
-          aria-hidden
+        <CountryFlag
+          iso2={iso2}
           className="shrink-0 overflow-hidden rounded-[2px] shadow-sm ring-1 ring-black/5"
-          style={{ width: "1.15em", height: "0.85em" }}
         />
       ) : null}
       <span>{country}</span>

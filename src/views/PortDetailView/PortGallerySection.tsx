@@ -17,14 +17,15 @@ type PortGallerySectionProps = {
 };
 
 export default function PortGallerySection({ portId, images, onChange }: PortGallerySectionProps) {
+  const galleryImages = images ?? [];
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
   const viewerImages = useMemo(
-    () => images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
-    [images],
+    () => galleryImages.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
+    [galleryImages],
   );
 
   function handleReject(reason: "oversized" | "invalid") {
@@ -35,7 +36,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
     setUploading(true);
     setError(null);
     try {
-      const needsCover = images.length === 0;
+      const needsCover = galleryImages.length === 0;
       for (let i = 0; i < files.length; i += 1) {
         await createPortImage(portId, files[i], { isCover: needsCover && i === 0 });
       }
@@ -62,7 +63,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
     setViewerOpen(true);
   }
 
-  const hasImages = images.length > 0;
+  const hasImages = galleryImages.length > 0;
 
   return (
     <ViewSection
@@ -92,7 +93,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
       {hasImages && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {images.map((img, index) => (
+            {galleryImages.map((img, index) => (
               <figure
                 key={img.id}
                 className="group relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800"
