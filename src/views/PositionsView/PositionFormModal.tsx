@@ -37,8 +37,6 @@ function emptyForm(portId = 0): FormState {
     min_draft_m: null,
     bollard_count: null,
     fender_count: null,
-    out_of_service: false,
-    is_projection: false,
     notes: "",
     latitude: null,
     longitude: null,
@@ -57,8 +55,6 @@ function positionToForm(position: Position): FormState {
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
     bollard_count: position.bollard_count,
     fender_count: position.fender_count,
-    out_of_service: position.out_of_service,
-    is_projection: position.is_projection,
     notes: position.notes,
     latitude: position.latitude != null ? Number(position.latitude) : null,
     longitude: position.longitude != null ? Number(position.longitude) : null,
@@ -181,7 +177,7 @@ export default function PositionFormModal({
         </div>
       }
     >
-      <form id="position-form" onSubmit={handleSubmit} className="max-h-[min(72vh,680px)] overflow-y-auto pr-1">
+      <form id="position-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
           <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>
@@ -298,35 +294,20 @@ export default function PositionFormModal({
           </FormSection>
 
           <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-                <input
-                  type="checkbox"
-                  checked={form.out_of_service}
-                  onChange={(e) => setField("out_of_service", e.target.checked)}
-                  className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
-                />
-                Fuera de servicio
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-                <input
-                  type="checkbox"
-                  checked={form.is_projection}
-                  onChange={(e) => setField("is_projection", e.target.checked)}
-                  className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
-                />
-                Proyección
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setField("is_active", e.target.checked)}
-                  className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
-                />
-                Activa
-              </label>
-            </div>
+            <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-200">
+              <span className="font-medium">Activa</span>
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => setField("is_active", e.target.checked)}
+                className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
+              />
+            </label>
+            <p className="mt-2 text-xs text-zinc-500">
+              {form.is_active
+                ? "La posición aparece en listados y asignaciones."
+                : "Oculta para usuarios; conserva su historial."}
+            </p>
           </div>
         </div>
       </form>

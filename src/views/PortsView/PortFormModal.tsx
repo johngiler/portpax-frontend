@@ -174,7 +174,7 @@ export default function PortFormModal({
         </div>
       }
     >
-      <form id="port-form" onSubmit={handleSubmit} className="max-h-[min(72vh,720px)] overflow-y-auto pr-1">
+      <form id="port-form" onSubmit={handleSubmit}>
         <div className="grid gap-5 lg:grid-cols-[minmax(220px,260px)_1fr]">
           <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
             <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">

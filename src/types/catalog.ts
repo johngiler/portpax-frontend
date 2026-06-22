@@ -224,10 +224,8 @@ export type Position = {
   min_draft_m: string | null;
   bollard_count: number | null;
   fender_count: number | null;
-  out_of_service: boolean;
   effective_from: string | null;
   effective_until: string | null;
-  is_projection: boolean;
   notes: string;
   latitude: string | null;
   longitude: string | null;
@@ -246,8 +244,6 @@ export type PositionPayload = {
   min_draft_m: number | null;
   bollard_count: number | null;
   fender_count: number | null;
-  out_of_service: boolean;
-  is_projection: boolean;
   notes: string;
   latitude: number | null;
   longitude: number | null;

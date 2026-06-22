@@ -1,10 +1,13 @@
 let lockCount = 0;
-let previousOverflow = "";
+let previousBodyOverflow = "";
+let previousHtmlOverflow = "";
 
 export function lockBodyScroll(): void {
   if (lockCount === 0) {
-    previousOverflow = document.body.style.overflow;
+    previousBodyOverflow = document.body.style.overflow;
+    previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
   }
   lockCount += 1;
 }
@@ -13,6 +16,7 @@ export function unlockBodyScroll(): void {
   if (lockCount === 0) return;
   lockCount -= 1;
   if (lockCount === 0) {
-    document.body.style.overflow = previousOverflow;
+    document.body.style.overflow = previousBodyOverflow;
+    document.documentElement.style.overflow = previousHtmlOverflow;
   }
 }

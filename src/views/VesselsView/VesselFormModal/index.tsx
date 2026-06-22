@@ -143,11 +143,7 @@ export default function VesselFormModal({
         </div>
       }
     >
-      <form
-        id="vessel-form"
-        onSubmit={handleSubmit}
-        className="max-h-[70vh] overflow-y-auto pr-1"
-      >
+      <form id="vessel-form" onSubmit={handleSubmit}>
         <VesselFormFields
           form={form}
           errors={errors}

@@ -139,7 +139,7 @@ export default function BerthFormModal({
         </div>
       }
     >
-      <form id="berth-form" onSubmit={handleSubmit} className="max-h-[min(72vh,680px)] overflow-y-auto pr-1">
+      <form id="berth-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
           <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>

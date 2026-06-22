@@ -89,7 +89,7 @@ export default function Modal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-6 ${isAnimatingOut ? "pointer-events-none" : ""}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-6 ${isAnimatingOut ? "pointer-events-none" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -120,7 +120,9 @@ export default function Modal({
             <X className="h-5 w-5" strokeWidth={1.5} />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pt-5">
+          {children}
+        </div>
         {footer != null && (
           <div className="flex shrink-0 justify-end gap-3 border-t border-zinc-200/70 bg-zinc-50/80 p-4 dark:border-zinc-700/70 dark:bg-zinc-900">
             {footer}

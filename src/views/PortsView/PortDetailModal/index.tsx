@@ -168,13 +168,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                     </MainTableTd>
                     <MainTableTd>{position.bollard_count ?? "—"}</MainTableTd>
                     <MainTableTd>{position.fender_count ?? "—"}</MainTableTd>
-                    <MainTableTd>
-                      {position.out_of_service
-                        ? "Fuera de servicio"
-                        : position.is_active
-                          ? "Activa"
-                          : "Inactiva"}
-                    </MainTableTd>
+                    <MainTableTd>{position.is_active ? "Activa" : "Inactiva"}</MainTableTd>
                     <MainTableTd className="text-center">
                       <TableActionButtons
                         onEdit={() => openEdit(position)}

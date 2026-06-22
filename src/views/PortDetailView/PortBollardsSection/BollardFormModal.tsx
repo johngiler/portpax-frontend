@@ -128,7 +128,7 @@ export default function BollardFormModal({
         </div>
       }
     >
-      <form id="bollard-form" onSubmit={handleSubmit} className="max-h-[min(72vh,640px)] overflow-y-auto pr-1">
+      <form id="bollard-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
           <FormSection title="Especificación" description="Capacidad, tipo y cantidad.">
             <FormField
