@@ -83,9 +83,6 @@ export default function PortDetailView() {
 
   async function handleDelete() {
     if (!port) return;
-    if (!window.confirm(`¿Eliminar el puerto ${port.name}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
     setViewError(null);
     try {
       await deletePort(port.id);
@@ -107,11 +104,12 @@ export default function PortDetailView() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="pb-8">
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
       <PortDetailHero port={port} onEdit={() => setEditOpen(true)} onDelete={handleDelete} />
 
+      <div className="mt-6 space-y-6">
       <PortDetailsSection port={port} />
 
       <PortBollardsSection
@@ -126,6 +124,7 @@ export default function PortDetailView() {
       <PortBerthsSection portId={port.id} berths={port.berths} onChange={loadPort} />
 
       <PortPositionsSection port={port} onChange={loadPort} />
+      </div>
 
       <PortFormModal
         open={editOpen}

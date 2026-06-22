@@ -1,5 +1,6 @@
 "use client";
 
+import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 
 type PortLogoFieldProps = {
@@ -62,14 +63,16 @@ export default function PortLogoField({
             onFiles={(files) => onFileChange(files[0] ?? null)}
           />
           {canRemove && (
-            <button
-              type="button"
+            <ConfirmDeleteButton
+              deleteLabel="el logo del puerto"
+              onDelete={onRemove}
               disabled={disabled}
-              onClick={onRemove}
               className={`cursor-pointer text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400 ${compact ? "text-center" : "text-left"}`}
+              ariaLabel="Quitar logo"
+              title="Quitar logo"
             >
               Quitar logo
-            </button>
+            </ConfirmDeleteButton>
           )}
         </div>
       </div>

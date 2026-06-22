@@ -1,7 +1,8 @@
 "use client";
 
-import { Images, Trash2 } from "lucide-react";
+import { Images } from "lucide-react";
 import { useMemo, useState } from "react";
+import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
@@ -112,14 +113,12 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
                     Portada
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={() => handleDelete(img.id)}
+                <ConfirmDeleteButton
+                  deleteLabel="esta imagen de la galería"
+                  onDelete={() => handleDelete(img.id)}
                   className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  aria-label="Eliminar imagen"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                  ariaLabel="Eliminar imagen"
+                />
               </figure>
             ))}
           </div>

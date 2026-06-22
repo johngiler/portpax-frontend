@@ -1,7 +1,7 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import TableActionButtons from "@/components/tables/TableActionButtons";
@@ -81,17 +81,12 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={berth.cover_image} alt="" className="h-full w-full object-cover" />
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleDeleteCoverImage();
-              }}
+            <ConfirmDeleteButton
+              deleteLabel={`la imagen de portada del muelle ${berth.code}`}
+              onDelete={() => void handleDeleteCoverImage()}
               className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              aria-label="Eliminar imagen"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              ariaLabel="Eliminar imagen"
+            />
           </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
@@ -156,14 +151,14 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteImage(img.id)}
+                <ConfirmDeleteButton
+                  deleteLabel={`esta imagen del muelle ${berth.code}`}
+                  onDelete={() => void handleDeleteImage(img.id)}
                   className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-red-600 text-[10px] text-white"
-                  aria-label="Eliminar"
+                  ariaLabel="Eliminar"
                 >
                   ×
-                </button>
+                </ConfirmDeleteButton>
               </div>
             ))}
           </div>

@@ -2,6 +2,7 @@
 
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useConfirm } from "@/contexts/ConfirmContext";
+import { buildDeleteConfirmOptions } from "@/lib/confirmDelete";
 
 const btnClass =
   "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100 disabled:opacity-40 disabled:pointer-events-none";
@@ -24,13 +25,7 @@ export default function TableActionButtons({
 
   function handleDeleteClick() {
     if (onDelete) {
-      requestConfirm({
-        title: "Confirmar eliminación",
-        message: `¿Eliminar ${deleteLabel}? Esta acción no se puede deshacer.`,
-        confirmLabel: "Eliminar",
-        danger: true,
-        onConfirm: onDelete,
-      });
+      requestConfirm(buildDeleteConfirmOptions(deleteLabel, onDelete));
     }
   }
 

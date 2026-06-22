@@ -1,11 +1,13 @@
 "use client";
 
-import { LayoutGrid, Pencil, Trash2 } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 import { useMemo, useState } from "react";
+import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
+import TableActionButtons from "@/components/tables/TableActionButtons";
 import { ApiError } from "@/services/apiClient";
 import {
   createPosition,
@@ -99,17 +101,12 @@ function PositionCard({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleDeleteCoverImage();
-              }}
+            <ConfirmDeleteButton
+              deleteLabel={`la imagen de portada de la posición ${position.code}`}
+              onDelete={() => void handleDeleteCoverImage()}
               className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              aria-label="Eliminar imagen"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+              ariaLabel="Eliminar imagen"
+            />
           </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
@@ -143,24 +140,11 @@ function PositionCard({
               </div>
             </dl>
           </div>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={onEdit}
-              className="cursor-pointer rounded-md p-2 text-zinc-500 hover:bg-zinc-100 hover:text-[var(--admin-accent)] dark:hover:bg-zinc-800"
-              aria-label="Editar posición"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="cursor-pointer rounded-md p-2 text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
-              aria-label="Eliminar posición"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          <TableActionButtons
+            onEdit={onEdit}
+            onDelete={onDelete}
+            deleteLabel={`la posición ${position.code}`}
+          />
         </div>
         {images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -175,14 +159,14 @@ function PositionCard({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteImage(img.id)}
+                <ConfirmDeleteButton
+                  deleteLabel={`esta imagen de la posición ${position.code}`}
+                  onDelete={() => void handleDeleteImage(img.id)}
                   className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-red-600 text-[10px] text-white"
-                  aria-label="Eliminar"
+                  ariaLabel="Eliminar"
                 >
                   ×
-                </button>
+                </ConfirmDeleteButton>
               </div>
             ))}
           </div>
@@ -238,7 +222,6 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
   }
 
   async function handleDelete(position: PositionDetail) {
-    if (!window.confirm(`¿Eliminar la posición ${position.code}?`)) return;
     setError(null);
     try {
       await deletePosition(position.id);

@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { ArrowLeft, Pencil, Ship, Trash2 } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CountryLabel from "@/components/ui/CountryLabel";
+import { useMotionSpring, useMotionTransition } from "@/lib/motionPresets";
 import type { PortDetail } from "@/types/catalog";
 import { formatLargestVessel, portDisplayName, portStatusLabel } from "@/types/catalog";
 
@@ -14,106 +17,262 @@ type PortDetailHeroProps = {
   onDelete: () => void;
 };
 
-const LOGO_SIZE_MIN = 48;
+const LOGO_SIZE_EXPANDED_MIN = 48;
+const LOGO_SIZE_STUCK = 40;
+
+const CARD_BASE_CLASS =
+  "relative overflow-hidden border border-zinc-200/80 bg-gradient-to-br from-[var(--admin-accent)]/10 via-white to-zinc-50 backdrop-blur-md dark:border-zinc-800 dark:from-[var(--admin-accent)]/20 dark:via-zinc-900 dark:to-zinc-950";
+
+function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+  if (!node) return null;
+  let parent = node.parentElement;
+  while (parent) {
+    const { overflowY, overflow } = getComputedStyle(parent);
+    if (overflowY === "auto" || overflowY === "scroll" || overflow === "auto" || overflow === "scroll") {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+}
 
 export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHeroProps) {
   const largestVessel = formatLargestVessel(port);
   const textRef = useRef<HTMLDivElement>(null);
-  const [logoSize, setLogoSize] = useState(LOGO_SIZE_MIN);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [expandedLogoSize, setExpandedLogoSize] = useState(LOGO_SIZE_EXPANDED_MIN);
+  const [isStuck, setIsStuck] = useState(false);
+  const shellTransition = useMotionSpring();
+  const contentTransition = useMotionTransition(0.2);
+
+  const displayLogoSize = isStuck ? LOGO_SIZE_STUCK : expandedLogoSize;
 
   useLayoutEffect(() => {
+    if (isStuck) return;
     const el = textRef.current;
     if (!el) return;
 
     const syncLogoSize = () => {
       const height = el.getBoundingClientRect().height;
-      setLogoSize(Math.max(Math.round(height), LOGO_SIZE_MIN));
+      setExpandedLogoSize(Math.max(Math.round(height), LOGO_SIZE_EXPANDED_MIN));
     };
 
     syncLogoSize();
     const observer = new ResizeObserver(syncLogoSize);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [port.id, port.name, port.commercial_name, port.status, port.position_count, port.bollard_total, largestVessel]);
+  }, [
+    isStuck,
+    port.id,
+    port.name,
+    port.commercial_name,
+    port.status,
+    port.position_count,
+    port.bollard_total,
+    largestVessel,
+  ]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const scrollRoot = getScrollParent(sentinel);
+    if (!scrollRoot) return;
+
+    const updateStuck = () => {
+      const rootTop = scrollRoot.getBoundingClientRect().top;
+      const sentinelTop = sentinel.getBoundingClientRect().top;
+      setIsStuck(sentinelTop < rootTop - 1);
+    };
+
+    updateStuck();
+    scrollRoot.addEventListener("scroll", updateStuck, { passive: true });
+    window.addEventListener("resize", updateStuck);
+
+    return () => {
+      scrollRoot.removeEventListener("scroll", updateStuck);
+      window.removeEventListener("resize", updateStuck);
+    };
+  }, [port.id]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-[var(--admin-accent)]/10 via-white to-zinc-50 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:from-[var(--admin-accent)]/20 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
-        <div className="flex min-w-0 items-start gap-5">
-          <Link
-            href="/ports"
-            className="mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200/80 bg-white/80 text-zinc-600 transition-colors hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300"
-            aria-label="Volver a puertos"
+    <>
+      <div ref={sentinelRef} className="h-px w-full" aria-hidden />
+      {/* Negative top only when stuck — cancels <main> padding for flush header */}
+      <motion.div
+        layout
+        className={[
+          "sticky z-20",
+          isStuck ? "-top-4 sm:-top-6 lg:-top-8" : "top-0",
+        ].join(" ")}
+        transition={shellTransition}
+      >
+        <motion.div
+          layout
+          className={isStuck ? "-mx-4 sm:-mx-6 lg:-mx-8" : ""}
+          transition={shellTransition}
+        >
+          <motion.div
+            layout
+            className={[
+              CARD_BASE_CLASS,
+              isStuck ? "border-x-0 border-t-0 shadow-md" : "shadow-[var(--admin-card-shadow)]",
+            ].join(" ")}
+            animate={{ borderRadius: isStuck ? 0 : 16 }}
+            transition={shellTransition}
           >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="flex min-w-0 items-stretch gap-4">
-            <div
-              className="flex shrink-0 items-center justify-center self-stretch overflow-hidden rounded-2xl border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-              style={{ width: logoSize, height: logoSize }}
+            <motion.div
+              layout
+              className={[
+                "flex flex-col sm:flex-row sm:items-center sm:justify-between",
+                isStuck ? "gap-3 p-3 sm:px-6 sm:py-3" : "gap-6 p-6 sm:p-8",
+              ].join(" ")}
+              transition={shellTransition}
             >
-              {port.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={port.logo} alt="" className="h-full w-full object-contain p-1.5" />
-              ) : (
-                <span
-                  className="font-bold text-[var(--admin-accent)]/40"
-                  style={{ fontSize: Math.max(logoSize * 0.38, 14) }}
+              <div className={isStuck ? "flex min-w-0 items-center gap-3" : "flex min-w-0 items-start gap-5"}>
+                <Link
+                  href="/ports"
+                  className={[
+                    "flex shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200/80 bg-white/80 text-zinc-600 transition-colors hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300",
+                    isStuck ? "h-8 w-8" : "mt-1 h-9 w-9",
+                  ].join(" ")}
+                  aria-label="Volver a puertos"
                 >
-                  {port.name.charAt(0)}
-                </span>
-              )}
-            </div>
-            <div ref={textRef} className="min-w-0 flex flex-col">
-              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-semibold uppercase tracking-widest text-[var(--admin-accent)]">
-                <CountryLabel country={port.country} />
-                {port.region ? <span>· {port.region}</span> : null}
-              </p>
-              <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                {portDisplayName(port)}
-              </h1>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <span className="rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-xs font-medium text-[var(--admin-accent)]">
-                  {portStatusLabel(port.status)}
-                </span>
-                <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                  {port.position_count} posiciones
-                </span>
-                {port.bollard_total > 0 && (
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                    {port.bollard_total} bitas
-                  </span>
-                )}
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+                <div
+                  className={[
+                    "flex min-w-0 items-center",
+                    isStuck ? "gap-3" : "items-stretch gap-4",
+                  ].join(" ")}
+                >
+                  <motion.div
+                    layout
+                    className={[
+                      "flex shrink-0 items-center justify-center overflow-hidden border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
+                      isStuck ? "rounded-lg" : "self-stretch rounded-2xl",
+                    ].join(" ")}
+                    animate={{
+                      width: displayLogoSize,
+                      height: displayLogoSize,
+                    }}
+                    transition={shellTransition}
+                  >
+                    {port.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={port.logo}
+                        alt=""
+                        className={isStuck ? "h-full w-full object-contain p-1" : "h-full w-full object-contain p-1.5"}
+                      />
+                    ) : (
+                      <span
+                        className="font-bold text-[var(--admin-accent)]/40"
+                        style={{
+                          fontSize: isStuck ? 16 : Math.max(displayLogoSize * 0.38, 14),
+                        }}
+                      >
+                        {port.name.charAt(0)}
+                      </span>
+                    )}
+                  </motion.div>
+                  <div ref={textRef} className="min-w-0 flex flex-col">
+                    <p
+                      className={[
+                        "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold uppercase text-[var(--admin-accent)]",
+                        isStuck ? "text-[10px] tracking-wide" : "text-xs tracking-widest",
+                      ].join(" ")}
+                    >
+                      <CountryLabel country={port.country} />
+                      {port.region ? <span>· {port.region}</span> : null}
+                    </p>
+                    <motion.h1
+                      layout
+                      className={[
+                        "truncate font-bold tracking-tight text-zinc-900 dark:text-zinc-50",
+                        isStuck ? "text-base" : "mt-1 text-2xl",
+                      ].join(" ")}
+                      transition={shellTransition}
+                    >
+                      {portDisplayName(port)}
+                    </motion.h1>
+                    <div className={isStuck ? "mt-1 flex flex-wrap gap-1.5" : "mt-2 flex flex-wrap gap-2"}>
+                      <span
+                        className={[
+                          "rounded-full bg-[var(--admin-accent)]/10 font-medium text-[var(--admin-accent)]",
+                          isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                        ].join(" ")}
+                      >
+                        {portStatusLabel(port.status)}
+                      </span>
+                      <span
+                        className={[
+                          "rounded-full bg-zinc-100 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+                          isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                        ].join(" ")}
+                      >
+                        {port.position_count} posiciones
+                      </span>
+                      {port.bollard_total > 0 && (
+                        <span
+                          className={[
+                            "rounded-full bg-zinc-100 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+                            isStuck ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
+                          ].join(" ")}
+                        >
+                          {port.bollard_total} bitas
+                        </span>
+                      )}
+                    </div>
+                    <AnimatePresence initial={false}>
+                      {!isStuck && (
+                        <motion.p
+                          key="largest-vessel"
+                          layout
+                          initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                          animate={{ opacity: 1, height: "auto", marginTop: 12 }}
+                          exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                          transition={contentTransition}
+                          className="flex items-center gap-1.5 overflow-hidden text-sm text-zinc-600 dark:text-zinc-400"
+                        >
+                          <Ship
+                            className="h-4 w-4 shrink-0 text-[var(--admin-accent)]"
+                            strokeWidth={1.75}
+                          />
+                          <span>
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                              Mayor barco atracado:{" "}
+                            </span>
+                            {largestVessel ?? "Sin registros"}
+                          </span>
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               </div>
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                <Ship className="h-4 w-4 shrink-0 text-[var(--admin-accent)]" strokeWidth={1.75} />
-                <span>
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Mayor barco atracado:{" "}
+              <div className="flex shrink-0 flex-wrap gap-2 self-start sm:justify-end sm:self-center">
+                <DefaultButton type="button" onClick={onEdit}>
+                  <span className="inline-flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Editar
                   </span>
-                  {largestVessel ?? "Sin registros"}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2 self-start sm:justify-end">
-          <DefaultButton type="button" onClick={onEdit}>
-            <span className="inline-flex items-center gap-2">
-              <Pencil className="h-4 w-4" />
-              Editar
-            </span>
-          </DefaultButton>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
-          >
-            <Trash2 className="h-4 w-4" />
-            Eliminar
-          </button>
-        </div>
-      </div>
-    </div>
+                </DefaultButton>
+                <ConfirmDeleteButton
+                  deleteLabel={`el puerto ${port.name}`}
+                  onDelete={onDelete}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  ariaLabel="Eliminar puerto"
+                  title="Eliminar puerto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar
+                </ConfirmDeleteButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </>
   );
 }
