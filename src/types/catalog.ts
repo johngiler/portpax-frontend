@@ -211,6 +211,11 @@ export type BerthPayload = {
   is_active: boolean;
 };
 
+export type PositionComponentRef = {
+  id: number;
+  code: string;
+};
+
 export type Position = {
   id: number;
   port: number;
@@ -231,6 +236,8 @@ export type Position = {
   longitude: string | null;
   sort_order: number;
   is_active: boolean;
+  is_combined: boolean;
+  component_positions: PositionComponentRef[];
   created_at: string;
   updated_at: string;
 };
@@ -249,6 +256,7 @@ export type PositionPayload = {
   longitude: number | null;
   sort_order: number;
   is_active: boolean;
+  component_position_ids?: number[] | null;
 };
 
 export const POSITION_TYPE_OPTIONS: { value: PositionType; label: string }[] = [

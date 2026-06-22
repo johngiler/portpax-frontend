@@ -5,17 +5,19 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
+import { deriveCombinedDefaults } from "@/lib/positionCombination";
 import { fetchBerths } from "@/services/catalogs/berthService";
 import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchPositions } from "@/services/catalogs/positionService";
 import type { Position, PositionPayload, PositionType } from "@/types/catalog";
 import { POSITION_TYPE_OPTIONS, portDisplayName, positionTypeLabel } from "@/types/catalog";
+import CombinedPositionFields from "./CombinedPositionFields";
 
 export type PositionFormMode = "create" | "edit";
 
 type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
-  /** When set, port is fixed (e.g. port detail modal). */
   lockedPortId?: number;
   initial?: Position | null;
   saving: boolean;
@@ -25,7 +27,9 @@ type PositionFormModalProps = {
 
 type FormState = PositionPayload;
 
-type FieldErrors = Partial<Record<keyof FormState, string>>;
+type FieldErrors = Partial<Record<keyof FormState, string>> & {
+  component?: string;
+};
 
 function emptyForm(portId = 0): FormState {
   return {
@@ -63,10 +67,14 @@ function positionToForm(position: Position): FormState {
   };
 }
 
-function validate(form: FormState): FieldErrors {
+function validate(form: FormState, isCombined: boolean, componentA: number, componentB: number): FieldErrors {
   const errors: FieldErrors = {};
   if (!form.port) errors.port = "Requerido";
   if (!form.code.trim()) errors.code = "Requerido";
+  if (isCombined) {
+    if (!componentA || !componentB) errors.component = "Selecciona dos posiciones base.";
+    else if (componentA === componentB) errors.component = "Las posiciones base deben ser distintas.";
+  }
   return errors;
 }
 
@@ -83,22 +91,47 @@ export default function PositionFormModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
   const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [isCombined, setIsCombined] = useState(false);
+  const [componentAId, setComponentAId] = useState(0);
+  const [componentBId, setComponentBId] = useState(0);
+  const [basePositions, setBasePositions] = useState<Position[]>([]);
+  const [loadingBasePositions, setLoadingBasePositions] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     const defaultPort = lockedPortId ?? initial?.port ?? 0;
     setForm(initial ? positionToForm(initial) : emptyForm(defaultPort));
     setErrors({});
+    setIsCombined(Boolean(initial?.is_combined));
+    setComponentAId(initial?.component_positions[0]?.id ?? 0);
+    setComponentBId(initial?.component_positions[1]?.id ?? 0);
     if (!lockedPortId) {
       fetchPorts({ pageSize: 100 })
         .then((data) =>
-          setPortOptions(
-            data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })),
-          ),
+          setPortOptions(data.results.map((p) => ({ value: p.id, label: portDisplayName(p) }))),
         )
         .catch(() => setPortOptions([]));
     }
   }, [open, initial, lockedPortId]);
+
+  useEffect(() => {
+    if (!isCombined || !componentAId || !componentBId || componentAId === componentBId) return;
+    const first = basePositions.find((p) => p.id === componentAId);
+    const second = basePositions.find((p) => p.id === componentBId);
+    if (!first || !second) return;
+
+    const defaults = deriveCombinedDefaults(first, second);
+    setForm((prev) => ({
+      ...prev,
+      position_type: "pier",
+      code: defaults.code,
+      max_loa_m: defaults.max_loa_m,
+      min_draft_m: defaults.min_draft_m,
+      bollard_count: defaults.bollard_count,
+      fender_count: defaults.fender_count,
+      berth: defaults.berth,
+    }));
+  }, [isCombined, componentAId, componentBId, basePositions]);
 
   useEffect(() => {
     if (!open || !form.port) {
@@ -106,11 +139,24 @@ export default function PositionFormModal({
       return;
     }
     fetchBerths({ port: form.port, pageSize: 100 })
-      .then((data) =>
-        setBerthOptions(data.results.map((b) => ({ value: b.id, label: b.code }))),
-      )
+      .then((data) => setBerthOptions(data.results.map((b) => ({ value: b.id, label: b.code }))))
       .catch(() => setBerthOptions([]));
   }, [open, form.port]);
+
+  useEffect(() => {
+    if (!open || !isCombined || !form.port) {
+      setBasePositions([]);
+      return;
+    }
+    setLoadingBasePositions(true);
+    fetchPositions({ port: form.port, combinable: true, pageSize: 100 })
+      .then((data) => {
+        const results = data.results.filter((p) => p.id !== initial?.id);
+        setBasePositions(results);
+      })
+      .catch(() => setBasePositions([]))
+      .finally(() => setLoadingBasePositions(false));
+  }, [open, isCombined, form.port, initial?.id]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => {
@@ -131,24 +177,47 @@ export default function PositionFormModal({
     });
   }
 
+  function handleCombinedToggle(next: boolean) {
+    setIsCombined(next);
+    setComponentAId(0);
+    setComponentBId(0);
+    if (next) {
+      setForm((prev) => ({ ...prev, position_type: "pier", berth: null, code: "" }));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const nextErrors = validate(form);
+    const nextErrors = validate(form, isCombined, componentAId, componentBId);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
-    await onSubmit({
+
+    const payload: PositionPayload = {
       ...form,
       port: lockedPortId ?? form.port,
       code: form.code.trim().toUpperCase(),
       notes: form.notes.trim(),
       berth: form.position_type === "anchorage" ? null : form.berth,
-    });
+    };
+
+    if (isCombined) {
+      payload.position_type = "pier";
+      payload.component_position_ids = [componentAId, componentBId];
+    } else if (mode === "edit" && initial?.is_combined) {
+      payload.component_position_ids = [];
+    }
+
+    await onSubmit(payload);
   }
 
   const title = mode === "create" ? "Nueva posición" : "Editar posición";
   const displayName = form.code.trim() || "Posición sin código";
+  const baseOptions = basePositions.map((p) => ({
+    value: p.id,
+    label: `${p.code}${p.max_loa_m ? ` · ${p.max_loa_m} m` : ""}`,
+  }));
 
   return (
     <Modal
@@ -181,12 +250,53 @@ export default function PositionFormModal({
         <div className="space-y-4">
           <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>
-            <span className="mt-2 inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
-              {positionTypeLabel(form.position_type)}
-            </span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
+                {positionTypeLabel(form.position_type)}
+              </span>
+              {isCombined && (
+                <span className="inline-flex rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  Combinada
+                </span>
+              )}
+            </div>
           </div>
 
-          <FormSection title="Identificación" description="Puerto, código y asignación de muelle.">
+          {mode === "create" && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleCombinedToggle(false)}
+                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  !isCombined
+                    ? "bg-[var(--admin-accent)] text-white"
+                    : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
+                }`}
+              >
+                Posición simple
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCombinedToggle(true)}
+                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isCombined
+                    ? "bg-[var(--admin-accent)] text-white"
+                    : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
+                }`}
+              >
+                Posición combinada
+              </button>
+            </div>
+          )}
+
+          <FormSection
+            title="Identificación"
+            description={
+              isCombined
+                ? "Posición virtual para barcos que ocupan dos slots de muelle."
+                : "Puerto, código y asignación de muelle."
+            }
+          >
             {!lockedPortId && (
               <FormFieldSelect<number>
                 label="Puerto"
@@ -201,6 +311,18 @@ export default function PositionFormModal({
                 disabled={mode === "edit"}
               />
             )}
+            {isCombined && form.port > 0 && (
+              <CombinedPositionFields
+                componentAId={componentAId}
+                componentBId={componentBId}
+                options={baseOptions}
+                loading={loadingBasePositions}
+                disabled={saving}
+                error={errors.component}
+                onChangeA={setComponentAId}
+                onChangeB={setComponentBId}
+              />
+            )}
             <FormField
               label="Código"
               name="code"
@@ -208,25 +330,29 @@ export default function PositionFormModal({
               onChange={(v) => setField("code", String(v))}
               required
               error={errors.code}
-              placeholder="P1"
+              placeholder={isCombined ? "P1+P2" : "P1"}
             />
-            <FormFieldSelect<PositionType>
-              label="Tipo"
-              name="position_type"
-              value={form.position_type}
-              onChange={(v) => setField("position_type", v)}
-              options={POSITION_TYPE_OPTIONS}
-            />
-            {form.position_type === "pier" && form.port > 0 && (
-              <FormFieldSelect<number>
-                label="Muelle"
-                name="berth"
-                value={form.berth ?? 0}
-                onChange={(v) => setField("berth", v === 0 ? null : v)}
-                options={berthOptions}
-                optionLabel="Sin muelle asignado"
-                emptyValue={0}
-              />
+            {!isCombined && (
+              <>
+                <FormFieldSelect<PositionType>
+                  label="Tipo"
+                  name="position_type"
+                  value={form.position_type}
+                  onChange={(v) => setField("position_type", v)}
+                  options={POSITION_TYPE_OPTIONS}
+                />
+                {form.position_type === "pier" && form.port > 0 && (
+                  <FormFieldSelect<number>
+                    label="Muelle"
+                    name="berth"
+                    value={form.berth ?? 0}
+                    onChange={(v) => setField("berth", v === 0 ? null : v)}
+                    options={berthOptions}
+                    optionLabel="Sin muelle asignado"
+                    emptyValue={0}
+                  />
+                )}
+              </>
             )}
           </FormSection>
 

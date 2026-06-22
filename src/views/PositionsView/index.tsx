@@ -208,7 +208,14 @@ export default function PositionsView() {
             ) : (
               positions.map((position) => (
                 <MainTableRow key={position.id}>
-                  <MainTableTd className="font-mono font-medium">{position.code}</MainTableTd>
+                  <MainTableTd className="font-mono font-medium">
+                    <div>{position.code}</div>
+                    {position.is_combined && position.component_positions.length > 0 && (
+                      <div className="mt-0.5 text-[11px] font-normal text-zinc-500">
+                        {position.component_positions.map((p) => p.code).join(" + ")}
+                      </div>
+                    )}
+                  </MainTableTd>
                   <MainTableTd>{position.port_name}</MainTableTd>
                   <MainTableTd>{positionTypeLabel(position.position_type)}</MainTableTd>
                   <MainTableTd>{position.berth_code || "—"}</MainTableTd>

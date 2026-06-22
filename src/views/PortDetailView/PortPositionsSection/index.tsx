@@ -126,6 +126,11 @@ function PositionCard({
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
               {positionTypeLabel(position.position_type)}
               {position.berth_code ? ` · ${position.berth_code}` : ""}
+              {position.is_combined && position.component_positions.length > 0 && (
+                <span className="ml-1 normal-case text-amber-700 dark:text-amber-300">
+                  · {position.component_positions.map((p) => p.code).join(" + ")}
+                </span>
+              )}
             </p>
             <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <div>

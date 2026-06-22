@@ -8,6 +8,7 @@ export type FetchPositionsParams = {
   search?: string;
   port?: number;
   pageSize?: number;
+  combinable?: boolean;
 };
 
 export async function fetchPositions(
@@ -18,6 +19,7 @@ export async function fetchPositions(
   if (params.search?.trim()) query.set("search", params.search.trim());
   if (params.port) query.set("port", String(params.port));
   if (params.pageSize) query.set("page_size", String(params.pageSize));
+  if (params.combinable) query.set("combinable", "true");
   const qs = query.toString();
   return apiFetch<ApiListResponse<Position>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
