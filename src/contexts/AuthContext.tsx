@@ -11,9 +11,12 @@ import {
 } from "react";
 import {
   clearStoredTokens,
+  ensureFreshAccessToken,
   fetchCurrentUser,
   getStoredAccessToken,
   login as apiLogin,
+  resetSessionExpiredState,
+  setSessionExpiredHandler,
   setStoredTokens,
 } from "@/services/authService";
 import type { UserMe } from "@/types/auth";
@@ -32,18 +35,18 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const AUTH_LOADING = "auth_loading";
+const TOKEN_KEEPALIVE_MS = 4 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserMe | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = useCallback(async (accessToken: string) => {
+  const loadUser = useCallback(async () => {
     try {
       const me = await fetchCurrentUser();
       setUser(me);
-      setToken(accessToken);
+      setToken(getStoredAccessToken());
     } catch {
       clearStoredTokens();
       setUser(null);
@@ -54,21 +57,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setUser(null);
+      setToken(null);
+      window.location.assign("/login?session=expired");
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
+
+  useEffect(() => {
     const stored = getStoredAccessToken();
     if (!stored) {
       setLoading(false);
       return;
     }
-    loadUser(stored);
+    loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function keepSessionAlive() {
+      try {
+        const access = await ensureFreshAccessToken();
+        if (access) setToken(access);
+      } catch {
+        // notifySessionExpired handles redirect
+      }
+    }
+
+    function onVisible() {
+      if (document.visibilityState === "visible") void keepSessionAlive();
+    }
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", keepSessionAlive);
+    const interval = window.setInterval(keepSessionAlive, TOKEN_KEEPALIVE_MS);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", keepSessionAlive);
+      window.clearInterval(interval);
+    };
+  }, [token]);
 
   const login = useCallback(
     async (username: string, password: string) => {
       const { access, refresh } = await apiLogin(username, password);
       setStoredTokens(access, refresh);
-      await loadUser(access);
+      resetSessionExpiredState();
+      await loadUser();
     },
-    [loadUser]
+    [loadUser],
   );
 
   const logout = useCallback(() => {
@@ -86,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [user, token, loading, login, logout]
+    [user, token, loading, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

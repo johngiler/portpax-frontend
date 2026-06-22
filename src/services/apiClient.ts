@@ -1,4 +1,9 @@
-import { clearStoredTokens, getAuthHeaders, refreshAccessToken } from "./authService";
+import {
+  clearStoredTokens,
+  getAuthHeaders,
+  notifySessionExpired,
+  refreshAccessToken,
+} from "./authService";
 import { API_BASE } from "./apiBase";
 
 export function apiUrl(path: string): string {
@@ -63,8 +68,8 @@ export async function apiFetch<T>(
       if (retryRes.status === 204) return undefined as T;
       return retryRes.json();
     } catch {
-      clearStoredTokens();
-      throw new ApiError("Session expired", 401);
+      notifySessionExpired();
+      throw new ApiError("Tu sesión expiró. Inicia sesión de nuevo.", 401);
     }
   }
 

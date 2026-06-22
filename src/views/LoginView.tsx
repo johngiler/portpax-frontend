@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -47,11 +47,18 @@ const HERO_INTERVAL_MS = 5500;
 export default function LoginView() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    if (searchParams.get("session") === "expired") {
+      setError("Tu sesión expiró por inactividad. Inicia sesión de nuevo.");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
