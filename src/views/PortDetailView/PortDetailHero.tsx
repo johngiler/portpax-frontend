@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, Ship, Trash2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import CountryLabel from "@/components/ui/CountryLabel";
 import type { PortDetail } from "@/types/catalog";
 import { formatLargestVessel, portDisplayName, portStatusLabel } from "@/types/catalog";
 
@@ -64,9 +65,9 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
               )}
             </div>
             <div ref={textRef} className="min-w-0 flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[var(--admin-accent)]">
-                {port.country}
-                {port.region ? ` · ${port.region}` : ""}
+              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-semibold uppercase tracking-widest text-[var(--admin-accent)]">
+                <CountryLabel country={port.country} />
+                {port.region ? <span>· {port.region}</span> : null}
               </p>
               <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
                 {portDisplayName(port)}

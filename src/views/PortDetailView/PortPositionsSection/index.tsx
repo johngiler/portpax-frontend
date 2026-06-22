@@ -69,22 +69,46 @@ function PositionCard({
     await onImagesChange();
   }
 
+  function resolveCoverImageId(): number | null {
+    if (!position.images.length) return null;
+    const cover = position.images.find((img) => img.image === position.cover_image);
+    return (cover ?? position.images[0]).id;
+  }
+
+  async function handleDeleteCoverImage() {
+    const id = resolveCoverImageId();
+    if (id) await handleDeleteImage(id);
+  }
+
   return (
     <article className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
-      <div className="relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
+      <div className="group relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
         {position.cover_image ? (
-          <button
-            type="button"
-            onClick={() => {
-              const coverIndex = position.images.findIndex((img) => img.image === position.cover_image);
-              openViewer(coverIndex >= 0 ? coverIndex : 0);
-            }}
-            className="h-full w-full cursor-pointer"
-            aria-label="Ver imágenes de la posición"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                const coverIndex = position.images.findIndex((img) => img.image === position.cover_image);
+                openViewer(coverIndex >= 0 ? coverIndex : 0);
+              }}
+              className="h-full w-full cursor-pointer"
+              aria-label="Ver imágenes de la posición"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteCoverImage();
+              }}
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              aria-label="Eliminar imagen"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Sin portada

@@ -663,3 +663,48 @@ html.dark *::-webkit-scrollbar-thumb {
 html.dark *::-webkit-scrollbar-thumb:hover {
   background: rgb(255 255 255 / 0.3);
 }
+
+@keyframes port-map-pulse-ring {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+@keyframes port-map-pin-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.port-map-pulse-ring {
+  animation: port-map-pulse-ring 2s ease-out infinite;
+}
+
+.port-map-pulse-ring-delay {
+  animation-delay: 0.6s;
+}
+
+.port-map-pin-bob {
+  animation: port-map-pin-bob 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .port-map-pulse-ring,
+  .port-map-pulse-ring-delay,
+  .port-map-pin-bob {
+    animation: none;
+  }
+}

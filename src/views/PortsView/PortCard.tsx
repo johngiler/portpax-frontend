@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CountryLabel from "@/components/ui/CountryLabel";
 import type { Port } from "@/types/catalog";
 import { portDisplayName, portStatusLabel } from "@/types/catalog";
 
@@ -37,7 +38,10 @@ export default function PortCard({ port }: PortCardProps) {
         <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           {portDisplayName(port)}
         </h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">{port.country}</p>
+        <CountryLabel
+          country={port.country}
+          className="text-sm text-zinc-500 dark:text-zinc-400"
+        />
         <p className="mt-auto pt-2 text-xs text-zinc-400">
           {port.position_count > 0
             ? `${port.position_count} posición${port.position_count === 1 ? "" : "es"}`

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
@@ -48,24 +49,48 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
     await onImagesChange();
   }
 
+  function resolveCoverImageId(): number | null {
+    if (!berth.images.length) return null;
+    const cover = berth.images.find((img) => img.image === berth.cover_image);
+    return (cover ?? berth.images[0]).id;
+  }
+
+  async function handleDeleteCoverImage() {
+    const id = resolveCoverImageId();
+    if (id) await handleDeleteImage(id);
+  }
+
   return (
     <article
       className={`overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950/40 ${!berth.is_active ? "opacity-60" : ""}`}
     >
-      <div className="relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
+      <div className="group relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
         {berth.cover_image ? (
-          <button
-            type="button"
-            onClick={() => {
-              const coverIndex = berth.images.findIndex((img) => img.image === berth.cover_image);
-              openViewer(coverIndex >= 0 ? coverIndex : 0);
-            }}
-            className="h-full w-full cursor-pointer"
-            aria-label="Ver imágenes del muelle"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={berth.cover_image} alt="" className="h-full w-full object-cover" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                const coverIndex = berth.images.findIndex((img) => img.image === berth.cover_image);
+                openViewer(coverIndex >= 0 ? coverIndex : 0);
+              }}
+              className="h-full w-full cursor-pointer"
+              aria-label="Ver imágenes del muelle"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={berth.cover_image} alt="" className="h-full w-full object-cover" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteCoverImage();
+              }}
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              aria-label="Eliminar imagen"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Sin portada
@@ -75,7 +100,7 @@ export default function BerthCard({ berth, onEdit, onDelete, onImagesChange }: B
           {berth.code}
         </span>
         {!berth.is_active && (
-          <span className="absolute right-3 top-3 rounded-full bg-zinc-200/90 px-2 py-0.5 text-[10px] font-medium uppercase dark:bg-zinc-800/90">
+          <span className="absolute right-3 top-12 rounded-full bg-zinc-200/90 px-2 py-0.5 text-[10px] font-medium uppercase dark:bg-zinc-800/90">
             Inactivo
           </span>
         )}

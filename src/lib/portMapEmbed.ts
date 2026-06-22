@@ -1,11 +1,17 @@
-/** Google Maps embed URL for port coordinates (no API key required). */
+/** Google Maps embed URL — centers map and marker on exact coordinates. */
 export function buildPortMapEmbedUrl(latitude: number, longitude: number): string {
+  const lat = latitude.toFixed(6);
+  const lng = longitude.toFixed(6);
+  const point = `${lat},${lng}`;
+
   const params = new URLSearchParams({
-    q: `${latitude},${longitude}`,
+    q: point,
+    ll: point,
     hl: "es",
-    z: "14",
+    z: "16",
     output: "embed",
   });
+
   return `https://www.google.com/maps?${params.toString()}`;
 }
 
