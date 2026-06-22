@@ -1,5 +1,5 @@
 import { apiFetch, type ApiListResponse } from "@/services/apiClient";
-import type { Port, PortPayload } from "@/types/catalog";
+import type { Port, PortDetail, PortPayload } from "@/types/catalog";
 
 const BASE = "api/catalogs/ports/";
 
@@ -56,6 +56,10 @@ export async function fetchPorts(
 
 export async function fetchPort(id: number): Promise<Port> {
   return apiFetch<Port>(`${BASE}${id}/`);
+}
+
+export async function fetchPortDetail(id: number): Promise<PortDetail> {
+  return apiFetch<PortDetail>(`${BASE}${id}/`);
 }
 
 export async function createPort(

@@ -5,7 +5,8 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import type { Port, PortPayload, PortOperationalStatus } from "@/types/catalog";
-import { PORT_STATUS_OPTIONS } from "@/types/catalog";
+import { PORT_STATUS_OPTIONS, portStatusLabel } from "@/types/catalog";
+import PortFormSection from "./PortFormSection";
 import PortLogoField from "./PortLogoField";
 
 export type PortFormMode = "create" | "edit";
@@ -41,8 +42,7 @@ function emptyForm(): FormState {
     status: "operational",
     min_berth_draft_m: null,
     anchorage_slot_count: 0,
-    largest_vessel_recorded: "",
-    largest_vessel_loa_m: null,
+    fender_count: null,
     notes: "",
     is_active: true,
   };
@@ -61,9 +61,7 @@ function portToForm(port: Port): FormState {
     min_berth_draft_m:
       port.min_berth_draft_m != null ? Number(port.min_berth_draft_m) : null,
     anchorage_slot_count: port.anchorage_slot_count,
-    largest_vessel_recorded: port.largest_vessel_recorded,
-    largest_vessel_loa_m:
-      port.largest_vessel_loa_m != null ? Number(port.largest_vessel_loa_m) : null,
+    fender_count: port.fender_count != null ? Number(port.fender_count) : null,
     notes: port.notes,
     is_active: port.is_active,
   };
@@ -146,159 +144,199 @@ export default function PortFormModal({
     });
   }
 
-  const title = mode === "create" ? "Nuevo puerto" : "Editar puerto";
+  const title = mode === "create" ? "Nuevo puerto" : "Editar detalles del puerto";
+  const displayName = form.name.trim() || "Puerto sin nombre";
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={title}
-      panelClassName="max-w-2xl"
+      panelClassName="max-w-4xl"
       footer={
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="cursor-pointer rounded-md border border-[var(--admin-border)] px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-[var(--admin-surface-muted)] disabled:opacity-50 dark:text-zinc-200"
-          >
-            Cancelar
-          </button>
-          <DefaultButton type="submit" form="port-form" disabled={saving}>
-            {saving ? "Guardando…" : mode === "create" ? "Crear" : "Guardar"}
-          </DefaultButton>
+        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="hidden text-xs text-zinc-500 sm:block">
+            Los campos con <span className="text-red-500">*</span> son obligatorios.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="cursor-pointer rounded-md border border-[var(--admin-border)] px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-[var(--admin-surface-muted)] disabled:opacity-50 dark:text-zinc-200"
+            >
+              Cancelar
+            </button>
+            <DefaultButton type="submit" form="port-form" disabled={saving}>
+              {saving ? "Guardando…" : mode === "create" ? "Crear puerto" : "Guardar cambios"}
+            </DefaultButton>
+          </div>
         </div>
       }
     >
-      <form id="port-form" onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto pr-1">
-        <div className="grid gap-x-4 sm:grid-cols-2">
-          <PortLogoField
-            previewUrl={logoPreview}
-            disabled={saving}
-            onFileChange={(file) => {
-              setLogoFile(file);
-              setRemoveLogo(false);
-            }}
-            onRemove={() => {
-              setLogoFile(null);
-              setRemoveLogo(true);
-            }}
-            canRemove={Boolean(logoPreview)}
-          />
-          <FormField
-            label="Código"
-            name="code"
-            value={form.code}
-            onChange={(v) => setField("code", String(v))}
-            required
-            error={errors.code}
-            disabled={mode === "edit"}
-            placeholder="puerto_plata"
-          />
-          <FormField
-            label="Nombre"
-            name="name"
-            value={form.name}
-            onChange={(v) => setField("name", String(v))}
-            required
-            error={errors.name}
-            placeholder="Puerto Plata"
-          />
-          <FormField
-            label="Nombre comercial"
-            name="commercial_name"
-            value={form.commercial_name}
-            onChange={(v) => setField("commercial_name", String(v))}
-            placeholder="Taino Bay"
-          />
-          <FormField
-            label="País"
-            name="country"
-            value={form.country}
-            onChange={(v) => setField("country", String(v))}
-            required
-            error={errors.country}
-          />
-          <FormField
-            label="Región"
-            name="region"
-            value={form.region}
-            onChange={(v) => setField("region", String(v))}
-          />
-          <FormFieldSelect<PortOperationalStatus>
-            label="Estado"
-            name="status"
-            value={form.status}
-            onChange={(v) => setField("status", v)}
-            options={PORT_STATUS_OPTIONS}
-          />
-          <FormField
-            label="Calado mínimo (m)"
-            name="min_berth_draft_m"
-            type="number"
-            step="0.01"
-            value={form.min_berth_draft_m ?? ""}
-            onChange={(v) =>
-              setField("min_berth_draft_m", v === "" ? null : Number(v))
-            }
-          />
-          <FormField
-            label="Posiciones de fondeo"
-            name="anchorage_slot_count"
-            type="number"
-            min={0}
-            value={form.anchorage_slot_count}
-            onChange={(v) => setField("anchorage_slot_count", Number(v) || 0)}
-          />
-          <FormField
-            label="Latitud"
-            name="latitude"
-            type="number"
-            step="any"
-            value={form.latitude ?? ""}
-            onChange={(v) => setField("latitude", v === "" ? null : Number(v))}
-          />
-          <FormField
-            label="Longitud"
-            name="longitude"
-            type="number"
-            step="any"
-            value={form.longitude ?? ""}
-            onChange={(v) => setField("longitude", v === "" ? null : Number(v))}
-          />
-          <FormField
-            label="Mayor barco (nombre)"
-            name="largest_vessel_recorded"
-            value={form.largest_vessel_recorded}
-            onChange={(v) => setField("largest_vessel_recorded", String(v))}
-          />
-          <FormField
-            label="Mayor barco LOA (m)"
-            name="largest_vessel_loa_m"
-            type="number"
-            step="0.01"
-            value={form.largest_vessel_loa_m ?? ""}
-            onChange={(v) =>
-              setField("largest_vessel_loa_m", v === "" ? null : Number(v))
-            }
-          />
-        </div>
-        <FormField
-          label="Notas"
-          name="notes"
-          value={form.notes}
-          onChange={(v) => setField("notes", String(v))}
-        />
-        <div className="mb-4 flex flex-wrap gap-6">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) => setField("is_active", e.target.checked)}
-              className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
-            />
-            Activo
-          </label>
+      <form id="port-form" onSubmit={handleSubmit} className="max-h-[min(72vh,720px)] overflow-y-auto pr-1">
+        <div className="grid gap-5 lg:grid-cols-[minmax(220px,260px)_1fr]">
+          <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
+            <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
+              <PortLogoField
+                compact
+                previewUrl={logoPreview}
+                disabled={saving}
+                onFileChange={(file) => {
+                  setLogoFile(file);
+                  setRemoveLogo(false);
+                }}
+                onRemove={() => {
+                  setLogoFile(null);
+                  setRemoveLogo(true);
+                }}
+                canRemove={Boolean(logoPreview)}
+              />
+              <div className="mt-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  {displayName}
+                </p>
+                {form.commercial_name.trim() && (
+                  <p className="truncate text-xs text-zinc-500">{form.commercial_name}</p>
+                )}
+                <span className="mt-2 inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
+                  {portStatusLabel(form.status)}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+              <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-200">
+                <span className="font-medium">Visible en catálogo</span>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => setField("is_active", e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
+                />
+              </label>
+              <p className="mt-2 text-xs text-zinc-500">
+                {form.is_active
+                  ? "El puerto aparece en listados y búsquedas."
+                  : "Oculto para usuarios; conserva su historial."}
+              </p>
+            </div>
+          </aside>
+
+          <div className="space-y-4">
+            <PortFormSection
+              title="Identificación"
+              description="Nombre y código único del puerto."
+            >
+              <FormField
+                label="Código"
+                name="code"
+                value={form.code}
+                onChange={(v) => setField("code", String(v))}
+                required
+                error={errors.code}
+                disabled={mode === "edit"}
+                placeholder="puerto_plata"
+              />
+              <FormField
+                label="Nombre"
+                name="name"
+                value={form.name}
+                onChange={(v) => setField("name", String(v))}
+                required
+                error={errors.name}
+                placeholder="Puerto Plata"
+              />
+              <FormField
+                label="Nombre comercial"
+                name="commercial_name"
+                value={form.commercial_name}
+                onChange={(v) => setField("commercial_name", String(v))}
+                placeholder="Taino Bay"
+              />
+              <FormFieldSelect<PortOperationalStatus>
+                label="Estado operativo"
+                name="status"
+                value={form.status}
+                onChange={(v) => setField("status", v)}
+                options={PORT_STATUS_OPTIONS}
+              />
+            </PortFormSection>
+
+            <PortFormSection title="Ubicación" description="País, región y coordenadas.">
+              <FormField
+                label="País"
+                name="country"
+                value={form.country}
+                onChange={(v) => setField("country", String(v))}
+                required
+                error={errors.country}
+              />
+              <FormField
+                label="Región"
+                name="region"
+                value={form.region}
+                onChange={(v) => setField("region", String(v))}
+              />
+              <FormField
+                label="Latitud"
+                name="latitude"
+                type="number"
+                step="any"
+                value={form.latitude ?? ""}
+                onChange={(v) => setField("latitude", v === "" ? null : Number(v))}
+              />
+              <FormField
+                label="Longitud"
+                name="longitude"
+                type="number"
+                step="any"
+                value={form.longitude ?? ""}
+                onChange={(v) => setField("longitude", v === "" ? null : Number(v))}
+              />
+            </PortFormSection>
+
+            <PortFormSection
+              title="Capacidad"
+              description="Parámetros técnicos del puerto."
+            >
+              <FormField
+                label="Calado mínimo (m)"
+                name="min_berth_draft_m"
+                type="number"
+                step="0.01"
+                value={form.min_berth_draft_m ?? ""}
+                onChange={(v) =>
+                  setField("min_berth_draft_m", v === "" ? null : Number(v))
+                }
+              />
+              <FormField
+                label="Posiciones de fondeo"
+                name="anchorage_slot_count"
+                type="number"
+                min={0}
+                value={form.anchorage_slot_count}
+                onChange={(v) => setField("anchorage_slot_count", Number(v) || 0)}
+              />
+              <FormField
+                label="Defensas (total)"
+                name="fender_count"
+                type="number"
+                min={0}
+                value={form.fender_count ?? ""}
+                onChange={(v) => setField("fender_count", v === "" ? null : Number(v))}
+              />
+            </PortFormSection>
+
+            <PortFormSection title="Notas" description="Observaciones internas." columns={1}>
+              <FormField
+                label="Notas"
+                name="notes"
+                value={form.notes}
+                onChange={(v) => setField("notes", String(v))}
+              />
+            </PortFormSection>
+          </div>
         </div>
       </form>
     </Modal>

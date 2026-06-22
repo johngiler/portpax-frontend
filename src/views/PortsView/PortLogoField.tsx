@@ -6,6 +6,7 @@ type PortLogoFieldProps = {
   onFileChange: (file: File | null) => void;
   onRemove: () => void;
   canRemove: boolean;
+  compact?: boolean;
 };
 
 export default function PortLogoField({
@@ -14,22 +15,39 @@ export default function PortLogoField({
   onFileChange,
   onRemove,
   canRemove,
+  compact = false,
 }: PortLogoFieldProps) {
+  const boxClass = compact
+    ? "mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+    : "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]";
+
   return (
-    <div className="mb-4 sm:col-span-2">
-      <span className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+    <div className={compact ? "text-center" : "mb-4 sm:col-span-2"}>
+      <span
+        className={`mb-3 block text-sm font-medium text-zinc-700 dark:text-zinc-200 ${compact ? "text-center" : ""}`}
+      >
         Logo del puerto
       </span>
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]">
+      <div
+        className={
+          compact
+            ? "flex flex-col items-center gap-3"
+            : "flex flex-wrap items-center gap-4"
+        }
+      >
+        <div className={boxClass}>
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt="" className="h-full w-full object-contain p-1" />
+            <img
+              src={previewUrl}
+              alt=""
+              className={`object-contain ${compact ? "h-full w-full p-3" : "h-full w-full p-1"}`}
+            />
           ) : (
             <span className="text-xs text-zinc-400">Sin logo</span>
           )}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col gap-2 ${compact ? "items-center" : ""}`}>
           <label className="cursor-pointer text-sm font-medium text-[var(--admin-accent)] hover:underline">
             {previewUrl ? "Cambiar imagen" : "Subir imagen"}
             <input
@@ -52,7 +70,9 @@ export default function PortLogoField({
           )}
         </div>
       </div>
-      <p className="mt-1 text-xs text-zinc-500">Una sola imagen — logo o thumbnail del puerto.</p>
+      {!compact && (
+        <p className="mt-1 text-xs text-zinc-500">Se muestra en la rejilla y cabecera del puerto.</p>
+      )}
     </div>
   );
 }

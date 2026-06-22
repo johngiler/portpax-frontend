@@ -6,31 +6,16 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import MainTable, {
-  MainTableBody,
-  MainTableEmpty,
-  MainTableHeader,
-  MainTableRow,
-  MainTableTd,
-  MainTableTh,
-} from "@/components/tables/MainTable";
-import TableActionButtons from "@/components/tables/TableActionButtons";
-import TablePagination from "@/components/tables/TablePagination";
 import { FormField } from "@/components/ui/FormField";
 import { ApiError } from "@/services/apiClient";
-import {
-  createPort,
-  deletePort,
-  fetchPorts,
-  updatePort,
-} from "@/services/catalogs/portService";
+import { createPort, fetchPorts } from "@/services/catalogs/portService";
 import type { Port } from "@/types/catalog";
-import { portDisplayName, portStatusLabel } from "@/types/catalog";
-import PortFormModal, { type PortFormMode, type PortFormSubmitPayload } from "./PortFormModal";
-import PortDetailModal from "./PortDetailModal";
+import PortCard from "./PortCard";
+import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
 import PortsViewSkeleton from "./PortsViewSkeleton";
 
-const PAGE_SIZE = 20;
+/** Grid views: first batch + "Cargar más" (limit/offset via page API). */
+const BATCH_SIZE = 12;
 
 export default function PortsView() {
   const [ports, setPorts] = useState<Port[]>([]);
@@ -39,22 +24,19 @@ export default function PortsView() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
-
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<PortFormMode>("create");
-  const [editingPort, setEditingPort] = useState<Port | null>(null);
-  const [detailPort, setDetailPort] = useState<Port | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const loadPorts = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     setLoading(true);
     setViewError(null);
     try {
-      const data = await fetchPorts({ page, search: appliedSearch });
+      const data = await fetchPorts({ page: 1, search: appliedSearch, pageSize: BATCH_SIZE });
       setPorts(data.results);
       setTotalCount(data.count);
+      setPage(1);
     } catch (err) {
       setViewError(
         err instanceof ApiError ? err.message : "No se pudieron cargar los puertos.",
@@ -64,66 +46,54 @@ export default function PortsView() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedSearch]);
+  }, [appliedSearch]);
 
   useEffect(() => {
-    loadPorts();
-  }, [loadPorts]);
+    loadInitial();
+  }, [loadInitial]);
 
-  function openCreate() {
-    setModalMode("create");
-    setEditingPort(null);
-    setModalOpen(true);
-  }
-
-  function openEdit(port: Port) {
-    setModalMode("edit");
-    setEditingPort(port);
-    setModalOpen(true);
-  }
-
-  function openDetail(port: Port) {
-    setDetailPort(port);
-    setDetailOpen(true);
+  async function loadMore() {
+    setLoadingMore(true);
+    setViewError(null);
+    try {
+      const nextPage = page + 1;
+      const data = await fetchPorts({
+        page: nextPage,
+        search: appliedSearch,
+        pageSize: BATCH_SIZE,
+      });
+      setPorts((prev) => [...prev, ...data.results]);
+      setPage(nextPage);
+    } catch (err) {
+      setViewError(
+        err instanceof ApiError ? err.message : "No se pudieron cargar más puertos.",
+      );
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
     setViewError(null);
-    const logoOptions = { logoFile, removeLogo };
     try {
-      if (modalMode === "create") {
-        await createPort(payload, logoOptions);
-      } else if (editingPort) {
-        await updatePort(editingPort.id, payload, logoOptions);
-      }
+      await createPort(payload, { logoFile, removeLogo });
       setModalOpen(false);
-      await loadPorts();
+      await loadInitial();
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudo guardar el puerto.",
+        err instanceof ApiError ? err.message : "No se pudo crear el puerto.",
       );
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(port: Port) {
-    setViewError(null);
-    try {
-      await deletePort(port.id);
-      await loadPorts();
-    } catch (err) {
-      setViewError(
-        err instanceof ApiError ? err.message : "No se pudo eliminar el puerto.",
-      );
-    }
-  }
-
   function applyFilters() {
-    setPage(1);
     setAppliedSearch(search);
   }
+
+  const hasMore = ports.length < totalCount;
 
   if (loading && ports.length === 0 && !viewError) {
     return <PortsViewSkeleton />;
@@ -150,9 +120,9 @@ export default function PortsView() {
       <ViewPageHeader
         icon={MapPin}
         title="Puertos"
-        description="Catálogo de puertos ITM — muelles y posiciones (docs/muelles_especificaciones)."
+        description="Selecciona un puerto para ver su ficha, muelles, bitas y posiciones."
         actions={
-          <DefaultButton type="button" onClick={openCreate}>
+          <DefaultButton type="button" onClick={() => setModalOpen(true)}>
             <span className="inline-flex items-center gap-2">
               <Plus className="h-4 w-4" strokeWidth={2} />
               Nuevo puerto
@@ -163,98 +133,39 @@ export default function PortsView() {
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      <MainTable>
-        <table className="w-full min-w-[42rem]">
-          <MainTableHeader>
-            <MainTableTh className="w-16">Logo</MainTableTh>
-            <MainTableTh>Puerto</MainTableTh>
-            <MainTableTh>País</MainTableTh>
-            <MainTableTh>Estado</MainTableTh>
-            <MainTableTh>Posiciones</MainTableTh>
-            <MainTableTh>Calado mín.</MainTableTh>
-            <MainTableTh className="text-center">Acciones</MainTableTh>
-          </MainTableHeader>
-          <MainTableBody>
-            {loading ? (
-              <MainTableEmpty colSpan={7}>Cargando…</MainTableEmpty>
-            ) : ports.length === 0 ? (
-              <MainTableEmpty colSpan={7}>
-                {appliedSearch
-                  ? "Ningún puerto coincide con los filtros."
-                  : "No hay puertos registrados."}
-              </MainTableEmpty>
-            ) : (
-              ports.map((port) => (
-                <MainTableRow key={port.id}>
-                  <MainTableTd>
-                    {port.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={port.logo}
-                        alt=""
-                        className="mx-auto h-10 w-10 rounded object-contain"
-                      />
-                    ) : (
-                      <span className="text-xs text-zinc-400">—</span>
-                    )}
-                  </MainTableTd>
-                  <MainTableTd>{portDisplayName(port)}</MainTableTd>
-                  <MainTableTd>{port.country}</MainTableTd>
-                  <MainTableTd>{portStatusLabel(port.status)}</MainTableTd>
-                  <MainTableTd>
-                    {port.position_codes.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => openDetail(port)}
-                        className="cursor-pointer font-mono text-xs text-[var(--admin-accent)] hover:underline"
-                      >
-                        {port.position_codes.join(", ")}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openDetail(port)}
-                        className="cursor-pointer text-xs text-[var(--admin-accent)] hover:underline"
-                      >
-                        Gestionar
-                      </button>
-                    )}
-                  </MainTableTd>
-                  <MainTableTd>
-                    {port.min_berth_draft_m != null ? `${port.min_berth_draft_m} m` : "—"}
-                  </MainTableTd>
-                  <MainTableTd className="text-center">
-                    <TableActionButtons
-                      onView={() => openDetail(port)}
-                      onEdit={() => openEdit(port)}
-                      onDelete={() => handleDelete(port)}
-                      deleteLabel={`el puerto ${port.name}`}
-                    />
-                  </MainTableTd>
-                </MainTableRow>
-              ))
-            )}
-          </MainTableBody>
-        </table>
-        <TablePagination
-          page={page}
-          totalCount={totalCount}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          label="puertos"
-        />
-      </MainTable>
-
-      <PortDetailModal
-        open={detailOpen}
-        port={detailPort}
-        onClose={() => setDetailOpen(false)}
-      />
+      {loading && ports.length === 0 ? (
+        <p className="text-sm text-zinc-500">Cargando…</p>
+      ) : ports.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-12 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
+          <p className="text-sm text-zinc-500">
+            {appliedSearch
+              ? "Ningún puerto coincide con los filtros."
+              : "No hay puertos registrados."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {ports.map((port) => (
+              <PortCard key={port.id} port={port} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-8 flex flex-col items-center gap-2">
+              <DefaultButton type="button" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Cargando…" : "Cargar más"}
+              </DefaultButton>
+              <p className="text-xs text-zinc-500">
+                {ports.length} de {totalCount} puertos
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <PortFormModal
         open={modalOpen}
-        mode={modalMode}
-        initial={editingPort}
+        mode="create"
         saving={saving}
         onClose={() => !saving && setModalOpen(false)}
         onSubmit={handleSave}

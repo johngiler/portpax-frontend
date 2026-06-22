@@ -1,6 +1,6 @@
 "use client";
 
-import { Anchor, ChevronLeft, ChevronRight, LayoutDashboard, LayoutGrid, MapPin, Ship } from "lucide-react";
+import { Anchor, ChevronLeft, ChevronRight, LayoutDashboard, MapPin, Ship } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,7 +12,6 @@ const MOBILE_BREAKPOINT = 768;
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/ports", label: "Puertos", icon: MapPin },
-  { href: "/positions", label: "Posiciones", icon: LayoutGrid },
   { href: "/shipping-lines", label: "Navieras", icon: Anchor },
   { href: "/vessels", label: "Barcos", icon: Ship },
 ] as const;

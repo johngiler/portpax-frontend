@@ -15,6 +15,7 @@ export type Port = {
   status: PortOperationalStatus;
   min_berth_draft_m: string | null;
   anchorage_slot_count: number;
+  fender_count: number | null;
   largest_vessel_recorded: string;
   largest_vessel_loa_m: string | null;
   notes: string;
@@ -37,8 +38,7 @@ export type PortPayload = {
   status: PortOperationalStatus;
   min_berth_draft_m: number | null;
   anchorage_slot_count: number;
-  largest_vessel_recorded: string;
-  largest_vessel_loa_m: number | null;
+  fender_count: number | null;
   notes: string;
   is_active: boolean;
 };
@@ -53,11 +53,110 @@ export function portStatusLabel(status: PortOperationalStatus): string {
   return PORT_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status;
 }
 
-export function portDisplayName(port: Port): string {
+export function portDisplayName(port: Pick<Port, "name" | "commercial_name">): string {
   if (port.commercial_name) {
     return `${port.name} (${port.commercial_name})`;
   }
   return port.name;
+}
+
+export type BollardType =
+  | "standard"
+  | "t_head"
+  | "quick_release"
+  | "single_bitt"
+  | "other";
+
+export type PortBollard = {
+  id: number;
+  port: number;
+  capacity_t: number;
+  bollard_type: BollardType;
+  bollard_type_display: string;
+  quantity: number;
+  label: string;
+  sort_order: number;
+  notes: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PortBollardPayload = {
+  port: number;
+  capacity_t: number;
+  bollard_type: BollardType;
+  quantity: number;
+  label: string;
+  sort_order: number;
+  notes: string;
+  is_active: boolean;
+};
+
+export const BOLLARD_TYPE_OPTIONS: { value: BollardType; label: string }[] = [
+  { value: "standard", label: "Estándar" },
+  { value: "t_head", label: "T-head" },
+  { value: "quick_release", label: "Quick release" },
+  { value: "single_bitt", label: "Single bitt" },
+  { value: "other", label: "Otro" },
+];
+
+export function bollardTypeLabel(type: BollardType): string {
+  return BOLLARD_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
+}
+
+export type PortImage = {
+  id: number;
+  port: number;
+  image: string;
+  caption: string;
+  sort_order: number;
+  is_cover: boolean;
+  created_at: string;
+};
+
+export type PositionImage = {
+  id: number;
+  position: number;
+  image: string;
+  caption: string;
+  sort_order: number;
+  is_cover: boolean;
+  created_at: string;
+};
+
+export type PositionDetail = Position & {
+  images: PositionImage[];
+  cover_image: string | null;
+};
+
+export type PortDetail = Port & {
+  fender_count: number | null;
+  bollard_total: number;
+  berths: Berth[];
+  positions: PositionDetail[];
+  bollards: PortBollard[];
+  images: PortImage[];
+};
+
+export function formatCoord(value: string | null): string {
+  if (value == null || value === "") return "—";
+  return value;
+}
+
+export function formatMeters(value: string | number | null | undefined): string {
+  if (value == null || value === "") return "—";
+  return `${value} m`;
+}
+
+export function formatLargestVessel(
+  port: Pick<Port, "largest_vessel_recorded" | "largest_vessel_loa_m">,
+): string | null {
+  if (port.largest_vessel_recorded && port.largest_vessel_loa_m) {
+    return `${port.largest_vessel_recorded} · ${port.largest_vessel_loa_m} m LOA`;
+  }
+  if (port.largest_vessel_recorded) return port.largest_vessel_recorded;
+  return null;
 }
 
 export type PositionType = "pier" | "anchorage";
@@ -77,6 +176,20 @@ export type Berth = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type BerthPayload = {
+  port: number;
+  code: string;
+  name: string;
+  length_m: number | null;
+  width_m: number | null;
+  walkway_length_m: number | null;
+  walkway_width_m: number | null;
+  min_draft_m: number | null;
+  notes: string;
+  sort_order: number;
+  is_active: boolean;
 };
 
 export type Position = {
