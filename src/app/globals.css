@@ -213,6 +213,7 @@ body {
 }
 .modal-backdrop-exit {
   opacity: 1;
+  pointer-events: none;
   animation: modal-backdrop-exit 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 .modal-panel-enter {

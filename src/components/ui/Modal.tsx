@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/modalScrollLock";
 
 const MODAL_EXIT_MS = 250;
 
@@ -25,61 +26,81 @@ export default function Modal({
   panelClassName = "max-w-2xl",
 }: ModalProps) {
   const [isExiting, setIsExiting] = useState(false);
-  const prevOpen = useRef(open);
+  const wasOpenRef = useRef(false);
+  const exitTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (open) setIsExiting(false);
-  }, [open]);
+  const clearExitTimer = useCallback(() => {
+    if (exitTimerRef.current != null) {
+      window.clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+  }, []);
 
-  useEffect(() => {
-    const wasOpen = prevOpen.current;
-    prevOpen.current = open;
-    if (!open && wasOpen) {
-      if (isExiting) {
-        const t = setTimeout(() => setIsExiting(false), 0);
-        return () => clearTimeout(t);
-      }
+  const finishExit = useCallback(() => {
+    clearExitTimer();
+    setIsExiting(false);
+  }, [clearExitTimer]);
+
+  useLayoutEffect(() => {
+    if (open) {
+      clearExitTimer();
+      setIsExiting(false);
+      wasOpenRef.current = true;
+      return;
+    }
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false;
       setIsExiting(true);
-      const t = setTimeout(() => setIsExiting(false), MODAL_EXIT_MS);
-      return () => clearTimeout(t);
     }
-  }, [open, isExiting]);
+  }, [open, clearExitTimer]);
 
   useEffect(() => {
-    if (open && !isExiting) {
-      const handle = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
-      document.addEventListener("keydown", handle);
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.removeEventListener("keydown", handle);
-        document.body.style.overflow = "";
-      };
-    }
-  }, [open, isExiting]);
-
-  function handleClose() {
-    if (isExiting) return;
-    setIsExiting(true);
-    setTimeout(onClose, MODAL_EXIT_MS);
-  }
+    if (!isExiting || open) return;
+    clearExitTimer();
+    exitTimerRef.current = window.setTimeout(finishExit, MODAL_EXIT_MS);
+    return clearExitTimer;
+  }, [isExiting, open, finishExit, clearExitTimer]);
 
   const visible = open || isExiting;
+  const isAnimatingOut = isExiting && !open;
+
+  const requestClose = useCallback(() => {
+    if (!open || isExiting) return;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    onClose();
+  }, [open, isExiting, onClose]);
+
+  useEffect(() => {
+    if (!visible) return;
+    lockBodyScroll();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") requestClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      unlockBodyScroll();
+    };
+  }, [visible, requestClose]);
+
   if (!visible) return null;
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-6 ${isAnimatingOut ? "pointer-events-none" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
       <div
-        className={`absolute inset-0 cursor-pointer bg-slate-950/55 backdrop-blur-[2px] ${isExiting ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
-        onClick={handleClose}
+        className={`absolute inset-0 cursor-pointer bg-slate-950/55 backdrop-blur-[2px] ${isAnimatingOut ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+        onClick={requestClose}
         aria-hidden
       />
       <div
-        className={`relative w-full max-h-[90vh] flex flex-col ${panelClassName} overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow-hover)] dark:border-zinc-700/70 dark:bg-zinc-900 ${isExiting ? "modal-panel-exit" : "modal-panel-enter"}`}
+        className={`relative w-full max-h-[90vh] flex flex-col ${panelClassName} overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow-hover)] dark:border-zinc-700/70 dark:bg-zinc-900 ${isAnimatingOut ? "modal-panel-exit" : "modal-panel-enter"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-[var(--admin-accent)]/8 via-transparent to-[var(--admin-accent)]/10" />
@@ -92,16 +113,14 @@ export default function Modal({
           </h2>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={requestClose}
             className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" strokeWidth={1.5} />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-5">
-          {children}
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-5">{children}</div>
         {footer != null && (
           <div className="flex shrink-0 justify-end gap-3 border-t border-zinc-200/70 bg-zinc-50/80 p-4 dark:border-zinc-700/70 dark:bg-zinc-900">
             {footer}

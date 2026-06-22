@@ -209,6 +209,9 @@ export function FormFieldSelect<T extends string | number>({
         aria-invalid={!!error}
         isDisabled={disabled}
         menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+        menuPosition="fixed"
+        menuShouldBlockScroll={false}
+        blurInputOnSelect
       />
       {error && (
         <p id={`${name}-error`} className={errorClass} role="alert">
