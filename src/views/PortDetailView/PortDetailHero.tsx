@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Pencil, Ship, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CountryLabel from "@/components/ui/CountryLabel";
@@ -17,7 +17,7 @@ type PortDetailHeroProps = {
   onDelete: () => void;
 };
 
-const LOGO_SIZE_EXPANDED_MIN = 48;
+const LOGO_SIZE_EXPANDED = 72;
 const LOGO_SIZE_STUCK = 40;
 
 const CARD_BASE_CLASS =
@@ -38,39 +38,12 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
 
 export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHeroProps) {
   const largestVessel = formatLargestVessel(port);
-  const textRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const [expandedLogoSize, setExpandedLogoSize] = useState(LOGO_SIZE_EXPANDED_MIN);
   const [isStuck, setIsStuck] = useState(false);
   const shellTransition = useMotionSpring();
   const contentTransition = useMotionTransition(0.2);
 
-  const displayLogoSize = isStuck ? LOGO_SIZE_STUCK : expandedLogoSize;
-
-  useLayoutEffect(() => {
-    if (isStuck) return;
-    const el = textRef.current;
-    if (!el) return;
-
-    const syncLogoSize = () => {
-      const height = el.getBoundingClientRect().height;
-      setExpandedLogoSize(Math.max(Math.round(height), LOGO_SIZE_EXPANDED_MIN));
-    };
-
-    syncLogoSize();
-    const observer = new ResizeObserver(syncLogoSize);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [
-    isStuck,
-    port.id,
-    port.name,
-    port.commercial_name,
-    port.status,
-    port.position_count,
-    port.bollard_total,
-    largestVessel,
-  ]);
+  const logoSize = isStuck ? LOGO_SIZE_STUCK : LOGO_SIZE_EXPANDED;
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -98,22 +71,15 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
   return (
     <>
       <div ref={sentinelRef} className="h-px w-full" aria-hidden />
-      {/* Negative top only when stuck — cancels <main> padding for flush header */}
       <motion.div
-        layout
         className={[
           "sticky z-20",
           isStuck ? "-top-4 sm:-top-6 lg:-top-8" : "top-0",
         ].join(" ")}
         transition={shellTransition}
       >
-        <motion.div
-          layout
-          className={isStuck ? "-mx-4 sm:-mx-6 lg:-mx-8" : ""}
-          transition={shellTransition}
-        >
+        <div className={isStuck ? "-mx-4 sm:-mx-6 lg:-mx-8" : ""}>
           <motion.div
-            layout
             className={[
               CARD_BASE_CLASS,
               isStuck ? "border-x-0 border-t-0 shadow-md" : "shadow-[var(--admin-card-shadow)]",
@@ -121,13 +87,11 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
             animate={{ borderRadius: isStuck ? 0 : 16 }}
             transition={shellTransition}
           >
-            <motion.div
-              layout
+            <div
               className={[
                 "flex flex-col sm:flex-row sm:items-center sm:justify-between",
                 isStuck ? "gap-3 p-3 sm:px-6 sm:py-3" : "gap-6 p-6 sm:p-8",
               ].join(" ")}
-              transition={shellTransition}
             >
               <div className={isStuck ? "flex min-w-0 items-center gap-3" : "flex min-w-0 items-start gap-5"}>
                 <Link
@@ -143,19 +107,12 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                 <div
                   className={[
                     "flex min-w-0 items-center",
-                    isStuck ? "gap-3" : "items-stretch gap-4",
+                    isStuck ? "gap-3" : "gap-4",
                   ].join(" ")}
                 >
                   <motion.div
-                    layout
-                    className={[
-                      "flex shrink-0 items-center justify-center overflow-hidden border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
-                      isStuck ? "rounded-lg" : "self-stretch rounded-2xl",
-                    ].join(" ")}
-                    animate={{
-                      width: displayLogoSize,
-                      height: displayLogoSize,
-                    }}
+                    className="flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    animate={{ width: logoSize, height: logoSize }}
                     transition={shellTransition}
                   >
                     {port.logo ? (
@@ -163,20 +120,18 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                       <img
                         src={port.logo}
                         alt=""
-                        className={isStuck ? "h-full w-full object-contain p-1" : "h-full w-full object-contain p-1.5"}
+                        className="h-full w-full object-contain p-1.5"
                       />
                     ) : (
                       <span
                         className="font-bold text-[var(--admin-accent)]/40"
-                        style={{
-                          fontSize: isStuck ? 16 : Math.max(displayLogoSize * 0.38, 14),
-                        }}
+                        style={{ fontSize: isStuck ? 16 : 26 }}
                       >
                         {port.name.charAt(0)}
                       </span>
                     )}
                   </motion.div>
-                  <div ref={textRef} className="min-w-0 flex flex-col">
+                  <div className="min-w-0 flex flex-col">
                     <p
                       className={[
                         "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold uppercase text-[var(--admin-accent)]",
@@ -186,16 +141,14 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                       <CountryLabel country={port.country} />
                       {port.region ? <span>· {port.region}</span> : null}
                     </p>
-                    <motion.h1
-                      layout
+                    <h1
                       className={[
                         "truncate font-bold tracking-tight text-zinc-900 dark:text-zinc-50",
                         isStuck ? "text-base" : "mt-1 text-2xl",
                       ].join(" ")}
-                      transition={shellTransition}
                     >
                       {portDisplayName(port)}
-                    </motion.h1>
+                    </h1>
                     <div className={isStuck ? "mt-1 flex flex-wrap gap-1.5" : "mt-2 flex flex-wrap gap-2"}>
                       <span
                         className={[
@@ -228,7 +181,6 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                       {!isStuck && (
                         <motion.p
                           key="largest-vessel"
-                          layout
                           initial={{ opacity: 0, height: 0, marginTop: 0 }}
                           animate={{ opacity: 1, height: "auto", marginTop: 12 }}
                           exit={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -269,9 +221,9 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                   Eliminar
                 </ConfirmDeleteButton>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
-        </motion.div>
+        </div>
       </motion.div>
     </>
   );
