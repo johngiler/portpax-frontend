@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
@@ -322,7 +322,7 @@ export default function BookingWizard() {
               href="/bookings"
               className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <X className="h-4 w-4" />
               Cancelar
             </Link>
             {step !== "port" && (

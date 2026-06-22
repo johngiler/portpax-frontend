@@ -37,6 +37,80 @@ export function getMonthMatrix(year: number, monthIndex: number): (number | null
   return weeks;
 }
 
+export type CalendarCell = {
+  day: number;
+  year: number;
+  monthIndex: number;
+  iso: string;
+  isCurrentMonth: boolean;
+};
+
+/** Full month grid including trailing/leading days from adjacent months. */
+export function getCalendarGrid(year: number, monthIndex: number): CalendarCell[][] {
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, monthIndex, 0).getDate();
+  const cells: CalendarCell[] = [];
+
+  for (let index = firstWeekday - 1; index >= 0; index -= 1) {
+    const day = daysInPrevMonth - index;
+    const prevMonthIndex = monthIndex - 1;
+    const cellYear = prevMonthIndex < 0 ? year - 1 : year;
+    const cellMonthIndex = prevMonthIndex < 0 ? 11 : prevMonthIndex;
+    cells.push({
+      day,
+      year: cellYear,
+      monthIndex: cellMonthIndex,
+      iso: toIsoDate(cellYear, cellMonthIndex, day),
+      isCurrentMonth: false,
+    });
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({
+      day,
+      year,
+      monthIndex,
+      iso: toIsoDate(year, monthIndex, day),
+      isCurrentMonth: true,
+    });
+  }
+
+  let nextDay = 1;
+  while (cells.length % 7 !== 0) {
+    const nextMonthIndex = monthIndex + 1;
+    const cellYear = nextMonthIndex > 11 ? year + 1 : year;
+    const cellMonthIndex = nextMonthIndex > 11 ? 0 : nextMonthIndex;
+    cells.push({
+      day: nextDay,
+      year: cellYear,
+      monthIndex: cellMonthIndex,
+      iso: toIsoDate(cellYear, cellMonthIndex, nextDay),
+      isCurrentMonth: false,
+    });
+    nextDay += 1;
+  }
+
+  const weeks: CalendarCell[][] = [];
+  for (let index = 0; index < cells.length; index += 7) {
+    weeks.push(cells.slice(index, index + 7));
+  }
+  return weeks;
+}
+
+export function getMonthOptions(): Array<{ value: number; label: string }> {
+  return Array.from({ length: 12 }, (_, monthIndex) => ({
+    value: monthIndex,
+    label: new Date(2000, monthIndex, 1).toLocaleDateString("es-MX", { month: "long" }),
+  }));
+}
+
+export function getBookingYearRange(minIso: string, yearsAhead = 5): number[] {
+  const minYear = parseIsoDate(minIso).year;
+  const maxYear = new Date().getFullYear() + yearsAhead;
+  return Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index);
+}
+
 export function previewBookingCode(
   portCode: string,
   lineCode: string,

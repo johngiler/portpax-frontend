@@ -9,7 +9,7 @@ type DatesStepProps = {
 
 export default function DatesStep({ selectedDates, onChange }: DatesStepProps) {
   return (
-    <div className="max-w-xl">
+    <div className="max-w-2xl">
       <BookingDateCalendar selectedDates={selectedDates} onChange={onChange} />
     </div>
   );

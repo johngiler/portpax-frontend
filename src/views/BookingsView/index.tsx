@@ -6,28 +6,26 @@ import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import MainTable, {
-  MainTableBody,
-  MainTableEmpty,
-  MainTableHeader,
-  MainTableRow,
-  MainTableTd,
-  MainTableTh,
-} from "@/components/tables/MainTable";
 import TablePagination from "@/components/tables/TablePagination";
-import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { ApiError } from "@/services/apiClient";
 import { fetchBookings } from "@/services/bookings/bookingService";
-import { bookingStatusLabel, type Booking } from "@/types/booking";
+import type { BookingStatus } from "@/types/booking";
+import BookingFilters from "./BookingFilters";
+import BookingsList from "./BookingsList";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 
 const PAGE_SIZE = 20;
 
 export default function BookingsView() {
   const router = useRouter();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<Awaited<ReturnType<typeof fetchBookings>>["results"]>(
+    [],
+  );
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | "">("");
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
@@ -35,7 +33,11 @@ export default function BookingsView() {
     setLoading(true);
     setViewError(null);
     try {
-      const data = await fetchBookings({ page });
+      const data = await fetchBookings({
+        page,
+        search: appliedSearch,
+        status: statusFilter,
+      });
       setBookings(data.results);
       setTotalCount(data.count);
     } catch (err) {
@@ -47,11 +49,21 @@ export default function BookingsView() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, appliedSearch, statusFilter]);
 
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
+
+  function handleStatusChange(next: BookingStatus | "") {
+    setStatusFilter(next);
+    setPage(1);
+  }
+
+  function handleSearchApply() {
+    setAppliedSearch(search.trim());
+    setPage(1);
+  }
 
   return (
     <>
@@ -71,57 +83,19 @@ export default function BookingsView() {
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
+      <BookingFilters
+        status={statusFilter}
+        search={search}
+        onStatusChange={handleStatusChange}
+        onSearchChange={setSearch}
+        onSearchApply={handleSearchApply}
+      />
+
       {loading ? (
         <BookingsViewSkeleton />
       ) : (
         <>
-          <MainTable>
-            <table className="w-full min-w-[48rem]">
-              <MainTableHeader>
-                <MainTableTh>Código</MainTableTh>
-                <MainTableTh>Puerto</MainTableTh>
-                <MainTableTh>Naviera</MainTableTh>
-                <MainTableTh>Barco</MainTableTh>
-                <MainTableTh>Fecha</MainTableTh>
-                <MainTableTh>Estado</MainTableTh>
-              </MainTableHeader>
-              <MainTableBody>
-                {bookings.length === 0 ? (
-                  <MainTableEmpty colSpan={6}>
-                    Sin reservas. Crea el primero con Reservar.
-                  </MainTableEmpty>
-                ) : (
-                  bookings.map((booking) => (
-                    <MainTableRow key={booking.id}>
-                      <MainTableTd>
-                        <code className="text-xs font-semibold text-[var(--admin-accent)]">
-                          {booking.booking_code}
-                        </code>
-                      </MainTableTd>
-                      <MainTableTd>{booking.port_name}</MainTableTd>
-                      <MainTableTd>{booking.shipping_line_name}</MainTableTd>
-                      <MainTableTd>{booking.vessel_name}</MainTableTd>
-                      <MainTableTd>{formatIsoDateLabel(booking.call_date, "short")}</MainTableTd>
-                      <MainTableTd>
-                        <span
-                          className={[
-                            "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                            booking.status === "confirmed"
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                              : booking.status === "cancelled"
-                                ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400"
-                                : "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]",
-                          ].join(" ")}
-                        >
-                          {bookingStatusLabel(booking.status)}
-                        </span>
-                      </MainTableTd>
-                    </MainTableRow>
-                  ))
-                )}
-              </MainTableBody>
-            </table>
-          </MainTable>
+          <BookingsList bookings={bookings} />
 
           <TablePagination
             page={page}

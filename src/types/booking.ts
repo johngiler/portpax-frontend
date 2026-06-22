@@ -6,6 +6,7 @@ export type Booking = {
   port: number;
   port_code: string;
   port_name: string;
+  port_logo: string | null;
   shipping_line: number;
   shipping_line_code: string;
   shipping_line_name: string;
@@ -33,6 +34,31 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   cancelled: "Cancelada",
 };
 
+export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
+  value: BookingStatus | "";
+  label: string;
+}> = [
+  { value: "", label: "Todas" },
+  { value: "requested", label: "Solicitadas" },
+  { value: "confirmed", label: "Confirmadas" },
+  { value: "cancelled", label: "Canceladas" },
+];
+
 export function bookingStatusLabel(status: BookingStatus): string {
   return BOOKING_STATUS_LABELS[status] ?? status;
+}
+
+export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
+  switch (status) {
+    case "requested":
+      return ["confirmed", "cancelled"];
+    case "confirmed":
+      return ["cancelled"];
+    default:
+      return [];
+  }
+}
+
+export function bookingDetailHref(booking: Pick<Booking, "booking_code">): string {
+  return `/bookings/detail?code=${encodeURIComponent(booking.booking_code)}`;
 }

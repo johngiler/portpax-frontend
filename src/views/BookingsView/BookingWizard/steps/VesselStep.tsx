@@ -1,6 +1,6 @@
 "use client";
 
-import { Ship } from "lucide-react";
+import { Check, Ship } from "lucide-react";
 import type { Vessel } from "@/types/cruise";
 
 type VesselStepProps = {
@@ -13,12 +13,18 @@ type VesselStepProps = {
 export default function VesselStep({ vessels, selectedId, onSelect, loading }: VesselStepProps) {
   if (loading) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {Array.from({ length: 10 }).map((_, i) => (
           <div
             key={i}
-            className="h-24 animate-pulse rounded-2xl bg-zinc-200/80 dark:bg-zinc-800"
-          />
+            className="overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-zinc-800"
+          >
+            <div className="aspect-[4/3] animate-pulse bg-zinc-200/80 dark:bg-zinc-800" />
+            <div className="space-y-2 p-2.5">
+              <div className="h-3.5 w-full animate-pulse rounded bg-zinc-200/80 dark:bg-zinc-800" />
+              <div className="h-2.5 w-2/3 animate-pulse rounded bg-zinc-200/60 dark:bg-zinc-800/80" />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -33,7 +39,7 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
       {vessels.map((vessel) => {
         const selected = vessel.id === selectedId;
         return (
@@ -42,16 +48,33 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
             type="button"
             onClick={() => onSelect(vessel.id)}
             className={[
-              "flex cursor-pointer flex-col rounded-2xl border p-4 text-left transition-all duration-200",
+              "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border text-left shadow-[var(--admin-card-shadow)] transition-all duration-200",
               selected
-                ? "border-[var(--admin-accent)] bg-[var(--admin-accent)]/8 shadow-md shadow-[var(--admin-accent)]/10"
-                : "border-zinc-200/80 bg-white hover:border-[var(--admin-accent)]/35 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900/80",
+                ? "scale-[1.02] border-2 border-[var(--admin-accent)] shadow-lg shadow-[var(--admin-accent)]/25 ring-4 ring-[var(--admin-accent)]/15"
+                : "border-zinc-200/80 bg-white hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900/80",
             ].join(" ")}
           >
-            <div className="flex items-start gap-3">
+            {selected && (
+              <span
+                className="pointer-events-none absolute inset-0 z-10 rounded-2xl bg-[var(--admin-accent)]/8"
+                aria-hidden
+              />
+            )}
+            <div
+              className={[
+                "relative flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950",
+                selected ? "from-[var(--admin-accent)]/20" : "",
+              ].join(" ")}
+            >
+              {selected && (
+                <span
+                  className="pointer-events-none absolute inset-0 bg-[var(--admin-accent)]/20"
+                  aria-hidden
+                />
+              )}
               <span
                 className={[
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
                   selected
                     ? "bg-[var(--admin-accent)] text-white"
                     : "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]",
@@ -59,18 +82,40 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
               >
                 <Ship className="h-5 w-5" strokeWidth={2} />
               </span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-zinc-900 dark:text-zinc-50">
-                  {vessel.name}
-                </p>
-                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  {vessel.shipping_line_name}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                  {vessel.loa_m && <span>LOA {vessel.loa_m} m</span>}
-                  {vessel.draft_m && <span>Calado {vessel.draft_m} m</span>}
-                  {vessel.pax_capacity != null && <span>{vessel.pax_capacity} PAX</span>}
-                </div>
+              {selected && (
+                <span
+                  className="absolute left-2 top-2 z-[2] flex h-7 w-7 items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-md"
+                  aria-hidden
+                >
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
+                </span>
+              )}
+            </div>
+            <div
+              className={[
+                "relative z-[1] flex flex-col gap-1 p-2.5 sm:p-3",
+                selected
+                  ? "bg-[var(--admin-accent)]/10 dark:bg-[var(--admin-accent)]/15"
+                  : "bg-white dark:bg-zinc-900/80",
+              ].join(" ")}
+            >
+              <p
+                className={[
+                  "line-clamp-2 text-xs font-semibold leading-snug sm:text-sm",
+                  selected
+                    ? "text-[var(--admin-accent)]"
+                    : "text-zinc-900 dark:text-zinc-50",
+                ].join(" ")}
+              >
+                {vessel.name}
+              </p>
+              <p className="line-clamp-1 text-[10px] text-zinc-500 sm:text-[11px]">
+                {vessel.shipping_line_name}
+              </p>
+              <div className="mt-0.5 flex flex-wrap gap-x-1.5 gap-y-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
+                {vessel.loa_m && <span>LOA {vessel.loa_m} m</span>}
+                {vessel.draft_m && <span>· {vessel.draft_m} m calado</span>}
+                {vessel.pax_capacity != null && <span>· {vessel.pax_capacity} PAX</span>}
               </div>
             </div>
           </button>
