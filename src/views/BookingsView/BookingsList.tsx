@@ -5,9 +5,12 @@ import { ChevronRight, Ship } from "lucide-react";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { formatIsoDateLabel, parseIsoDate } from "@/lib/bookingDates";
 import { bookingDetailHref, type Booking } from "@/types/booking";
+import BookingsEmptyState from "./BookingsEmptyState";
 
 type BookingsListProps = {
   bookings: Booking[];
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 };
 
 function DateBadge({ callDate }: { callDate: string }) {
@@ -24,17 +27,17 @@ function DateBadge({ callDate }: { callDate: string }) {
   );
 }
 
-export default function BookingsList({ bookings }: BookingsListProps) {
+export default function BookingsList({
+  bookings,
+  hasActiveFilters = false,
+  onClearFilters,
+}: BookingsListProps) {
   if (bookings.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-zinc-300/80 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-          Sin reservas con estos filtros.
-        </p>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Crea una nueva con el botón Reservar o ajusta la búsqueda.
-        </p>
-      </div>
+      <BookingsEmptyState
+        variant={hasActiveFilters ? "filtered" : "empty"}
+        onClearFilters={onClearFilters}
+      />
     );
   }
 

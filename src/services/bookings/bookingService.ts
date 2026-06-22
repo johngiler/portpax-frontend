@@ -55,3 +55,7 @@ export async function updateBookingStatus(id: number, status: BookingStatus): Pr
     body: JSON.stringify({ status }),
   });
 }
+
+export async function deleteBooking(id: number): Promise<void> {
+  await apiFetch<void>(`${BASE}${id}/`, { method: "DELETE" });
+}

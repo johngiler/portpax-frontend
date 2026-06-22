@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import { ApiError } from "@/services/apiClient";
@@ -12,6 +12,7 @@ import BookingDetailSummary from "./BookingDetailSummary";
 import BookingStatusActions from "./BookingStatusActions";
 
 export default function BookingDetailView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
 
@@ -76,6 +77,7 @@ export default function BookingDetailView() {
       <BookingStatusActions
         booking={booking}
         onUpdated={setBooking}
+        onDeleted={() => router.push("/bookings")}
         onError={setViewError}
       />
     </div>

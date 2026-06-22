@@ -7,7 +7,6 @@ import {
   Menu,
   MessageSquare,
   Moon,
-  Plus,
   Sun,
 } from "lucide-react";
 import Link from "next/link";
@@ -130,15 +129,6 @@ export default function Header() {
         </Link>
       </div>
       <div className="relative z-10 flex shrink-0 items-center gap-1 sm:gap-2">
-        <Link
-          href="/bookings/new"
-          className="btn-primary-gradient inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all hover:brightness-105 hover:shadow-[0_8px_22px_-14px_rgba(52,120,181,0.7)] sm:px-4 sm:py-2"
-          aria-label="Reservar"
-          title="Reservar"
-        >
-          <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
-          <span className="hidden sm:inline">Reservar</span>
-        </Link>
         <div className="hidden sm:block">
           <GlobalSearch />
         </div>

@@ -65,6 +65,15 @@ export default function BookingsView() {
     setPage(1);
   }
 
+  function handleClearFilters() {
+    setStatusFilter("");
+    setSearch("");
+    setAppliedSearch("");
+    setPage(1);
+  }
+
+  const hasActiveFilters = statusFilter !== "" || appliedSearch !== "";
+
   return (
     <>
       <ViewPageHeader
@@ -95,7 +104,11 @@ export default function BookingsView() {
         <BookingsViewSkeleton />
       ) : (
         <>
-          <BookingsList bookings={bookings} />
+          <BookingsList
+            bookings={bookings}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={handleClearFilters}
+          />
 
           <TablePagination
             page={page}
