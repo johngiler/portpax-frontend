@@ -3,7 +3,7 @@
 import { Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import ViewSection from "@/components/layout/ViewSection";
-import { Skeleton } from "@/components/ui/Skeleton";
+import SkeletonLoader from "@/components/ui/Skeleton";
 import { buildPortMapEmbedUrl, parsePortCoordinates } from "@/lib/portMapEmbed";
 import type { PortDetail } from "@/types/catalog";
 import { formatCoord, formatMeters } from "@/types/catalog";
@@ -36,7 +36,7 @@ function PortMapEmbed({ lat, lng }: { lat: number; lng: number }) {
     >
       {!loaded && (
         <div className="absolute inset-0" role="status" aria-label="Cargando mapa">
-          <Skeleton className="h-full min-h-[280px] rounded-xl" />
+          <SkeletonLoader className="h-full min-h-[280px] rounded-xl" />
         </div>
       )}
       <iframe
