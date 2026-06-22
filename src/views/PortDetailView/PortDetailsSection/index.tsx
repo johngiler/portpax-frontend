@@ -2,7 +2,7 @@
 
 import { Info } from "lucide-react";
 import { useEffect, useState } from "react";
-import PortMapSkeleton from "./PortDetailsSection/PortMapSkeleton";
+import PortMapSkeleton from "./PortMapSkeleton";
 import ViewSection from "@/components/layout/ViewSection";
 import { buildPortMapEmbedUrl, parsePortCoordinates } from "@/lib/portMapEmbed";
 import type { PortDetail } from "@/types/catalog";
