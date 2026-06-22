@@ -133,7 +133,7 @@ export type PositionDetail = Position & {
 export type PortDetail = Port & {
   fender_count: number | null;
   bollard_total: number;
-  berths: Berth[];
+  berths: BerthDetail[];
   positions: PositionDetail[];
   bollards: PortBollard[];
   images: PortImage[];
@@ -176,6 +176,21 @@ export type Berth = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type BerthImage = {
+  id: number;
+  berth: number;
+  image: string;
+  caption: string;
+  sort_order: number;
+  is_cover: boolean;
+  created_at: string;
+};
+
+export type BerthDetail = Berth & {
+  images: BerthImage[];
+  cover_image: string | null;
 };
 
 export type BerthPayload = {

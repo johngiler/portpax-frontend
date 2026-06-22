@@ -1,8 +1,8 @@
 "use client";
 
-import { Anchor, Plus } from "lucide-react";
+import { Anchor } from "lucide-react";
 import { useState } from "react";
-import DefaultButton from "@/components/buttons/DefaultButton";
+import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import { ApiError } from "@/services/apiClient";
@@ -80,21 +80,13 @@ export default function PortBollardsSection({
         icon={Anchor}
         title="Inventario de bitas"
         description="Cantidad de bitas por capacidad y tipo."
+        actions={<SectionAddButton label="Agregar bita" onClick={openCreate} />}
       >
         {error && (
           <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
             {error}
           </p>
         )}
-
-        <div className="mb-4 flex justify-end">
-          <DefaultButton type="button" onClick={openCreate}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              Agregar bita
-            </span>
-          </DefaultButton>
-        </div>
 
         {bollards.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin bitas registradas para este puerto.</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import ImageDropZone from "@/components/ui/ImageDropZone";
+
 type PortLogoFieldProps = {
   previewUrl: string | null;
   disabled?: boolean;
@@ -20,6 +22,8 @@ export default function PortLogoField({
   const boxClass = compact
     ? "mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
     : "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]";
+
+  const uploadLabel = previewUrl ? "Cambiar imagen" : "Subir imagen";
 
   return (
     <div className={compact ? "text-center" : "mb-4 sm:col-span-2"}>
@@ -47,23 +51,22 @@ export default function PortLogoField({
             <span className="text-xs text-zinc-400">Sin logo</span>
           )}
         </div>
-        <div className={`flex flex-col gap-2 ${compact ? "items-center" : ""}`}>
-          <label className="cursor-pointer text-sm font-medium text-[var(--admin-accent)] hover:underline">
-            {previewUrl ? "Cambiar imagen" : "Subir imagen"}
-            <input
-              type="file"
-              accept="image/*"
-              disabled={disabled}
-              className="sr-only"
-              onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-            />
-          </label>
+        <div className={`flex w-full flex-col gap-2 ${compact ? "items-stretch" : "max-w-xs"}`}>
+          <ImageDropZone
+            compact
+            multiple={false}
+            disabled={disabled}
+            label={uploadLabel}
+            hint=""
+            className={compact ? "w-full [&_button]:mt-0" : "[&_button]:mt-0"}
+            onFiles={(files) => onFileChange(files[0] ?? null)}
+          />
           {canRemove && (
             <button
               type="button"
               disabled={disabled}
               onClick={onRemove}
-              className="cursor-pointer text-left text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+              className={`cursor-pointer text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400 ${compact ? "text-center" : "text-left"}`}
             >
               Quitar logo
             </button>

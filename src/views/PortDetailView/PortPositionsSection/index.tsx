@@ -1,8 +1,10 @@
 "use client";
 
-import { ImagePlus, LayoutGrid, Pencil, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
-import DefaultButton from "@/components/buttons/DefaultButton";
+import { LayoutGrid, Pencil, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import SectionAddButton from "@/components/buttons/SectionAddButton";
+import ImageDropZone from "@/components/ui/ImageDropZone";
+import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
 import { ApiError } from "@/services/apiClient";
 import {
@@ -33,22 +35,32 @@ function PositionCard({
   onDelete: () => void;
   onImagesChange: () => Promise<void>;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
-  async function handleUpload(files: FileList | null) {
-    if (!files?.length) return;
+  const viewerImages = useMemo(
+    () => position.images.map((img) => ({ src: img.image, alt: img.caption, caption: img.caption })),
+    [position.images],
+  );
+
+  function openViewer(index: number) {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  }
+
+  async function handleUpload(files: File[]) {
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
-        await createPositionImage(position.id, file, {
-          isCover: !position.cover_image && position.images.length === 0,
+      const needsCover = !position.cover_image && position.images.length === 0;
+      for (let i = 0; i < files.length; i += 1) {
+        await createPositionImage(position.id, files[i], {
+          isCover: needsCover && i === 0,
         });
       }
       await onImagesChange();
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -61,8 +73,18 @@ function PositionCard({
     <article className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
         {position.cover_image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => {
+              const coverIndex = position.images.findIndex((img) => img.image === position.cover_image);
+              openViewer(coverIndex >= 0 ? coverIndex : 0);
+            }}
+            className="h-full w-full cursor-pointer"
+            aria-label="Ver imágenes de la posición"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
+          </button>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Sin portada
@@ -111,10 +133,17 @@ function PositionCard({
         </div>
         {position.images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {position.images.map((img) => (
+            {position.images.map((img, index) => (
               <div key={img.id} className="relative shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
+                <button
+                  type="button"
+                  onClick={() => openViewer(index)}
+                  className="cursor-pointer"
+                  aria-label="Ver imagen"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
+                </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteImage(img.id)}
@@ -127,24 +156,15 @@ function PositionCard({
             ))}
           </div>
         )}
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="mt-3 inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-[var(--admin-accent)] hover:underline disabled:opacity-50"
-        >
-          <ImagePlus className="h-3.5 w-3.5" />
-          {uploading ? "Subiendo…" : "Agregar fotos"}
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={(e) => handleUpload(e.target.files)}
-        />
+        <ImageDropZone compact busy={uploading} onFiles={handleUpload} hint="" />
       </div>
+
+      <ImageViewer
+        images={viewerImages}
+        open={viewerOpen}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerOpen(false)}
+      />
     </article>
   );
 }
@@ -203,21 +223,17 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         icon={LayoutGrid}
         title="Posiciones"
         description="Posiciones de atraque y fondeo con sus características."
+        actions={<SectionAddButton label="Agregar posición" onClick={openCreate} />}
       >
         {error && (
           <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
             {error}
           </p>
         )}
-        <div className="mb-4 flex justify-end">
-          <DefaultButton type="button" onClick={openCreate}>
-            Nueva posición
-          </DefaultButton>
-        </div>
         {port.positions.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin posiciones registradas.</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {port.positions.map((position) => (
               <PositionCard
                 key={position.id}
