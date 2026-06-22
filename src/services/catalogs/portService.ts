@@ -9,6 +9,40 @@ export type FetchPortsParams = {
   pageSize?: number;
 };
 
+export type PortSaveOptions = {
+  logoFile?: File | null;
+  removeLogo?: boolean;
+};
+
+function appendFormValue(form: FormData, key: string, value: unknown) {
+  if (value === null || value === undefined) {
+    form.append(key, "");
+    return;
+  }
+  if (typeof value === "boolean") {
+    form.append(key, value ? "true" : "false");
+    return;
+  }
+  form.append(key, String(value));
+}
+
+function buildPortFormData(payload: PortPayload, options?: PortSaveOptions): FormData {
+  const form = new FormData();
+  (Object.entries(payload) as [keyof PortPayload, PortPayload[keyof PortPayload]][]).forEach(
+    ([key, value]) => appendFormValue(form, key, value),
+  );
+  if (options?.logoFile) {
+    form.append("logo", options.logoFile);
+  } else if (options?.removeLogo) {
+    form.append("logo", "");
+  }
+  return form;
+}
+
+function usesMultipart(options?: PortSaveOptions): boolean {
+  return Boolean(options?.logoFile || options?.removeLogo);
+}
+
 export async function fetchPorts(
   params: FetchPortsParams = {},
 ): Promise<ApiListResponse<Port>> {
@@ -24,14 +58,33 @@ export async function fetchPort(id: number): Promise<Port> {
   return apiFetch<Port>(`${BASE}${id}/`);
 }
 
-export async function createPort(payload: PortPayload): Promise<Port> {
+export async function createPort(
+  payload: PortPayload,
+  options?: PortSaveOptions,
+): Promise<Port> {
+  if (usesMultipart(options)) {
+    return apiFetch<Port>(BASE, {
+      method: "POST",
+      body: buildPortFormData(payload, options),
+    });
+  }
   return apiFetch<Port>(BASE, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function updatePort(id: number, payload: PortPayload): Promise<Port> {
+export async function updatePort(
+  id: number,
+  payload: PortPayload,
+  options?: PortSaveOptions,
+): Promise<Port> {
+  if (usesMultipart(options)) {
+    return apiFetch<Port>(`${BASE}${id}/`, {
+      method: "PATCH",
+      body: buildPortFormData(payload, options),
+    });
+  }
   return apiFetch<Port>(`${BASE}${id}/`, {
     method: "PATCH",
     body: JSON.stringify(payload),

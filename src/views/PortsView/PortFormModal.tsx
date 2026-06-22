@@ -6,8 +6,15 @@ import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import type { Port, PortPayload, PortOperationalStatus } from "@/types/catalog";
 import { PORT_STATUS_OPTIONS } from "@/types/catalog";
+import PortLogoField from "./PortLogoField";
 
 export type PortFormMode = "create" | "edit";
+
+export type PortFormSubmitPayload = {
+  payload: PortPayload;
+  logoFile?: File | null;
+  removeLogo?: boolean;
+};
 
 type PortFormModalProps = {
   open: boolean;
@@ -15,7 +22,7 @@ type PortFormModalProps = {
   initial?: Port | null;
   saving: boolean;
   onClose: () => void;
-  onSubmit: (payload: PortPayload) => Promise<void>;
+  onSubmit: (data: PortFormSubmitPayload) => Promise<void>;
 };
 
 type FormState = PortPayload;
@@ -80,12 +87,32 @@ export default function PortFormModal({
 }: PortFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(initial ? portToForm(initial) : emptyForm());
     setErrors({});
+    setLogoFile(null);
+    setRemoveLogo(false);
+    setLogoPreview(initial?.logo ?? null);
   }, [open, initial]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (logoFile) {
+      const url = URL.createObjectURL(logoFile);
+      setLogoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (removeLogo) {
+      setLogoPreview(null);
+      return;
+    }
+    setLogoPreview(initial?.logo ?? null);
+  }, [open, logoFile, removeLogo, initial?.logo]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -112,7 +139,11 @@ export default function PortFormModal({
       country: form.country.trim(),
       region: form.region.trim(),
     };
-    await onSubmit(payload);
+    await onSubmit({
+      payload,
+      logoFile,
+      removeLogo,
+    });
   }
 
   const title = mode === "create" ? "Nuevo puerto" : "Editar puerto";
@@ -141,6 +172,19 @@ export default function PortFormModal({
     >
       <form id="port-form" onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto pr-1">
         <div className="grid gap-x-4 sm:grid-cols-2">
+          <PortLogoField
+            previewUrl={logoPreview}
+            disabled={saving}
+            onFileChange={(file) => {
+              setLogoFile(file);
+              setRemoveLogo(false);
+            }}
+            onRemove={() => {
+              setLogoFile(null);
+              setRemoveLogo(true);
+            }}
+            canRemove={Boolean(logoPreview)}
+          />
           <FormField
             label="Código"
             name="code"

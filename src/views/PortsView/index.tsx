@@ -24,9 +24,9 @@ import {
   fetchPorts,
   updatePort,
 } from "@/services/catalogs/portService";
-import type { Port, PortPayload } from "@/types/catalog";
+import type { Port } from "@/types/catalog";
 import { portDisplayName, portStatusLabel } from "@/types/catalog";
-import PortFormModal, { type PortFormMode } from "./PortFormModal";
+import PortFormModal, { type PortFormMode, type PortFormSubmitPayload } from "./PortFormModal";
 import PortDetailModal from "./PortDetailModal";
 import PortsViewSkeleton from "./PortsViewSkeleton";
 
@@ -87,14 +87,15 @@ export default function PortsView() {
     setDetailOpen(true);
   }
 
-  async function handleSave(payload: PortPayload) {
+  async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
     setViewError(null);
+    const logoOptions = { logoFile, removeLogo };
     try {
       if (modalMode === "create") {
-        await createPort(payload);
+        await createPort(payload, logoOptions);
       } else if (editingPort) {
-        await updatePort(editingPort.id, payload);
+        await updatePort(editingPort.id, payload, logoOptions);
       }
       setModalOpen(false);
       await loadPorts();
@@ -163,9 +164,9 @@ export default function PortsView() {
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
       <MainTable>
-        <table className="w-full min-w-[48rem]">
+        <table className="w-full min-w-[42rem]">
           <MainTableHeader>
-            <MainTableTh>Código</MainTableTh>
+            <MainTableTh className="w-16">Logo</MainTableTh>
             <MainTableTh>Puerto</MainTableTh>
             <MainTableTh>País</MainTableTh>
             <MainTableTh>Estado</MainTableTh>
@@ -185,7 +186,18 @@ export default function PortsView() {
             ) : (
               ports.map((port) => (
                 <MainTableRow key={port.id}>
-                  <MainTableTd className="font-mono text-xs">{port.code}</MainTableTd>
+                  <MainTableTd>
+                    {port.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={port.logo}
+                        alt=""
+                        className="mx-auto h-10 w-10 rounded object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs text-zinc-400">—</span>
+                    )}
+                  </MainTableTd>
                   <MainTableTd>{portDisplayName(port)}</MainTableTd>
                   <MainTableTd>{port.country}</MainTableTd>
                   <MainTableTd>{portStatusLabel(port.status)}</MainTableTd>

@@ -18,6 +18,7 @@ export type Port = {
   largest_vessel_recorded: string;
   largest_vessel_loa_m: string | null;
   notes: string;
+  logo: string | null;
   is_active: boolean;
   position_count: number;
   position_codes: string[];
