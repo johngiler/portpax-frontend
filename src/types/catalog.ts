@@ -172,6 +172,8 @@ export type Berth = {
   walkway_width_m: string | null;
   min_draft_m: string | null;
   notes: string;
+  latitude: string | null;
+  longitude: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
@@ -203,6 +205,8 @@ export type BerthPayload = {
   walkway_width_m: number | null;
   min_draft_m: number | null;
   notes: string;
+  latitude: number | null;
+  longitude: number | null;
   sort_order: number;
   is_active: boolean;
 };
@@ -225,6 +229,8 @@ export type Position = {
   effective_until: string | null;
   is_projection: boolean;
   notes: string;
+  latitude: string | null;
+  longitude: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
@@ -243,6 +249,8 @@ export type PositionPayload = {
   out_of_service: boolean;
   is_projection: boolean;
   notes: string;
+  latitude: number | null;
+  longitude: number | null;
   sort_order: number;
   is_active: boolean;
 };

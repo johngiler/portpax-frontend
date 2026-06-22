@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
 
-type PortFormSectionProps = {
+type FormSectionProps = {
   title: string;
   description?: string;
   children: ReactNode;
   columns?: 1 | 2;
 };
 
-export default function PortFormSection({
+export default function FormSection({
   title,
   description,
   children,
   columns = 2,
-}: PortFormSectionProps) {
+}: FormSectionProps) {
   return (
     <section className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/30">
       <div className="mb-4">

@@ -6,7 +6,7 @@ import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import type { Port, PortPayload, PortOperationalStatus } from "@/types/catalog";
 import { PORT_STATUS_OPTIONS, portStatusLabel } from "@/types/catalog";
-import PortFormSection from "./PortFormSection";
+import FormSection from "@/components/ui/FormSection";
 import PortLogoField from "./PortLogoField";
 
 export type PortFormMode = "create" | "edit";
@@ -224,7 +224,7 @@ export default function PortFormModal({
           </aside>
 
           <div className="space-y-4">
-            <PortFormSection
+            <FormSection
               title="Identificación"
               description="Nombre y código único del puerto."
             >
@@ -261,9 +261,9 @@ export default function PortFormModal({
                 onChange={(v) => setField("status", v)}
                 options={PORT_STATUS_OPTIONS}
               />
-            </PortFormSection>
+            </FormSection>
 
-            <PortFormSection title="Ubicación" description="País, región y coordenadas.">
+            <FormSection title="Ubicación" description="País, región y coordenadas.">
               <FormField
                 label="País"
                 name="country"
@@ -294,9 +294,9 @@ export default function PortFormModal({
                 value={form.longitude ?? ""}
                 onChange={(v) => setField("longitude", v === "" ? null : Number(v))}
               />
-            </PortFormSection>
+            </FormSection>
 
-            <PortFormSection
+            <FormSection
               title="Capacidad"
               description="Parámetros técnicos del puerto."
             >
@@ -326,16 +326,16 @@ export default function PortFormModal({
                 value={form.fender_count ?? ""}
                 onChange={(v) => setField("fender_count", v === "" ? null : Number(v))}
               />
-            </PortFormSection>
+            </FormSection>
 
-            <PortFormSection title="Notas" description="Observaciones internas." columns={1}>
+            <FormSection title="Notas" description="Observaciones internas." columns={1}>
               <FormField
                 label="Notas"
                 name="notes"
                 value={form.notes}
                 onChange={(v) => setField("notes", String(v))}
               />
-            </PortFormSection>
+            </FormSection>
           </div>
         </div>
       </form>
