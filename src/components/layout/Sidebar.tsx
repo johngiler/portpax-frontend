@@ -1,6 +1,6 @@
 "use client";
 
-import { Anchor, CalendarDays, ChevronLeft, ChevronRight, LayoutDashboard, MapPin, Ship } from "lucide-react";
+import { Anchor, CalendarDays, ChevronLeft, ChevronRight, LayoutDashboard, MapPin } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,7 +14,6 @@ const navItems = [
   { href: "/bookings", label: "Reservas", icon: CalendarDays },
   { href: "/ports", label: "Puertos", icon: MapPin },
   { href: "/shipping-lines", label: "Navieras", icon: Anchor },
-  { href: "/vessels", label: "Barcos", icon: Ship },
 ] as const;
 
 export default function Sidebar() {
@@ -47,15 +46,15 @@ export default function Sidebar() {
 
   const linkBase =
     "relative flex cursor-pointer items-center rounded-lg text-sm font-medium transition-colors duration-200";
-  const linkExpanded = "gap-3 px-3 py-3";
-  const linkCollapsed = "justify-center p-3";
+  const linkExpanded = "gap-2.5 px-2.5 py-2.5";
+  const linkCollapsed = "justify-center p-2.5";
   const linkActive =
     "bg-white/80 text-[var(--admin-accent)] shadow-[var(--admin-card-shadow)] dark:bg-zinc-900/70";
   const linkInactive =
     "text-zinc-600 hover:bg-white/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-50";
 
   const asideClassName = `flex min-h-0 shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ease-out ${
-    isMobileView ? "w-64" : collapsed ? "w-16" : "w-64"
+    isMobileView ? "w-52" : collapsed ? "w-16" : "w-52"
   }`;
 
   const sidebarInner = (
@@ -70,10 +69,10 @@ export default function Sidebar() {
         <span className="sidebar-square sidebar-square-4" />
       </div>
 
-      <nav className="relative z-10 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+      <nav className="relative z-10 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3">
         <div className={`flex flex-col gap-1.5 ${collapsed && !isMobileView ? "" : "mb-2"}`}>
           {(!collapsed || isMobileView) && (
-            <span className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            <span className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
               PortPax
             </span>
           )}

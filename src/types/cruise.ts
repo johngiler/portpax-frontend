@@ -19,9 +19,15 @@ export type ShippingLine = {
   group_name: string;
   code: string;
   name: string;
+  logo: string | null;
   is_active: boolean;
+  vessel_count: number;
   created_at: string;
   updated_at: string;
+};
+
+export type ShippingLineDetail = ShippingLine & {
+  vessels: Vessel[];
 };
 
 export type ShippingLinePayload = {
@@ -37,6 +43,7 @@ export type Vessel = {
   shipping_line_name: string;
   group_name: string;
   name: string;
+  logo: string | null;
   vessel_class: string;
   gross_tonnage: string | null;
   pax_capacity: number | null;
@@ -82,6 +89,18 @@ export function shippingLineDisplayName(line: ShippingLine): string {
     return `${line.name} (${line.group_name})`;
   }
   return line.name;
+}
+
+export function shippingLineDetailHref(line: Pick<ShippingLine, "code">): string {
+  return `/shipping-lines/detail?code=${encodeURIComponent(line.code)}`;
+}
+
+export function shippingLineStatusLabel(isActive: boolean): string {
+  return isActive ? "Activa" : "Inactiva";
+}
+
+export function vesselStatusLabel(isActive: boolean): string {
+  return isActive ? "Activo" : "Inactivo";
 }
 
 export function vesselDisplayName(vessel: Vessel): string {

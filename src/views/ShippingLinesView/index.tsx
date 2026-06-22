@@ -1,56 +1,61 @@
 "use client";
 
-import { Anchor, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Anchor, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import MainTable, {
-  MainTableBody,
-  MainTableEmpty,
-  MainTableHeader,
-  MainTableRow,
-  MainTableTd,
-  MainTableTh,
-} from "@/components/tables/MainTable";
-import TableActionButtons from "@/components/tables/TableActionButtons";
-import TablePagination from "@/components/tables/TablePagination";
-import { FormField } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { ApiError } from "@/services/apiClient";
-import {
-  createShippingLine,
-  deleteShippingLine,
-  fetchShippingLines,
-  updateShippingLine,
-} from "@/services/catalogs/shippingLineService";
-import type { ShippingLine, ShippingLinePayload } from "@/types/cruise";
-import ShippingLineFormModal, { type ShippingLineFormMode } from "./ShippingLineFormModal";
+import { createShippingLine, fetchShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
+import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
+import ShippingLineCard from "./ShippingLineCard";
+import ShippingLineFormModal from "./ShippingLineFormModal";
+import ShippingLinesEmptyState from "./ShippingLinesEmptyState";
 import ShippingLinesViewSkeleton from "./ShippingLinesViewSkeleton";
 
-const PAGE_SIZE = 20;
+const BATCH_SIZE = 12;
 
 export default function ShippingLinesView() {
-  const [lines, setLines] = useState<ShippingLine[]>([]);
+  const [lines, setLines] = useState<Awaited<ReturnType<typeof fetchShippingLines>>["results"]>(
+    [],
+  );
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [groupFilter, setGroupFilter] = useState(0);
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [appliedGroupFilter, setAppliedGroupFilter] = useState(0);
+  const [groupOptions, setGroupOptions] = useState<{ value: number; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
-
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<ShippingLineFormMode>("create");
-  const [editingLine, setEditingLine] = useState<ShippingLine | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadLines = useCallback(async () => {
+  useEffect(() => {
+    fetchShippingLineGroups()
+      .then((groups) =>
+        setGroupOptions(groups.map((group) => ({ value: group.id, label: group.name }))),
+      )
+      .catch(() => setGroupOptions([]));
+  }, []);
+
+  const loadInitial = useCallback(async () => {
     setLoading(true);
     setViewError(null);
     try {
-      const data = await fetchShippingLines({ page, search: appliedSearch });
+      const data = await fetchShippingLines({
+        page: 1,
+        search: appliedSearch,
+        group: appliedGroupFilter > 0 ? appliedGroupFilter : undefined,
+        pageSize: BATCH_SIZE,
+      });
       setLines(data.results);
       setTotalCount(data.count);
+      setPage(1);
     } catch (err) {
       setViewError(
         err instanceof ApiError ? err.message : "No se pudieron cargar las navieras.",
@@ -60,60 +65,58 @@ export default function ShippingLinesView() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedSearch]);
+  }, [appliedSearch, appliedGroupFilter]);
 
   useEffect(() => {
-    loadLines();
-  }, [loadLines]);
+    loadInitial();
+  }, [loadInitial]);
 
-  function openCreate() {
-    setModalMode("create");
-    setEditingLine(null);
-    setModalOpen(true);
+  async function loadMore() {
+    setLoadingMore(true);
+    setViewError(null);
+    try {
+      const nextPage = page + 1;
+      const data = await fetchShippingLines({
+        page: nextPage,
+        search: appliedSearch,
+        group: appliedGroupFilter > 0 ? appliedGroupFilter : undefined,
+        pageSize: BATCH_SIZE,
+      });
+      setLines((prev) => [...prev, ...data.results]);
+      setPage(nextPage);
+    } catch (err) {
+      setViewError(
+        err instanceof ApiError ? err.message : "No se pudieron cargar más navieras.",
+      );
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
-  function openEdit(line: ShippingLine) {
-    setModalMode("edit");
-    setEditingLine(line);
-    setModalOpen(true);
-  }
-
-  async function handleSave(payload: ShippingLinePayload) {
+  async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     setSaving(true);
     setViewError(null);
     try {
-      if (modalMode === "create") {
-        await createShippingLine(payload);
-      } else if (editingLine) {
-        await updateShippingLine(editingLine.id, payload);
-      }
+      await createShippingLine(payload, { logoFile, removeLogo });
       setModalOpen(false);
-      await loadLines();
+      await loadInitial();
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudo guardar la naviera.",
+        err instanceof ApiError ? err.message : "No se pudo crear la naviera.",
       );
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(line: ShippingLine) {
-    setViewError(null);
-    try {
-      await deleteShippingLine(line.id);
-      await loadLines();
-    } catch (err) {
-      setViewError(
-        err instanceof ApiError ? err.message : "No se pudo eliminar la naviera.",
-      );
-    }
+  function applyFilters() {
+    setAppliedSearch(search);
+    setAppliedGroupFilter(groupFilter);
   }
 
-  function applyFilters() {
-    setPage(1);
-    setAppliedSearch(search);
-  }
+  const hasActiveFilters = Boolean(appliedSearch) || appliedGroupFilter > 0;
+
+  const hasMore = lines.length < totalCount;
 
   if (loading && lines.length === 0 && !viewError) {
     return <ShippingLinesViewSkeleton />;
@@ -122,15 +125,21 @@ export default function ShippingLinesView() {
   return (
     <>
       <FilterSidebarContent>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Filtros
-        </p>
         <FormField
           label="Buscar"
           name="line_search"
           value={search}
-          onChange={(v) => setSearch(String(v))}
-          placeholder="Marca, grupo, código…"
+          onChange={(value) => setSearch(String(value))}
+          placeholder="Marca, código…"
+        />
+        <FormFieldSelect<number>
+          label="Grupo corporativo"
+          name="line_group_filter"
+          value={groupFilter}
+          onChange={setGroupFilter}
+          options={groupOptions}
+          optionLabel="Todos los grupos"
+          emptyValue={0}
         />
         <DefaultButton type="button" onClick={applyFilters} className="w-full">
           Aplicar
@@ -140,9 +149,9 @@ export default function ShippingLinesView() {
       <ViewPageHeader
         icon={Anchor}
         title="Navieras"
-        description="Marcas operativas y grupo corporativo — Base_Datos_Cruceros."
+        description="Selecciona una naviera para ver su ficha y la flota de barcos asociada."
         actions={
-          <DefaultButton type="button" onClick={openCreate}>
+          <DefaultButton type="button" onClick={() => setModalOpen(true)}>
             <span className="inline-flex items-center gap-2">
               <Plus className="h-4 w-4" strokeWidth={2} />
               Nueva naviera
@@ -153,56 +162,36 @@ export default function ShippingLinesView() {
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      <MainTable>
-        <table className="w-full min-w-[44rem]">
-          <MainTableHeader>
-            <MainTableTh>Código</MainTableTh>
-            <MainTableTh>Naviera</MainTableTh>
-            <MainTableTh>Grupo</MainTableTh>
-            <MainTableTh>Estado</MainTableTh>
-            <MainTableTh className="text-center">Acciones</MainTableTh>
-          </MainTableHeader>
-          <MainTableBody>
-            {loading ? (
-              <MainTableEmpty colSpan={5}>Cargando…</MainTableEmpty>
-            ) : lines.length === 0 ? (
-              <MainTableEmpty colSpan={5}>
-                {appliedSearch
-                  ? "Ninguna naviera coincide con los filtros."
-                  : "No hay navieras registradas."}
-              </MainTableEmpty>
-            ) : (
-              lines.map((line) => (
-                <MainTableRow key={line.id}>
-                  <MainTableTd className="font-mono text-xs">{line.code}</MainTableTd>
-                  <MainTableTd>{line.name}</MainTableTd>
-                  <MainTableTd>{line.group_name}</MainTableTd>
-                  <MainTableTd>{line.is_active ? "Activa" : "Inactiva"}</MainTableTd>
-                  <MainTableTd className="text-center">
-                    <TableActionButtons
-                      onEdit={() => openEdit(line)}
-                      onDelete={() => handleDelete(line)}
-                      deleteLabel={`la naviera ${line.name}`}
-                    />
-                  </MainTableTd>
-                </MainTableRow>
-              ))
-            )}
-          </MainTableBody>
-        </table>
-        <TablePagination
-          page={page}
-          totalCount={totalCount}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          label="navieras"
+      {loading && lines.length === 0 ? (
+        <p className="text-sm text-zinc-500">Cargando…</p>
+      ) : lines.length === 0 ? (
+        <ShippingLinesEmptyState
+          filtered={hasActiveFilters}
+          onCreate={() => setModalOpen(true)}
         />
-      </MainTable>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {lines.map((line) => (
+              <ShippingLineCard key={line.id} line={line} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-8 flex flex-col items-center gap-2">
+              <DefaultButton type="button" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Cargando…" : "Cargar más"}
+              </DefaultButton>
+              <p className="text-xs text-zinc-500">
+                {lines.length} de {totalCount} navieras
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
       <ShippingLineFormModal
         open={modalOpen}
-        mode={modalMode}
-        initial={editingLine}
+        mode="create"
         saving={saving}
         onClose={() => !saving && setModalOpen(false)}
         onSubmit={handleSave}

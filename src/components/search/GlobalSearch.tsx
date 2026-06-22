@@ -183,7 +183,7 @@ export default function GlobalSearch() {
                       {results!.ships.map((s) => (
                         <Link
                           key={s.id}
-                          href="/ships"
+                          href="/shipping-lines"
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -206,7 +206,7 @@ export default function GlobalSearch() {
                       {results!.shipping_lines.map((sl) => (
                         <Link
                           key={sl.id}
-                          href="/shipping-lines"
+                          href={`/shipping-lines/detail?code=${encodeURIComponent(sl.code)}`}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >

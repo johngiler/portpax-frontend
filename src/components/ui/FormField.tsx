@@ -10,6 +10,86 @@ const inputErrorClass =
   "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500 dark:focus:border-red-500 dark:focus:ring-red-500/25";
 const errorClass = "mt-1 text-xs font-medium text-red-600 dark:text-red-400";
 
+export function buildCatalogSelectStyles<T extends string | number>(
+  error?: boolean,
+): StylesConfig<{ value: T; label: string }, false> {
+  return {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "42px",
+      borderRadius: 6,
+      borderColor: error
+        ? "#ef4444"
+        : state.isFocused
+          ? "var(--admin-accent)"
+          : "var(--admin-border)",
+      background:
+        "linear-gradient(to bottom, var(--admin-surface) 0%, var(--admin-surface-muted) 100%)",
+      boxShadow: error
+        ? "0 0 0 2px color-mix(in srgb, #ef4444 20%, transparent)"
+        : state.isFocused
+          ? "0 0 0 2px color-mix(in srgb, var(--admin-accent) 20%, transparent)"
+          : "inset 0 1px 2px rgba(15,23,42,0.06)",
+      "&:hover": {
+        borderColor: error
+          ? "#ef4444"
+          : state.isFocused
+            ? "var(--admin-accent)"
+            : "var(--admin-border)",
+      },
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      padding: "0 12px",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: "rgb(161 161 170)",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "var(--foreground)",
+    }),
+    indicatorSeparator: (base) => ({
+      ...base,
+      backgroundColor: "var(--admin-border)",
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: "rgb(113 113 122)",
+      "&:hover": { color: "rgb(63 63 70)" },
+    }),
+    clearIndicator: (base) => ({
+      ...base,
+      color: "rgb(113 113 122)",
+      "&:hover": { color: "rgb(63 63 70)" },
+    }),
+    menu: (base) => ({
+      ...base,
+      borderRadius: 8,
+      border: "1px solid var(--admin-border)",
+      backgroundColor: "var(--admin-surface)",
+      boxShadow: "var(--admin-card-shadow-hover)",
+      overflow: "hidden",
+      zIndex: 60,
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 70,
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isFocused
+        ? "color-mix(in srgb, var(--admin-accent) 10%, transparent)"
+        : state.isSelected
+          ? "color-mix(in srgb, var(--admin-accent) 16%, transparent)"
+          : "transparent",
+      color: "var(--foreground)",
+      cursor: "pointer",
+    }),
+  };
+}
+
 type FormFieldProps = {
   label: string;
   name: string;
@@ -115,81 +195,7 @@ export function FormFieldSelect<T extends string | number>({
       ? null
       : (options.find((opt) => opt.value === value) ?? null);
 
-  const styles: StylesConfig<{ value: T; label: string }, false> = {
-    control: (base, state) => ({
-      ...base,
-      minHeight: "42px",
-      borderRadius: 6,
-      borderColor: error
-        ? "#ef4444"
-        : state.isFocused
-          ? "var(--admin-accent)"
-          : "var(--admin-border)",
-      background:
-        "linear-gradient(to bottom, var(--admin-surface) 0%, var(--admin-surface-muted) 100%)",
-      boxShadow: error
-        ? "0 0 0 2px color-mix(in srgb, #ef4444 20%, transparent)"
-        : state.isFocused
-          ? "0 0 0 2px color-mix(in srgb, var(--admin-accent) 20%, transparent)"
-          : "inset 0 1px 2px rgba(15,23,42,0.06)",
-      "&:hover": {
-        borderColor: error
-          ? "#ef4444"
-          : state.isFocused
-            ? "var(--admin-accent)"
-            : "var(--admin-border)",
-      },
-    }),
-    valueContainer: (base) => ({
-      ...base,
-      padding: "0 12px",
-    }),
-    placeholder: (base) => ({
-      ...base,
-      color: "rgb(161 161 170)",
-    }),
-    singleValue: (base) => ({
-      ...base,
-      color: "var(--foreground)",
-    }),
-    indicatorSeparator: (base) => ({
-      ...base,
-      backgroundColor: "var(--admin-border)",
-    }),
-    dropdownIndicator: (base) => ({
-      ...base,
-      color: "rgb(113 113 122)",
-      "&:hover": { color: "rgb(63 63 70)" },
-    }),
-    clearIndicator: (base) => ({
-      ...base,
-      color: "rgb(113 113 122)",
-      "&:hover": { color: "rgb(63 63 70)" },
-    }),
-    menu: (base) => ({
-      ...base,
-      borderRadius: 8,
-      border: "1px solid var(--admin-border)",
-      backgroundColor: "var(--admin-surface)",
-      boxShadow: "var(--admin-card-shadow-hover)",
-      overflow: "hidden",
-      zIndex: 60,
-    }),
-    menuPortal: (base) => ({
-      ...base,
-      zIndex: 70,
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isFocused
-        ? "color-mix(in srgb, var(--admin-accent) 10%, transparent)"
-        : state.isSelected
-          ? "color-mix(in srgb, var(--admin-accent) 16%, transparent)"
-          : "transparent",
-      color: "var(--foreground)",
-      cursor: "pointer",
-    }),
-  };
+  const styles = buildCatalogSelectStyles<T>(Boolean(error));
 
   return (
     <div className="mb-4">
@@ -222,4 +228,4 @@ export function FormFieldSelect<T extends string | number>({
   );
 }
 
-export { inputClass, labelClass };
+export { inputClass, labelClass, errorClass };

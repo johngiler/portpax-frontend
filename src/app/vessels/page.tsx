@@ -1,5 +1,5 @@
-import VesselsView from "@/views/VesselsView";
+import { redirect } from "next/navigation";
 
 export default function VesselsPage() {
-  return <VesselsView />;
+  redirect("/shipping-lines");
 }

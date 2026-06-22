@@ -1,4 +1,10 @@
 import { apiFetch, type ApiListResponse } from "@/services/apiClient";
+import {
+  appendCatalogFormValue,
+  appendCatalogLogoFields,
+  type CatalogLogoSaveOptions,
+  usesCatalogLogoMultipart,
+} from "@/lib/catalogMultipart";
 import type { Vessel, VesselPayload } from "@/types/cruise";
 
 const BASE = "api/catalogs/vessels/";
@@ -9,6 +15,17 @@ export type FetchVesselsParams = {
   shipping_line?: number;
   pageSize?: number;
 };
+
+export type VesselSaveOptions = CatalogLogoSaveOptions;
+
+function buildVesselFormData(payload: VesselPayload, options?: VesselSaveOptions): FormData {
+  const form = new FormData();
+  (Object.entries(payload) as [keyof VesselPayload, VesselPayload[keyof VesselPayload]][]).forEach(
+    ([key, value]) => appendCatalogFormValue(form, key, value),
+  );
+  appendCatalogLogoFields(form, options);
+  return form;
+}
 
 export async function fetchVessels(
   params: FetchVesselsParams = {},
@@ -22,14 +39,33 @@ export async function fetchVessels(
   return apiFetch<ApiListResponse<Vessel>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
 
-export async function createVessel(payload: VesselPayload): Promise<Vessel> {
+export async function createVessel(
+  payload: VesselPayload,
+  options?: VesselSaveOptions,
+): Promise<Vessel> {
+  if (usesCatalogLogoMultipart(options)) {
+    return apiFetch<Vessel>(BASE, {
+      method: "POST",
+      body: buildVesselFormData(payload, options),
+    });
+  }
   return apiFetch<Vessel>(BASE, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateVessel(id: number, payload: VesselPayload): Promise<Vessel> {
+export async function updateVessel(
+  id: number,
+  payload: VesselPayload,
+  options?: VesselSaveOptions,
+): Promise<Vessel> {
+  if (usesCatalogLogoMultipart(options)) {
+    return apiFetch<Vessel>(`${BASE}${id}/`, {
+      method: "PATCH",
+      body: buildVesselFormData(payload, options),
+    });
+  }
   return apiFetch<Vessel>(`${BASE}${id}/`, {
     method: "PATCH",
     body: JSON.stringify(payload),

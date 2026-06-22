@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import TablePagination from "@/components/tables/TablePagination";
@@ -24,6 +25,7 @@ export default function BookingsView() {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "">("");
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingStatus | "">("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function BookingsView() {
       const data = await fetchBookings({
         page,
         search: appliedSearch,
-        status: statusFilter,
+        status: appliedStatusFilter,
       });
       setBookings(data.results);
       setTotalCount(data.count);
@@ -49,33 +51,40 @@ export default function BookingsView() {
     } finally {
       setLoading(false);
     }
-  }, [page, appliedSearch, statusFilter]);
+  }, [page, appliedSearch, appliedStatusFilter]);
 
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
 
-  function handleStatusChange(next: BookingStatus | "") {
-    setStatusFilter(next);
-    setPage(1);
-  }
-
-  function handleSearchApply() {
+  function applyFilters() {
     setAppliedSearch(search.trim());
+    setAppliedStatusFilter(statusFilter);
     setPage(1);
   }
 
   function handleClearFilters() {
     setStatusFilter("");
+    setAppliedStatusFilter("");
     setSearch("");
     setAppliedSearch("");
     setPage(1);
   }
 
-  const hasActiveFilters = statusFilter !== "" || appliedSearch !== "";
+  const hasActiveFilters = appliedStatusFilter !== "" || appliedSearch !== "";
 
   return (
     <>
+      <FilterSidebarContent>
+        <BookingFilters
+          status={statusFilter}
+          search={search}
+          onStatusChange={setStatusFilter}
+          onSearchChange={setSearch}
+          onApply={applyFilters}
+        />
+      </FilterSidebarContent>
+
       <ViewPageHeader
         icon={CalendarDays}
         title="Reservas"
@@ -91,14 +100,6 @@ export default function BookingsView() {
       />
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
-
-      <BookingFilters
-        status={statusFilter}
-        search={search}
-        onStatusChange={handleStatusChange}
-        onSearchChange={setSearch}
-        onSearchApply={handleSearchApply}
-      />
 
       {loading ? (
         <BookingsViewSkeleton />

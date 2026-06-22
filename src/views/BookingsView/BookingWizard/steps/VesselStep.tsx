@@ -74,13 +74,18 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
               )}
               <span
                 className={[
-                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors overflow-hidden",
                   selected
                     ? "bg-[var(--admin-accent)] text-white"
                     : "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]",
                 ].join(" ")}
               >
-                <Ship className="h-5 w-5" strokeWidth={2} />
+                {vessel.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={vessel.logo} alt="" className="h-full w-full object-contain p-1" />
+                ) : (
+                  <Ship className="h-5 w-5" strokeWidth={2} />
+                )}
               </span>
               {selected && (
                 <span

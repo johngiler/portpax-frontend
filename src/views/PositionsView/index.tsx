@@ -142,9 +142,6 @@ export default function PositionsView() {
   return (
     <>
       <FilterSidebarContent>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Filtros
-        </p>
         <FormField
           label="Buscar"
           name="position_search"

@@ -71,13 +71,18 @@ export default function ShippingLineStep({
               )}
               <span
                 className={[
-                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+                  "relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl transition-colors overflow-hidden",
                   selected
                     ? "bg-[var(--admin-accent)] text-white"
                     : "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]",
                 ].join(" ")}
               >
-                <Anchor className="h-5 w-5" strokeWidth={2} />
+                {line.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={line.logo} alt="" className="h-full w-full object-contain p-1.5" />
+                ) : (
+                  <Anchor className="h-5 w-5" strokeWidth={2} />
+                )}
               </span>
               {selected && (
                 <span
