@@ -19,6 +19,7 @@ export default function DashboardViewSkeleton() {
           <Skeleton key={i} className="h-[130px] rounded-2xl" />
         ))}
       </div>
+      <Skeleton className="mb-8 h-[42rem] rounded-2xl" />
       <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/80">
         <Skeleton className="mb-3 h-10 w-10 rounded-xl" />
         <Skeleton className="h-5 w-48 rounded" />

@@ -191,6 +191,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
+        lockedPortCode={port.code}
         initial={editingPosition}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

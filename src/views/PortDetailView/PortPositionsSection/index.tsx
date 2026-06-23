@@ -16,12 +16,13 @@ import {
   updatePosition,
 } from "@/services/catalogs/positionService";
 import { createPositionImage, deletePositionImage } from "@/services/catalogs/positionImageService";
-import type { PortDetail, PositionDetail, PositionPayload } from "@/types/catalog";
+import type { PortDetail, PortBollard, PortFender, PositionDetail, PositionPayload } from "@/types/catalog";
 import { formatMeters, positionTypeLabel } from "@/types/catalog";
 import { positionDisplayCode } from "@/lib/positionCode";
 import PositionFormModal, {
   type PositionFormMode,
 } from "@/views/PositionsView/PositionFormModal";
+import PositionCardInventory from "./PositionCardInventory";
 
 type PortPositionsSectionProps = {
   port: PortDetail;
@@ -30,11 +31,15 @@ type PortPositionsSectionProps = {
 
 function PositionCard({
   position,
+  bollards,
+  fenders,
   onEdit,
   onDelete,
   onImagesChange,
 }: {
   position: PositionDetail;
+  bollards: PortBollard[];
+  fenders: PortFender[];
   onEdit: () => void;
   onDelete: () => void;
   onImagesChange: () => Promise<void>;
@@ -141,6 +146,11 @@ function PositionCard({
                 <dd className="font-medium">{formatMeters(position.min_draft_m)}</dd>
               </div>
             </dl>
+            <PositionCardInventory
+              position={position}
+              bollards={bollards}
+              fenders={fenders}
+            />
           </div>
           <TableActionButtons
             onEdit={onEdit}
@@ -249,6 +259,8 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
               <PositionCard
                 key={position.id}
                 position={position}
+                bollards={port.bollards}
+                fenders={port.fenders}
                 onEdit={() => openEdit(position)}
                 onDelete={() => handleDelete(position)}
                 onImagesChange={onChange}
@@ -262,6 +274,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
+        lockedPortCode={port.code}
         initial={editing}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

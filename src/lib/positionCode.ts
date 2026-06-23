@@ -41,3 +41,7 @@ type PositionCodeFields = {
 export function positionDisplayCode(position: PositionCodeFields): string {
   return position.short_code ?? positionShortCode(position.port_code, position.code);
 }
+
+export function formatPositionStoredCode(code: string): string {
+  return code.trim().toUpperCase();
+}

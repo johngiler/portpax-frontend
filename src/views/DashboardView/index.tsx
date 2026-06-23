@@ -16,6 +16,7 @@ import ViewStatCard from "@/components/layout/ViewStatCard";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { getTimeRange, type TimeFilterPreset } from "@/utils/timeRange";
 import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
+import DashboardOccupancySection from "./DashboardOccupancySection";
 import DashboardUpcomingSection from "./DashboardUpcomingSection";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
 import { loadDashboardSummary, type DashboardSummary } from "./loadDashboardSummary";
@@ -158,7 +159,7 @@ export default function DashboardView() {
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="Resumen operativo de reservas y catálogos del período seleccionado."
+        description="Resumen operativo de reservas, ocupación visual y catálogos del período seleccionado."
       />
 
       {viewError && (
@@ -179,6 +180,8 @@ export default function DashboardView() {
           />
         ))}
       </div>
+
+      <DashboardOccupancySection dateFrom={timeRange.date_from} dateTo={timeRange.date_to} />
 
       {summary && (
         <DashboardUpcomingSection

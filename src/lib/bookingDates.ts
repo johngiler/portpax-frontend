@@ -111,6 +111,22 @@ export function getBookingYearRange(minIso: string, yearsAhead = 5): number[] {
   return Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index);
 }
 
+/** Inclusive ISO date range (local calendar, no UTC drift). */
+export function enumerateIsoDates(from: string, to: string): string[] {
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  const cursor = new Date(start.year, start.monthIndex, start.day);
+  const endDate = new Date(end.year, end.monthIndex, end.day);
+  const dates: string[] = [];
+
+  while (cursor <= endDate) {
+    dates.push(toIsoDate(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
 export function previewBookingCode(
   portCode: string,
   lineCode: string,

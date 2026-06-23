@@ -246,6 +246,16 @@ export type PositionComponentRef = {
   code: string;
 };
 
+export type PositionBollardAllocation = {
+  port_bollard: number;
+  quantity: number;
+};
+
+export type PositionFenderAllocation = {
+  port_fender: number;
+  quantity: number;
+};
+
 export type Position = {
   id: number;
   port: number;
@@ -258,8 +268,8 @@ export type Position = {
   position_type: PositionType;
   max_loa_m: string | null;
   min_draft_m: string | null;
-  port_bollard_ids: number[];
-  port_fender_ids: number[];
+  bollard_allocations: PositionBollardAllocation[];
+  fender_allocations: PositionFenderAllocation[];
   bollard_count: number | null;
   fender_count: number | null;
   effective_from: string | null;
@@ -282,8 +292,8 @@ export type PositionPayload = {
   position_type: PositionType;
   max_loa_m: number | null;
   min_draft_m: number | null;
-  port_bollard_ids: number[];
-  port_fender_ids: number[];
+  bollard_allocations: PositionBollardAllocation[];
+  fender_allocations: PositionFenderAllocation[];
   bollard_count: number | null;
   fender_count: number | null;
   notes: string;

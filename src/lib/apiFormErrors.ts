@@ -57,8 +57,10 @@ const MESSAGE_PATTERNS: Array<{
 
 const FIELD_ALIASES: Record<string, string> = {
   component_position_ids: "component",
-  port_bollard: "port_bollard_ids",
-  port_fender: "port_fender_ids",
+  port_bollard: "bollard_allocations",
+  port_fender: "fender_allocations",
+  port_bollard_ids: "bollard_allocations",
+  port_fender_ids: "fender_allocations",
 };
 
 const CODE_FIELD_MESSAGE_PATTERNS = [

@@ -3,15 +3,20 @@
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
-import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { submitModalForm } from "@/lib/apiFormErrors";
 import {
-  formatPortBollardLabel,
-  formatPortFenderLabel,
+  formatPortBollardOptionLabel,
+  formatPortFenderOptionLabel,
 } from "@/lib/inventoryLabels";
-import { normalizePositionShortCode, positionDisplayCode } from "@/lib/positionCode";
+import {
+  buildPositionCode,
+  formatPositionStoredCode,
+  normalizePositionShortCode,
+  positionDisplayCode,
+} from "@/lib/positionCode";
 import { deriveCombinedDefaults } from "@/lib/positionCombination";
 import { fetchBerths } from "@/services/catalogs/berthService";
 import { fetchPortBollards } from "@/services/catalogs/portBollardService";
@@ -21,6 +26,12 @@ import { fetchPositions } from "@/services/catalogs/positionService";
 import type { Position, PositionPayload, PositionType } from "@/types/catalog";
 import { POSITION_TYPE_OPTIONS, portDisplayName, positionTypeLabel } from "@/types/catalog";
 import CombinedPositionFields from "./CombinedPositionFields";
+import PositionInventoryRows, {
+  allocationsFromBollardRows,
+  allocationsFromFenderRows,
+  rowsFromAllocations,
+  type InventoryRow,
+} from "./PositionInventoryRows";
 
 export type PositionFormMode = "create" | "edit";
 
@@ -28,6 +39,7 @@ type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
   lockedPortId?: number;
+  lockedPortCode?: string;
   initial?: Position | null;
   saving: boolean;
   onClose: () => void;
@@ -38,6 +50,8 @@ type FormState = PositionPayload;
 
 type FieldErrors = Partial<Record<keyof FormState, string>> & {
   component?: string;
+  bollard_allocations?: string;
+  fender_allocations?: string;
 };
 
 function emptyForm(portId = 0): FormState {
@@ -48,8 +62,8 @@ function emptyForm(portId = 0): FormState {
     position_type: "pier",
     max_loa_m: null,
     min_draft_m: null,
-    port_bollard_ids: [],
-    port_fender_ids: [],
+    bollard_allocations: [],
+    fender_allocations: [],
     bollard_count: null,
     fender_count: null,
     notes: "",
@@ -68,8 +82,8 @@ function positionToForm(position: Position): FormState {
     position_type: position.position_type,
     max_loa_m: position.max_loa_m != null ? Number(position.max_loa_m) : null,
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
-    port_bollard_ids: position.port_bollard_ids ?? [],
-    port_fender_ids: position.port_fender_ids ?? [],
+    bollard_allocations: position.bollard_allocations ?? [],
+    fender_allocations: position.fender_allocations ?? [],
     bollard_count: position.bollard_count,
     fender_count: position.fender_count,
     notes: position.notes,
@@ -95,6 +109,7 @@ export default function PositionFormModal({
   open,
   mode,
   lockedPortId,
+  lockedPortCode,
   initial,
   saving,
   onClose,
@@ -105,6 +120,7 @@ export default function PositionFormModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
   const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portCodesById, setPortCodesById] = useState<Record<number, string>>({});
   const [isCombined, setIsCombined] = useState(false);
   const [componentAId, setComponentAId] = useState(0);
   const [componentBId, setComponentBId] = useState(0);
@@ -113,25 +129,33 @@ export default function PositionFormModal({
   const [bollardOptions, setBollardOptions] = useState<{ value: number; label: string }[]>([]);
   const [fenderOptions, setFenderOptions] = useState<{ value: number; label: string }[]>([]);
   const [loadingInventory, setLoadingInventory] = useState(false);
+  const [bollardRows, setBollardRows] = useState<InventoryRow[]>([]);
+  const [fenderRows, setFenderRows] = useState<InventoryRow[]>([]);
 
   useEffect(() => {
     if (!open) return;
     const defaultPort = lockedPortId ?? initial?.port ?? 0;
     setForm(initial ? positionToForm(initial) : emptyForm(defaultPort));
+    setBollardRows(
+      rowsFromAllocations(initial?.bollard_allocations ?? [], "port_bollard"),
+    );
+    setFenderRows(
+      rowsFromAllocations(initial?.fender_allocations ?? [], "port_fender"),
+    );
     setErrors({});
     setSubmitError(null);
     setIsCombined(Boolean(initial?.is_combined));
     setComponentAId(initial?.component_positions[0]?.id ?? 0);
     setComponentBId(initial?.component_positions[1]?.id ?? 0);
-    if (!lockedPortId) {
-      fetchPorts({ pageSize: 100 })
-        .then((data) =>
-          setPortOptions(
-            data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })),
-          ),
-        )
-        .catch(() => setPortOptions([]));
-    }
+    fetchPorts({ pageSize: 100 })
+      .then((data) => {
+        setPortOptions(data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })));
+        setPortCodesById(Object.fromEntries(data.results.map((p) => [p.id, p.code])));
+      })
+      .catch(() => {
+        setPortOptions([]);
+        setPortCodesById({});
+      });
   }, [open, initial, lockedPortId]);
 
   useEffect(() => {
@@ -171,10 +195,16 @@ export default function PositionFormModal({
     Promise.all([fetchPortBollards(form.port), fetchPortFenders(form.port)])
       .then(([bollards, fenders]) => {
         setBollardOptions(
-          bollards.map((item) => ({ value: item.id, label: formatPortBollardLabel(item) })),
+          bollards.map((item) => ({
+            value: item.id,
+            label: formatPortBollardOptionLabel(item),
+          })),
         );
         setFenderOptions(
-          fenders.map((item) => ({ value: item.id, label: formatPortFenderLabel(item) })),
+          fenders.map((item) => ({
+            value: item.id,
+            label: formatPortFenderOptionLabel(item),
+          })),
         );
       })
       .catch(() => {
@@ -204,16 +234,24 @@ export default function PositionFormModal({
       const next = { ...prev, [key]: value };
       if (key === "position_type" && value === "anchorage") {
         next.berth = null;
-        next.port_bollard_ids = [];
-        next.port_fender_ids = [];
+        next.bollard_allocations = [];
+        next.fender_allocations = [];
       }
       if (key === "port") {
         next.berth = null;
-        next.port_bollard_ids = [];
-        next.port_fender_ids = [];
+        next.bollard_allocations = [];
+        next.fender_allocations = [];
       }
       return next;
     });
+    if (key === "position_type" && value === "anchorage") {
+      setBollardRows([]);
+      setFenderRows([]);
+    }
+    if (key === "port") {
+      setBollardRows([]);
+      setFenderRows([]);
+    }
     setErrors((prev) => {
       if (!prev[key]) return prev;
       const next = { ...prev };
@@ -227,7 +265,16 @@ export default function PositionFormModal({
     setComponentAId(0);
     setComponentBId(0);
     if (next) {
-      setForm((prev) => ({ ...prev, position_type: "pier", berth: null, code: "" }));
+      setForm((prev) => ({
+        ...prev,
+        position_type: "pier",
+        berth: null,
+        code: "",
+        bollard_allocations: [],
+        fender_allocations: [],
+      }));
+      setBollardRows([]);
+      setFenderRows([]);
     }
   }
 
@@ -239,16 +286,19 @@ export default function PositionFormModal({
       return;
     }
 
+    const bollardAllocations = allocationsFromBollardRows(bollardRows);
+    const fenderAllocations = allocationsFromFenderRows(fenderRows);
+
     const payload: PositionPayload = {
       ...form,
       port: lockedPortId ?? form.port,
       code: normalizePositionShortCode(form.code),
       notes: form.notes.trim(),
       berth: form.position_type === "anchorage" ? null : form.berth,
-      port_bollard_ids:
-        form.position_type === "anchorage" || isCombined ? [] : form.port_bollard_ids,
-      port_fender_ids:
-        form.position_type === "anchorage" || isCombined ? [] : form.port_fender_ids,
+      bollard_allocations:
+        form.position_type === "anchorage" || isCombined ? [] : bollardAllocations,
+      fender_allocations:
+        form.position_type === "anchorage" || isCombined ? [] : fenderAllocations,
     };
 
     if (isCombined) {
@@ -269,7 +319,23 @@ export default function PositionFormModal({
   }
 
   const title = mode === "create" ? "Nueva posición" : "Editar posición";
-  const displayName = form.code.trim() || "Posición sin código";
+  const portCode =
+    lockedPortCode ??
+    initial?.port_code ??
+    portCodesById[form.port] ??
+    (lockedPortId ? portCodesById[lockedPortId] : undefined) ??
+    "";
+  const shortCode = form.code.trim();
+  const rawDisplayCode = !shortCode
+    ? ""
+    : portCode
+      ? buildPositionCode(portCode, shortCode)
+      : mode === "edit" && initial?.code
+        ? initial.code
+        : shortCode;
+  const displayName = !rawDisplayCode
+    ? "Posición sin código"
+    : formatPositionStoredCode(rawDisplayCode);
   const baseOptions = basePositions.map((p) => ({
     value: p.id,
     label: `${positionDisplayCode(p)}${p.max_loa_m ? ` · ${p.max_loa_m} m` : ""}`,
@@ -416,50 +482,51 @@ export default function PositionFormModal({
           <FormSection
             title="Características"
             description="Eslora, calado e inventario operativo de la posición."
+            columns={1}
           >
-            <FormField
-              label="Eslora (m)"
-              name="max_loa_m"
-              type="number"
-              step="0.01"
-              value={form.max_loa_m ?? ""}
-              onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
-            />
-            <FormField
-              label="Calado (m)"
-              name="min_draft_m"
-              type="number"
-              step="0.01"
-              value={form.min_draft_m ?? ""}
-              onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
-            />
+            <div className="grid gap-x-4 sm:grid-cols-2">
+              <FormField
+                label="Eslora (m)"
+                name="max_loa_m"
+                type="number"
+                step="0.01"
+                value={form.max_loa_m ?? ""}
+                onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
+              />
+              <FormField
+                label="Calado (m)"
+                name="min_draft_m"
+                type="number"
+                step="0.01"
+                value={form.min_draft_m ?? ""}
+                onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
+              />
+            </div>
             {!isCombined && form.position_type !== "anchorage" && form.port > 0 && (
-              <>
-                <FormFieldMultiSelect<number>
+              <div className="mt-4 flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+                <PositionInventoryRows
                   label="Bitas"
-                  name="port_bollard_ids"
-                  value={form.port_bollard_ids}
-                  onChange={(v) => setField("port_bollard_ids", v)}
+                  rows={bollardRows}
                   options={bollardOptions}
-                  placeholder={
-                    loadingInventory ? "Cargando inventario…" : "Seleccionar bitas…"
+                  selectPlaceholder={
+                    loadingInventory ? "Cargando inventario…" : "Tipo de bita…"
                   }
                   disabled={loadingInventory || saving}
-                  error={errors.port_bollard_ids}
+                  error={errors.bollard_allocations}
+                  onChange={setBollardRows}
                 />
-                <FormFieldMultiSelect<number>
+                <PositionInventoryRows
                   label="Defensas"
-                  name="port_fender_ids"
-                  value={form.port_fender_ids}
-                  onChange={(v) => setField("port_fender_ids", v)}
+                  rows={fenderRows}
                   options={fenderOptions}
-                  placeholder={
-                    loadingInventory ? "Cargando inventario…" : "Seleccionar defensas…"
+                  selectPlaceholder={
+                    loadingInventory ? "Cargando inventario…" : "Tipo de defensa…"
                   }
                   disabled={loadingInventory || saving}
-                  error={errors.port_fender_ids}
+                  error={errors.fender_allocations}
+                  onChange={setFenderRows}
                 />
-              </>
+              </div>
             )}
           </FormSection>
 
