@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchAllBookings } from "@/services/bookings/bookingService";
 import BookingDateCalendar from "@/components/booking/BookingDateCalendar";
-import { fetchBookings } from "@/services/bookings/bookingService";
+import {
+  buildCalendarOccupancy,
+  mergeBookingsById,
+} from "@/components/booking/BookingDateCalendar/buildCalendarOccupancy";
+import type { CalendarDayBooking } from "@/components/booking/BookingDateCalendar/types";
 
 type DatesStepProps = {
   portId: number | null;
@@ -17,26 +22,38 @@ export default function DatesStep({
   selectedDates,
   onChange,
 }: DatesStepProps) {
-  const [occupiedDates, setOccupiedDates] = useState<string[]>([]);
+  const [occupancyByDate, setOccupancyByDate] = useState<Record<string, CalendarDayBooking[]>>(
+    {},
+  );
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [loadingOccupied, setLoadingOccupied] = useState(false);
 
   useEffect(() => {
     if (!portId || !vesselId) {
-      setOccupiedDates([]);
+      setOccupancyByDate({});
+      setBlockedDates([]);
       return;
     }
 
     let cancelled = false;
     setLoadingOccupied(true);
 
-    fetchBookings({ port: portId, vessel: vesselId, pageSize: 500 })
-      .then((data) => {
-        if (!cancelled) {
-          setOccupiedDates(data.results.map((booking) => booking.call_date));
-        }
+    Promise.all([fetchAllBookings({ port: portId }), fetchAllBookings({ vessel: vesselId })])
+      .then(([portBookings, vesselBookings]) => {
+        if (cancelled) return;
+        const { byDate, blockedDates: blocked } = buildCalendarOccupancy(
+          mergeBookingsById(portBookings, vesselBookings),
+          portId,
+          vesselId,
+        );
+        setOccupancyByDate(byDate);
+        setBlockedDates(blocked);
       })
       .catch(() => {
-        if (!cancelled) setOccupiedDates([]);
+        if (!cancelled) {
+          setOccupancyByDate({});
+          setBlockedDates([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingOccupied(false);
@@ -48,13 +65,12 @@ export default function DatesStep({
   }, [portId, vesselId]);
 
   return (
-    <div className="max-w-2xl">
-      <BookingDateCalendar
-        selectedDates={selectedDates}
-        onChange={onChange}
-        occupiedDates={occupiedDates}
-        loadingOccupied={loadingOccupied}
-      />
-    </div>
+    <BookingDateCalendar
+      selectedDates={selectedDates}
+      onChange={onChange}
+      occupancyByDate={occupancyByDate}
+      blockedDates={blockedDates}
+      loadingOccupied={loadingOccupied}
+    />
   );
 }

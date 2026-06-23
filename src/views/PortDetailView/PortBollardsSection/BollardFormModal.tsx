@@ -5,6 +5,8 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
+import { submitModalForm } from "@/lib/apiFormErrors";
 import type { BollardType, PortBollard, PortBollardPayload } from "@/types/catalog";
 import { BOLLARD_TYPE_OPTIONS } from "@/types/catalog";
 
@@ -68,11 +70,13 @@ export default function BollardFormModal({
 }: BollardFormModalProps) {
   const [form, setForm] = useState<FormState>(() => emptyForm(portId));
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(initial ? bollardToForm(initial) : emptyForm(portId));
     setErrors({});
+    setSubmitError(null);
   }, [open, initial, portId]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -92,11 +96,19 @@ export default function BollardFormModal({
       setErrors(nextErrors);
       return;
     }
-    await onSubmit({
-      ...form,
-      label: form.label.trim(),
-      notes: form.notes.trim(),
-    });
+    await submitModalForm(
+      () =>
+        onSubmit({
+          ...form,
+          label: form.label.trim(),
+          notes: form.notes.trim(),
+        }),
+      {
+        fallback: "No se pudo guardar la bita.",
+        setSubmitError,
+        setFieldErrors: setErrors,
+      },
+    );
   }
 
   const title = mode === "create" ? "Nueva bita" : "Editar bita";
@@ -130,6 +142,7 @@ export default function BollardFormModal({
     >
       <form id="bollard-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
+          <ModalFormError message={submitError} />
           <FormSection title="Especificación" description="Capacidad, tipo y cantidad.">
             <FormField
               label="Capacidad (toneladas)"

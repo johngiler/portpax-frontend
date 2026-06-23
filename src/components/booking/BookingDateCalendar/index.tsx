@@ -7,14 +7,17 @@ import {
   toIsoDate,
   type CalendarCell,
 } from "@/lib/bookingDates";
+import CalendarDayAccordion from "./CalendarDayAccordion";
 import CalendarGrid from "./CalendarGrid";
 import CalendarNav from "./CalendarNav";
 import SelectedDatesList from "./SelectedDatesList";
+import type { CalendarDayBooking } from "./types";
 
 type BookingDateCalendarProps = {
   selectedDates: string[];
   onChange: (dates: string[]) => void;
-  occupiedDates?: string[];
+  occupancyByDate?: Record<string, CalendarDayBooking[]>;
+  blockedDates?: string[];
   minDate?: string;
   loadingOccupied?: boolean;
 };
@@ -27,7 +30,8 @@ function todayIso(): string {
 export default function BookingDateCalendar({
   selectedDates,
   onChange,
-  occupiedDates = [],
+  occupancyByDate = {},
+  blockedDates = [],
   minDate,
   loadingOccupied = false,
 }: BookingDateCalendarProps) {
@@ -36,6 +40,7 @@ export default function BookingDateCalendar({
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [direction, setDirection] = useState(0);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   const weeks = useMemo(
     () => getCalendarGrid(viewYear, viewMonth),
@@ -43,7 +48,7 @@ export default function BookingDateCalendar({
   );
 
   const selectedSet = useMemo(() => new Set(selectedDates), [selectedDates]);
-  const occupiedSet = useMemo(() => new Set(occupiedDates), [occupiedDates]);
+  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   function setView(year: number, monthIndex: number, navDirection: number) {
     setDirection(navDirection);
@@ -59,13 +64,19 @@ export default function BookingDateCalendar({
     setView(year, monthIndex, delta >= 0 ? 1 : -1);
   }
 
-  function toggleDate(cell: CalendarCell) {
+  function handleDayClick(cell: CalendarCell) {
     if (cell.iso < min) return;
+
+    setExpandedDate((current) => (current === cell.iso ? null : cell.iso));
 
     if (!cell.isCurrentMonth) {
       const delta =
         cell.year > viewYear || (cell.year === viewYear && cell.monthIndex > viewMonth) ? 1 : -1;
       setView(cell.year, cell.monthIndex, delta);
+    }
+
+    if (blockedSet.has(cell.iso)) {
+      return;
     }
 
     if (selectedSet.has(cell.iso)) {
@@ -81,17 +92,20 @@ export default function BookingDateCalendar({
     const { year, monthIndex } = parseIsoDate(first);
     const delta = (year - viewYear) * 12 + (monthIndex - viewMonth);
     setView(year, monthIndex, delta >= 0 ? 1 : -1);
+    setExpandedDate(first);
   }
 
+  const expandedBookings = expandedDate ? (occupancyByDate[expandedDate] ?? []) : [];
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-white via-[var(--admin-accent)]/[0.04] to-zinc-50 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-800">
+    <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-white via-[var(--admin-accent)]/[0.03] to-zinc-50 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--admin-accent)]">
             Calendario
           </p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Marca uno o varios días · los tachados ya tienen escala
+          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+            Toca un día para ver ocupación · vuelve a tocar para cerrar
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -131,8 +145,16 @@ export default function BookingDateCalendar({
         todayIso={today}
         minIso={min}
         selectedSet={selectedSet}
-        occupiedSet={occupiedSet}
-        onDayClick={toggleDate}
+        blockedSet={blockedSet}
+        occupancyByDate={occupancyByDate}
+        expandedDate={expandedDate}
+        onDayClick={handleDayClick}
+      />
+
+      <CalendarDayAccordion
+        dateIso={expandedDate}
+        bookings={expandedBookings}
+        onClose={() => setExpandedDate(null)}
       />
 
       <SelectedDatesList selectedDates={selectedDates} onChange={onChange} />

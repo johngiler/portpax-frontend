@@ -6,6 +6,8 @@ import CatalogLogoField from "@/components/ui/CatalogLogoField";
 import { FormField } from "@/components/ui/FormField";
 import FormSection from "@/components/ui/FormSection";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
+import { submitModalForm } from "@/lib/apiFormErrors";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import type { ShippingLine, ShippingLinePayload } from "@/types/cruise";
 import { shippingLineStatusLabel } from "@/types/cruise";
@@ -70,6 +72,7 @@ export default function ShippingLineFormModal({
 }: ShippingLineFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [groupOptions, setGroupOptions] = useState<ShippingLineGroupOption[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
@@ -79,6 +82,7 @@ export default function ShippingLineFormModal({
     if (!open) return;
     setForm(initial ? lineToForm(initial) : emptyForm());
     setErrors({});
+    setSubmitError(null);
     setLogoFile(null);
     setRemoveLogo(false);
     setLogoPreview(initial?.logo ?? null);
@@ -120,15 +124,23 @@ export default function ShippingLineFormModal({
       setErrors(nextErrors);
       return;
     }
-    await onSubmit({
-      payload: {
-        ...form,
-        code: form.code.trim().toLowerCase().replace(/\s+/g, "_"),
-        name: form.name.trim(),
+    await submitModalForm(
+      () =>
+        onSubmit({
+          payload: {
+            ...form,
+            code: form.code.trim().toLowerCase().replace(/\s+/g, "_"),
+            name: form.name.trim(),
+          },
+          logoFile,
+          removeLogo,
+        }),
+      {
+        fallback: mode === "create" ? "No se pudo crear la naviera." : "No se pudo guardar la naviera.",
+        setSubmitError,
+        setFieldErrors: setErrors,
       },
-      logoFile,
-      removeLogo,
-    });
+    );
   }
 
   const title = mode === "create" ? "Nueva naviera" : "Editar naviera";
@@ -162,6 +174,7 @@ export default function ShippingLineFormModal({
       }
     >
       <form id="shipping-line-form" onSubmit={handleSubmit}>
+        <ModalFormError message={submitError} />
         <div className="grid gap-5 lg:grid-cols-[minmax(220px,260px)_1fr]">
           <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
             <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">

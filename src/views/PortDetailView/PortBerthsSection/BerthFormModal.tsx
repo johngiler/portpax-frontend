@@ -5,6 +5,8 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
 import { FormField } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
+import { submitModalForm } from "@/lib/apiFormErrors";
 import type { Berth, BerthPayload } from "@/types/catalog";
 
 export type BerthFormMode = "create" | "edit";
@@ -77,11 +79,13 @@ export default function BerthFormModal({
 }: BerthFormModalProps) {
   const [form, setForm] = useState<FormState>(() => emptyForm(portId));
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(initial ? berthToForm(initial) : emptyForm(portId));
     setErrors({});
+    setSubmitError(null);
   }, [open, initial, portId]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -101,12 +105,20 @@ export default function BerthFormModal({
       setErrors(nextErrors);
       return;
     }
-    await onSubmit({
-      ...form,
-      code: form.code.trim().toUpperCase().replace(/\s+/g, "_"),
-      name: form.name.trim(),
-      notes: form.notes.trim(),
-    });
+    await submitModalForm(
+      () =>
+        onSubmit({
+          ...form,
+          code: form.code.trim().toUpperCase().replace(/\s+/g, "_"),
+          name: form.name.trim(),
+          notes: form.notes.trim(),
+        }),
+      {
+        fallback: "No se pudo guardar el muelle.",
+        setSubmitError,
+        setFieldErrors: setErrors,
+      },
+    );
   }
 
   const title = mode === "create" ? "Nuevo muelle" : "Editar muelle";
@@ -141,6 +153,7 @@ export default function BerthFormModal({
     >
       <form id="berth-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
+          <ModalFormError message={submitError} />
           <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>
             {form.code.trim() && (

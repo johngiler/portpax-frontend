@@ -48,7 +48,6 @@ export default function PortBollardsSection({
 
   async function handleSave(payload: PortBollardPayload) {
     setSaving(true);
-    setError(null);
     try {
       if (formMode === "create") {
         await createPortBollard({ ...payload, port: portId });
@@ -58,7 +57,7 @@ export default function PortBollardsSection({
       setFormOpen(false);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la bita.");
+      throw err;
     } finally {
       setSaving(false);
     }

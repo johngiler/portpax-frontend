@@ -1,3 +1,8 @@
+import {
+  buildCombinedPositionCode,
+  positionDisplayCode,
+  positionShortCode,
+} from "@/lib/positionCode";
 import type { Position } from "@/types/catalog";
 
 export type CombinedDefaults = {
@@ -40,7 +45,11 @@ export function deriveCombinedDefaults(first: Position, second: Position): Combi
   const sharedBerth = first.berth != null && first.berth === second.berth ? first.berth : null;
 
   return {
-    code: `${first.code}+${second.code}`,
+    code: buildCombinedPositionCode(
+      first.port_code,
+      positionDisplayCode(first),
+      positionDisplayCode(second),
+    ),
     max_loa_m: maxLoa,
     min_draft_m: minDraft,
     bollard_count: bollards,

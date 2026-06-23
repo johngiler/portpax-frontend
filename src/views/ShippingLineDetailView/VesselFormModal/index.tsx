@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CatalogLogoField from "@/components/ui/CatalogLogoField";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
+import { submitModalForm } from "@/lib/apiFormErrors";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Vessel, VesselPayload } from "@/types/cruise";
 import { vesselStatusLabel } from "@/types/cruise";
@@ -93,6 +95,7 @@ export default function VesselFormModal({
 }: VesselFormModalProps) {
   const [form, setForm] = useState<VesselFormState>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [lineOptions, setLineOptions] = useState<{ value: number; label: string }[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
@@ -106,6 +109,7 @@ export default function VesselFormModal({
     }
     setForm(base);
     setErrors({});
+    setSubmitError(null);
     setLogoFile(null);
     setRemoveLogo(false);
     setLogoPreview(initial?.logo ?? null);
@@ -156,11 +160,19 @@ export default function VesselFormModal({
       setErrors(nextErrors);
       return;
     }
-    await onSubmit({
-      payload: { ...form, name: form.name.trim() },
-      logoFile,
-      removeLogo,
-    });
+    await submitModalForm(
+      () =>
+        onSubmit({
+          payload: { ...form, name: form.name.trim() },
+          logoFile,
+          removeLogo,
+        }),
+      {
+        fallback: "No se pudo guardar el barco.",
+        setSubmitError,
+        setFieldErrors: setErrors,
+      },
+    );
   }
 
   const title = mode === "create" ? "Nuevo barco" : "Editar barco";
@@ -194,6 +206,7 @@ export default function VesselFormModal({
       }
     >
       <form id="vessel-form" onSubmit={handleSubmit}>
+        <ModalFormError message={submitError} />
         <div className="grid gap-5 lg:grid-cols-[minmax(220px,260px)_1fr]">
           <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
             <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">

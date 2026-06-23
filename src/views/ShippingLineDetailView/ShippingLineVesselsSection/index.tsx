@@ -42,7 +42,6 @@ export default function ShippingLineVesselsSection({
 
   async function handleSave({ payload, logoFile, removeLogo }: VesselFormSubmitPayload) {
     setSaving(true);
-    setError(null);
     try {
       const body = { ...payload, shipping_line: line.id };
       if (formMode === "create") {
@@ -53,7 +52,7 @@ export default function ShippingLineVesselsSection({
       setFormOpen(false);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el barco.");
+      throw err;
     } finally {
       setSaving(false);
     }

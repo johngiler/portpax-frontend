@@ -221,6 +221,7 @@ export type Position = {
   port: number;
   port_name: string;
   port_code: string;
+  short_code: string;
   berth: number | null;
   berth_code: string | null;
   code: string;

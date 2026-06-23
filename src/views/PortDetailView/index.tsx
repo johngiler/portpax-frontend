@@ -69,13 +69,12 @@ export default function PortDetailView() {
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     if (!port) return;
     setSaving(true);
-    setViewError(null);
     try {
       await updatePort(port.id, payload, { logoFile, removeLogo });
       setEditOpen(false);
       await loadPort();
     } catch (err) {
-      setViewError(err instanceof ApiError ? err.message : "No se pudo guardar el puerto.");
+      throw err;
     } finally {
       setSaving(false);
     }

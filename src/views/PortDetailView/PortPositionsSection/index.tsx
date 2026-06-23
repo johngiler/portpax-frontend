@@ -17,6 +17,7 @@ import {
 import { createPositionImage, deletePositionImage } from "@/services/catalogs/positionImageService";
 import type { PortDetail, PositionDetail, PositionPayload } from "@/types/catalog";
 import { formatMeters, positionTypeLabel } from "@/types/catalog";
+import { positionDisplayCode } from "@/lib/positionCode";
 import PositionFormModal, {
   type PositionFormMode,
 } from "@/views/PositionsView/PositionFormModal";
@@ -102,7 +103,7 @@ function PositionCard({
               <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
             </button>
             <ConfirmDeleteButton
-              deleteLabel={`la imagen de portada de la posición ${position.code}`}
+              deleteLabel={`la imagen de portada de la posición ${positionDisplayCode(position)}`}
               onDelete={() => void handleDeleteCoverImage()}
               className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
               ariaLabel="Eliminar imagen"
@@ -114,7 +115,7 @@ function PositionCard({
           </div>
         )}
         <span className="absolute left-3 top-3 rounded-lg bg-black/60 px-2 py-1 font-mono text-xs font-bold text-white">
-          {position.code}
+          {positionDisplayCode(position)}
         </span>
       </div>
       <div className="p-4">
@@ -143,7 +144,7 @@ function PositionCard({
           <TableActionButtons
             onEdit={onEdit}
             onDelete={onDelete}
-            deleteLabel={`la posición ${position.code}`}
+            deleteLabel={`la posición ${positionDisplayCode(position)}`}
           />
         </div>
         {images.length > 1 && (
@@ -160,7 +161,7 @@ function PositionCard({
                   <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
                 </button>
                 <ConfirmDeleteButton
-                  deleteLabel={`esta imagen de la posición ${position.code}`}
+                  deleteLabel={`esta imagen de la posición ${positionDisplayCode(position)}`}
                   onDelete={() => void handleDeleteImage(img.id)}
                   className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-red-600 text-[10px] text-white"
                   ariaLabel="Eliminar"
@@ -205,7 +206,6 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
 
   async function handleSave(payload: PositionPayload) {
     setSaving(true);
-    setError(null);
     try {
       if (formMode === "create") {
         await createPosition(payload);
@@ -215,7 +215,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
       setFormOpen(false);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la posición.");
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -265,6 +265,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
+        lockedPortCode={port.code}
         initial={editing}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

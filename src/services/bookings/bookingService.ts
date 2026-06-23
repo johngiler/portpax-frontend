@@ -1,3 +1,4 @@
+import { fetchAllPages } from "@/lib/fetchAllPages";
 import { apiFetch, ApiError, type ApiListResponse } from "@/services/apiClient";
 import type {
   Booking,
@@ -39,6 +40,12 @@ export async function fetchBookings(
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Booking>>(`${BASE}${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchAllBookings(
+  params: Omit<FetchBookingsParams, "page"> = {},
+): Promise<Booking[]> {
+  return fetchAllPages((page, pageSize) => fetchBookings({ ...params, page, pageSize }));
 }
 
 export async function fetchBooking(id: number): Promise<Booking> {

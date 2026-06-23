@@ -95,15 +95,12 @@ export default function ShippingLinesView() {
 
   async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     setSaving(true);
-    setViewError(null);
     try {
       await createShippingLine(payload, { logoFile, removeLogo });
       setModalOpen(false);
       await loadInitial();
     } catch (err) {
-      setViewError(
-        err instanceof ApiError ? err.message : "No se pudo crear la naviera.",
-      );
+      throw err;
     } finally {
       setSaving(false);
     }

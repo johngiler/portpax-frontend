@@ -75,15 +75,12 @@ export default function PortsView() {
 
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
-    setViewError(null);
     try {
       await createPort(payload, { logoFile, removeLogo });
       setModalOpen(false);
       await loadInitial();
     } catch (err) {
-      setViewError(
-        err instanceof ApiError ? err.message : "No se pudo crear el puerto.",
-      );
+      throw err;
     } finally {
       setSaving(false);
     }

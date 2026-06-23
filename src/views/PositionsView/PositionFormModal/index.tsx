@@ -5,6 +5,13 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
+import { submitModalForm } from "@/lib/apiFormErrors";
+import {
+  buildPositionCode,
+  normalizePositionShortCode,
+  positionDisplayCode,
+} from "@/lib/positionCode";
 import { deriveCombinedDefaults } from "@/lib/positionCombination";
 import { fetchBerths } from "@/services/catalogs/berthService";
 import { fetchPorts } from "@/services/catalogs/portService";
@@ -19,6 +26,7 @@ type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
   lockedPortId?: number;
+  lockedPortCode?: string;
   initial?: Position | null;
   saving: boolean;
   onClose: () => void;
@@ -53,7 +61,7 @@ function positionToForm(position: Position): FormState {
   return {
     port: position.port,
     berth: position.berth,
-    code: position.code,
+    code: positionDisplayCode(position),
     position_type: position.position_type,
     max_loa_m: position.max_loa_m != null ? Number(position.max_loa_m) : null,
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
@@ -82,6 +90,7 @@ export default function PositionFormModal({
   open,
   mode,
   lockedPortId,
+  lockedPortCode,
   initial,
   saving,
   onClose,
@@ -89,8 +98,11 @@ export default function PositionFormModal({
 }: PositionFormModalProps) {
   const [form, setForm] = useState<FormState>(emptyForm(lockedPortId ?? 0));
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
-  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portOptions, setPortOptions] = useState<
+    { value: number; label: string; code: string }[]
+  >([]);
   const [isCombined, setIsCombined] = useState(false);
   const [componentAId, setComponentAId] = useState(0);
   const [componentBId, setComponentBId] = useState(0);
@@ -102,13 +114,20 @@ export default function PositionFormModal({
     const defaultPort = lockedPortId ?? initial?.port ?? 0;
     setForm(initial ? positionToForm(initial) : emptyForm(defaultPort));
     setErrors({});
+    setSubmitError(null);
     setIsCombined(Boolean(initial?.is_combined));
     setComponentAId(initial?.component_positions[0]?.id ?? 0);
     setComponentBId(initial?.component_positions[1]?.id ?? 0);
     if (!lockedPortId) {
       fetchPorts({ pageSize: 100 })
         .then((data) =>
-          setPortOptions(data.results.map((p) => ({ value: p.id, label: portDisplayName(p) }))),
+          setPortOptions(
+            data.results.map((p) => ({
+              value: p.id,
+              label: portDisplayName(p),
+              code: p.code,
+            })),
+          ),
         )
         .catch(() => setPortOptions([]));
     }
@@ -197,7 +216,7 @@ export default function PositionFormModal({
     const payload: PositionPayload = {
       ...form,
       port: lockedPortId ?? form.port,
-      code: form.code.trim().toUpperCase(),
+      code: normalizePositionShortCode(form.code),
       notes: form.notes.trim(),
       berth: form.position_type === "anchorage" ? null : form.berth,
     };
@@ -209,14 +228,30 @@ export default function PositionFormModal({
       payload.component_position_ids = [];
     }
 
-    await onSubmit(payload);
+    await submitModalForm(
+      () => onSubmit(payload),
+      {
+        fallback: "No se pudo guardar la posición.",
+        setSubmitError,
+        setFieldErrors: setErrors,
+      },
+    );
   }
 
   const title = mode === "create" ? "Nueva posición" : "Editar posición";
   const displayName = form.code.trim() || "Posición sin código";
+  const resolvedPortCode =
+    lockedPortCode ??
+    initial?.port_code ??
+    portOptions.find((option) => option.value === form.port)?.code ??
+    "";
+  const storedCodePreview =
+    resolvedPortCode && form.code.trim()
+      ? buildPositionCode(resolvedPortCode, form.code)
+      : null;
   const baseOptions = basePositions.map((p) => ({
     value: p.id,
-    label: `${p.code}${p.max_loa_m ? ` · ${p.max_loa_m} m` : ""}`,
+    label: `${positionDisplayCode(p)}${p.max_loa_m ? ` · ${p.max_loa_m} m` : ""}`,
   }));
 
   return (
@@ -248,6 +283,7 @@ export default function PositionFormModal({
     >
       <form id="position-form" onSubmit={handleSubmit}>
         <div className="space-y-4">
+          <ModalFormError message={submitError} />
           <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -332,6 +368,12 @@ export default function PositionFormModal({
               error={errors.code}
               placeholder={isCombined ? "P1+P2" : "P1"}
             />
+            {storedCodePreview && (
+              <p className="-mt-2 text-xs text-zinc-500">
+                Identificador local del puerto. Se guardará como{" "}
+                <span className="font-mono">{storedCodePreview}</span>.
+              </p>
+            )}
             {!isCombined && (
               <>
                 <FormFieldSelect<PositionType>

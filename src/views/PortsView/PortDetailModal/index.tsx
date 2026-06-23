@@ -22,6 +22,7 @@ import {
 } from "@/services/catalogs/positionService";
 import type { Port, Position, PositionPayload } from "@/types/catalog";
 import { portDisplayName, positionTypeLabel } from "@/types/catalog";
+import { positionDisplayCode } from "@/lib/positionCode";
 import PositionFormModal, { type PositionFormMode } from "@/views/PositionsView/PositionFormModal";
 
 type PortDetailModalProps = {
@@ -81,7 +82,6 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
   async function handleSave(payload: PositionPayload) {
     if (!port) return;
     setSaving(true);
-    setError(null);
     try {
       if (formMode === "create") {
         await createPosition(payload);
@@ -91,7 +91,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
       setFormOpen(false);
       await loadPositions();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la posición.");
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -158,7 +158,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                 positions.map((position) => (
                   <MainTableRow key={position.id}>
                     <MainTableTd className="font-mono font-medium">
-                      <div>{position.code}</div>
+                      <div>{positionDisplayCode(position)}</div>
                       {position.is_combined && position.component_positions.length > 0 && (
                         <div className="mt-0.5 text-[11px] font-normal text-zinc-500">
                           {position.component_positions.map((p) => p.code).join(" + ")}
@@ -180,7 +180,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                       <TableActionButtons
                         onEdit={() => openEdit(position)}
                         onDelete={() => handleDelete(position)}
-                        deleteLabel={`la posición ${position.code}`}
+                        deleteLabel={`la posición ${positionDisplayCode(position)}`}
                       />
                     </MainTableTd>
                   </MainTableRow>
@@ -195,6 +195,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
+        lockedPortCode={port.code}
         initial={editingPosition}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

@@ -61,13 +61,12 @@ export default function ShippingLineDetailView() {
   async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     if (!line) return;
     setSaving(true);
-    setViewError(null);
     try {
       await updateShippingLine(line.id, payload, { logoFile, removeLogo });
       setEditOpen(false);
       await loadLine();
     } catch (err) {
-      setViewError(err instanceof ApiError ? err.message : "No se pudo guardar la naviera.");
+      throw err;
     } finally {
       setSaving(false);
     }

@@ -37,7 +37,6 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
 
   async function handleSave(payload: BerthPayload) {
     setSaving(true);
-    setError(null);
     try {
       if (formMode === "create") {
         await createBerth({ ...payload, port: portId });
@@ -47,7 +46,7 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
       setFormOpen(false);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el muelle.");
+      throw err;
     } finally {
       setSaving(false);
     }
