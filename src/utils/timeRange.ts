@@ -63,3 +63,21 @@ export const TIME_FILTER_LABELS: Record<TimeFilterPreset, string> = {
   temporada: "Temporada",
   custom: "Rango personalizado",
 };
+
+/** Widen the occupancy calendar so upcoming port calls stay visible beyond a short filter window. */
+export function expandRangeForOccupancy(
+  range: TimeRange,
+  forwardDays = 90,
+  refDate?: Date,
+): TimeRange {
+  const now = refDate || new Date();
+  const today = toLocalISO(now);
+  const end = new Date(now);
+  end.setDate(end.getDate() + forwardDays);
+  const horizon = toLocalISO(end);
+
+  return {
+    date_from: range.date_from < today ? range.date_from : today,
+    date_to: range.date_to > horizon ? range.date_to : horizon,
+  };
+}

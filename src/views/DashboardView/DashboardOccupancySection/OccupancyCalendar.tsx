@@ -2,15 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import CalendarNav from "@/components/booking/BookingDateCalendar/CalendarNav";
-import { formatIsoDateLabel, getCalendarGrid, toIsoDate } from "@/lib/bookingDates";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  getMonthOptions,
+  parseIsoDate,
+  toIsoDate,
+} from "@/lib/bookingDates";
 import { useMotionTransition } from "@/lib/motionPresets";
 import type { Booking } from "@/types/booking";
-import type { Port } from "@/types/catalog";
-import { activeCountForDate, filterBookingsByPort } from "./occupancyUtils";
-import { occupancyHeatClass, portAccentColor } from "./portColors";
+import { portDisplayName, type Port } from "@/types/catalog";
+import { filterBookingsByPort } from "./occupancyUtils";
+import { portAccentColor } from "./portColors";
+import OccupancyYearMonth from "./OccupancyYearMonth";
 
-const WEEKDAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const NAV_BUTTON_CLASS =
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-600 transition-colors hover:border-[var(--admin-accent)]/40 hover:text-[var(--admin-accent)] disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300";
 
 type OccupancyCalendarProps = {
   dateFrom: string;
@@ -28,6 +34,12 @@ function todayIso(): string {
   return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+function yearOptions(dateFrom: string, dateTo: string): number[] {
+  const minYear = parseIsoDate(dateFrom).year;
+  const maxYear = Math.max(parseIsoDate(dateTo).year, new Date().getFullYear() + 1);
+  return Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index);
+}
+
 export default function OccupancyCalendar({
   dateFrom,
   dateTo,
@@ -39,40 +51,31 @@ export default function OccupancyCalendar({
   onSelectPort,
 }: OccupancyCalendarProps) {
   const today = todayIso();
-  const initial = useMemo(() => {
-    const anchor = selectedDate && selectedDate >= dateFrom && selectedDate <= dateTo
-      ? selectedDate
-      : dateFrom;
-    const [year, month] = anchor.split("-").map(Number);
-    return { year, monthIndex: month - 1 };
+  const years = useMemo(() => yearOptions(dateFrom, dateTo), [dateFrom, dateTo]);
+  const monthOptions = useMemo(() => getMonthOptions(), []);
+
+  const initialYear = useMemo(() => {
+    if (selectedDate) return parseIsoDate(selectedDate).year;
+    return parseIsoDate(dateFrom).year;
   }, [dateFrom, selectedDate]);
 
-  const [viewYear, setViewYear] = useState(initial.year);
-  const [viewMonth, setViewMonth] = useState(initial.monthIndex);
+  const [viewYear, setViewYear] = useState(initialYear);
   const [direction, setDirection] = useState(0);
   const transition = useMotionTransition(0.2);
 
   useEffect(() => {
-    const anchor =
-      selectedDate && selectedDate >= dateFrom && selectedDate <= dateTo
-        ? selectedDate
-        : dateFrom;
-    const [year, month] = anchor.split("-").map(Number);
-    setViewYear(year);
-    setViewMonth(month - 1);
-  }, [dateFrom, dateTo, selectedDate]);
+    if (selectedDate) {
+      setViewYear(parseIsoDate(selectedDate).year);
+      return;
+    }
+    setViewYear(parseIsoDate(dateFrom).year);
+  }, [dateFrom, selectedDate]);
 
-  const weeks = useMemo(() => getCalendarGrid(viewYear, viewMonth), [viewYear, viewMonth]);
-
-  function setView(year: number, monthIndex: number, navDirection: number) {
-    setDirection(navDirection);
-    setViewYear(year);
-    setViewMonth(monthIndex);
-  }
-
-  function goToToday() {
-    const now = new Date();
-    setView(now.getFullYear(), now.getMonth(), 0);
+  function shiftYear(delta: number) {
+    const nextYear = viewYear + delta;
+    if (nextYear < years[0] || nextYear > years[years.length - 1]) return;
+    setDirection(delta);
+    setViewYear(nextYear);
   }
 
   function dayBookings(iso: string): Booking[] {
@@ -113,100 +116,73 @@ export default function OccupancyCalendar({
                   : undefined
               }
             >
-              {port.code}
+              {portDisplayName(port)}
             </button>
           ))}
         </div>
       </div>
 
-      <CalendarNav
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        minIso={dateFrom}
-        onViewChange={setView}
-        onGoToToday={goToToday}
-      />
-
-      <div className="grid grid-cols-7 gap-2 px-5 pb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-        {WEEKDAY_LABELS.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 px-5 py-3 dark:border-zinc-800">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => shiftYear(-1)}
+            disabled={viewYear <= years[0]}
+            className={NAV_BUTTON_CLASS}
+            aria-label="Año anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="min-w-[5rem] text-center text-lg font-bold text-zinc-900 dark:text-zinc-50">
+            {viewYear}
+          </span>
+          <button
+            type="button"
+            onClick={() => shiftYear(1)}
+            disabled={viewYear >= years[years.length - 1]}
+            className={NAV_BUTTON_CLASS}
+            aria-label="Año siguiente"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setDirection(0);
+            setViewYear(new Date().getFullYear());
+          }}
+          className="cursor-pointer rounded-full px-3 py-1 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-[var(--admin-accent)]/10"
+        >
+          Ir a hoy
+        </button>
       </div>
 
-      <div className="relative min-h-[22rem] px-5 pb-5">
+      <div className="relative px-5 py-5">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
-            key={`${viewYear}-${viewMonth}`}
+            key={viewYear}
             custom={direction}
-            initial={{ opacity: 0, x: direction >= 0 ? 24 : -24 }}
+            initial={{ opacity: 0, x: direction >= 0 ? 20 : -20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction >= 0 ? -24 : 24 }}
+            exit={{ opacity: 0, x: direction >= 0 ? -20 : 20 }}
             transition={transition}
-            className="grid grid-cols-7 gap-2"
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
-            {weeks.flat().map((cell) => {
-              const inRange = cell.iso >= dateFrom && cell.iso <= dateTo;
-              const bookings = dayBookings(cell.iso);
-              const count = activeCountForDate(bookings);
-              const isSelected = selectedDate === cell.iso;
-              const isToday = cell.iso === today;
-              const portIds = [...new Set(bookings.filter((b) => b.status !== "cancelled").map((b) => b.port))];
-
-              return (
-                <button
-                  key={cell.iso}
-                  type="button"
-                  disabled={!inRange}
-                  onClick={() => inRange && onSelectDate(isSelected ? null : cell.iso)}
-                  className={[
-                    "group relative flex min-h-[4.5rem] cursor-pointer flex-col rounded-2xl border px-1 pb-1.5 pt-2 text-left transition-all duration-200",
-                    occupancyHeatClass(count, inRange),
-                    !cell.isCurrentMonth && inRange ? "opacity-70" : "",
-                    isSelected
-                      ? "ring-2 ring-[var(--admin-accent)] ring-offset-2 ring-offset-white dark:ring-offset-zinc-900"
-                      : "",
-                    isToday && !isSelected ? "ring-1 ring-[var(--admin-accent)]/30" : "",
-                    !inRange ? "cursor-default" : "hover:-translate-y-0.5 hover:shadow-md",
-                  ].join(" ")}
-                  aria-label={
-                    inRange
-                      ? `${formatIsoDateLabel(cell.iso)} — ${count} escala${count === 1 ? "" : "s"}`
-                      : formatIsoDateLabel(cell.iso)
-                  }
-                  aria-pressed={isSelected}
-                >
-                  <span
-                    className={[
-                      "w-full text-center text-sm font-bold leading-none",
-                      count > 0 ? "text-[var(--admin-accent)]" : "text-zinc-700 dark:text-zinc-200",
-                    ].join(" ")}
-                  >
-                    {cell.day}
-                  </span>
-
-                  {inRange && count > 0 ? (
-                    <span className="mt-1 w-full text-center text-[10px] font-bold text-[var(--admin-accent)]">
-                      {count}
-                    </span>
-                  ) : null}
-
-                  {inRange && portIds.length > 0 ? (
-                    <span className="mt-auto flex w-full justify-center gap-0.5 pt-1">
-                      {portIds.slice(0, 4).map((portId) => (
-                        <span
-                          key={portId}
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: portAccentColor(portId) }}
-                        />
-                      ))}
-                      {portIds.length > 4 ? (
-                        <span className="text-[8px] font-bold text-zinc-400">+{portIds.length - 4}</span>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+            {monthOptions.map((month) => (
+              <OccupancyYearMonth
+                key={`${viewYear}-${month.value}`}
+                year={viewYear}
+                monthIndex={month.value}
+                monthLabel={month.label}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                todayIso={today}
+                selectedDate={selectedDate}
+                dayBookings={dayBookings}
+                onSelectDate={onSelectDate}
+              />
+            ))}
           </motion.div>
         </AnimatePresence>
       </div>

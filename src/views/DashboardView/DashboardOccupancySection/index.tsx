@@ -11,10 +11,8 @@ import { fetchPorts } from "@/services/catalogs/portService";
 import type { Booking } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import OccupancyCalendar from "./OccupancyCalendar";
-import OccupancyDayPanel from "./OccupancyDayPanel";
 import OccupancyPortMatrix from "./OccupancyPortMatrix";
-import OccupancyStatsStrip from "./OccupancyStatsStrip";
-import { buildOccupancySnapshot, filterBookingsByPort } from "./occupancyUtils";
+import { buildOccupancySnapshot } from "./occupancyUtils";
 
 type DashboardOccupancySectionProps = {
   dateFrom: string;
@@ -60,6 +58,24 @@ export default function DashboardOccupancySection({
   }, [loadOccupancy]);
 
   useEffect(() => {
+    function refresh() {
+      loadOccupancy();
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") refresh();
+    }
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [loadOccupancy]);
+
+  useEffect(() => {
     setSelectedDate(null);
     setSelectedPortId(null);
   }, [dateFrom, dateTo]);
@@ -68,12 +84,6 @@ export default function DashboardOccupancySection({
     () => buildOccupancySnapshot(bookings, ports, dateFrom, dateTo),
     [bookings, ports, dateFrom, dateTo],
   );
-
-  const dayBookings = useMemo(() => {
-    if (!selectedDate) return [];
-    const day = occupancy.byDate[selectedDate] ?? [];
-    return filterBookingsByPort(day, selectedPortId);
-  }, [occupancy.byDate, selectedDate, selectedPortId]);
 
   function handleMatrixCell(portId: number, date: string) {
     setSelectedPortId(portId);
@@ -84,50 +94,28 @@ export default function DashboardOccupancySection({
     <ViewSection
       icon={LayoutGrid}
       title="Mapa de ocupación"
-      description="Calendario visual de escalas por puerto en el período seleccionado."
+      description="Vista anual de escalas por puerto. Los totales del mapa respetan el período del sidebar."
       className="mb-8"
     >
       <FormErrorAlert message={error} className="mb-4" />
 
       {loading ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-2xl" />
-            ))}
-          </div>
-          <div className="grid gap-6 xl:grid-cols-5">
-            <Skeleton className="h-[32rem] rounded-2xl xl:col-span-3" />
-            <Skeleton className="h-[32rem] rounded-2xl xl:col-span-2" />
-          </div>
+          <Skeleton className="h-[48rem] rounded-2xl" />
           <Skeleton className="h-64 rounded-2xl" />
         </div>
       ) : (
         <>
-          <OccupancyStatsStrip stats={occupancy.stats} />
-
-          <div className="grid gap-6 xl:grid-cols-5">
-            <div className="xl:col-span-3">
-              <OccupancyCalendar
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                ports={occupancy.ports}
-                byDate={occupancy.byDate}
-                selectedDate={selectedDate}
-                selectedPortId={selectedPortId}
-                onSelectDate={setSelectedDate}
-                onSelectPort={setSelectedPortId}
-              />
-            </div>
-            <div className="xl:col-span-2">
-              <OccupancyDayPanel
-                dateIso={selectedDate}
-                bookings={dayBookings}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-              />
-            </div>
-          </div>
+          <OccupancyCalendar
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            ports={occupancy.ports}
+            byDate={occupancy.byDate}
+            selectedDate={selectedDate}
+            selectedPortId={selectedPortId}
+            onSelectDate={setSelectedDate}
+            onSelectPort={setSelectedPortId}
+          />
 
           <OccupancyPortMatrix
             dates={occupancy.dates}

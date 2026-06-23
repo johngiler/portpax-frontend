@@ -1,6 +1,8 @@
+import { toIsoDate } from "@/lib/bookingDates";
 import type { TimeFilterPreset } from "@/utils/timeRange";
 
 const STORAGE_KEY = "portpax-view-time-prefs";
+const PREFS_VERSION = 2;
 
 export type ViewTimePrefs = {
   timeFilter: TimeFilterPreset;
@@ -18,12 +20,13 @@ function isValidDate(s: string): boolean {
 
 function defaultCustomFrom(): string {
   const d = new Date();
-  d.setDate(d.getDate() - 29);
-  return d.toISOString().slice(0, 10);
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function defaultCustomTo(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  d.setDate(d.getDate() + 29);
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 export function loadViewTimePrefs(): ViewTimePrefs | null {
@@ -32,11 +35,14 @@ export function loadViewTimePrefs(): ViewTimePrefs | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as Record<string, unknown>;
+    const version = typeof data.prefsVersion === "number" ? data.prefsVersion : 1;
+    if (version < PREFS_VERSION) return null;
+
     return {
       timeFilter:
         typeof data.timeFilter === "string" && isValidTimeFilter(data.timeFilter)
           ? data.timeFilter
-          : "7d",
+          : "30d",
       customDateFrom:
         typeof data.customDateFrom === "string" && isValidDate(data.customDateFrom)
           ? data.customDateFrom
@@ -54,7 +60,10 @@ export function loadViewTimePrefs(): ViewTimePrefs | null {
 export function saveViewTimePrefs(prefs: ViewTimePrefs): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...prefs, prefsVersion: PREFS_VERSION }),
+    );
   } catch {
     // ignore
   }

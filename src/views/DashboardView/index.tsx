@@ -15,7 +15,7 @@ import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
-import { getTimeRange, type TimeFilterPreset } from "@/utils/timeRange";
+import { getTimeRange, expandRangeForOccupancy, type TimeFilterPreset } from "@/utils/timeRange";
 import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
 import DashboardOccupancySection from "./DashboardOccupancySection";
 import DashboardUpcomingSection from "./DashboardUpcomingSection";
@@ -71,6 +71,11 @@ export default function DashboardView() {
     [timeFilter, customDateFrom, customDateTo],
   );
 
+  const occupancyRange = useMemo(
+    () => expandRangeForOccupancy(timeRange),
+    [timeRange],
+  );
+
   useEffect(() => {
     if (!hasLoadedPrefs) return;
     saveViewTimePrefs({ timeFilter, customDateFrom, customDateTo });
@@ -95,6 +100,26 @@ export default function DashboardView() {
   useEffect(() => {
     if (!hasLoadedPrefs) return;
     loadSummary();
+  }, [hasLoadedPrefs, loadSummary]);
+
+  useEffect(() => {
+    if (!hasLoadedPrefs) return;
+
+    function refresh() {
+      loadSummary();
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") refresh();
+    }
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [hasLoadedPrefs, loadSummary]);
 
   if (!hasLoadedPrefs || (loading && !summary)) {
@@ -185,7 +210,10 @@ export default function DashboardView() {
         ))}
       </div>
 
-      <DashboardOccupancySection dateFrom={timeRange.date_from} dateTo={timeRange.date_to} />
+      <DashboardOccupancySection
+        dateFrom={occupancyRange.date_from}
+        dateTo={occupancyRange.date_to}
+      />
 
       {summary && (
         <DashboardUpcomingSection

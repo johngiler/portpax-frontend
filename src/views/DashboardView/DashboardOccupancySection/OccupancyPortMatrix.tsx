@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { formatIsoDateLabel, parseIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
-import type { Port } from "@/types/catalog";
+import { portDisplayName, type Port } from "@/types/catalog";
 import { activeCountForDate } from "./occupancyUtils";
 import { portAccentColor } from "./portColors";
 
@@ -98,9 +98,8 @@ export default function OccupancyPortMatrix({
                 />
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100">
-                    {port.code}
+                    {portDisplayName(port)}
                   </p>
-                  <p className="truncate text-[10px] text-zinc-400">{port.name}</p>
                 </div>
               </div>
 
@@ -114,7 +113,7 @@ export default function OccupancyPortMatrix({
                     key={`${port.id}-${date}`}
                     type="button"
                     onClick={() => onSelectCell(port.id, date)}
-                    title={`${port.name} · ${formatIsoDateLabel(date, "short")} · ${count} escala${count === 1 ? "" : "s"}`}
+                    title={`${portDisplayName(port)} · ${formatIsoDateLabel(date, "short")} · ${count} escala${count === 1 ? "" : "s"}`}
                     className={[
                       "group relative h-11 border-b border-r border-zinc-200/40 transition-all hover:brightness-95 dark:border-zinc-800/60",
                       cellIntensity(count),
