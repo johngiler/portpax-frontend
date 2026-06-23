@@ -11,6 +11,7 @@ import {
   Ship,
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
+import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
 import { previewAssignedPositions, validateBookings } from "@/services/bookings/bookingService";
 import type { BookingValidationResult, PositionSuggestion } from "@/types/booking";
@@ -152,20 +153,10 @@ export default function ReviewStep({
 
       {validation && (validation.warnings.length > 0 || validation.errors.length > 0) ? (
         <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
-          {validation.errors.length > 0 ? (
-            <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
-              {validation.errors.map((issue, index) => (
-                <li key={`err-${index}`}>{issue.message}</li>
-              ))}
-            </ul>
-          ) : null}
-          {validation.warnings.length > 0 ? (
-            <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-300">
-              {validation.warnings.map((issue, index) => (
-                <li key={`warn-${index}`}>{issue.message}</li>
-              ))}
-            </ul>
-          ) : null}
+          <ValidationIssuesAlert
+            errors={validation.errors}
+            warnings={validation.warnings}
+          />
         </div>
       ) : null}
 

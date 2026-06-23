@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import CalendarNav from "@/components/booking/BookingDateCalendar/CalendarNav";
 import { formatIsoDateLabel, getCalendarGrid, toIsoDate } from "@/lib/bookingDates";
@@ -51,6 +51,16 @@ export default function OccupancyCalendar({
   const [viewMonth, setViewMonth] = useState(initial.monthIndex);
   const [direction, setDirection] = useState(0);
   const transition = useMotionTransition(0.2);
+
+  useEffect(() => {
+    const anchor =
+      selectedDate && selectedDate >= dateFrom && selectedDate <= dateTo
+        ? selectedDate
+        : dateFrom;
+    const [year, month] = anchor.split("-").map(Number);
+    setViewYear(year);
+    setViewMonth(month - 1);
+  }, [dateFrom, dateTo, selectedDate]);
 
   const weeks = useMemo(() => getCalendarGrid(viewYear, viewMonth), [viewYear, viewMonth]);
 

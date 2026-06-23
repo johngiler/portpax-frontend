@@ -2,31 +2,42 @@
 
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { BOOKING_STATUS_FILTER_OPTIONS, type BookingStatus } from "@/types/booking";
+import {
+  BOOKING_STATUS_FILTER_OPTIONS,
+  type BookingListStatusFilter,
+} from "@/types/booking";
+import { getTimeRange } from "@/utils/timeRange";
+import BookingsDateFilters, { type BookingsDatePreset } from "./BookingsDateFilters";
 
 const STATUS_OPTIONS = BOOKING_STATUS_FILTER_OPTIONS
   .filter((option) => option.value !== "")
   .map((option) => ({
-    value: option.value as BookingStatus,
+    value: option.value as Exclude<BookingListStatusFilter, "">,
     label: option.label,
   }));
 
 type FilterOption = { value: number; label: string };
 
 type BookingFiltersProps = {
-  status: BookingStatus | "";
+  status: BookingListStatusFilter;
   search: string;
   portFilter: number;
   shippingLineFilter: number;
   vesselFilter: number;
+  datePreset: BookingsDatePreset;
+  customDateFrom: string;
+  customDateTo: string;
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
-  onStatusChange: (status: BookingStatus | "") => void;
+  onStatusChange: (status: BookingListStatusFilter) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
   onShippingLineFilterChange: (lineId: number) => void;
   onVesselFilterChange: (vesselId: number) => void;
+  onDatePresetChange: (preset: BookingsDatePreset) => void;
+  onCustomDateFromChange: (value: string) => void;
+  onCustomDateToChange: (value: string) => void;
   onApply: () => void;
 };
 
@@ -36,6 +47,9 @@ export default function BookingFilters({
   portFilter,
   shippingLineFilter,
   vesselFilter,
+  datePreset,
+  customDateFrom,
+  customDateTo,
   portOptions,
   shippingLineOptions,
   vesselOptions,
@@ -44,10 +58,27 @@ export default function BookingFilters({
   onPortFilterChange,
   onShippingLineFilterChange,
   onVesselFilterChange,
+  onDatePresetChange,
+  onCustomDateFromChange,
+  onCustomDateToChange,
   onApply,
 }: BookingFiltersProps) {
+  const timeRange =
+    datePreset === "all"
+      ? getTimeRange("hoy")
+      : getTimeRange(datePreset, customDateFrom, customDateTo);
+
   return (
     <>
+      <BookingsDateFilters
+        datePreset={datePreset}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
+        timeRange={timeRange}
+        onDatePresetChange={onDatePresetChange}
+        onCustomDateFromChange={onCustomDateFromChange}
+        onCustomDateToChange={onCustomDateToChange}
+      />
       <FormField
         label="Buscar"
         name="booking_search"
@@ -59,7 +90,7 @@ export default function BookingFilters({
         label="Estado"
         name="booking_status_filter"
         value={status}
-        onChange={(value) => onStatusChange(value as BookingStatus | "")}
+        onChange={(value) => onStatusChange(value as BookingListStatusFilter)}
         options={STATUS_OPTIONS}
         optionLabel="Todos los estados"
         emptyValue=""

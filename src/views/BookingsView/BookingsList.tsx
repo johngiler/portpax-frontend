@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight, Ship } from "lucide-react";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { formatIsoDateLabel, parseIsoDate } from "@/lib/bookingDates";
-import { bookingDetailHref, type Booking } from "@/types/booking";
+import { bookingDetailHref, getBookingBadgeStatus, type Booking } from "@/types/booking";
 import BookingsEmptyState from "./BookingsEmptyState";
 
 type BookingsListProps = {
@@ -72,7 +72,7 @@ export default function BookingsList({
                   <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                     {booking.vessel_name}
                   </p>
-                  <BookingStatusBadge status={booking.status} />
+                  <BookingStatusBadge status={getBookingBadgeStatus(booking)} />
                 </div>
                 <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-300">
                   {booking.port_name} · {booking.shipping_line_name}

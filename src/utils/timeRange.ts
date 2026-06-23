@@ -1,3 +1,5 @@
+import { toIsoDate } from "@/lib/bookingDates";
+
 export type TimeFilterPreset = "hoy" | "7d" | "30d" | "temporada" | "custom";
 
 export type TimeRange = {
@@ -5,8 +7,8 @@ export type TimeRange = {
   date_to: string;
 };
 
-function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function toLocalISO(d: Date): string {
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function getSeasonRange(now: Date): TimeRange {
@@ -22,23 +24,23 @@ export function getTimeRange(
   preset: TimeFilterPreset,
   customFrom?: string,
   customTo?: string,
-  refDate?: Date
+  refDate?: Date,
 ): TimeRange {
   const now = refDate || new Date();
-  const today = toISO(now);
+  const today = toLocalISO(now);
 
   switch (preset) {
     case "hoy":
       return { date_from: today, date_to: today };
     case "7d": {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 6);
-      return { date_from: toISO(from), date_to: today };
+      const to = new Date(now);
+      to.setDate(to.getDate() + 6);
+      return { date_from: today, date_to: toLocalISO(to) };
     }
     case "30d": {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 29);
-      return { date_from: toISO(from), date_to: today };
+      const to = new Date(now);
+      to.setDate(to.getDate() + 29);
+      return { date_from: today, date_to: toLocalISO(to) };
     }
     case "temporada":
       return getSeasonRange(now);
@@ -56,8 +58,8 @@ export function getTimeRange(
 
 export const TIME_FILTER_LABELS: Record<TimeFilterPreset, string> = {
   hoy: "Hoy",
-  "7d": "7 días",
-  "30d": "30 días",
+  "7d": "Próx. 7 días",
+  "30d": "Próx. 30 días",
   temporada: "Temporada",
   custom: "Rango personalizado",
 };

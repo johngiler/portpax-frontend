@@ -1,4 +1,11 @@
+import { toIsoDate } from "@/lib/bookingDates";
+
 export type BookingStatus = "requested" | "confirmed" | "cancelled";
+
+/** List filter: past active bookings (not a stored status). */
+export type BookingListStatusFilter = BookingStatus | "" | "completed";
+
+export type BookingBadgeStatus = BookingStatus | "completed";
 
 export type BookingAuditEntry = {
   id: number;
@@ -29,6 +36,7 @@ export type Booking = {
   etd: string | null;
   planned_pax: number | null;
   actual_pax: number | null;
+  actual_crew: number | null;
   status: BookingStatus;
   status_display: string;
   notes: string;
@@ -80,6 +88,7 @@ export type BookingUpdatePayload = {
   etd?: string | null;
   planned_pax?: number | null;
   actual_pax?: number | null;
+  actual_crew?: number | null;
   cancellation_evidence?: File | null;
 };
 
@@ -89,15 +98,44 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   cancelled: "Cancelada",
 };
 
+export const BOOKING_BADGE_STATUS_LABELS: Record<BookingBadgeStatus, string> = {
+  ...BOOKING_STATUS_LABELS,
+  completed: "Completada",
+};
+
 export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
-  value: BookingStatus | "";
+  value: BookingListStatusFilter;
   label: string;
 }> = [
   { value: "", label: "Todas" },
   { value: "requested", label: "Solicitadas" },
   { value: "confirmed", label: "Confirmadas" },
+  { value: "completed", label: "Completadas" },
   { value: "cancelled", label: "Canceladas" },
 ];
+
+export function bookingTodayIso(): string {
+  const now = new Date();
+  return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+export function isBookingCompleted(
+  booking: Pick<Booking, "status" | "call_date">,
+  todayIso = bookingTodayIso(),
+): boolean {
+  if (booking.status === "cancelled") return false;
+  return booking.call_date < todayIso;
+}
+
+export function getBookingBadgeStatus(
+  booking: Pick<Booking, "status" | "call_date">,
+): BookingBadgeStatus {
+  return isBookingCompleted(booking) ? "completed" : booking.status;
+}
+
+export function bookingBadgeStatusLabel(status: BookingBadgeStatus): string {
+  return BOOKING_BADGE_STATUS_LABELS[status] ?? status;
+}
 
 export function bookingStatusLabel(status: BookingStatus): string {
   return BOOKING_STATUS_LABELS[status] ?? status;

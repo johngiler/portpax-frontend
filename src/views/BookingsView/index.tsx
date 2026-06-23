@@ -13,13 +13,26 @@ import { fetchBookings } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchAllVessels } from "@/services/catalogs/vesselService";
+import { toIsoDate } from "@/lib/bookingDates";
 import { portDisplayName } from "@/types/catalog";
-import type { BookingStatus } from "@/types/booking";
+import type { BookingListStatusFilter } from "@/types/booking";
 import BookingFilters from "./BookingFilters";
 import BookingsList from "./BookingsList";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
+import { resolveBookingsDateRange, type BookingsDatePreset } from "./BookingsDateFilters";
 
 const PAGE_SIZE = 20;
+
+function defaultCustomFrom(): string {
+  const d = new Date();
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function defaultCustomTo(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 29);
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
 
 export default function BookingsView() {
   const router = useRouter();
@@ -28,8 +41,14 @@ export default function BookingsView() {
   );
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | "">("");
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<BookingListStatusFilter>("");
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingListStatusFilter>("");
+  const [datePreset, setDatePreset] = useState<BookingsDatePreset>("all");
+  const [appliedDatePreset, setAppliedDatePreset] = useState<BookingsDatePreset>("all");
+  const [customDateFrom, setCustomDateFrom] = useState(defaultCustomFrom);
+  const [customDateTo, setCustomDateTo] = useState(defaultCustomTo);
+  const [appliedCustomDateFrom, setAppliedCustomDateFrom] = useState(defaultCustomFrom);
+  const [appliedCustomDateTo, setAppliedCustomDateTo] = useState(defaultCustomTo);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState(0);
@@ -95,6 +114,11 @@ export default function BookingsView() {
     setLoading(true);
     setViewError(null);
     try {
+      const dateRange = resolveBookingsDateRange(
+        appliedDatePreset,
+        appliedCustomDateFrom,
+        appliedCustomDateTo,
+      );
       const data = await fetchBookings({
         page,
         search: appliedSearch,
@@ -102,6 +126,9 @@ export default function BookingsView() {
         port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
         shipping_line: appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
         vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+        call_date_from: dateRange.call_date_from,
+        call_date_to: dateRange.call_date_to,
+        ordering: "call_date_proximity",
       });
       setBookings(data.results);
       setTotalCount(data.count);
@@ -121,6 +148,9 @@ export default function BookingsView() {
     appliedPortFilter,
     appliedShippingLineFilter,
     appliedVesselFilter,
+    appliedDatePreset,
+    appliedCustomDateFrom,
+    appliedCustomDateTo,
   ]);
 
   useEffect(() => {
@@ -133,12 +163,21 @@ export default function BookingsView() {
     setAppliedPortFilter(portFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
     setAppliedVesselFilter(vesselFilter);
+    setAppliedDatePreset(datePreset);
+    setAppliedCustomDateFrom(customDateFrom);
+    setAppliedCustomDateTo(customDateTo);
     setPage(1);
   }
 
   function handleClearFilters() {
     setStatusFilter("");
     setAppliedStatusFilter("");
+    setDatePreset("all");
+    setAppliedDatePreset("all");
+    setCustomDateFrom(defaultCustomFrom());
+    setCustomDateTo(defaultCustomTo());
+    setAppliedCustomDateFrom(defaultCustomFrom());
+    setAppliedCustomDateTo(defaultCustomTo());
     setSearch("");
     setAppliedSearch("");
     setPortFilter(0);
@@ -155,7 +194,8 @@ export default function BookingsView() {
     appliedSearch !== "" ||
     appliedPortFilter > 0 ||
     appliedShippingLineFilter > 0 ||
-    appliedVesselFilter > 0;
+    appliedVesselFilter > 0 ||
+    appliedDatePreset !== "all";
 
   return (
     <>
@@ -166,6 +206,9 @@ export default function BookingsView() {
           portFilter={portFilter}
           shippingLineFilter={shippingLineFilter}
           vesselFilter={vesselFilter}
+          datePreset={datePreset}
+          customDateFrom={customDateFrom}
+          customDateTo={customDateTo}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
@@ -174,6 +217,9 @@ export default function BookingsView() {
           onPortFilterChange={setPortFilter}
           onShippingLineFilterChange={setShippingLineFilter}
           onVesselFilterChange={setVesselFilter}
+          onDatePresetChange={setDatePreset}
+          onCustomDateFromChange={setCustomDateFrom}
+          onCustomDateToChange={setCustomDateTo}
           onApply={applyFilters}
         />
       </FilterSidebarContent>

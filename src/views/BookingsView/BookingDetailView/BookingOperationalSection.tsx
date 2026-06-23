@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import NoticeAlert from "@/components/ui/NoticeAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
@@ -29,6 +30,9 @@ export default function BookingOperationalSection({
   );
   const [actualPax, setActualPax] = useState(
     booking.actual_pax != null ? String(booking.actual_pax) : "",
+  );
+  const [actualCrew, setActualCrew] = useState(
+    booking.actual_crew != null ? String(booking.actual_crew) : "",
   );
   const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -70,6 +74,7 @@ export default function BookingOperationalSection({
         etd: etd || null,
         planned_pax: plannedPax === "" ? null : Number(plannedPax),
         actual_pax: actualPax === "" ? null : Number(actualPax),
+        actual_crew: actualCrew === "" ? null : Number(actualCrew),
       });
       onUpdated(updated);
     } catch (err) {
@@ -165,20 +170,26 @@ export default function BookingOperationalSection({
           value={actualPax}
           onChange={(value) => setActualPax(String(value))}
         />
+        <FormField
+          label="Tripulación real (post-arribo)"
+          name="booking_actual_crew"
+          type="number"
+          min={0}
+          value={actualCrew}
+          onChange={(value) => setActualCrew(String(value))}
+        />
       </div>
 
       {suggestions.some((position) => position.warnings.length > 0) ? (
-        <ul className="mt-3 space-y-1 text-xs text-amber-700 dark:text-amber-300">
-          {suggestions
+        <NoticeAlert
+          variant="warning"
+          className="mt-3"
+          messages={suggestions
             .filter((position) => position.warnings.length > 0)
             .flatMap((position) =>
-              position.warnings.map((warning) => (
-                <li key={`${position.code}-${warning.code}`}>
-                  {position.code}: {warning.message}
-                </li>
-              )),
+              position.warnings.map((warning) => `${position.code}: ${warning.message}`),
             )}
-        </ul>
+        />
       ) : null}
 
       {booking.status !== "cancelled" ? (

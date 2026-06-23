@@ -3,6 +3,7 @@ import { apiFetch, ApiError, type ApiListResponse } from "@/services/apiClient";
 import type {
   Booking,
   BookingBatchPayload,
+  BookingListStatusFilter,
   BookingStatus,
   BookingUpdatePayload,
   BookingValidationResult,
@@ -17,7 +18,7 @@ export type FetchBookingsParams = {
   port?: number;
   shipping_line?: number;
   vessel?: number;
-  status?: BookingStatus | "";
+  status?: BookingListStatusFilter;
   call_date_from?: string;
   call_date_to?: string;
   ordering?: string;
@@ -145,6 +146,7 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.etd !== undefined) body.etd = payload.etd;
   if (payload.planned_pax !== undefined) body.planned_pax = payload.planned_pax;
   if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
+  if (payload.actual_crew !== undefined) body.actual_crew = payload.actual_crew;
 
   return apiFetch<Booking>(`${BASE}${id}/`, {
     method: "PATCH",

@@ -14,6 +14,7 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { toIsoDate } from "@/lib/bookingDates";
 import { getTimeRange, type TimeFilterPreset } from "@/utils/timeRange";
 import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
 import DashboardOccupancySection from "./DashboardOccupancySection";
@@ -23,11 +24,14 @@ import { loadDashboardSummary, type DashboardSummary } from "./loadDashboardSumm
 
 function defaultCustomFrom(): string {
   const d = new Date();
-  d.setDate(d.getDate() - 29);
-  return d.toISOString().slice(0, 10);
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-const defaultCustomTo = (): string => new Date().toISOString().slice(0, 10);
+function defaultCustomTo(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 29);
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
 
 function formatBookingBreakdown(summary: DashboardSummary): string {
   const parts: string[] = [];
@@ -44,7 +48,7 @@ function formatBookingBreakdown(summary: DashboardSummary): string {
 }
 
 export default function DashboardView() {
-  const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>("7d");
+  const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>("30d");
   const [customDateFrom, setCustomDateFrom] = useState(defaultCustomFrom);
   const [customDateTo, setCustomDateTo] = useState(defaultCustomTo);
   const [hasLoadedPrefs, setHasLoadedPrefs] = useState(false);
