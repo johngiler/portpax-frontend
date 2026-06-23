@@ -7,7 +7,8 @@ export function formatPortBollardLabel(bollard: PortBollard): string {
 }
 
 export function formatPortBollardOptionLabel(bollard: PortBollard): string {
-  return formatPortBollardLabel(bollard);
+  const typeLabel = bollard.label.trim() || bollardTypeLabel(bollard.bollard_type);
+  return `${bollard.capacity_t} t · ${typeLabel} · disponible: ${bollard.quantity}`;
 }
 
 export function formatPortFenderLabel(fender: PortFender): string {
@@ -15,7 +16,7 @@ export function formatPortFenderLabel(fender: PortFender): string {
 }
 
 export function formatPortFenderOptionLabel(fender: PortFender): string {
-  return formatPortFenderLabel(fender);
+  return `${fender.fender_type} · disponible: ${fender.quantity}`;
 }
 
 export function formatPositionBollardAllocationLabel(
