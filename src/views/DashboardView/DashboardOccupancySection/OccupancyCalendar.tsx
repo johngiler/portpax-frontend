@@ -9,6 +9,7 @@ import {
   toIsoDate,
 } from "@/lib/bookingDates";
 import { useMotionTransition } from "@/lib/motionPresets";
+import { OCCUPANCY_MAX_FORWARD_YEARS } from "@/utils/timeRange";
 import type { Booking } from "@/types/booking";
 import { portDisplayName, type Port } from "@/types/catalog";
 import { filterBookingsByPort } from "./occupancyUtils";
@@ -36,7 +37,10 @@ function todayIso(): string {
 
 function yearOptions(dateFrom: string, dateTo: string): number[] {
   const minYear = parseIsoDate(dateFrom).year;
-  const maxYear = Math.max(parseIsoDate(dateTo).year, new Date().getFullYear() + 1);
+  const maxYear = Math.max(
+    parseIsoDate(dateTo).year,
+    new Date().getFullYear() + OCCUPANCY_MAX_FORWARD_YEARS,
+  );
   return Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index);
 }
 
