@@ -9,6 +9,8 @@ import type { Booking } from "@/types/booking";
 import BookingDetailHero from "./BookingDetailHero";
 import BookingDetailSkeleton from "./BookingDetailSkeleton";
 import BookingDetailSummary from "./BookingDetailSummary";
+import BookingOperationalSection from "./BookingOperationalSection";
+import BookingAuditSection from "./BookingAuditSection";
 import BookingStatusActions from "./BookingStatusActions";
 
 export default function BookingDetailView() {
@@ -74,12 +76,18 @@ export default function BookingDetailView() {
 
       <BookingDetailHero booking={booking} />
       <BookingDetailSummary booking={booking} />
+      <BookingOperationalSection
+        booking={booking}
+        onUpdated={setBooking}
+        onError={setViewError}
+      />
       <BookingStatusActions
         booking={booking}
         onUpdated={setBooking}
         onDeleted={() => router.push("/bookings")}
         onError={setViewError}
       />
+      <BookingAuditSection entries={booking.audit_entries} />
     </div>
   );
 }

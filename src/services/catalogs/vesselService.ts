@@ -1,4 +1,5 @@
 import { apiFetch, type ApiListResponse } from "@/services/apiClient";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 import {
   appendCatalogFormValue,
   appendCatalogLogoFields,
@@ -37,6 +38,12 @@ export async function fetchVessels(
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Vessel>>(`${BASE}${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchAllVessels(
+  params: Omit<FetchVesselsParams, "page"> = {},
+): Promise<Vessel[]> {
+  return fetchAllPages((page, pageSize) => fetchVessels({ ...params, page, pageSize }));
 }
 
 export async function createVessel(

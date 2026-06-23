@@ -4,9 +4,11 @@ import { useState } from "react";
 import { CheckCircle2, Trash2, XCircle } from "lucide-react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Modal from "@/components/ui/Modal";
+import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { ApiError } from "@/services/apiClient";
-import { deleteBooking, updateBookingStatus } from "@/services/bookings/bookingService";
+import { deleteBooking, updateBooking } from "@/services/bookings/bookingService";
 import {
   bookingNextStatuses,
   type Booking,
@@ -22,6 +24,14 @@ type BookingStatusActionsProps = {
 
 type PendingAction = BookingStatus | null;
 
+function formatValidationError(err: unknown): string {
+  if (err instanceof ApiError && err.fieldErrors?.status) {
+    const status = err.fieldErrors.status;
+    return status.map((item) => String(item)).join(" · ");
+  }
+  return err instanceof ApiError ? err.message : "No se pudo actualizar el estado de la reserva.";
+}
+
 export default function BookingStatusActions({
   booking,
   onUpdated,
@@ -29,6 +39,7 @@ export default function BookingStatusActions({
   onError,
 }: BookingStatusActionsProps) {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [cancelEvidence, setCancelEvidence] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -49,16 +60,36 @@ export default function BookingStatusActions({
     }
   }
 
-  async function applyStatus(status: BookingStatus) {
+  async function applyConfirm() {
     setSaving(true);
     onError(null);
     try {
-      const updated = await updateBookingStatus(booking.id, status);
+      const updated = await updateBooking(booking.id, { status: "confirmed" });
       onUpdated(updated);
     } catch (err) {
-      onError(
-        err instanceof ApiError ? err.message : "No se pudo actualizar el estado de la reserva.",
-      );
+      onError(formatValidationError(err));
+    } finally {
+      setSaving(false);
+      setPendingAction(null);
+    }
+  }
+
+  async function applyCancel() {
+    if (!cancelEvidence) {
+      onError("Selecciona un archivo de evidencia para cancelar.");
+      return;
+    }
+    setSaving(true);
+    onError(null);
+    try {
+      const updated = await updateBooking(booking.id, {
+        status: "cancelled",
+        cancellation_evidence: cancelEvidence,
+      });
+      onUpdated(updated);
+      setCancelEvidence(null);
+    } catch (err) {
+      onError(formatValidationError(err));
     } finally {
       setSaving(false);
       setPendingAction(null);
@@ -104,6 +135,16 @@ export default function BookingStatusActions({
         </div>
       ) : (
         <div className="mt-4 space-y-3">
+          {booking.cancellation_evidence_url ? (
+            <a
+              href={booking.cancellation_evidence_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-[var(--admin-accent)] hover:underline"
+            >
+              Ver evidencia de cancelación
+            </a>
+          ) : null}
           <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
             Esta reserva está cancelada. Puedes eliminarla del sistema si ya no necesitas el
             registro.
@@ -125,21 +166,45 @@ export default function BookingStatusActions({
       <ConfirmModal
         open={pendingAction === "confirmed"}
         onClose={() => setPendingAction(null)}
-        onConfirm={() => applyStatus("confirmed")}
+        onConfirm={applyConfirm}
         title="Confirmar reserva"
-        message={`¿Confirmar la escala de ${booking.vessel_name} en ${booking.port_name}?`}
+        message={`¿Confirmar la escala de ${booking.vessel_name} en ${booking.port_name}? Se asignará folio y se generará el PDF de confirmación.`}
         confirmLabel="Confirmar"
       />
 
-      <ConfirmModal
+      <Modal
         open={pendingAction === "cancelled"}
-        onClose={() => setPendingAction(null)}
-        onConfirm={() => applyStatus("cancelled")}
+        onClose={() => {
+          setPendingAction(null);
+          setCancelEvidence(null);
+        }}
         title="Cancelar reserva"
-        message={`¿Cancelar la reserva ${booking.booking_code}? Esta acción no se puede revertir.`}
-        confirmLabel="Cancelar reserva"
-        danger
-      />
+      >
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          Adjunta evidencia de la cancelación (clima, fuerza mayor, etc.).
+        </p>
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          className="mt-4 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--admin-accent)]/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--admin-accent)]"
+          onChange={(event) => setCancelEvidence(event.target.files?.[0] ?? null)}
+        />
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setPendingAction(null);
+              setCancelEvidence(null);
+            }}
+            className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+          >
+            Volver
+          </button>
+          <DefaultButton type="button" onClick={applyCancel} disabled={saving || !cancelEvidence}>
+            {saving ? "Cancelando…" : "Confirmar cancelación"}
+          </DefaultButton>
+        </div>
+      </Modal>
     </section>
   );
 }

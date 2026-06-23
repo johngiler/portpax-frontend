@@ -5,7 +5,10 @@ import { Anchor, Check } from "lucide-react";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import type { ShippingLine } from "@/types/cruise";
+import WizardStepPagination from "../WizardStepPagination";
 import WizardStepSearch from "../WizardStepSearch";
+import { useWizardGridPage } from "../useWizardGridPage";
+import { WIZARD_GRID_PAGE_SIZE } from "../wizardTypes";
 
 type ShippingLineStepProps = {
   lines: ShippingLine[];
@@ -50,6 +53,28 @@ export default function ShippingLineStep({
       ),
     [lines, search, groupFilter],
   );
+
+  const filterKey = `${search}|${groupFilter}`;
+  const { page, setPage, pagedItems, totalCount } = useWizardGridPage(
+    filteredLines,
+    WIZARD_GRID_PAGE_SIZE,
+    filterKey,
+  );
+
+  const selectedLine = useMemo(
+    () => (selectedId ? filteredLines.find((line) => line.id === selectedId) : null),
+    [filteredLines, selectedId],
+  );
+
+  const selectedVisible = selectedId != null && pagedItems.some((line) => line.id === selectedId);
+
+  useEffect(() => {
+    if (!selectedId || filteredLines.length === 0) return;
+    const index = filteredLines.findIndex((line) => line.id === selectedId);
+    if (index >= 0) {
+      setPage(Math.floor(index / WIZARD_GRID_PAGE_SIZE) + 1);
+    }
+  }, [selectedId, filterKey, filteredLines, setPage]);
 
   if (loading) {
     return (
@@ -97,8 +122,28 @@ export default function ShippingLineStep({
           No hay navieras que coincidan con los filtros.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {filteredLines.map((line) => {
+        <>
+          {selectedLine && !selectedVisible ? (
+            <p className="rounded-lg border border-[var(--admin-accent)]/25 bg-[var(--admin-accent)]/5 px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300">
+              Seleccionada:{" "}
+              <span className="font-semibold text-[var(--admin-accent)]">{selectedLine.name}</span>
+              {" · "}
+              <button
+                type="button"
+                onClick={() => {
+                  const index = filteredLines.findIndex((line) => line.id === selectedId);
+                  if (index >= 0) {
+                    setPage(Math.floor(index / WIZARD_GRID_PAGE_SIZE) + 1);
+                  }
+                }}
+                className="cursor-pointer font-medium text-[var(--admin-accent)] underline-offset-2 hover:underline"
+              >
+                Ver en la lista
+              </button>
+            </p>
+          ) : null}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {pagedItems.map((line) => {
             const selected = line.id === selectedId;
             return (
               <button
@@ -179,7 +224,15 @@ export default function ShippingLineStep({
               </button>
             );
           })}
-        </div>
+          </div>
+          <WizardStepPagination
+            page={page}
+            totalCount={totalCount}
+            pageSize={WIZARD_GRID_PAGE_SIZE}
+            onPageChange={setPage}
+            label="navieras"
+          />
+        </>
       )}
     </div>
   );

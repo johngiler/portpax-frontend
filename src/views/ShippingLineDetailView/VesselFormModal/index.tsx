@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CatalogLogoField from "@/components/ui/CatalogLogoField";
 import Modal from "@/components/ui/Modal";
-import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Vessel, VesselPayload } from "@/types/cruise";
 import { vesselStatusLabel } from "@/types/cruise";
 import VesselFormFields, { type VesselFormState } from "./VesselFormFields";
@@ -113,10 +113,10 @@ export default function VesselFormModal({
       setLineOptions([]);
       return;
     }
-    fetchShippingLines({ pageSize: 500 })
-      .then((data) =>
+    fetchAllShippingLines()
+      .then((lines) =>
         setLineOptions(
-          data.results.map((line) => ({
+          lines.map((line) => ({
             value: line.id,
             label: line.group_name !== line.name ? `${line.name} (${line.group_name})` : line.name,
           })),

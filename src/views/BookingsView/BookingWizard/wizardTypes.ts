@@ -8,6 +8,9 @@ export const BOOKING_WIZARD_STEPS = [
   { id: "review", label: "Confirmar", icon: CheckCircle2 },
 ] as const;
 
+/** Cards per page in wizard selection grids (naviera, barco, …). */
+export const WIZARD_GRID_PAGE_SIZE = 15;
+
 export type BookingWizardStepId = (typeof BOOKING_WIZARD_STEPS)[number]["id"];
 
 export type BookingWizardForm = {

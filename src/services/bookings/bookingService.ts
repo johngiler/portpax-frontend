@@ -1,5 +1,12 @@
 import { apiFetch, ApiError, type ApiListResponse } from "@/services/apiClient";
-import type { Booking, BookingBatchPayload, BookingStatus } from "@/types/booking";
+import type {
+  Booking,
+  BookingBatchPayload,
+  BookingStatus,
+  BookingUpdatePayload,
+  BookingValidationResult,
+  PositionSuggestion,
+} from "@/types/booking";
 
 const BASE = "api/bookings/";
 
@@ -57,11 +64,89 @@ export async function createBookingBatch(payload: BookingBatchPayload): Promise<
   });
 }
 
-export async function updateBookingStatus(id: number, status: BookingStatus): Promise<Booking> {
+export async function validateBookings(params: {
+  port: number;
+  vessel: number;
+  call_dates: string[];
+  position?: number | null;
+}): Promise<BookingValidationResult> {
+  return apiFetch<BookingValidationResult>(`${BASE}validate/`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export async function suggestBookingPositions(params: {
+  port: number;
+  vessel: number;
+  call_date: string;
+}): Promise<{ positions: PositionSuggestion[] }> {
+  const query = new URLSearchParams({
+    port: String(params.port),
+    vessel: String(params.vessel),
+    call_date: params.call_date,
+  });
+  return apiFetch<{ positions: PositionSuggestion[] }>(
+    `${BASE}suggest-positions/?${query.toString()}`,
+  );
+}
+
+export function pickRecommendedPosition(
+  positions: PositionSuggestion[],
+): PositionSuggestion | null {
+  return (
+    positions.find((position) => position.recommended) ??
+    positions.find((position) => !position.occupied) ??
+    null
+  );
+}
+
+export async function previewAssignedPositions(params: {
+  port: number;
+  vessel: number;
+  call_dates: string[];
+}): Promise<Record<string, PositionSuggestion | null>> {
+  const entries = await Promise.all(
+    params.call_dates.map(async (call_date) => {
+      const { positions } = await suggestBookingPositions({
+        port: params.port,
+        vessel: params.vessel,
+        call_date,
+      });
+      return [call_date, pickRecommendedPosition(positions)] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+export async function updateBooking(id: number, payload: BookingUpdatePayload): Promise<Booking> {
+  const hasFile = payload.cancellation_evidence instanceof File;
+
+  if (hasFile) {
+    const form = new FormData();
+    if (payload.status) form.set("status", payload.status);
+    if (payload.cancellation_evidence) {
+      form.set("cancellation_evidence", payload.cancellation_evidence);
+    }
+    return apiFetch<Booking>(`${BASE}${id}/`, { method: "PATCH", body: form });
+  }
+
+  const body: Record<string, unknown> = {};
+  if (payload.status !== undefined) body.status = payload.status;
+  if (payload.position !== undefined) body.position = payload.position;
+  if (payload.eta !== undefined) body.eta = payload.eta;
+  if (payload.etd !== undefined) body.etd = payload.etd;
+  if (payload.planned_pax !== undefined) body.planned_pax = payload.planned_pax;
+  if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
+
   return apiFetch<Booking>(`${BASE}${id}/`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(body),
   });
+}
+
+export async function updateBookingStatus(id: number, status: BookingStatus): Promise<Booking> {
+  return updateBooking(id, { status });
 }
 
 export async function deleteBooking(id: number): Promise<void> {

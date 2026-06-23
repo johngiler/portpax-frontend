@@ -59,6 +59,11 @@ export default function BookingDetailSummary({ booking }: BookingDetailSummaryPr
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fecha de escala">
           <span>{formatIsoDateLabel(booking.call_date, "long")}</span>
+          {booking.position_code ? (
+            <p className="mt-0.5 text-xs font-normal text-zinc-500">
+              Posición {booking.position_code}
+            </p>
+          ) : null}
         </SummaryItem>
       </div>
 

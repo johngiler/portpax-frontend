@@ -1,8 +1,18 @@
 export type BookingStatus = "requested" | "confirmed" | "cancelled";
 
+export type BookingAuditEntry = {
+  id: number;
+  action: string;
+  summary: string;
+  changes: Record<string, unknown>;
+  user_display: string | null;
+  created_at: string;
+};
+
 export type Booking = {
   id: number;
   booking_code: string;
+  folio: string | null;
   port: number;
   port_code: string;
   port_name: string;
@@ -12,12 +22,47 @@ export type Booking = {
   shipping_line_name: string;
   vessel: number;
   vessel_name: string;
+  position: number | null;
+  position_code: string | null;
   call_date: string;
+  eta: string | null;
+  etd: string | null;
+  planned_pax: number | null;
+  actual_pax: number | null;
   status: BookingStatus;
   status_display: string;
   notes: string;
+  cancellation_evidence_url: string | null;
+  confirmation_pdf_url: string | null;
+  audit_entries: BookingAuditEntry[];
   created_at: string;
   updated_at: string;
+};
+
+export type BookingValidationIssue = {
+  level: "error" | "warning";
+  code: string;
+  message: string;
+};
+
+export type BookingValidationResult = {
+  valid: boolean;
+  errors: BookingValidationIssue[];
+  warnings: BookingValidationIssue[];
+  by_date: Record<
+    string,
+    { valid: boolean; errors: BookingValidationIssue[]; warnings: BookingValidationIssue[] }
+  >;
+};
+
+export type PositionSuggestion = {
+  id: number;
+  code: string;
+  position_type: string;
+  max_loa_m: string | null;
+  occupied: boolean;
+  recommended?: boolean;
+  warnings: BookingValidationIssue[];
 };
 
 export type BookingBatchPayload = {
@@ -26,6 +71,16 @@ export type BookingBatchPayload = {
   vessel: number;
   call_dates: string[];
   notes?: string;
+};
+
+export type BookingUpdatePayload = {
+  status?: BookingStatus;
+  position?: number | null;
+  eta?: string | null;
+  etd?: string | null;
+  planned_pax?: number | null;
+  actual_pax?: number | null;
+  cancellation_evidence?: File | null;
 };
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {

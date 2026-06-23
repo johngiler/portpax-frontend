@@ -11,8 +11,8 @@ import TablePagination from "@/components/tables/TablePagination";
 import { ApiError } from "@/services/apiClient";
 import { fetchBookings } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
-import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
-import { fetchVessels } from "@/services/catalogs/vesselService";
+import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingStatus } from "@/types/booking";
 import BookingFilters from "./BookingFilters";
@@ -59,20 +59,20 @@ export default function BookingsView() {
       )
       .catch(() => setPortOptions([]));
 
-    fetchShippingLines({ pageSize: 200 })
-      .then((data) =>
+    fetchAllShippingLines()
+      .then((lines) =>
         setShippingLineOptions(
-          data.results
+          lines
             .filter((line) => line.is_active)
             .map((line) => ({ value: line.id, label: line.name })),
         ),
       )
       .catch(() => setShippingLineOptions([]));
 
-    fetchVessels({ pageSize: 500 })
-      .then((data) =>
+    fetchAllVessels()
+      .then((vessels) =>
         setAllVessels(
-          data.results
+          vessels
             .filter((vessel) => vessel.is_active)
             .map((vessel) => ({
               value: vessel.id,

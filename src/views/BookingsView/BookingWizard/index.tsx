@@ -11,8 +11,8 @@ import { useMotionTransition } from "@/lib/motionPresets";
 import { ApiError } from "@/services/apiClient";
 import { createBookingBatch } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
-import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
-import { fetchVessels } from "@/services/catalogs/vesselService";
+import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
 import type { Booking } from "@/types/booking";
@@ -98,8 +98,8 @@ export default function BookingWizard() {
   const loadLines = useCallback(async () => {
     setLoadingLines(true);
     try {
-      const data = await fetchShippingLines({ page: 1, pageSize: 100 });
-      setLines(data.results.filter((l) => l.is_active));
+      const all = await fetchAllShippingLines();
+      setLines(all.filter((l) => l.is_active));
     } catch {
       setLines([]);
     } finally {
@@ -110,8 +110,8 @@ export default function BookingWizard() {
   const loadVessels = useCallback(async (shippingLineId: number) => {
     setLoadingVessels(true);
     try {
-      const data = await fetchVessels({ shipping_line: shippingLineId, pageSize: 200 });
-      setVessels(data.results.filter((v) => v.is_active));
+      const all = await fetchAllVessels({ shipping_line: shippingLineId });
+      setVessels(all.filter((v) => v.is_active));
     } catch {
       setVessels([]);
     } finally {

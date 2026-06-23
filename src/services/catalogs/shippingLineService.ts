@@ -1,4 +1,5 @@
 import { apiFetch, type ApiListResponse } from "@/services/apiClient";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 import {
   appendCatalogFormValue,
   appendCatalogLogoFields,
@@ -40,6 +41,14 @@ export async function fetchShippingLines(
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<ShippingLine>>(`${BASE}${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchAllShippingLines(
+  params: Omit<FetchShippingLinesParams, "page"> = {},
+): Promise<ShippingLine[]> {
+  return fetchAllPages((page, pageSize) =>
+    fetchShippingLines({ ...params, page, pageSize }),
+  );
 }
 
 export async function fetchShippingLine(id: number): Promise<ShippingLineDetail> {
