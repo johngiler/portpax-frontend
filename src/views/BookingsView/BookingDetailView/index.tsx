@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { fetchBookingByCode } from "@/services/bookings/bookingService";
 import type { Booking } from "@/types/booking";
 import BookingDetailHero from "./BookingDetailHero";
@@ -36,13 +36,7 @@ export default function BookingDetailView() {
       const detail = await fetchBookingByCode(code);
       setBooking(detail);
     } catch (err) {
-      setViewError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "No se pudo cargar la reserva.",
-      );
+      setViewError(getApiErrorMessage(err, "No se pudo cargar la reserva."));
       setBooking(null);
     } finally {
       setLoading(false);

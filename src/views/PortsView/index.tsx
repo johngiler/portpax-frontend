@@ -7,7 +7,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField } from "@/components/ui/FormField";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createPort, fetchPorts } from "@/services/catalogs/portService";
 import type { Port } from "@/types/catalog";
 import PortCard from "./PortCard";
@@ -39,7 +39,7 @@ export default function PortsView() {
       setPage(1);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar los puertos.",
+        getApiErrorMessage(err, "No se pudieron cargar los puertos."),
       );
       setPorts([]);
       setTotalCount(0);
@@ -66,7 +66,7 @@ export default function PortsView() {
       setPage(nextPage);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar más puertos.",
+        getApiErrorMessage(err, "No se pudieron cargar más puertos."),
       );
     } finally {
       setLoadingMore(false);

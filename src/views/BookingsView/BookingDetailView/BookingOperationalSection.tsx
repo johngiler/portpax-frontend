@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   suggestBookingPositions,
   updateBooking,
@@ -74,7 +74,7 @@ export default function BookingOperationalSection({
       onUpdated(updated);
     } catch (err) {
       onError(
-        err instanceof ApiError ? err.message : "No se pudo guardar la información operativa.",
+        getApiErrorMessage(err, "No se pudo guardar la información operativa."),
       );
     } finally {
       setSaving(false);

@@ -7,7 +7,7 @@ import {
   errorClass,
   labelClass,
 } from "@/components/ui/FormField";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createShippingLineGroup } from "@/services/catalogs/shippingLineGroupService";
 
 export type ShippingLineGroupOption = { value: number; label: string };
@@ -66,7 +66,7 @@ export default function ShippingLineGroupSelect({
       onChange(group.id);
     } catch (err) {
       setCreateError(
-        err instanceof ApiError ? err.message : "No se pudo crear el grupo corporativo.",
+        getApiErrorMessage(err, "No se pudo crear el grupo corporativo."),
       );
     } finally {
       setCreating(false);

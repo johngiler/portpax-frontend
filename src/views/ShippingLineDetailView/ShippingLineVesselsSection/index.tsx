@@ -4,7 +4,8 @@ import { Ship } from "lucide-react";
 import { useState } from "react";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
-import { ApiError } from "@/services/apiClient";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createVessel, deleteVessel, updateVessel } from "@/services/catalogs/vesselService";
 import type { ShippingLineDetail, Vessel } from "@/types/cruise";
 import type { VesselFormSubmitPayload } from "@/views/ShippingLineDetailView/VesselFormModal";
@@ -64,7 +65,7 @@ export default function ShippingLineVesselsSection({
       await deleteVessel(vessel.id);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el barco.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar el barco."));
     }
   }
 
@@ -76,11 +77,7 @@ export default function ShippingLineVesselsSection({
         description="Flota asociada a esta naviera — LOA, capacidad y datos operativos."
         actions={<SectionAddButton label="Agregar barco" onClick={openCreate} />}
       >
-        {error && (
-          <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <FormErrorAlert message={error} className="mb-3" />
 
         {vessels.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin barcos registrados para esta naviera.</p>

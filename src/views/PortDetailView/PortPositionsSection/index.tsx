@@ -7,8 +7,9 @@ import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import TableActionButtons from "@/components/tables/TableActionButtons";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   createPosition,
   deletePosition,
@@ -227,7 +228,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
       await deletePosition(position.id);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la posición.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar la posición."));
     }
   }
 
@@ -239,11 +240,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         description="Posiciones de atraque y fondeo con sus características."
         actions={<SectionAddButton label="Agregar posición" onClick={openCreate} />}
       >
-        {error && (
-          <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <FormErrorAlert message={error} className="mb-3" />
         {port.positions.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin posiciones registradas.</p>
         ) : (
@@ -265,7 +262,6 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
-        lockedPortCode={port.code}
         initial={editing}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

@@ -81,7 +81,7 @@ export default function PortDetailsSection({ port }: PortDetailsSectionProps) {
             />
             <DetailItem
               label="Defensas (total)"
-              value={port.fender_count != null ? String(port.fender_count) : "—"}
+              value={port.fender_total > 0 ? String(port.fender_total) : "—"}
             />
             <DetailItem
               label="Bitas (total)"

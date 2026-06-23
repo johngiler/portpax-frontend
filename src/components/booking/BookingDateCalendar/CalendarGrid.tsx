@@ -59,12 +59,14 @@ export default function CalendarGrid({
           >
             {weeks.flat().map((cell) => {
               const dayBookings = occupancyByDate[cell.iso] ?? [];
+              const occupancyCount = dayBookings.length;
               const isSelected = selectedSet.has(cell.iso);
               const isBlocked = blockedSet.has(cell.iso) && !isSelected;
               const isToday = cell.iso === todayIso;
               const isPast = cell.iso < minIso;
-              const isExpanded = expandedDate === cell.iso;
-              const occupancyCount = dayBookings.length;
+              const isExpanded = expandedDate === cell.iso && occupancyCount > 0;
+              const isAvailableSelected =
+                isSelected && !isBlocked && occupancyCount === 0 && !isPast;
               const hasPortBookings = dayBookings.some(
                 (booking) => booking.isCurrentPort && !booking.blocksSelection,
               );
@@ -84,10 +86,10 @@ export default function CalendarGrid({
                   onClick={() => onDayClick(cell)}
                   whileTap={isPast ? undefined : { scale: 0.97 }}
                   className={[
-                    "group relative flex min-h-[4.25rem] cursor-pointer flex-col items-center justify-between rounded-2xl border px-1 pb-1.5 pt-2 text-left transition-all duration-200",
-                    !cell.isCurrentMonth && !isSelected ? "opacity-35" : "",
+                    "group relative flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-between rounded-2xl border px-1 pb-1.5 pt-2 text-left transition-all duration-200",
+                    !cell.isCurrentMonth && !isSelected && !isPast ? "opacity-35" : "",
                     isPast
-                      ? "cursor-not-allowed border-transparent bg-transparent text-zinc-300 dark:text-zinc-600"
+                      ? "cursor-not-allowed border-zinc-100/60 bg-zinc-50/40 opacity-55 dark:border-zinc-800/40 dark:bg-zinc-900/15"
                       : isSelected
                         ? "border-[var(--admin-accent)] bg-[var(--admin-accent)] text-white shadow-lg shadow-[var(--admin-accent)]/25"
                         : isExpanded
@@ -97,14 +99,16 @@ export default function CalendarGrid({
                             : occupancyCount > 0
                               ? "border-zinc-200/90 bg-white/90 hover:border-[var(--admin-accent)]/35 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900/70"
                               : "border-zinc-200/70 bg-white/60 hover:border-[var(--admin-accent)]/30 hover:bg-white hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:bg-zinc-900",
-                    isToday && !isSelected && !isExpanded
+                    isToday && !isSelected && !isExpanded && !isPast
                       ? "ring-1 ring-[var(--admin-accent)]/25"
                       : "",
                   ].join(" ")}
                   aria-label={
                     occupancyCount > 0
                       ? `${formatIsoDateLabel(cell.iso)} — ${occupancyLabel}`
-                      : formatIsoDateLabel(cell.iso)
+                      : isAvailableSelected
+                        ? `${formatIsoDateLabel(cell.iso)} — disponible para reservar`
+                        : formatIsoDateLabel(cell.iso)
                   }
                   aria-expanded={isExpanded}
                   aria-pressed={isSelected}
@@ -112,16 +116,28 @@ export default function CalendarGrid({
                   <span
                     className={[
                       "w-full text-center text-base font-semibold leading-none",
-                      isBlocked && !isSelected ? "text-amber-800 line-through dark:text-amber-300" : "",
-                      isSelected ? "text-white" : "text-zinc-800 dark:text-zinc-100",
+                      isPast
+                        ? "text-zinc-300 dark:text-zinc-600"
+                        : isBlocked && !isSelected
+                          ? "text-amber-800 line-through dark:text-amber-300"
+                          : isSelected
+                            ? "text-white"
+                            : "text-zinc-800 dark:text-zinc-100",
                     ].join(" ")}
                   >
                     {cell.day}
                   </span>
 
-                  <span className="flex min-h-[1.1rem] w-full items-center justify-center gap-0.5">
-                    {occupancyCount > 0 && !isSelected ? (
+                  <span className="flex min-h-[1.35rem] w-full flex-col items-center justify-center gap-0.5">
+                    {isAvailableSelected ? (
                       <>
+                        <span className="h-0.5 w-5 rounded-full bg-white/35" aria-hidden />
+                        <span className="text-[7px] font-bold uppercase leading-none tracking-[0.14em] text-white/95">
+                          Disponible
+                        </span>
+                      </>
+                    ) : occupancyCount > 0 && !isSelected ? (
+                      <span className="flex items-center justify-center gap-0.5">
                         {hasPortBookings ? (
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                         ) : null}
@@ -132,12 +148,17 @@ export default function CalendarGrid({
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-700" />
                         ) : null}
                         {occupancyCount > 1 ? (
-                          <span className="text-[9px] font-bold text-zinc-500">+{occupancyCount - 1}</span>
+                          <span className="text-[9px] font-bold text-zinc-500">
+                            +{occupancyCount - 1}
+                          </span>
                         ) : null}
-                      </>
-                    ) : isExpanded && !isSelected ? (
+                      </span>
+                    ) : isExpanded ? (
                       <ChevronDown
-                        className="h-3.5 w-3.5 text-[var(--admin-accent)]"
+                        className={[
+                          "h-3.5 w-3.5",
+                          isSelected ? "text-white/90" : "text-[var(--admin-accent)]",
+                        ].join(" ")}
                         strokeWidth={2.5}
                       />
                     ) : null}

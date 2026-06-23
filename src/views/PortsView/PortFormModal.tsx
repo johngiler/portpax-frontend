@@ -331,14 +331,6 @@ export default function PortFormModal({
                 value={form.anchorage_slot_count}
                 onChange={(v) => setField("anchorage_slot_count", Number(v) || 0)}
               />
-              <FormField
-                label="Defensas (total)"
-                name="fender_count"
-                type="number"
-                min={0}
-                value={form.fender_count ?? ""}
-                onChange={(v) => setField("fender_count", v === "" ? null : Number(v))}
-              />
             </FormSection>
 
             <FormSection title="Notas" description="Observaciones internas." columns={1}>

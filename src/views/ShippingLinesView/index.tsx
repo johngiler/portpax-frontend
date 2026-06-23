@@ -7,7 +7,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createShippingLine, fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
@@ -58,7 +58,7 @@ export default function ShippingLinesView() {
       setPage(1);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar las navieras.",
+        getApiErrorMessage(err, "No se pudieron cargar las navieras."),
       );
       setLines([]);
       setTotalCount(0);
@@ -86,7 +86,7 @@ export default function ShippingLinesView() {
       setPage(nextPage);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar más navieras.",
+        getApiErrorMessage(err, "No se pudieron cargar más navieras."),
       );
     } finally {
       setLoadingMore(false);

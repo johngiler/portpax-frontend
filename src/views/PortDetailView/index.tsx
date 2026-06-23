@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   deletePort,
   fetchPortDetail,
@@ -14,6 +14,7 @@ import type { PortDetail } from "@/types/catalog";
 import PortFormModal, { type PortFormSubmitPayload } from "@/views/PortsView/PortFormModal";
 import PortBerthsSection from "./PortBerthsSection";
 import PortBollardsSection from "./PortBollardsSection";
+import PortFendersSection from "./PortFendersSection";
 import PortDetailHero from "./PortDetailHero";
 import PortDetailSkeleton from "./PortDetailSkeleton";
 import PortDetailsSection from "./PortDetailsSection";
@@ -54,7 +55,7 @@ export default function PortDetailView() {
       setPort(detail);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudo cargar el puerto.",
+        getApiErrorMessage(err, "No se pudo cargar el puerto."),
       );
       setPort(null);
     } finally {
@@ -87,7 +88,7 @@ export default function PortDetailView() {
       await deletePort(port.id);
       router.push("/ports");
     } catch (err) {
-      setViewError(err instanceof ApiError ? err.message : "No se pudo eliminar el puerto.");
+      setViewError(getApiErrorMessage(err, "No se pudo eliminar el puerto."));
     }
   }
 
@@ -115,6 +116,13 @@ export default function PortDetailView() {
         portId={port.id}
         bollards={port.bollards}
         total={port.bollard_total}
+        onChange={loadPort}
+      />
+
+      <PortFendersSection
+        portId={port.id}
+        fenders={port.fenders}
+        total={port.fender_total}
         onChange={loadPort}
       />
 

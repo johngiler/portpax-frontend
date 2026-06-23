@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FormSection from "@/components/ui/FormSection";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { submitModalForm } from "@/lib/apiFormErrors";
 import {
-  buildPositionCode,
-  normalizePositionShortCode,
-  positionDisplayCode,
-} from "@/lib/positionCode";
+  formatPortBollardLabel,
+  formatPortFenderLabel,
+} from "@/lib/inventoryLabels";
+import { normalizePositionShortCode, positionDisplayCode } from "@/lib/positionCode";
 import { deriveCombinedDefaults } from "@/lib/positionCombination";
 import { fetchBerths } from "@/services/catalogs/berthService";
+import { fetchPortBollards } from "@/services/catalogs/portBollardService";
+import { fetchPortFenders } from "@/services/catalogs/portFenderService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import type { Position, PositionPayload, PositionType } from "@/types/catalog";
@@ -26,7 +28,6 @@ type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
   lockedPortId?: number;
-  lockedPortCode?: string;
   initial?: Position | null;
   saving: boolean;
   onClose: () => void;
@@ -47,6 +48,8 @@ function emptyForm(portId = 0): FormState {
     position_type: "pier",
     max_loa_m: null,
     min_draft_m: null,
+    port_bollard_ids: [],
+    port_fender_ids: [],
     bollard_count: null,
     fender_count: null,
     notes: "",
@@ -65,6 +68,8 @@ function positionToForm(position: Position): FormState {
     position_type: position.position_type,
     max_loa_m: position.max_loa_m != null ? Number(position.max_loa_m) : null,
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
+    port_bollard_ids: position.port_bollard_ids ?? [],
+    port_fender_ids: position.port_fender_ids ?? [],
     bollard_count: position.bollard_count,
     fender_count: position.fender_count,
     notes: position.notes,
@@ -90,7 +95,6 @@ export default function PositionFormModal({
   open,
   mode,
   lockedPortId,
-  lockedPortCode,
   initial,
   saving,
   onClose,
@@ -100,14 +104,15 @@ export default function PositionFormModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
-  const [portOptions, setPortOptions] = useState<
-    { value: number; label: string; code: string }[]
-  >([]);
+  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
   const [isCombined, setIsCombined] = useState(false);
   const [componentAId, setComponentAId] = useState(0);
   const [componentBId, setComponentBId] = useState(0);
   const [basePositions, setBasePositions] = useState<Position[]>([]);
   const [loadingBasePositions, setLoadingBasePositions] = useState(false);
+  const [bollardOptions, setBollardOptions] = useState<{ value: number; label: string }[]>([]);
+  const [fenderOptions, setFenderOptions] = useState<{ value: number; label: string }[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -122,11 +127,7 @@ export default function PositionFormModal({
       fetchPorts({ pageSize: 100 })
         .then((data) =>
           setPortOptions(
-            data.results.map((p) => ({
-              value: p.id,
-              label: portDisplayName(p),
-              code: p.code,
-            })),
+            data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })),
           ),
         )
         .catch(() => setPortOptions([]));
@@ -146,8 +147,6 @@ export default function PositionFormModal({
       code: defaults.code,
       max_loa_m: defaults.max_loa_m,
       min_draft_m: defaults.min_draft_m,
-      bollard_count: defaults.bollard_count,
-      fender_count: defaults.fender_count,
       berth: defaults.berth,
     }));
   }, [isCombined, componentAId, componentBId, basePositions]);
@@ -160,6 +159,29 @@ export default function PositionFormModal({
     fetchBerths({ port: form.port, pageSize: 100 })
       .then((data) => setBerthOptions(data.results.map((b) => ({ value: b.id, label: b.code }))))
       .catch(() => setBerthOptions([]));
+  }, [open, form.port]);
+
+  useEffect(() => {
+    if (!open || !form.port) {
+      setBollardOptions([]);
+      setFenderOptions([]);
+      return;
+    }
+    setLoadingInventory(true);
+    Promise.all([fetchPortBollards(form.port), fetchPortFenders(form.port)])
+      .then(([bollards, fenders]) => {
+        setBollardOptions(
+          bollards.map((item) => ({ value: item.id, label: formatPortBollardLabel(item) })),
+        );
+        setFenderOptions(
+          fenders.map((item) => ({ value: item.id, label: formatPortFenderLabel(item) })),
+        );
+      })
+      .catch(() => {
+        setBollardOptions([]);
+        setFenderOptions([]);
+      })
+      .finally(() => setLoadingInventory(false));
   }, [open, form.port]);
 
   useEffect(() => {
@@ -182,9 +204,13 @@ export default function PositionFormModal({
       const next = { ...prev, [key]: value };
       if (key === "position_type" && value === "anchorage") {
         next.berth = null;
+        next.port_bollard_ids = [];
+        next.port_fender_ids = [];
       }
       if (key === "port") {
         next.berth = null;
+        next.port_bollard_ids = [];
+        next.port_fender_ids = [];
       }
       return next;
     });
@@ -219,6 +245,10 @@ export default function PositionFormModal({
       code: normalizePositionShortCode(form.code),
       notes: form.notes.trim(),
       berth: form.position_type === "anchorage" ? null : form.berth,
+      port_bollard_ids:
+        form.position_type === "anchorage" || isCombined ? [] : form.port_bollard_ids,
+      port_fender_ids:
+        form.position_type === "anchorage" || isCombined ? [] : form.port_fender_ids,
     };
 
     if (isCombined) {
@@ -240,15 +270,6 @@ export default function PositionFormModal({
 
   const title = mode === "create" ? "Nueva posición" : "Editar posición";
   const displayName = form.code.trim() || "Posición sin código";
-  const resolvedPortCode =
-    lockedPortCode ??
-    initial?.port_code ??
-    portOptions.find((option) => option.value === form.port)?.code ??
-    "";
-  const storedCodePreview =
-    resolvedPortCode && form.code.trim()
-      ? buildPositionCode(resolvedPortCode, form.code)
-      : null;
   const baseOptions = basePositions.map((p) => ({
     value: p.id,
     label: `${positionDisplayCode(p)}${p.max_loa_m ? ` · ${p.max_loa_m} m` : ""}`,
@@ -360,7 +381,7 @@ export default function PositionFormModal({
               />
             )}
             <FormField
-              label="Código"
+              label="Nombre de posición"
               name="code"
               value={form.code}
               onChange={(v) => setField("code", String(v))}
@@ -368,12 +389,6 @@ export default function PositionFormModal({
               error={errors.code}
               placeholder={isCombined ? "P1+P2" : "P1"}
             />
-            {storedCodePreview && (
-              <p className="-mt-2 text-xs text-zinc-500">
-                Identificador local del puerto. Se guardará como{" "}
-                <span className="font-mono">{storedCodePreview}</span>.
-              </p>
-            )}
             {!isCombined && (
               <>
                 <FormFieldSelect<PositionType>
@@ -398,7 +413,10 @@ export default function PositionFormModal({
             )}
           </FormSection>
 
-          <FormSection title="Características" description="Capacidad operativa de la posición.">
+          <FormSection
+            title="Características"
+            description="Eslora, calado e inventario operativo de la posición."
+          >
             <FormField
               label="Eslora (m)"
               name="max_loa_m"
@@ -415,22 +433,34 @@ export default function PositionFormModal({
               value={form.min_draft_m ?? ""}
               onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
             />
-            <FormField
-              label="Bitas"
-              name="bollard_count"
-              type="number"
-              min={0}
-              value={form.bollard_count ?? ""}
-              onChange={(v) => setField("bollard_count", v === "" ? null : Number(v))}
-            />
-            <FormField
-              label="Defensas"
-              name="fender_count"
-              type="number"
-              min={0}
-              value={form.fender_count ?? ""}
-              onChange={(v) => setField("fender_count", v === "" ? null : Number(v))}
-            />
+            {!isCombined && form.position_type !== "anchorage" && form.port > 0 && (
+              <>
+                <FormFieldMultiSelect<number>
+                  label="Bitas"
+                  name="port_bollard_ids"
+                  value={form.port_bollard_ids}
+                  onChange={(v) => setField("port_bollard_ids", v)}
+                  options={bollardOptions}
+                  placeholder={
+                    loadingInventory ? "Cargando inventario…" : "Seleccionar bitas…"
+                  }
+                  disabled={loadingInventory || saving}
+                  error={errors.port_bollard_ids}
+                />
+                <FormFieldMultiSelect<number>
+                  label="Defensas"
+                  name="port_fender_ids"
+                  value={form.port_fender_ids}
+                  onChange={(v) => setField("port_fender_ids", v)}
+                  options={fenderOptions}
+                  placeholder={
+                    loadingInventory ? "Cargando inventario…" : "Seleccionar defensas…"
+                  }
+                  disabled={loadingInventory || saving}
+                  error={errors.port_fender_ids}
+                />
+              </>
+            )}
           </FormSection>
 
           <FormSection title="Ubicación" description="Coordenadas GPS de la posición.">

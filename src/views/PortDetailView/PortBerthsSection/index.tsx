@@ -4,7 +4,8 @@ import { Warehouse } from "lucide-react";
 import { useState } from "react";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
-import { ApiError } from "@/services/apiClient";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createBerth, deleteBerth, updateBerth } from "@/services/catalogs/berthService";
 import type { Berth, BerthDetail, BerthPayload } from "@/types/catalog";
 import BerthCard from "./BerthCard";
@@ -58,7 +59,7 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
       await deleteBerth(berth.id);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar el muelle.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar el muelle."));
     }
   }
 
@@ -70,11 +71,7 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
         description="Muelles registrados con dimensiones y calado."
         actions={<SectionAddButton label="Agregar muelle" onClick={openCreate} />}
       >
-        {error && (
-          <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <FormErrorAlert message={error} className="mb-3" />
 
         {berths.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin muelles registrados.</p>

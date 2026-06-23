@@ -13,7 +13,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { getTimeRange, type TimeFilterPreset } from "@/utils/timeRange";
 import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
 import DashboardUpcomingSection from "./DashboardUpcomingSection";
@@ -79,7 +79,7 @@ export default function DashboardView() {
       setSummary(data);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudo cargar el resumen del dashboard.",
+        getApiErrorMessage(err, "No se pudo cargar el resumen del dashboard."),
       );
       setSummary(null);
     } finally {

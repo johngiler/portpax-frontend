@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage, translateApiMessage } from "@/lib/apiFormErrors";
 import { deleteBooking, updateBooking } from "@/services/bookings/bookingService";
 import {
   bookingNextStatuses,
@@ -26,10 +27,9 @@ type PendingAction = BookingStatus | null;
 
 function formatValidationError(err: unknown): string {
   if (err instanceof ApiError && err.fieldErrors?.status) {
-    const status = err.fieldErrors.status;
-    return status.map((item) => String(item)).join(" · ");
+    return err.fieldErrors.status.map((item) => translateApiMessage(String(item))).join(" · ");
   }
-  return err instanceof ApiError ? err.message : "No se pudo actualizar el estado de la reserva.";
+  return getApiErrorMessage(err, "No se pudo actualizar el estado de la reserva.");
 }
 
 export default function BookingStatusActions({
@@ -53,7 +53,7 @@ export default function BookingStatusActions({
       onDeleted();
     } catch (err) {
       onError(
-        err instanceof ApiError ? err.message : "No se pudo eliminar la reserva.",
+        getApiErrorMessage(err, "No se pudo eliminar la reserva."),
       );
     } finally {
       setDeleting(false);

@@ -6,7 +6,8 @@ import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
-import { ApiError } from "@/services/apiClient";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { IMAGE_FILE_REJECT_MESSAGES } from "@/lib/imageFiles";
 import { createPortImage, deletePortImage } from "@/services/catalogs/portImageService";
 import type { PortImage } from "@/types/catalog";
@@ -43,7 +44,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
       }
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo subir la imagen.");
+      setError(getApiErrorMessage(err, "No se pudo subir la imagen."));
     } finally {
       setUploading(false);
     }
@@ -55,7 +56,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
       await deletePortImage(id);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la imagen.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar la imagen."));
     }
   }
 
@@ -72,11 +73,7 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
       title="Galería del puerto"
       description="Imágenes y material visual del puerto."
     >
-      {error && (
-        <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
-          {error}
-        </p>
-      )}
+      <FormErrorAlert message={error} className="mb-3" />
 
       {!hasImages && (
         <>

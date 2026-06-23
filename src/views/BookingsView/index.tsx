@@ -8,7 +8,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import TablePagination from "@/components/tables/TablePagination";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { fetchBookings } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
@@ -107,7 +107,7 @@ export default function BookingsView() {
       setTotalCount(data.count);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar las reservas.",
+        getApiErrorMessage(err, "No se pudieron cargar las reservas."),
       );
       setBookings([]);
       setTotalCount(0);

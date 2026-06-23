@@ -17,7 +17,7 @@ import MainTable, {
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { fetchPorts } from "@/services/catalogs/portService";
 import {
   createPosition,
@@ -73,7 +73,7 @@ export default function PositionsView() {
       setTotalCount(data.count);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar las posiciones.",
+        getApiErrorMessage(err, "No se pudieron cargar las posiciones."),
       );
       setPositions([]);
       setTotalCount(0);
@@ -122,7 +122,7 @@ export default function PositionsView() {
       await loadPositions();
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudo eliminar la posición.",
+        getApiErrorMessage(err, "No se pudo eliminar la posición."),
       );
     }
   }
@@ -186,16 +186,14 @@ export default function PositionsView() {
             <MainTableTh>Muelle</MainTableTh>
             <MainTableTh>Eslora</MainTableTh>
             <MainTableTh>Calado</MainTableTh>
-            <MainTableTh>Bitas</MainTableTh>
-            <MainTableTh>Defensas</MainTableTh>
             <MainTableTh>Estado</MainTableTh>
             <MainTableTh className="text-center">Acciones</MainTableTh>
           </MainTableHeader>
           <MainTableBody>
             {loading ? (
-              <MainTableEmpty colSpan={10}>Cargando…</MainTableEmpty>
+              <MainTableEmpty colSpan={8}>Cargando…</MainTableEmpty>
             ) : positions.length === 0 ? (
-              <MainTableEmpty colSpan={10}>
+              <MainTableEmpty colSpan={8}>
                 {appliedSearch || appliedPortFilter
                   ? "Ninguna posición coincide con los filtros."
                   : "No hay posiciones registradas."}
@@ -220,8 +218,6 @@ export default function PositionsView() {
                   <MainTableTd>
                     {position.min_draft_m != null ? `${position.min_draft_m} m` : "—"}
                   </MainTableTd>
-                  <MainTableTd>{position.bollard_count ?? "—"}</MainTableTd>
-                  <MainTableTd>{position.fender_count ?? "—"}</MainTableTd>
                   <MainTableTd>{position.is_active ? "Activa" : "Inactiva"}</MainTableTd>
                   <MainTableTd className="text-center">
                     <TableActionButtons

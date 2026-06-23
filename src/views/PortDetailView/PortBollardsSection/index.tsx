@@ -4,8 +4,9 @@ import { Anchor } from "lucide-react";
 import { useState } from "react";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import TableActionButtons from "@/components/tables/TableActionButtons";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   createPortBollard,
   deletePortBollard,
@@ -69,7 +70,7 @@ export default function PortBollardsSection({
       await deletePortBollard(bollard.id);
       await onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la bita.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar la bita."));
     }
   }
 
@@ -81,11 +82,7 @@ export default function PortBollardsSection({
         description="Cantidad de bitas por capacidad y tipo."
         actions={<SectionAddButton label="Agregar bita" onClick={openCreate} />}
       >
-        {error && (
-          <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <FormErrorAlert message={error} className="mb-3" />
 
         {bollards.length === 0 ? (
           <p className="text-sm text-zinc-500">Sin bitas registradas para este puerto.</p>

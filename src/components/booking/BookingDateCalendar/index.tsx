@@ -67,7 +67,14 @@ export default function BookingDateCalendar({
   function handleDayClick(cell: CalendarCell) {
     if (cell.iso < min) return;
 
-    setExpandedDate((current) => (current === cell.iso ? null : cell.iso));
+    const dayBookings = occupancyByDate[cell.iso] ?? [];
+    const hasOccupancy = dayBookings.length > 0;
+
+    if (hasOccupancy) {
+      setExpandedDate((current) => (current === cell.iso ? null : cell.iso));
+    } else {
+      setExpandedDate(null);
+    }
 
     if (!cell.isCurrentMonth) {
       const delta =
@@ -92,10 +99,12 @@ export default function BookingDateCalendar({
     const { year, monthIndex } = parseIsoDate(first);
     const delta = (year - viewYear) * 12 + (monthIndex - viewMonth);
     setView(year, monthIndex, delta >= 0 ? 1 : -1);
-    setExpandedDate(first);
+    const firstBookings = occupancyByDate[first] ?? [];
+    setExpandedDate(firstBookings.length > 0 ? first : null);
   }
 
   const expandedBookings = expandedDate ? (occupancyByDate[expandedDate] ?? []) : [];
+  const showAccordion = expandedDate != null && expandedBookings.length > 0;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-white via-[var(--admin-accent)]/[0.03] to-zinc-50 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950">
@@ -105,7 +114,7 @@ export default function BookingDateCalendar({
             Calendario
           </p>
           <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            Toca un día para ver ocupación · vuelve a tocar para cerrar
+            Selecciona fechas libres · toca un día ocupado para ver escalas
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -152,7 +161,7 @@ export default function BookingDateCalendar({
       />
 
       <CalendarDayAccordion
-        dateIso={expandedDate}
+        dateIso={showAccordion ? expandedDate : null}
         bookings={expandedBookings}
         onClose={() => setExpandedDate(null)}
       />

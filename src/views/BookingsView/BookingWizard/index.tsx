@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import { useMotionTransition } from "@/lib/motionPresets";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createBookingBatch } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
@@ -206,7 +206,7 @@ export default function BookingWizard() {
       setCreatedBookings(created);
     } catch (err) {
       setViewError(
-        err instanceof ApiError ? err.message : "No se pudieron crear las reservas.",
+        getApiErrorMessage(err, "No se pudieron crear las reservas."),
       );
     } finally {
       setSubmitting(false);

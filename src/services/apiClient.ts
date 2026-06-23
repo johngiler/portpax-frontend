@@ -29,20 +29,50 @@ export class ApiError extends Error {
   }
 }
 
+function normalizeErrorMessages(value: unknown): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value.flatMap(normalizeErrorMessages);
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap(normalizeErrorMessages);
+  }
+  const text = String(value).trim();
+  return text ? [text] : [];
+}
+
+function extractFieldErrors(data: Record<string, unknown>): Record<string, string[]> {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (key === "detail") continue;
+    const messages = normalizeErrorMessages(value);
+    if (messages.length) fieldErrors[key] = messages;
+  }
+  return fieldErrors;
+}
+
 async function parseError(res: Response): Promise<ApiError> {
   const data = await res.json().catch(() => ({}));
-  const fieldErrors =
-    typeof data === "object" && data !== null && !Array.isArray(data)
-      ? (data as Record<string, string[]>)
-      : undefined;
-  const detail = (data as { detail?: string }).detail;
+
+  if (typeof data === "string" && data.trim()) {
+    return new ApiError(data.trim(), res.status);
+  }
+
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return new ApiError(`Error en la solicitud (${res.status}).`, res.status);
+  }
+
+  const payload = data as Record<string, unknown>;
+  const fieldErrors = extractFieldErrors(payload);
+  const detail = typeof payload.detail === "string" ? payload.detail.trim() : "";
+  const nonField = fieldErrors.non_field_errors?.[0];
+  const firstField = Object.entries(fieldErrors).find(([key]) => key !== "non_field_errors")?.[1]?.[0];
   const message =
-    typeof detail === "string"
-      ? detail
-      : fieldErrors
-        ? Object.values(fieldErrors).flat().join(" ")
-        : `Request failed (${res.status})`;
-  return new ApiError(message, res.status, fieldErrors);
+    detail ||
+    nonField ||
+    firstField ||
+    Object.values(fieldErrors).flat()[0] ||
+    `Error en la solicitud (${res.status}).`;
+
+  return new ApiError(message, res.status, Object.keys(fieldErrors).length ? fieldErrors : undefined);
 }
 
 export async function apiFetch<T>(

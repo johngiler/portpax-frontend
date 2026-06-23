@@ -105,6 +105,35 @@ export function bollardTypeLabel(type: BollardType): string {
   return BOLLARD_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
 }
 
+export type PortFender = {
+  id: number;
+  port: number;
+  fender_type: string;
+  quantity: number;
+  sort_order: number;
+  notes: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PortFenderPayload = {
+  port: number;
+  fender_type: string;
+  quantity: number;
+  sort_order: number;
+  notes: string;
+  is_active: boolean;
+};
+
+export const DEFAULT_FENDER_TYPE_OPTIONS = [
+  "Estándar",
+  "Celular",
+  "Cono",
+  "D",
+  "Arch",
+];
+
 export type PortImage = {
   id: number;
   port: number;
@@ -131,11 +160,12 @@ export type PositionDetail = Position & {
 };
 
 export type PortDetail = Port & {
-  fender_count: number | null;
   bollard_total: number;
+  fender_total: number;
   berths: BerthDetail[];
   positions: PositionDetail[];
   bollards: PortBollard[];
+  fenders: PortFender[];
   images: PortImage[];
 };
 
@@ -228,6 +258,8 @@ export type Position = {
   position_type: PositionType;
   max_loa_m: string | null;
   min_draft_m: string | null;
+  port_bollard_ids: number[];
+  port_fender_ids: number[];
   bollard_count: number | null;
   fender_count: number | null;
   effective_from: string | null;
@@ -250,6 +282,8 @@ export type PositionPayload = {
   position_type: PositionType;
   max_loa_m: number | null;
   min_draft_m: number | null;
+  port_bollard_ids: number[];
+  port_fender_ids: number[];
   bollard_count: number | null;
   fender_count: number | null;
   notes: string;

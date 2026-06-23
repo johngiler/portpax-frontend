@@ -13,7 +13,7 @@ import MainTable, {
 } from "@/components/tables/MainTable";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import Modal from "@/components/ui/Modal";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   createPosition,
   deletePosition,
@@ -50,7 +50,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
       setPositions(data.results);
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "No se pudieron cargar las posiciones.",
+        getApiErrorMessage(err, "No se pudieron cargar las posiciones."),
       );
       setPositions([]);
     } finally {
@@ -103,7 +103,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
       await deletePosition(position.id);
       await loadPositions();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la posición.");
+      setError(getApiErrorMessage(err, "No se pudo eliminar la posición."));
     }
   }
 
@@ -144,16 +144,14 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
               <MainTableTh>Muelle</MainTableTh>
               <MainTableTh>Eslora</MainTableTh>
               <MainTableTh>Calado</MainTableTh>
-              <MainTableTh>Bitas</MainTableTh>
-              <MainTableTh>Defensas</MainTableTh>
               <MainTableTh>Estado</MainTableTh>
               <MainTableTh className="text-center">Acciones</MainTableTh>
             </MainTableHeader>
             <MainTableBody>
               {loading ? (
-                <MainTableEmpty colSpan={8}>Cargando…</MainTableEmpty>
+                <MainTableEmpty colSpan={6}>Cargando…</MainTableEmpty>
               ) : positions.length === 0 ? (
-                <MainTableEmpty colSpan={8}>Sin posiciones registradas.</MainTableEmpty>
+                <MainTableEmpty colSpan={6}>Sin posiciones registradas.</MainTableEmpty>
               ) : (
                 positions.map((position) => (
                   <MainTableRow key={position.id}>
@@ -173,8 +171,6 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                     <MainTableTd>
                       {position.min_draft_m != null ? `${position.min_draft_m} m` : "—"}
                     </MainTableTd>
-                    <MainTableTd>{position.bollard_count ?? "—"}</MainTableTd>
-                    <MainTableTd>{position.fender_count ?? "—"}</MainTableTd>
                     <MainTableTd>{position.is_active ? "Activa" : "Inactiva"}</MainTableTd>
                     <MainTableTd className="text-center">
                       <TableActionButtons
@@ -195,7 +191,6 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
         open={formOpen}
         mode={formMode}
         lockedPortId={port.id}
-        lockedPortCode={port.code}
         initial={editingPosition}
         saving={saving}
         onClose={() => !saving && setFormOpen(false)}

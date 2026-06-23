@@ -228,4 +228,91 @@ export function FormFieldSelect<T extends string | number>({
   );
 }
 
+export function buildCatalogMultiSelectStyles<T extends string | number>(
+  error?: boolean,
+): StylesConfig<{ value: T; label: string }, true> {
+  const single = buildCatalogSelectStyles<T>(error);
+  return {
+    ...single,
+    valueContainer: (base) => ({
+      ...base,
+      padding: "2px 8px",
+      gap: 4,
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: "color-mix(in srgb, var(--admin-accent) 12%, transparent)",
+      borderRadius: 6,
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: "var(--foreground)",
+      fontSize: "0.8125rem",
+      paddingRight: 2,
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "rgb(113 113 122)",
+      borderRadius: 4,
+      ":hover": {
+        backgroundColor: "rgba(239, 68, 68, 0.15)",
+        color: "#ef4444",
+      },
+    }),
+  } as StylesConfig<{ value: T; label: string }, true>;
+}
+
+export function FormFieldMultiSelect<T extends string | number>({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  placeholder,
+  error,
+  disabled,
+}: {
+  label: string;
+  name: string;
+  value: T[];
+  onChange: (value: T[]) => void;
+  options: { value: T; label: string }[];
+  placeholder?: string;
+  error?: string;
+  disabled?: boolean;
+}) {
+  const selectedOptions = options.filter((opt) => value.includes(opt.value));
+  const styles = buildCatalogMultiSelectStyles<T>(Boolean(error));
+
+  return (
+    <div className="mb-4">
+      <label htmlFor={name} className={labelClass}>
+        {label}
+      </label>
+      <Select<{ value: T; label: string }, true>
+        inputId={name}
+        name={name}
+        isMulti
+        closeMenuOnSelect={false}
+        value={selectedOptions}
+        options={options}
+        onChange={(selected) => onChange(selected ? selected.map((item) => item.value) : [])}
+        styles={styles}
+        placeholder={placeholder ?? "Seleccionar…"}
+        aria-invalid={!!error}
+        isDisabled={disabled}
+        menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+        menuPosition="fixed"
+        menuShouldBlockScroll={false}
+        blurInputOnSelect={false}
+      />
+      {error && (
+        <p id={`${name}-error`} className={errorClass} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export { inputClass, labelClass, errorClass };

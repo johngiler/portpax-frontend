@@ -3,6 +3,13 @@ import type { PortBollard, PortBollardPayload } from "@/types/catalog";
 
 const BASE = "api/catalogs/port-bollards/";
 
+export async function fetchPortBollards(portId: number): Promise<PortBollard[]> {
+  const data = await apiFetch<{ results: PortBollard[] }>(
+    `${BASE}?port=${portId}&page_size=100`,
+  );
+  return data.results.filter((item) => item.is_active);
+}
+
 export async function createPortBollard(payload: PortBollardPayload): Promise<PortBollard> {
   return apiFetch<PortBollard>(BASE, {
     method: "POST",

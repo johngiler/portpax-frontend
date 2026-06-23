@@ -68,11 +68,7 @@ export default function CalendarDayAccordion({
                   <CalendarOccupancyCard key={booking.booking_code} booking={booking} />
                 ))}
               </div>
-            ) : (
-              <p className="mt-4 rounded-2xl border border-dashed border-zinc-200/80 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-                Puedes seleccionar este día para tu reserva.
-              </p>
-            )}
+            ) : null}
 
             <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200/60 dark:border-zinc-800">
               <CalendarOccupancyLegend />

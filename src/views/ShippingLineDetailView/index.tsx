@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
-import { ApiError } from "@/services/apiClient";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   deleteShippingLine,
   fetchShippingLineByCode,
@@ -41,13 +41,7 @@ export default function ShippingLineDetailView() {
       const detail = await fetchShippingLineByCode(code);
       setLine(detail);
     } catch (err) {
-      setViewError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "No se pudo cargar la naviera.",
-      );
+      setViewError(getApiErrorMessage(err, "No se pudo cargar la naviera."));
       setLine(null);
     } finally {
       setLoading(false);
@@ -79,7 +73,7 @@ export default function ShippingLineDetailView() {
       await deleteShippingLine(line.id);
       router.push("/shipping-lines");
     } catch (err) {
-      setViewError(err instanceof ApiError ? err.message : "No se pudo eliminar la naviera.");
+      setViewError(getApiErrorMessage(err, "No se pudo eliminar la naviera."));
     }
   }
 

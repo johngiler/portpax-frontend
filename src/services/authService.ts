@@ -76,6 +76,8 @@ function accessTokenNeedsRefresh(access: string): boolean {
   return Date.now() >= expMs - ACCESS_TOKEN_REFRESH_BUFFER_MS;
 }
 
+import { translateApiMessage } from "@/lib/apiFormErrors";
+
 export async function login(username: string, password: string): Promise<LoginResponse> {
   const res = await fetch(apiPath("api/auth/jwt/create/"), {
     method: "POST",
@@ -83,9 +85,18 @@ export async function login(username: string, password: string): Promise<LoginRe
     body: JSON.stringify({ username, password }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const msg = data.detail ?? data.non_field_errors?.[0] ?? "Credenciales incorrectas";
-    throw new Error(typeof msg === "string" ? msg : "Credenciales incorrectas");
+    const data = await res.json().catch(() => ({})) as {
+      detail?: string;
+      non_field_errors?: string | string[];
+    };
+    const raw =
+      data.detail ??
+      (Array.isArray(data.non_field_errors)
+        ? data.non_field_errors[0]
+        : data.non_field_errors) ??
+      "Credenciales incorrectas";
+    const msg = typeof raw === "string" ? raw : "Credenciales incorrectas";
+    throw new Error(translateApiMessage(msg));
   }
   return res.json();
 }
