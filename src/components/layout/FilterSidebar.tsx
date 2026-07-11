@@ -93,7 +93,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     <aside
       className={`relative flex h-full min-h-0 shrink-0 flex-col border-l border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ${
         open
-          ? "w-64 shadow-[var(--admin-card-shadow-hover)]"
+          ? "w-[306px] shadow-[var(--admin-card-shadow-hover)]"
           : "w-16 shadow-[var(--admin-card-shadow)]"
       }`}
     >
