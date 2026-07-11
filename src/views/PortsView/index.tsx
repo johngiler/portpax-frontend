@@ -14,6 +14,7 @@ import { createPort, fetchPorts } from "@/services/catalogs/portService";
 import type { Port } from "@/types/catalog";
 import PortCard from "./PortCard";
 import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
+import PortsEmptyState from "./PortsEmptyState";
 import PortsViewSkeleton from "./PortsViewSkeleton";
 
 const BATCH_SIZE = 12;
@@ -98,6 +99,7 @@ export default function PortsView() {
   }
 
   const canClearFilters = Boolean(search.trim()) || Boolean(appliedSearch);
+  const hasActiveFilters = Boolean(appliedSearch);
   const hasMore = ports.length < totalCount;
 
   if (loading && ports.length === 0 && !viewError) {
@@ -141,13 +143,11 @@ export default function PortsView() {
       {loading && ports.length === 0 ? (
         <p className="text-sm text-zinc-500">Cargando…</p>
       ) : ports.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-12 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
-          <p className="text-sm text-zinc-500">
-            {appliedSearch
-              ? "Ningún puerto coincide con los filtros."
-              : "No hay puertos registrados."}
-          </p>
-        </div>
+        <PortsEmptyState
+          variant={hasActiveFilters ? "filtered" : "empty"}
+          onCreate={() => setModalOpen(true)}
+          onClearFilters={clearFilters}
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

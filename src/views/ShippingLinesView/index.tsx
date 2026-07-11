@@ -179,8 +179,9 @@ export default function ShippingLinesView() {
         <p className="text-sm text-zinc-500">Cargando…</p>
       ) : lines.length === 0 ? (
         <ShippingLinesEmptyState
-          filtered={hasActiveFilters}
+          variant={hasActiveFilters ? "filtered" : "empty"}
           onCreate={() => setModalOpen(true)}
+          onClearFilters={clearFilters}
         />
       ) : (
         <>

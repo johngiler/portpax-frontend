@@ -1,6 +1,6 @@
 "use client";
 
-import { Anchor, Plus, SearchX } from "lucide-react";
+import { MapPin, Plus, SearchX } from "lucide-react";
 
 const CREATE_BUTTON_CLASS =
   "btn-primary-gradient inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all hover:brightness-105 hover:shadow-[0_8px_22px_-14px_rgba(52,120,181,0.7)]";
@@ -8,17 +8,17 @@ const CREATE_BUTTON_CLASS =
 const CLEAR_BUTTON_CLASS =
   "cursor-pointer rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
 
-type ShippingLinesEmptyStateProps = {
+type PortsEmptyStateProps = {
   variant: "empty" | "filtered";
   onCreate: () => void;
   onClearFilters?: () => void;
 };
 
-export default function ShippingLinesEmptyState({
+export default function PortsEmptyState({
   variant,
   onCreate,
   onClearFilters,
-}: ShippingLinesEmptyStateProps) {
+}: PortsEmptyStateProps) {
   const isFiltered = variant === "filtered";
 
   return (
@@ -27,24 +27,24 @@ export default function ShippingLinesEmptyState({
         {isFiltered ? (
           <SearchX className="h-8 w-8" strokeWidth={1.5} aria-hidden />
         ) : (
-          <Anchor className="h-8 w-8" strokeWidth={1.5} aria-hidden />
+          <MapPin className="h-8 w-8" strokeWidth={1.5} aria-hidden />
         )}
       </div>
 
       <h2 className="mt-5 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-        {isFiltered ? "Sin navieras con estos filtros" : "Aún no hay navieras"}
+        {isFiltered ? "Sin puertos con estos filtros" : "Aún no hay puertos"}
       </h2>
 
       <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
         {isFiltered
-          ? "Ajusta la búsqueda o el grupo, o registra una nueva marca operativa."
-          : "Registra marcas operativas y su grupo corporativo para asociar barcos."}
+          ? "Ajusta la búsqueda o registra un nuevo puerto en el catálogo."
+          : "Registra puertos operativos para gestionar muelles, posiciones y escalas."}
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <button type="button" onClick={onCreate} className={CREATE_BUTTON_CLASS}>
           <Plus className="h-4 w-4" strokeWidth={2} />
-          Nueva naviera
+          Nuevo puerto
         </button>
 
         {isFiltered && onClearFilters ? (
