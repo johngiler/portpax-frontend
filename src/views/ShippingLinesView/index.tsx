@@ -139,7 +139,7 @@ export default function ShippingLinesView() {
           name="line_search"
           value={search}
           onChange={(value) => setSearch(String(value))}
-          placeholder="Marca, código…"
+          placeholder="Nombre naviera, Barco"
           compact
         />
         <FormFieldSelect<number>
