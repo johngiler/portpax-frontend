@@ -4,19 +4,31 @@ import Select, { type StylesConfig } from "react-select";
 
 const labelClass =
   "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200";
+const labelCompactClass =
+  "mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-200";
 const inputClass =
   "w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-all focus:border-[var(--admin-accent)] focus:from-white focus:to-white focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:from-zinc-900 dark:focus:to-zinc-900";
+const inputCompactClass =
+  "w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-all focus:border-[var(--admin-accent)] focus:from-white focus:to-white focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:from-zinc-900 dark:focus:to-zinc-900";
 const inputErrorClass =
   "border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500 dark:focus:border-red-500 dark:focus:ring-red-500/25";
 const errorClass = "mt-1 text-xs font-medium text-red-600 dark:text-red-400";
 
+const SELECT_FONT = "0.875rem";
+const SELECT_FONT_COMPACT = "0.75rem";
+
 export function buildCatalogSelectStyles<T extends string | number>(
   error?: boolean,
+  compact = false,
 ): StylesConfig<{ value: T; label: string }, false> {
+  const fontSize = compact ? SELECT_FONT_COMPACT : SELECT_FONT;
+  const minHeight = compact ? "34px" : "42px";
+
   return {
     control: (base, state) => ({
       ...base,
-      minHeight: "42px",
+      minHeight,
+      fontSize,
       borderRadius: 6,
       borderColor: error
         ? "#ef4444"
@@ -40,15 +52,23 @@ export function buildCatalogSelectStyles<T extends string | number>(
     }),
     valueContainer: (base) => ({
       ...base,
-      padding: "0 12px",
+      padding: compact ? "0 10px" : "0 12px",
     }),
     placeholder: (base) => ({
       ...base,
+      fontSize,
       color: "rgb(161 161 170)",
     }),
     singleValue: (base) => ({
       ...base,
+      fontSize,
       color: "var(--foreground)",
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize,
+      margin: 0,
+      padding: 0,
     }),
     indicatorSeparator: (base) => ({
       ...base,
@@ -56,11 +76,13 @@ export function buildCatalogSelectStyles<T extends string | number>(
     }),
     dropdownIndicator: (base) => ({
       ...base,
+      padding: compact ? 6 : 8,
       color: "rgb(113 113 122)",
       "&:hover": { color: "rgb(63 63 70)" },
     }),
     clearIndicator: (base) => ({
       ...base,
+      padding: compact ? 6 : 8,
       color: "rgb(113 113 122)",
       "&:hover": { color: "rgb(63 63 70)" },
     }),
@@ -72,6 +94,7 @@ export function buildCatalogSelectStyles<T extends string | number>(
       boxShadow: "var(--admin-card-shadow-hover)",
       overflow: "hidden",
       zIndex: 60,
+      fontSize,
     }),
     menuPortal: (base) => ({
       ...base,
@@ -79,6 +102,8 @@ export function buildCatalogSelectStyles<T extends string | number>(
     }),
     option: (base, state) => ({
       ...base,
+      fontSize,
+      padding: compact ? "8px 10px" : "10px 12px",
       backgroundColor: state.isFocused
         ? "color-mix(in srgb, var(--admin-accent) 10%, transparent)"
         : state.isSelected
@@ -86,6 +111,7 @@ export function buildCatalogSelectStyles<T extends string | number>(
           : "transparent",
       color: "var(--foreground)",
       cursor: "pointer",
+      fontWeight: 400,
     }),
   };
 }
@@ -102,6 +128,8 @@ type FormFieldProps = {
   min?: number;
   step?: string;
   disabled?: boolean;
+  /** Smaller type scale for FilterSidebar and dense panels. */
+  compact?: boolean;
 };
 
 export function FormField({
@@ -116,10 +144,11 @@ export function FormField({
   min,
   step,
   disabled,
+  compact = false,
 }: FormFieldProps) {
   return (
-    <div className="mb-4">
-      <label htmlFor={name} className={labelClass}>
+    <div className={compact ? "mb-3" : "mb-4"}>
+      <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
         {label}
         {required && <span className="text-red-500"> *</span>}
       </label>
@@ -138,7 +167,7 @@ export function FormField({
           onChange(v);
         }}
         placeholder={placeholder}
-        className={`${inputClass} ${error ? inputErrorClass : ""}`}
+        className={`${compact ? inputCompactClass : inputClass} ${error ? inputErrorClass : ""}`}
         required={required}
         min={min}
         step={step}
@@ -166,6 +195,7 @@ export function FormFieldSelect<T extends string | number>({
   required,
   error,
   disabled,
+  compact = false,
 }: {
   label: string;
   name: string;
@@ -178,6 +208,7 @@ export function FormFieldSelect<T extends string | number>({
   required?: boolean;
   error?: string;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const handleChange = (selected: { value: T; label: string } | null) => {
     if (!selected) {
@@ -195,11 +226,11 @@ export function FormFieldSelect<T extends string | number>({
       ? null
       : (options.find((opt) => opt.value === value) ?? null);
 
-  const styles = buildCatalogSelectStyles<T>(Boolean(error));
+  const styles = buildCatalogSelectStyles<T>(Boolean(error), compact);
 
   return (
-    <div className="mb-4">
-      <label htmlFor={name} className={labelClass}>
+    <div className={compact ? "mb-3" : "mb-4"}>
+      <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
         {label}
         {required && <span className="text-red-500"> *</span>}
       </label>
@@ -230,13 +261,14 @@ export function FormFieldSelect<T extends string | number>({
 
 export function buildCatalogMultiSelectStyles<T extends string | number>(
   error?: boolean,
+  compact = false,
 ): StylesConfig<{ value: T; label: string }, true> {
-  const single = buildCatalogSelectStyles<T>(error);
+  const single = buildCatalogSelectStyles<T>(error, compact);
   return {
     ...single,
     valueContainer: (base) => ({
       ...base,
-      padding: "2px 8px",
+      padding: compact ? "2px 6px" : "2px 8px",
       gap: 4,
     }),
     multiValue: (base) => ({
@@ -247,7 +279,7 @@ export function buildCatalogMultiSelectStyles<T extends string | number>(
     multiValueLabel: (base) => ({
       ...base,
       color: "var(--foreground)",
-      fontSize: "0.8125rem",
+      fontSize: compact ? SELECT_FONT_COMPACT : "0.8125rem",
       paddingRight: 2,
     }),
     multiValueRemove: (base) => ({

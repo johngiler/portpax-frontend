@@ -72,7 +72,7 @@ export default function BookingsDateFilters({
           onChange={() => onDatePresetChange("custom")}
           className="h-4 w-4 cursor-pointer border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
         />
-        <span className="text-sm text-zinc-700 dark:text-zinc-300">
+        <span className="text-xs text-zinc-700 dark:text-zinc-300">
           {BOOKINGS_DATE_PRESET_LABELS.custom}
         </span>
       </label>
@@ -86,7 +86,7 @@ export default function BookingsDateFilters({
               type="date"
               value={customDateFrom}
               onChange={(e) => onCustomDateFromChange(e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
             />
           </div>
           <div>
@@ -97,7 +97,7 @@ export default function BookingsDateFilters({
               type="date"
               value={customDateTo}
               onChange={(e) => onCustomDateToChange(e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
             />
           </div>
         </div>

@@ -167,6 +167,7 @@ export default function PositionsView() {
           value={search}
           onChange={(v) => setSearch(String(v))}
           placeholder="Código, puerto, muelle…"
+          compact
         />
         <FormFieldSelect<number>
           label="Puerto"
@@ -176,8 +177,9 @@ export default function PositionsView() {
           options={portOptions}
           optionLabel="Todos los puertos"
           emptyValue={0}
+          compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full">
+        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
           Aplicar
         </DefaultButton>
       </FilterSidebarContent>

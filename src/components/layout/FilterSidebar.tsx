@@ -122,7 +122,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                   <button
                     type="button"
                     onClick={handleImportClick}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
                     aria-label="Importar desde Excel/CSV"
                     title="Importar desde Excel o CSV"
                   >
@@ -133,7 +133,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                     <button
                       type="button"
                       onClick={() => setExportOpen((v) => !v)}
-                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
                       aria-label="Exportar"
                       aria-expanded={exportOpen}
                       aria-haspopup="true"
@@ -153,7 +153,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                             type="button"
                             role="menuitem"
                             onClick={() => handleExportOption(opt.id)}
-                            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
                           >
                             {opt.label}
                           </button>
@@ -219,7 +219,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                       type="button"
                       role="menuitem"
                       onClick={() => handleExportOption(opt.id)}
-                      className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
                     >
                       {opt.label}
                     </button>

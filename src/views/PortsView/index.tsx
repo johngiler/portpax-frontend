@@ -106,8 +106,9 @@ export default function PortsView() {
           value={search}
           onChange={(v) => setSearch(String(v))}
           placeholder="Nombre, código, país…"
+          compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full">
+        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
           Aplicar
         </DefaultButton>
       </FilterSidebarContent>

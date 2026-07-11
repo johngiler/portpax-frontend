@@ -130,6 +130,7 @@ export default function ShippingLinesView() {
           value={search}
           onChange={(value) => setSearch(String(value))}
           placeholder="Marca, código…"
+          compact
         />
         <FormFieldSelect<number>
           label="Grupo corporativo"
@@ -139,8 +140,9 @@ export default function ShippingLinesView() {
           options={groupOptions}
           optionLabel="Todos los grupos"
           emptyValue={0}
+          compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full">
+        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
           Aplicar
         </DefaultButton>
       </FilterSidebarContent>

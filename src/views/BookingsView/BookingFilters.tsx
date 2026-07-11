@@ -85,6 +85,7 @@ export default function BookingFilters({
         value={search}
         onChange={(value) => onSearchChange(String(value))}
         placeholder="Código, puerto, barco…"
+        compact
       />
       <FormFieldSelect<string>
         label="Estado"
@@ -94,6 +95,7 @@ export default function BookingFilters({
         options={STATUS_OPTIONS}
         optionLabel="Todos los estados"
         emptyValue=""
+        compact
       />
       <FormFieldSelect<number>
         label="Puerto"
@@ -103,6 +105,7 @@ export default function BookingFilters({
         options={portOptions}
         optionLabel="Todos los puertos"
         emptyValue={0}
+        compact
       />
       <FormFieldSelect<number>
         label="Naviera"
@@ -115,6 +118,7 @@ export default function BookingFilters({
         options={shippingLineOptions}
         optionLabel="Todas las navieras"
         emptyValue={0}
+        compact
       />
       <FormFieldSelect<number>
         label="Barco"
@@ -124,8 +128,9 @@ export default function BookingFilters({
         options={vesselOptions}
         optionLabel="Todos los barcos"
         emptyValue={0}
+        compact
       />
-      <DefaultButton type="button" onClick={onApply} className="w-full">
+      <DefaultButton type="button" onClick={onApply} className="w-full text-xs">
         Aplicar
       </DefaultButton>
     </>
