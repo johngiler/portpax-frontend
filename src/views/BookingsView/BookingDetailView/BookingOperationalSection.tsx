@@ -107,18 +107,12 @@ export default function BookingOperationalSection({
         Puedes ajustarla manualmente si hace falta.
       </p>
 
-      {booking.folio ? (
-        <p className="mt-3 text-sm font-medium text-[var(--admin-accent)]">
-          Folio: {booking.folio}
-        </p>
-      ) : null}
-
       {booking.confirmation_pdf_url ? (
         <a
           href={booking.confirmation_pdf_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
+          className="mt-3 inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
         >
           Descargar confirmación PDF
         </a>
@@ -126,7 +120,7 @@ export default function BookingOperationalSection({
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <FormFieldSelect<number>
-          label="Posición"
+          label="Reasignar posición"
           name="booking_position"
           value={positionId}
           onChange={setPositionId}
