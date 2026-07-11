@@ -92,13 +92,13 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
                 )}
                 <div
                   className={[
-                    "relative flex aspect-[5/4] items-center justify-center bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950",
+                    "relative flex aspect-[5/4] items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950",
                     selected ? "from-[var(--admin-accent)]/20" : "",
                   ].join(" ")}
                 >
                   {selected && (
                     <span
-                      className="pointer-events-none absolute inset-0 bg-[var(--admin-accent)]/20"
+                      className="pointer-events-none absolute inset-0 z-[1] bg-[var(--admin-accent)]/20"
                       aria-hidden
                     />
                   )}
@@ -107,7 +107,7 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
                     <img
                       src={vessel.logo}
                       alt=""
-                      className="max-h-[70%] max-w-[75%] relative z-[1] object-contain transition-transform duration-200 group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
                     <span className="relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
