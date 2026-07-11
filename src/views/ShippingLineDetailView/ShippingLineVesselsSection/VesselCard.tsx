@@ -18,13 +18,13 @@ export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps
         !vessel.is_active ? "opacity-60" : "",
       ].join(" ")}
     >
-      <div className="relative flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950">
+      <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950">
         {vessel.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={vessel.logo}
             alt=""
-            className="max-h-[75%] max-w-[85%] object-contain"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <Ship className="h-10 w-10 text-[var(--admin-accent)]/60" strokeWidth={1.5} />
