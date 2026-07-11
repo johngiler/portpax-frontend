@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Ship } from "lucide-react";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import ImageViewer from "@/components/ui/ImageViewer";
 import type { Vessel } from "@/types/cruise";
 
 type VesselCardProps = {
@@ -11,6 +13,8 @@ type VesselCardProps = {
 };
 
 export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps) {
+  const [viewerOpen, setViewerOpen] = useState(false);
+
   return (
     <article
       className={[
@@ -20,12 +24,19 @@ export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps
     >
       <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--admin-accent)]/8 via-zinc-50 to-zinc-100 dark:from-[var(--admin-accent)]/15 dark:via-zinc-900 dark:to-zinc-950">
         {vessel.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={vessel.logo}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <button
+            type="button"
+            onClick={() => setViewerOpen(true)}
+            className="absolute inset-0 h-full w-full cursor-pointer"
+            aria-label={`Ver imagen de ${vessel.name}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={vessel.logo}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </button>
         ) : (
           <Ship className="h-10 w-10 text-[var(--admin-accent)]/60" strokeWidth={1.5} />
         )}
@@ -75,6 +86,14 @@ export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps
           </div>
         </dl>
       </div>
+
+      {vessel.logo ? (
+        <ImageViewer
+          images={[{ src: vessel.logo, alt: vessel.name, caption: vessel.name }]}
+          open={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }
