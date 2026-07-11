@@ -2,25 +2,25 @@
 
 import { LayoutGrid } from "lucide-react";
 import { useMemo, useState } from "react";
-import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
-import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import ViewSection from "@/components/layout/ViewSection";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { syncCoverImage } from "@/lib/syncCoverImage";
 import {
   createPosition,
   deletePosition,
   updatePosition,
 } from "@/services/catalogs/positionService";
 import { createPositionImage, deletePositionImage } from "@/services/catalogs/positionImageService";
-import type { PortDetail, PortBollard, PortFender, PositionDetail, PositionPayload } from "@/types/catalog";
+import type { PortDetail, PortBollard, PortFender, PositionDetail } from "@/types/catalog";
 import { formatMeters, positionTypeLabel } from "@/types/catalog";
 import { positionDisplayCode } from "@/lib/positionCode";
 import PositionFormModal, {
   type PositionFormMode,
+  type PositionFormSubmitPayload,
 } from "@/views/PositionsView/PositionFormModal";
 import PositionCardInventory from "./PositionCardInventory";
 
@@ -35,16 +35,13 @@ function PositionCard({
   fenders,
   onEdit,
   onDelete,
-  onImagesChange,
 }: {
   position: PositionDetail;
   bollards: PortBollard[];
   fenders: PortFender[];
   onEdit: () => void;
   onDelete: () => void;
-  onImagesChange: () => Promise<void>;
 }) {
-  const [uploading, setUploading] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -60,61 +57,22 @@ function PositionCard({
     setViewerOpen(true);
   }
 
-  async function handleUpload(files: File[]) {
-    setUploading(true);
-    try {
-      const needsCover = !position.cover_image && images.length === 0;
-      for (let i = 0; i < files.length; i += 1) {
-        await createPositionImage(position.id, files[i], {
-          isCover: needsCover && i === 0,
-        });
-      }
-      await onImagesChange();
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handleDeleteImage(id: number) {
-    await deletePositionImage(id);
-    await onImagesChange();
-  }
-
-  function resolveCoverImageId(): number | null {
-    if (!images.length) return null;
-    const cover = images.find((img) => img.image === position.cover_image);
-    return (cover ?? images[0]).id;
-  }
-
-  async function handleDeleteCoverImage() {
-    const id = resolveCoverImageId();
-    if (id) await handleDeleteImage(id);
-  }
-
   return (
     <article className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="group relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
         {position.cover_image ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                const coverIndex = images.findIndex((img) => img.image === position.cover_image);
-                openViewer(coverIndex >= 0 ? coverIndex : 0);
-              }}
-              className="h-full w-full cursor-pointer"
-              aria-label="Ver imágenes de la posición"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
-            </button>
-            <ConfirmDeleteButton
-              deleteLabel={`la imagen de portada de la posición ${positionDisplayCode(position)}`}
-              onDelete={() => void handleDeleteCoverImage()}
-              className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              ariaLabel="Eliminar imagen"
-            />
-          </>
+          <button
+            type="button"
+            onClick={() => {
+              const coverIndex = images.findIndex((img) => img.image === position.cover_image);
+              openViewer(coverIndex >= 0 ? coverIndex : 0);
+            }}
+            className="h-full w-full cursor-pointer"
+            aria-label="Ver imagen de la posición"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={position.cover_image} alt="" className="h-full w-full object-cover" />
+          </button>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Sin portada
@@ -158,40 +116,16 @@ function PositionCard({
             deleteLabel={`la posición ${positionDisplayCode(position)}`}
           />
         </div>
-        {images.length > 1 && (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {images.map((img, index) => (
-              <div key={img.id} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => openViewer(index)}
-                  className="cursor-pointer"
-                  aria-label="Ver imagen"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.image} alt="" className="h-14 w-20 rounded-md object-cover" />
-                </button>
-                <ConfirmDeleteButton
-                  deleteLabel={`esta imagen de la posición ${positionDisplayCode(position)}`}
-                  onDelete={() => void handleDeleteImage(img.id)}
-                  className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-red-600 text-[10px] text-white"
-                  ariaLabel="Eliminar"
-                >
-                  ×
-                </ConfirmDeleteButton>
-              </div>
-            ))}
-          </div>
-        )}
-        <ImageDropZone compact busy={uploading} onFiles={handleUpload} hint="" />
       </div>
 
-      <ImageViewer
-        images={viewerImages}
-        open={viewerOpen}
-        initialIndex={viewerIndex}
-        onClose={() => setViewerOpen(false)}
-      />
+      {viewerImages.length > 0 ? (
+        <ImageViewer
+          images={viewerImages}
+          open={viewerOpen}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }
@@ -215,13 +149,30 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
     setFormOpen(true);
   }
 
-  async function handleSave(payload: PositionPayload) {
+  async function handleSave({ payload, imageFile, removeImage }: PositionFormSubmitPayload) {
     setSaving(true);
     try {
       if (formMode === "create") {
-        await createPosition(payload);
+        const created = await createPosition(payload);
+        await syncCoverImage({
+          entityId: created.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       } else if (editing) {
         await updatePosition(editing.id, payload);
+        await syncCoverImage({
+          entityId: editing.id,
+          images: editing.images ?? [],
+          coverUrl: editing.cover_image,
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       }
       setFormOpen(false);
       await onChange();
@@ -263,7 +214,6 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
                 fenders={port.fenders}
                 onEdit={() => openEdit(position)}
                 onDelete={() => handleDelete(position)}
-                onImagesChange={onChange}
               />
             ))}
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import CatalogLogoField from "@/components/ui/CatalogLogoField";
 import FormSection from "@/components/ui/FormSection";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
@@ -23,8 +24,18 @@ import { fetchPortBollards } from "@/services/catalogs/portBollardService";
 import { fetchPortFenders } from "@/services/catalogs/portFenderService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchPositions } from "@/services/catalogs/positionService";
-import type { Position, PositionPayload, PositionType } from "@/types/catalog";
-import { POSITION_TYPE_OPTIONS, portDisplayName, positionTypeLabel } from "@/types/catalog";
+import type {
+  Position,
+  PositionDetail,
+  PositionPayload,
+  PositionType,
+} from "@/types/catalog";
+import {
+  POSITION_TYPE_OPTIONS,
+  formatMeters,
+  portDisplayName,
+  positionTypeLabel,
+} from "@/types/catalog";
 import CombinedPositionFields from "./CombinedPositionFields";
 import PositionInventoryRows, {
   allocationsFromBollardRows,
@@ -35,16 +46,27 @@ import PositionInventoryRows, {
 
 export type PositionFormMode = "create" | "edit";
 
+export type PositionFormSubmitPayload = {
+  payload: PositionPayload;
+  imageFile?: File | null;
+  removeImage?: boolean;
+};
+
 type PositionFormModalProps = {
   open: boolean;
   mode: PositionFormMode;
   lockedPortId?: number;
   lockedPortCode?: string;
-  initial?: Position | null;
+  initial?: Position | PositionDetail | null;
   saving: boolean;
   onClose: () => void;
-  onSubmit: (payload: PositionPayload) => Promise<void>;
+  onSubmit: (data: PositionFormSubmitPayload) => Promise<void>;
 };
+
+function initialCoverUrl(initial?: Position | PositionDetail | null): string | null {
+  if (!initial || !("cover_image" in initial)) return null;
+  return initial.cover_image ?? null;
+}
 
 type FormState = PositionPayload;
 
@@ -131,6 +153,9 @@ export default function PositionFormModal({
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [bollardRows, setBollardRows] = useState<InventoryRow[]>([]);
   const [fenderRows, setFenderRows] = useState<InventoryRow[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -144,6 +169,9 @@ export default function PositionFormModal({
     );
     setErrors({});
     setSubmitError(null);
+    setImageFile(null);
+    setRemoveImage(false);
+    setImagePreview(initialCoverUrl(initial));
     setIsCombined(Boolean(initial?.is_combined));
     setComponentAId(initial?.component_positions[0]?.id ?? 0);
     setComponentBId(initial?.component_positions[1]?.id ?? 0);
@@ -157,6 +185,20 @@ export default function PositionFormModal({
         setPortCodesById({});
       });
   }, [open, initial, lockedPortId]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (imageFile) {
+      const url = URL.createObjectURL(imageFile);
+      setImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (removeImage) {
+      setImagePreview(null);
+      return;
+    }
+    setImagePreview(initialCoverUrl(initial));
+  }, [open, imageFile, removeImage, initial]);
 
   useEffect(() => {
     if (!isCombined || !componentAId || !componentBId || componentAId === componentBId) return;
@@ -309,7 +351,12 @@ export default function PositionFormModal({
     }
 
     await submitModalForm(
-      () => onSubmit(payload),
+      () =>
+        onSubmit({
+          payload,
+          imageFile,
+          removeImage,
+        }),
       {
         fallback: "No se pudo guardar la posición.",
         setSubmitError,
@@ -346,7 +393,7 @@ export default function PositionFormModal({
       open={open}
       onClose={onClose}
       title={title}
-      panelClassName="max-w-2xl"
+      panelClassName="max-w-3xl"
       footer={
         <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="hidden text-xs text-zinc-500 sm:block">
@@ -369,210 +416,243 @@ export default function PositionFormModal({
       }
     >
       <form id="position-form" onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <ModalFormError message={submitError} />
-          <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{displayName}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
-                {positionTypeLabel(form.position_type)}
-              </span>
-              {isCombined && (
-                <span className="inline-flex rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                  Combinada
-                </span>
-              )}
-            </div>
-          </div>
-
-          {mode === "create" && (
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleCombinedToggle(false)}
-                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  !isCombined
-                    ? "bg-[var(--admin-accent)] text-white"
-                    : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
-                }`}
-              >
-                Posición simple
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCombinedToggle(true)}
-                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  isCombined
-                    ? "bg-[var(--admin-accent)] text-white"
-                    : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
-                }`}
-              >
-                Posición combinada
-              </button>
-            </div>
-          )}
-
-          <FormSection
-            title="Identificación"
-            description={
-              isCombined
-                ? "Posición virtual para barcos que ocupan dos slots de muelle."
-                : "Puerto, código y asignación de muelle."
-            }
-          >
-            {!lockedPortId && (
-              <FormFieldSelect<number>
-                label="Puerto"
-                name="port"
-                value={form.port}
-                onChange={(v) => setField("port", v)}
-                options={portOptions}
-                optionLabel="Seleccionar puerto…"
-                emptyValue={0}
-                required
-                error={errors.port}
-                disabled={mode === "edit"}
-              />
-            )}
-            {isCombined && form.port > 0 && (
-              <CombinedPositionFields
-                componentAId={componentAId}
-                componentBId={componentBId}
-                options={baseOptions}
-                loading={loadingBasePositions}
+        <ModalFormError message={submitError} />
+        <div className="grid gap-5 lg:grid-cols-[minmax(220px,260px)_1fr]">
+          <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
+            <div className="rounded-xl border border-zinc-200/80 bg-gradient-to-b from-[var(--admin-accent)]/5 to-white p-4 dark:border-zinc-800 dark:from-[var(--admin-accent)]/10 dark:to-zinc-900">
+              <CatalogLogoField
+                compact
+                label="Imagen de la posición"
+                deleteLabel="la imagen de la posición"
+                previewUrl={imagePreview}
                 disabled={saving}
-                error={errors.component}
-                onChangeA={setComponentAId}
-                onChangeB={setComponentBId}
+                onFileChange={(file) => {
+                  setImageFile(file);
+                  setRemoveImage(false);
+                }}
+                onRemove={() => {
+                  setImageFile(null);
+                  setRemoveImage(true);
+                }}
+                canRemove={Boolean(imagePreview)}
               />
-            )}
-            <FormField
-              label="Nombre de posición"
-              name="code"
-              value={form.code}
-              onChange={(v) => setField("code", String(v))}
-              required
-              error={errors.code}
-              placeholder={isCombined ? "P1+P2" : "P1"}
-            />
-            {!isCombined && (
-              <>
-                <FormFieldSelect<PositionType>
-                  label="Tipo"
-                  name="position_type"
-                  value={form.position_type}
-                  onChange={(v) => setField("position_type", v)}
-                  options={POSITION_TYPE_OPTIONS}
-                />
-                {form.position_type === "pier" && form.port > 0 && (
-                  <FormFieldSelect<number>
-                    label="Muelle"
-                    name="berth"
-                    value={form.berth ?? 0}
-                    onChange={(v) => setField("berth", v === 0 ? null : v)}
-                    options={berthOptions}
-                    optionLabel="Sin muelle asignado"
-                    emptyValue={0}
-                  />
-                )}
-              </>
-            )}
-          </FormSection>
-
-          <FormSection
-            title="Características"
-            description="Eslora, calado e inventario operativo de la posición."
-            columns={1}
-          >
-            <div className="grid gap-x-4 sm:grid-cols-2">
-              <FormField
-                label="Eslora (m)"
-                name="max_loa_m"
-                type="number"
-                step="0.01"
-                value={form.max_loa_m ?? ""}
-                onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
-              />
-              <FormField
-                label="Calado (m)"
-                name="min_draft_m"
-                type="number"
-                step="0.01"
-                value={form.min_draft_m ?? ""}
-                onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
-              />
+              <div className="mt-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  {displayName}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
+                    {positionTypeLabel(form.position_type)}
+                  </span>
+                  {form.is_active ? (
+                    <span className="inline-flex rounded-full bg-[var(--admin-accent)]/10 px-2.5 py-0.5 text-[11px] font-medium text-[var(--admin-accent)]">
+                      Activa
+                    </span>
+                  ) : (
+                    <span className="inline-flex rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      Inactiva
+                    </span>
+                  )}
+                  {isCombined && (
+                    <span className="inline-flex rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                      Combinada
+                    </span>
+                  )}
+                  {form.max_loa_m ? (
+                    <span className="inline-flex rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      LOA {formatMeters(form.max_loa_m)}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            {!isCombined && form.position_type !== "anchorage" && form.port > 0 && (
-              <div className="mt-4 flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
-                <PositionInventoryRows
-                  label="Bitas"
-                  rows={bollardRows}
-                  options={bollardOptions}
-                  selectPlaceholder={
-                    loadingInventory ? "Cargando inventario…" : "Tipo de bita…"
-                  }
-                  disabled={loadingInventory || saving}
-                  error={errors.bollard_allocations}
-                  onChange={setBollardRows}
+
+            <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+              <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-200">
+                <span className="font-medium">Posición activa</span>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => setField("is_active", e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
                 />
-                <PositionInventoryRows
-                  label="Defensas"
-                  rows={fenderRows}
-                  options={fenderOptions}
-                  selectPlaceholder={
-                    loadingInventory ? "Cargando inventario…" : "Tipo de defensa…"
-                  }
-                  disabled={loadingInventory || saving}
-                  error={errors.fender_allocations}
-                  onChange={setFenderRows}
-                />
+              </label>
+            </div>
+          </aside>
+
+          <div className="space-y-4">
+            {mode === "create" && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCombinedToggle(false)}
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    !isCombined
+                      ? "bg-[var(--admin-accent)] text-white"
+                      : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
+                  }`}
+                >
+                  Posición simple
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCombinedToggle(true)}
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isCombined
+                      ? "bg-[var(--admin-accent)] text-white"
+                      : "border border-[var(--admin-border)] text-zinc-600 hover:bg-[var(--admin-surface-muted)]"
+                  }`}
+                >
+                  Posición combinada
+                </button>
               </div>
             )}
-          </FormSection>
 
-          <FormSection title="Ubicación" description="Coordenadas GPS de la posición.">
-            <FormField
-              label="Latitud"
-              name="latitude"
-              type="number"
-              step="any"
-              value={form.latitude ?? ""}
-              onChange={(v) => setField("latitude", v === "" ? null : Number(v))}
-            />
-            <FormField
-              label="Longitud"
-              name="longitude"
-              type="number"
-              step="any"
-              value={form.longitude ?? ""}
-              onChange={(v) => setField("longitude", v === "" ? null : Number(v))}
-            />
-          </FormSection>
-
-          <FormSection title="Notas" description="Observaciones internas." columns={1}>
-            <FormField
-              label="Notas"
-              name="notes"
-              value={form.notes}
-              onChange={(v) => setField("notes", String(v))}
-            />
-          </FormSection>
-
-          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
-            <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-200">
-              <span className="font-medium">Activa</span>
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(e) => setField("is_active", e.target.checked)}
-                className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
+            <FormSection
+              title="Identificación"
+              description={
+                isCombined
+                  ? "Posición virtual para barcos que ocupan dos slots de muelle."
+                  : "Puerto, código y asignación de muelle."
+              }
+            >
+              {!lockedPortId && (
+                <FormFieldSelect<number>
+                  label="Puerto"
+                  name="port"
+                  value={form.port}
+                  onChange={(v) => setField("port", v)}
+                  options={portOptions}
+                  optionLabel="Seleccionar puerto…"
+                  emptyValue={0}
+                  required
+                  error={errors.port}
+                  disabled={mode === "edit"}
+                />
+              )}
+              {isCombined && form.port > 0 && (
+                <CombinedPositionFields
+                  componentAId={componentAId}
+                  componentBId={componentBId}
+                  options={baseOptions}
+                  loading={loadingBasePositions}
+                  disabled={saving}
+                  error={errors.component}
+                  onChangeA={setComponentAId}
+                  onChangeB={setComponentBId}
+                />
+              )}
+              <FormField
+                label="Nombre de posición"
+                name="code"
+                value={form.code}
+                onChange={(v) => setField("code", String(v))}
+                required
+                error={errors.code}
+                placeholder={isCombined ? "P1+P2" : "P1"}
               />
-            </label>
-            <p className="mt-2 text-xs text-zinc-500">
-              {form.is_active
-                ? "La posición aparece en listados y asignaciones."
-                : "Oculta para usuarios; conserva su historial."}
-            </p>
+              {!isCombined && (
+                <>
+                  <FormFieldSelect<PositionType>
+                    label="Tipo"
+                    name="position_type"
+                    value={form.position_type}
+                    onChange={(v) => setField("position_type", v)}
+                    options={POSITION_TYPE_OPTIONS}
+                  />
+                  {form.position_type === "pier" && form.port > 0 && (
+                    <FormFieldSelect<number>
+                      label="Muelle"
+                      name="berth"
+                      value={form.berth ?? 0}
+                      onChange={(v) => setField("berth", v === 0 ? null : v)}
+                      options={berthOptions}
+                      optionLabel="Sin muelle asignado"
+                      emptyValue={0}
+                    />
+                  )}
+                </>
+              )}
+            </FormSection>
+
+            <FormSection
+              title="Características"
+              description="Eslora, calado e inventario operativo de la posición."
+              columns={1}
+            >
+              <div className="grid gap-x-4 sm:grid-cols-2">
+                <FormField
+                  label="Eslora (m)"
+                  name="max_loa_m"
+                  type="number"
+                  step="0.01"
+                  value={form.max_loa_m ?? ""}
+                  onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
+                />
+                <FormField
+                  label="Calado (m)"
+                  name="min_draft_m"
+                  type="number"
+                  step="0.01"
+                  value={form.min_draft_m ?? ""}
+                  onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
+                />
+              </div>
+              {!isCombined && form.position_type !== "anchorage" && form.port > 0 && (
+                <div className="mt-4 flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+                  <PositionInventoryRows
+                    label="Bitas"
+                    rows={bollardRows}
+                    options={bollardOptions}
+                    selectPlaceholder={
+                      loadingInventory ? "Cargando inventario…" : "Tipo de bita…"
+                    }
+                    disabled={loadingInventory || saving}
+                    error={errors.bollard_allocations}
+                    onChange={setBollardRows}
+                  />
+                  <PositionInventoryRows
+                    label="Defensas"
+                    rows={fenderRows}
+                    options={fenderOptions}
+                    selectPlaceholder={
+                      loadingInventory ? "Cargando inventario…" : "Tipo de defensa…"
+                    }
+                    disabled={loadingInventory || saving}
+                    error={errors.fender_allocations}
+                    onChange={setFenderRows}
+                  />
+                </div>
+              )}
+            </FormSection>
+
+            <FormSection title="Ubicación" description="Coordenadas GPS de la posición.">
+              <FormField
+                label="Latitud"
+                name="latitude"
+                type="number"
+                step="any"
+                value={form.latitude ?? ""}
+                onChange={(v) => setField("latitude", v === "" ? null : Number(v))}
+              />
+              <FormField
+                label="Longitud"
+                name="longitude"
+                type="number"
+                step="any"
+                value={form.longitude ?? ""}
+                onChange={(v) => setField("longitude", v === "" ? null : Number(v))}
+              />
+            </FormSection>
+
+            <FormSection title="Notas" description="Observaciones internas." columns={1}>
+              <FormField
+                label="Notas"
+                name="notes"
+                value={form.notes}
+                onChange={(v) => setField("notes", String(v))}
+              />
+            </FormSection>
           </div>
         </div>
       </form>

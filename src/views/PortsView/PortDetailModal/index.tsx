@@ -14,16 +14,21 @@ import MainTable, {
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import Modal from "@/components/ui/Modal";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { positionDisplayCode } from "@/lib/positionCode";
+import { syncCoverImage } from "@/lib/syncCoverImage";
 import {
   createPosition,
   deletePosition,
   fetchPositions,
   updatePosition,
 } from "@/services/catalogs/positionService";
-import type { Port, Position, PositionPayload } from "@/types/catalog";
+import { createPositionImage, deletePositionImage } from "@/services/catalogs/positionImageService";
+import type { Port, Position } from "@/types/catalog";
 import { portDisplayName, positionTypeLabel } from "@/types/catalog";
-import { positionDisplayCode } from "@/lib/positionCode";
-import PositionFormModal, { type PositionFormMode } from "@/views/PositionsView/PositionFormModal";
+import PositionFormModal, {
+  type PositionFormMode,
+  type PositionFormSubmitPayload,
+} from "@/views/PositionsView/PositionFormModal";
 
 type PortDetailModalProps = {
   open: boolean;
@@ -79,14 +84,30 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
     setFormOpen(true);
   }
 
-  async function handleSave(payload: PositionPayload) {
+  async function handleSave({ payload, imageFile, removeImage }: PositionFormSubmitPayload) {
     if (!port) return;
     setSaving(true);
     try {
       if (formMode === "create") {
-        await createPosition(payload);
+        const created = await createPosition(payload);
+        await syncCoverImage({
+          entityId: created.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       } else if (editingPosition) {
         await updatePosition(editingPosition.id, payload);
+        await syncCoverImage({
+          entityId: editingPosition.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       }
       setFormOpen(false);
       await loadPositions();

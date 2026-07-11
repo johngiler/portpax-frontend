@@ -6,10 +6,15 @@ import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { syncCoverImage } from "@/lib/syncCoverImage";
 import { createBerth, deleteBerth, updateBerth } from "@/services/catalogs/berthService";
-import type { Berth, BerthDetail, BerthPayload } from "@/types/catalog";
+import { createBerthImage, deleteBerthImage } from "@/services/catalogs/berthImageService";
+import type { BerthDetail } from "@/types/catalog";
 import BerthCard from "./BerthCard";
-import BerthFormModal, { type BerthFormMode } from "./BerthFormModal";
+import BerthFormModal, {
+  type BerthFormMode,
+  type BerthFormSubmitPayload,
+} from "./BerthFormModal";
 
 type PortBerthsSectionProps = {
   portId: number;
@@ -20,7 +25,7 @@ type PortBerthsSectionProps = {
 export default function PortBerthsSection({ portId, berths, onChange }: PortBerthsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<BerthFormMode>("create");
-  const [editing, setEditing] = useState<Berth | null>(null);
+  const [editing, setEditing] = useState<BerthDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +41,31 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
     setFormOpen(true);
   }
 
-  async function handleSave(payload: BerthPayload) {
+  async function handleSave({ payload, imageFile, removeImage }: BerthFormSubmitPayload) {
     setSaving(true);
     try {
+      const body = { ...payload, port: portId };
       if (formMode === "create") {
-        await createBerth({ ...payload, port: portId });
+        const created = await createBerth(body);
+        await syncCoverImage({
+          entityId: created.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createBerthImage,
+          deleteImage: deleteBerthImage,
+        });
       } else if (editing) {
-        await updateBerth(editing.id, { ...payload, port: portId });
+        await updateBerth(editing.id, body);
+        await syncCoverImage({
+          entityId: editing.id,
+          images: editing.images ?? [],
+          coverUrl: editing.cover_image,
+          imageFile,
+          removeImage,
+          createImage: createBerthImage,
+          deleteImage: deleteBerthImage,
+        });
       }
       setFormOpen(false);
       await onChange();
@@ -83,7 +106,6 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
                 berth={berth}
                 onEdit={() => openEdit(berth)}
                 onDelete={() => handleDelete(berth)}
-                onImagesChange={onChange}
               />
             ))}
           </div>

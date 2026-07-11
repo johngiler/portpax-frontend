@@ -18,6 +18,8 @@ import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { positionDisplayCode } from "@/lib/positionCode";
+import { syncCoverImage } from "@/lib/syncCoverImage";
 import { fetchPorts } from "@/services/catalogs/portService";
 import {
   createPosition,
@@ -25,10 +27,13 @@ import {
   fetchPositions,
   updatePosition,
 } from "@/services/catalogs/positionService";
-import type { Position, PositionPayload } from "@/types/catalog";
+import { createPositionImage, deletePositionImage } from "@/services/catalogs/positionImageService";
+import type { Position } from "@/types/catalog";
 import { portDisplayName, positionTypeLabel } from "@/types/catalog";
-import { positionDisplayCode } from "@/lib/positionCode";
-import PositionFormModal, { type PositionFormMode } from "./PositionFormModal";
+import PositionFormModal, {
+  type PositionFormMode,
+  type PositionFormSubmitPayload,
+} from "./PositionFormModal";
 import PositionsViewSkeleton from "./PositionsViewSkeleton";
 
 const PAGE_SIZE = 20;
@@ -98,13 +103,29 @@ export default function PositionsView() {
     setModalOpen(true);
   }
 
-  async function handleSave(payload: PositionPayload) {
+  async function handleSave({ payload, imageFile, removeImage }: PositionFormSubmitPayload) {
     setSaving(true);
     try {
       if (modalMode === "create") {
-        await createPosition(payload);
+        const created = await createPosition(payload);
+        await syncCoverImage({
+          entityId: created.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       } else if (editingPosition) {
         await updatePosition(editingPosition.id, payload);
+        await syncCoverImage({
+          entityId: editingPosition.id,
+          images: [],
+          imageFile,
+          removeImage,
+          createImage: createPositionImage,
+          deleteImage: deletePositionImage,
+        });
       }
       setModalOpen(false);
       await loadPositions();
