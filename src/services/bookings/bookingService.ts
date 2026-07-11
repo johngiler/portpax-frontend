@@ -167,3 +167,25 @@ export async function updateBookingStatus(id: number, status: BookingStatus): Pr
 export async function deleteBooking(id: number): Promise<void> {
   await apiFetch<void>(`${BASE}${id}/`, { method: "DELETE" });
 }
+
+export type FetchDashboardStatsParams = {
+  years: number[];
+  port?: number;
+  shipping_line?: number;
+  shipping_line_group?: number;
+};
+
+export async function fetchDashboardStats(
+  params: FetchDashboardStatsParams,
+): Promise<import("@/types/dashboard").DashboardStats> {
+  const query = new URLSearchParams();
+  for (const year of params.years) {
+    query.append("year", String(year));
+  }
+  if (params.port) query.set("port", String(params.port));
+  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
+  return apiFetch(`${BASE}dashboard-stats/?${query.toString()}`);
+}

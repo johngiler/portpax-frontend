@@ -94,7 +94,7 @@ export default function DashboardOccupancySection({
     <ViewSection
       icon={LayoutGrid}
       title="Mapa de ocupación"
-      description="Vista anual de escalas por puerto. Los totales del mapa respetan el período del sidebar."
+      description="Vista anual de escalas por puerto. Los totales respetan el período del sidebar."
       className="mb-8"
     >
       <FormErrorAlert message={error} className="mb-4" />

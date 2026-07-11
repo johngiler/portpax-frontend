@@ -17,10 +17,45 @@ const errorClass = "mt-1 text-xs font-medium text-red-600 dark:text-red-400";
 const SELECT_FONT = "0.875rem";
 const SELECT_FONT_COMPACT = "0.75rem";
 
+export type CatalogSelectOption<T extends string | number> = {
+  value: T;
+  label: string;
+  logoUrl?: string | null;
+};
+
+function SelectOptionLabel({
+  label,
+  logoUrl,
+  showLogo,
+  compact,
+}: {
+  label: string;
+  logoUrl?: string | null;
+  showLogo?: boolean;
+  compact?: boolean;
+}) {
+  if (!showLogo) return <>{label}</>;
+  const size = compact ? "h-5 w-5" : "h-6 w-6";
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span
+        className={`flex ${size} shrink-0 items-center justify-center overflow-hidden rounded border border-zinc-200/80 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800`}
+      >
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="h-full w-full object-contain" />
+        ) : (
+          <span className="text-[8px] font-medium text-zinc-400">—</span>
+        )}
+      </span>
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
 export function buildCatalogSelectStyles<T extends string | number>(
   error?: boolean,
   compact = false,
-): StylesConfig<{ value: T; label: string }, false> {
+): StylesConfig<CatalogSelectOption<T>, false> {
   const fontSize = compact ? SELECT_FONT_COMPACT : SELECT_FONT;
   const minHeight = compact ? "34px" : "42px";
 
@@ -196,12 +231,13 @@ export function FormFieldSelect<T extends string | number>({
   error,
   disabled,
   compact = false,
+  showLogo = false,
 }: {
   label: string;
   name: string;
   value: T;
   onChange: (value: T) => void;
-  options: { value: T; label: string }[];
+  options: CatalogSelectOption<T>[];
   optionLabel?: string;
   /** Valor cuando se elige la opción vacía (ej. 0 para IDs) */
   emptyValue?: T;
@@ -209,8 +245,10 @@ export function FormFieldSelect<T extends string | number>({
   error?: string;
   disabled?: boolean;
   compact?: boolean;
+  /** Render logo thumbnail from option.logoUrl */
+  showLogo?: boolean;
 }) {
-  const handleChange = (selected: { value: T; label: string } | null) => {
+  const handleChange = (selected: CatalogSelectOption<T> | null) => {
     if (!selected) {
       onChange(
         (emptyValue ??
@@ -234,7 +272,7 @@ export function FormFieldSelect<T extends string | number>({
         {label}
         {required && <span className="text-red-500"> *</span>}
       </label>
-      <Select<{ value: T; label: string }, false>
+      <Select<CatalogSelectOption<T>, false>
         inputId={name}
         name={name}
         value={selectedOption}
@@ -245,6 +283,14 @@ export function FormFieldSelect<T extends string | number>({
         placeholder={optionLabel ?? "Seleccionar..."}
         aria-invalid={!!error}
         isDisabled={disabled}
+        formatOptionLabel={(option) => (
+          <SelectOptionLabel
+            label={option.label}
+            logoUrl={option.logoUrl}
+            showLogo={showLogo}
+            compact={compact}
+          />
+        )}
         menuPortalTarget={typeof window !== "undefined" ? document.body : null}
         menuPosition="fixed"
         menuShouldBlockScroll={false}
@@ -262,7 +308,7 @@ export function FormFieldSelect<T extends string | number>({
 export function buildCatalogMultiSelectStyles<T extends string | number>(
   error?: boolean,
   compact = false,
-): StylesConfig<{ value: T; label: string }, true> {
+): StylesConfig<CatalogSelectOption<T>, true> {
   const single = buildCatalogSelectStyles<T>(error, compact);
   return {
     ...single,
@@ -291,7 +337,7 @@ export function buildCatalogMultiSelectStyles<T extends string | number>(
         color: "#ef4444",
       },
     }),
-  } as StylesConfig<{ value: T; label: string }, true>;
+  } as StylesConfig<CatalogSelectOption<T>, true>;
 }
 
 export function FormFieldMultiSelect<T extends string | number>({
@@ -303,25 +349,29 @@ export function FormFieldMultiSelect<T extends string | number>({
   placeholder,
   error,
   disabled,
+  compact = false,
+  showLogo = false,
 }: {
   label: string;
   name: string;
   value: T[];
   onChange: (value: T[]) => void;
-  options: { value: T; label: string }[];
+  options: CatalogSelectOption<T>[];
   placeholder?: string;
   error?: string;
   disabled?: boolean;
+  compact?: boolean;
+  showLogo?: boolean;
 }) {
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
-  const styles = buildCatalogMultiSelectStyles<T>(Boolean(error));
+  const styles = buildCatalogMultiSelectStyles<T>(Boolean(error), compact);
 
   return (
-    <div className="mb-4">
-      <label htmlFor={name} className={labelClass}>
+    <div className={compact ? "mb-3" : "mb-4"}>
+      <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
         {label}
       </label>
-      <Select<{ value: T; label: string }, true>
+      <Select<CatalogSelectOption<T>, true>
         inputId={name}
         name={name}
         isMulti
@@ -333,6 +383,14 @@ export function FormFieldMultiSelect<T extends string | number>({
         placeholder={placeholder ?? "Seleccionar…"}
         aria-invalid={!!error}
         isDisabled={disabled}
+        formatOptionLabel={(option) => (
+          <SelectOptionLabel
+            label={option.label}
+            logoUrl={option.logoUrl}
+            showLogo={showLogo}
+            compact={compact}
+          />
+        )}
         menuPortalTarget={typeof window !== "undefined" ? document.body : null}
         menuPosition="fixed"
         menuShouldBlockScroll={false}

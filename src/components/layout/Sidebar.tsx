@@ -1,6 +1,14 @@
 "use client";
 
-import { Anchor, CalendarDays, ChevronLeft, ChevronRight, LayoutDashboard, MapPin } from "lucide-react";
+import {
+  Anchor,
+  CalendarDays,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  MapPin,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,6 +19,7 @@ const MOBILE_BREAKPOINT = 768;
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/calendar", label: "Calendario", icon: CalendarRange },
   { href: "/bookings", label: "Reservas", icon: CalendarDays },
   { href: "/ports", label: "Puertos", icon: MapPin },
   { href: "/shipping-lines", label: "Navieras", icon: Anchor },

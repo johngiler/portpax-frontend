@@ -1,233 +1,190 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import {
-  Anchor,
+  Ban,
   ClipboardList,
+  Gauge,
   LayoutDashboard,
-  MapPin,
-  Ship,
+  Users,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import TimeRangeFilters from "@/components/filters/TimeRangeFilters";
-import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { toIsoDate } from "@/lib/bookingDates";
-import { getTimeRange, expandRangeForOccupancy, type TimeFilterPreset } from "@/utils/timeRange";
-import { loadViewTimePrefs, saveViewTimePrefs } from "@/utils/viewPrefs";
-import DashboardOccupancySection from "./DashboardOccupancySection";
-import DashboardUpcomingSection from "./DashboardUpcomingSection";
+import { fetchDashboardStats } from "@/services/bookings/bookingService";
+import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
+import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
+import type { Port } from "@/types/catalog";
+import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
+import type { DashboardCarrierFilter, DashboardStats } from "@/types/dashboard";
+import DashboardCharts from "./DashboardCharts";
+import DashboardFilters from "./DashboardFilters";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
-import { loadDashboardSummary, type DashboardSummary } from "./loadDashboardSummary";
 
-function defaultCustomFrom(): string {
-  const d = new Date();
-  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function defaultCustomTo(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 29);
-  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function formatBookingBreakdown(summary: DashboardSummary): string {
-  const parts: string[] = [];
-  if (summary.bookingsRequested > 0) {
-    parts.push(`${summary.bookingsRequested} solicitadas`);
-  }
-  if (summary.bookingsConfirmed > 0) {
-    parts.push(`${summary.bookingsConfirmed} confirmadas`);
-  }
-  if (summary.bookingsCancelled > 0) {
-    parts.push(`${summary.bookingsCancelled} canceladas`);
-  }
-  return parts.length > 0 ? parts.join(" · ") : "Sin reservas en el período";
+function currentYear(): number {
+  return new Date().getFullYear();
 }
 
 export default function DashboardView() {
-  const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>("30d");
-  const [customDateFrom, setCustomDateFrom] = useState(defaultCustomFrom);
-  const [customDateTo, setCustomDateTo] = useState(defaultCustomTo);
-  const [hasLoadedPrefs, setHasLoadedPrefs] = useState(false);
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [ports, setPorts] = useState<Port[]>([]);
+  const [groups, setGroups] = useState<ShippingLineGroup[]>([]);
+  const [lines, setLines] = useState<ShippingLine[]>([]);
+  const [catalogReady, setCatalogReady] = useState(false);
+
+  const [selectedPortId, setSelectedPortId] = useState<number | null>(null);
+  const [selectedYears, setSelectedYears] = useState<number[]>(() => [currentYear()]);
+  const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
+    type: "all",
+  });
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
   useEffect(() => {
-    const prefs = loadViewTimePrefs();
-    if (prefs) {
-      setTimeFilter(prefs.timeFilter);
-      setCustomDateFrom(prefs.customDateFrom);
-      setCustomDateTo(prefs.customDateTo);
+    let cancelled = false;
+    async function loadCatalogs() {
+      try {
+        const [portsRes, groupsRes, linesRes] = await Promise.all([
+          fetchPorts({ pageSize: 100 }),
+          fetchShippingLineGroups(),
+          fetchAllShippingLines({ pageSize: 100 }),
+        ]);
+        if (cancelled) return;
+        setPorts(portsRes.results.filter((port) => port.is_active));
+        setGroups(groupsRes);
+        setLines(linesRes.filter((line) => line.is_active));
+      } catch (err) {
+        if (!cancelled) {
+          setViewError(
+            getApiErrorMessage(err, "No se pudieron cargar los filtros del dashboard."),
+          );
+        }
+      } finally {
+        if (!cancelled) setCatalogReady(true);
+      }
     }
-    setHasLoadedPrefs(true);
+    loadCatalogs();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const timeRange = useMemo(
-    () => getTimeRange(timeFilter, customDateFrom, customDateTo),
-    [timeFilter, customDateFrom, customDateTo],
-  );
-
-  const occupancyRange = useMemo(
-    () => expandRangeForOccupancy(timeRange),
-    [timeRange],
-  );
-
-  useEffect(() => {
-    if (!hasLoadedPrefs) return;
-    saveViewTimePrefs({ timeFilter, customDateFrom, customDateTo });
-  }, [hasLoadedPrefs, timeFilter, customDateFrom, customDateTo]);
-
-  const loadSummary = useCallback(async () => {
+  const loadStats = useCallback(async () => {
     setLoading(true);
     setViewError(null);
     try {
-      const data = await loadDashboardSummary(timeRange);
-      setSummary(data);
+      const data = await fetchDashboardStats({
+        years: selectedYears,
+        port: selectedPortId ?? undefined,
+        shipping_line:
+          carrierFilter.type === "line" ? carrierFilter.id : undefined,
+        shipping_line_group:
+          carrierFilter.type === "group" ? carrierFilter.id : undefined,
+      });
+      setStats(data);
     } catch (err) {
       setViewError(
-        getApiErrorMessage(err, "No se pudo cargar el resumen del dashboard."),
+        getApiErrorMessage(err, "No se pudo cargar el resumen operativo."),
       );
-      setSummary(null);
+      setStats(null);
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
+  }, [selectedYears, selectedPortId, carrierFilter]);
 
   useEffect(() => {
-    if (!hasLoadedPrefs) return;
-    loadSummary();
-  }, [hasLoadedPrefs, loadSummary]);
+    if (!catalogReady) return;
+    loadStats();
+  }, [catalogReady, loadStats]);
 
-  useEffect(() => {
-    if (!hasLoadedPrefs) return;
-
-    function refresh() {
-      loadSummary();
-    }
-
-    function onVisibilityChange() {
-      if (document.visibilityState === "visible") refresh();
-    }
-
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [hasLoadedPrefs, loadSummary]);
-
-  if (!hasLoadedPrefs || (loading && !summary)) {
+  if (!catalogReady || (loading && !stats)) {
     return <DashboardViewSkeleton />;
   }
 
-  const statCards = summary
-    ? [
-        {
-          label: "Reservas",
-          value: summary.bookingsTotal,
-          description: formatBookingBreakdown(summary),
-          icon: ClipboardList,
-          color: "#3478b5",
-          gradient:
-            "linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)",
-          href: "/bookings",
-        },
-        {
-          label: "Puertos",
-          value: summary.portsTotal,
-          description: "Puertos en catálogo",
-          icon: MapPin,
-          color: "#0d9488",
-          gradient:
-            "linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)",
-          href: "/ports",
-        },
-        {
-          label: "Navieras",
-          value: summary.shippingLinesTotal,
-          description: "Marcas operativas",
-          icon: Anchor,
-          color: "#d97706",
-          gradient:
-            "linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)",
-          href: "/shipping-lines",
-        },
-        {
-          label: "Barcos",
-          value: summary.vesselsTotal,
-          description: "Flota registrada",
-          icon: Ship,
-          color: "#7c3aed",
-          gradient:
-            "linear-gradient(160deg, rgba(124, 58, 237, 0.14) 0%, var(--background) 55%)",
-          href: "/shipping-lines",
-        },
-      ]
-    : [];
+  const kpis = stats?.kpis;
+  const cancelLabel =
+    kpis != null
+      ? `${kpis.cancelled} de ${kpis.total_bookings}`
+      : "—";
+  const yearsLabel =
+    selectedYears.length === 1
+      ? String(selectedYears[0])
+      : selectedYears.join(", ");
 
   return (
     <>
-      <FilterSidebarContent>
-        <TimeRangeFilters
-          timeFilter={timeFilter}
-          setTimeFilter={setTimeFilter}
-          customDateFrom={customDateFrom}
-          setCustomDateFrom={setCustomDateFrom}
-          customDateTo={customDateTo}
-          setCustomDateTo={setCustomDateTo}
-          timeRange={timeRange}
-          canClear={timeFilter !== "30d"}
-          onClear={() => {
-            setTimeFilter("30d");
-            setCustomDateFrom(defaultCustomFrom());
-            setCustomDateTo(defaultCustomTo());
-          }}
-        />
-      </FilterSidebarContent>
-
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="Resumen operativo de reservas, ocupación visual y catálogos del período seleccionado."
+        description="Vista operativa de los años seleccionados: ocupación, reservas, pax y cancelaciones."
       />
 
       {viewError && (
         <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
       )}
 
-      <div className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map(({ label, description, icon, color, gradient, href, value }) => (
-          <ViewStatCard
-            key={label}
-            label={label}
-            value={value}
-            description={description}
-            icon={icon}
-            accentColor={color}
-            gradient={gradient}
-            href={href}
-          />
-        ))}
-      </div>
-
-      <DashboardOccupancySection
-        dateFrom={occupancyRange.date_from}
-        dateTo={occupancyRange.date_to}
+      <DashboardFilters
+        ports={ports}
+        groups={groups}
+        lines={lines}
+        selectedPortId={selectedPortId}
+        onPortChange={setSelectedPortId}
+        selectedYears={selectedYears}
+        onYearsChange={setSelectedYears}
+        carrierFilter={carrierFilter}
+        onCarrierChange={setCarrierFilter}
       />
 
-      {summary && (
-        <DashboardUpcomingSection
-          bookings={summary.upcomingBookings}
-          dateFrom={timeRange.date_from}
-          dateTo={timeRange.date_to}
-        />
-      )}
+      {kpis ? (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <ViewStatCard
+            label="Ocupación"
+            value={`${kpis.occupancy_pct}%`}
+            description={`${kpis.occupied_slot_days.toLocaleString("es")} de ${kpis.capacity_slot_days.toLocaleString("es")} slot-días`}
+            icon={Gauge}
+            accentColor="#3478b5"
+            gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
+          />
+          <ViewStatCard
+            label="PAX planificados"
+            value={kpis.planned_pax.toLocaleString("es")}
+            description={
+              kpis.actual_pax > 0
+                ? `${kpis.actual_pax.toLocaleString("es")} pax reales`
+                : "Suma de pax en reservas activas"
+            }
+            icon={Users}
+            accentColor="#0d9488"
+            gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
+          />
+          <ViewStatCard
+            label="Cancelaciones"
+            value={cancelLabel}
+            description={
+              kpis.total_bookings > 0
+                ? `${Math.round((kpis.cancelled / kpis.total_bookings) * 100)}% del total`
+                : "Sin reservas en el período"
+            }
+            icon={Ban}
+            accentColor="#dc2626"
+            gradient="linear-gradient(160deg, rgba(220, 38, 38, 0.12) 0%, var(--background) 55%)"
+          />
+          <ViewStatCard
+            label="Solicitadas / confirmadas"
+            value={`${kpis.requested} / ${kpis.confirmed}`}
+            description={`${kpis.total_bookings} reservas en ${yearsLabel}`}
+            icon={ClipboardList}
+            accentColor="#d97706"
+            gradient="linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)"
+            href="/bookings"
+          />
+        </div>
+      ) : null}
+
+      {stats ? <DashboardCharts stats={stats} /> : null}
     </>
   );
 }
