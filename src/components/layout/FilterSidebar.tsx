@@ -10,10 +10,8 @@ import {
   ChevronRight,
   Download,
   Filter,
-  LogOut,
   Upload,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 type FilterSidebarProps = {
   children: React.ReactNode;
@@ -47,7 +45,6 @@ const exportOptions = [
  */
 export default function FilterSidebar({ children }: FilterSidebarProps) {
   const layout = useMainLayoutOptional();
-  const { logout } = useAuth();
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +90,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     <aside
       className={`relative flex h-full min-h-0 shrink-0 flex-col border-l border-[var(--admin-border)] bg-[var(--admin-sidebar)]/90 backdrop-blur-md transition-[width] duration-200 ${
         open
-          ? "w-[306px] shadow-[var(--admin-card-shadow-hover)]"
+          ? "w-[320px] shadow-[var(--admin-card-shadow-hover)]"
           : "w-16 shadow-[var(--admin-card-shadow)]"
       }`}
     >
@@ -233,31 +230,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
           </div>
         )}
       </nav>
-
-      <div className="shrink-0 border-t border-[var(--admin-border)] p-4">
-        {open ? (
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
-            aria-label="Cerrar sesión"
-          >
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} />
-            <span>Cerrar sesión</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => logout()}
-            className={iconButtonClass}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-          >
-            <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-            <span className="text-[11px] font-medium tracking-wide">Salir</span>
-          </button>
-        )}
-      </div>
 
       <button
         type="button"
