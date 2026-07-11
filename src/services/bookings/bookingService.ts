@@ -133,6 +133,9 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (hasFile) {
     const form = new FormData();
     if (payload.status) form.set("status", payload.status);
+    if (payload.cancellation_reason) {
+      form.set("cancellation_reason", payload.cancellation_reason);
+    }
     if (payload.cancellation_evidence) {
       form.set("cancellation_evidence", payload.cancellation_evidence);
     }
@@ -147,6 +150,9 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.planned_pax !== undefined) body.planned_pax = payload.planned_pax;
   if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
   if (payload.actual_crew !== undefined) body.actual_crew = payload.actual_crew;
+  if (payload.cancellation_reason !== undefined) {
+    body.cancellation_reason = payload.cancellation_reason;
+  }
 
   return apiFetch<Booking>(`${BASE}${id}/`, {
     method: "PATCH",

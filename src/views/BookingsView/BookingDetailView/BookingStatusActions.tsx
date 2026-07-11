@@ -12,8 +12,10 @@ import { getApiErrorMessage, translateApiMessage } from "@/lib/apiFormErrors";
 import { deleteBooking, updateBooking } from "@/services/bookings/bookingService";
 import {
   bookingNextStatuses,
+  CANCELLATION_REASON_OPTIONS,
   type Booking,
   type BookingStatus,
+  type CancellationReason,
 } from "@/types/booking";
 
 type BookingStatusActionsProps = {
@@ -39,7 +41,7 @@ export default function BookingStatusActions({
   onError,
 }: BookingStatusActionsProps) {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-  const [cancelEvidence, setCancelEvidence] = useState<File | null>(null);
+  const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -75,8 +77,8 @@ export default function BookingStatusActions({
   }
 
   async function applyCancel() {
-    if (!cancelEvidence) {
-      onError("Selecciona un archivo de evidencia para cancelar.");
+    if (!cancelReason) {
+      onError("Selecciona el motivo de cancelación.");
       return;
     }
     setSaving(true);
@@ -84,10 +86,10 @@ export default function BookingStatusActions({
     try {
       const updated = await updateBooking(booking.id, {
         status: "cancelled",
-        cancellation_evidence: cancelEvidence,
+        cancellation_reason: cancelReason,
       });
       onUpdated(updated);
-      setCancelEvidence(null);
+      setCancelReason("");
     } catch (err) {
       onError(formatValidationError(err));
     } finally {
@@ -135,15 +137,13 @@ export default function BookingStatusActions({
         </div>
       ) : (
         <div className="mt-4 space-y-3">
-          {booking.cancellation_evidence_url ? (
-            <a
-              href={booking.cancellation_evidence_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-[var(--admin-accent)] hover:underline"
-            >
-              Ver evidencia de cancelación
-            </a>
+          {booking.cancellation_reason_display ? (
+            <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
+              Motivo:{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                {booking.cancellation_reason_display}
+              </span>
+            </p>
           ) : null}
           <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
             Esta reserva está cancelada. Puedes eliminarla del sistema si ya no necesitas el
@@ -176,34 +176,58 @@ export default function BookingStatusActions({
         open={pendingAction === "cancelled"}
         onClose={() => {
           setPendingAction(null);
-          setCancelEvidence(null);
+          setCancelReason("");
         }}
         title="Cancelar reserva"
+        footer={
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setPendingAction(null);
+                setCancelReason("");
+              }}
+              className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+            >
+              Volver
+            </button>
+            <DefaultButton
+              type="button"
+              onClick={applyCancel}
+              disabled={saving || !cancelReason}
+            >
+              {saving ? "Cancelando…" : "Confirmar cancelación"}
+            </DefaultButton>
+          </div>
+        }
       >
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          Adjunta evidencia de la cancelación (clima, fuerza mayor, etc.).
+          Selecciona el motivo de la cancelación.
         </p>
-        <input
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png,.webp"
-          className="mt-4 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--admin-accent)]/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--admin-accent)]"
-          onChange={(event) => setCancelEvidence(event.target.files?.[0] ?? null)}
-        />
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setPendingAction(null);
-              setCancelEvidence(null);
-            }}
-            className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
-          >
-            Volver
-          </button>
-          <DefaultButton type="button" onClick={applyCancel} disabled={saving || !cancelEvidence}>
-            {saving ? "Cancelando…" : "Confirmar cancelación"}
-          </DefaultButton>
-        </div>
+        <fieldset className="mt-4 space-y-2">
+          <legend className="sr-only">Motivo de cancelación</legend>
+          {CANCELLATION_REASON_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className={[
+                "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
+                cancelReason === option.value
+                  ? "border-[var(--admin-accent)] bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]"
+                  : "border-zinc-200/80 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800",
+              ].join(" ")}
+            >
+              <input
+                type="radio"
+                name="cancellation_reason"
+                value={option.value}
+                checked={cancelReason === option.value}
+                onChange={() => setCancelReason(option.value)}
+                className="h-4 w-4 cursor-pointer border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+              />
+              <span className="font-medium">{option.label}</span>
+            </label>
+          ))}
+        </fieldset>
       </Modal>
     </section>
   );

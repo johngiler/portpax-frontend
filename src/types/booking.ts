@@ -2,6 +2,11 @@ import { toIsoDate } from "@/lib/bookingDates";
 
 export type BookingStatus = "requested" | "confirmed" | "cancelled";
 
+export type CancellationReason =
+  | "bad_weather"
+  | "shipping_line_decision"
+  | "itm_decision";
+
 /** List filter: past active bookings (not a stored status). */
 export type BookingListStatusFilter = BookingStatus | "" | "completed";
 
@@ -40,6 +45,8 @@ export type Booking = {
   status: BookingStatus;
   status_display: string;
   notes: string;
+  cancellation_reason: CancellationReason | "";
+  cancellation_reason_display: string;
   cancellation_evidence_url: string | null;
   confirmation_pdf_url: string | null;
   audit_entries: BookingAuditEntry[];
@@ -89,8 +96,18 @@ export type BookingUpdatePayload = {
   planned_pax?: number | null;
   actual_pax?: number | null;
   actual_crew?: number | null;
+  cancellation_reason?: CancellationReason | null;
   cancellation_evidence?: File | null;
 };
+
+export const CANCELLATION_REASON_OPTIONS: {
+  value: CancellationReason;
+  label: string;
+}[] = [
+  { value: "bad_weather", label: "Mal tiempo" },
+  { value: "shipping_line_decision", label: "Decisión naviera" },
+  { value: "itm_decision", label: "Decisión ITM" },
+];
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   requested: "Solicitada",
