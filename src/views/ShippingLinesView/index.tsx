@@ -7,6 +7,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createShippingLine, fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
@@ -71,7 +72,8 @@ export default function ShippingLinesView() {
     loadInitial();
   }, [loadInitial]);
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
+    if (loadingMore || lines.length >= totalCount) return;
     setLoadingMore(true);
     setViewError(null);
     try {
@@ -91,7 +93,7 @@ export default function ShippingLinesView() {
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [loadingMore, lines.length, totalCount, page, appliedSearch, appliedGroupFilter]);
 
   async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     setSaving(true);
@@ -173,16 +175,14 @@ export default function ShippingLinesView() {
               <ShippingLineCard key={line.id} line={line} />
             ))}
           </div>
-          {hasMore && (
-            <div className="mt-8 flex flex-col items-center gap-2">
-              <DefaultButton type="button" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? "Cargando…" : "Cargar más"}
-              </DefaultButton>
-              <p className="text-xs text-zinc-500">
-                {lines.length} de {totalCount} navieras
-              </p>
-            </div>
-          )}
+          <InfiniteScrollFooter
+            hasMore={hasMore}
+            loading={loadingMore}
+            onLoadMore={loadMore}
+            loadedCount={lines.length}
+            totalCount={totalCount}
+            itemLabel="navieras"
+          />
         </>
       )}
 

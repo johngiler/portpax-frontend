@@ -7,7 +7,7 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import TablePagination from "@/components/tables/TablePagination";
+import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { fetchBookings } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
@@ -21,7 +21,7 @@ import BookingsList from "./BookingsList";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import { resolveBookingsDateRange, type BookingsDatePreset } from "./BookingsDateFilters";
 
-const PAGE_SIZE = 20;
+const BATCH_SIZE = 20;
 
 function defaultCustomFrom(): string {
   const d = new Date();
@@ -65,6 +65,7 @@ export default function BookingsView() {
     [],
   );
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,39 +111,24 @@ export default function BookingsView() {
     return allVessels;
   }, [allVessels, shippingLineFilter]);
 
-  const loadBookings = useCallback(async () => {
-    setLoading(true);
-    setViewError(null);
-    try {
-      const dateRange = resolveBookingsDateRange(
-        appliedDatePreset,
-        appliedCustomDateFrom,
-        appliedCustomDateTo,
-      );
-      const data = await fetchBookings({
-        page,
-        search: appliedSearch,
-        status: appliedStatusFilter,
-        port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
-        shipping_line: appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
-        vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
-        call_date_from: dateRange.call_date_from,
-        call_date_to: dateRange.call_date_to,
-        ordering: "call_date_proximity",
-      });
-      setBookings(data.results);
-      setTotalCount(data.count);
-    } catch (err) {
-      setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar las reservas."),
-      );
-      setBookings([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
+  const listParams = useMemo(() => {
+    const dateRange = resolveBookingsDateRange(
+      appliedDatePreset,
+      appliedCustomDateFrom,
+      appliedCustomDateTo,
+    );
+    return {
+      search: appliedSearch,
+      status: appliedStatusFilter,
+      port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+      shipping_line: appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      call_date_from: dateRange.call_date_from,
+      call_date_to: dateRange.call_date_to,
+      ordering: "call_date_proximity" as const,
+      pageSize: BATCH_SIZE,
+    };
   }, [
-    page,
     appliedSearch,
     appliedStatusFilter,
     appliedPortFilter,
@@ -153,9 +139,46 @@ export default function BookingsView() {
     appliedCustomDateTo,
   ]);
 
+  const loadInitial = useCallback(async () => {
+    setLoading(true);
+    setViewError(null);
+    try {
+      const data = await fetchBookings({ ...listParams, page: 1 });
+      setBookings(data.results);
+      setTotalCount(data.count);
+      setPage(1);
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(err, "No se pudieron cargar las reservas."),
+      );
+      setBookings([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [listParams]);
+
   useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+    loadInitial();
+  }, [loadInitial]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || bookings.length >= totalCount) return;
+    setLoadingMore(true);
+    setViewError(null);
+    try {
+      const nextPage = page + 1;
+      const data = await fetchBookings({ ...listParams, page: nextPage });
+      setBookings((prev) => [...prev, ...data.results]);
+      setPage(nextPage);
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(err, "No se pudieron cargar más reservas."),
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, bookings.length, totalCount, page, listParams]);
 
   function applyFilters() {
     setAppliedSearch(search.trim());
@@ -166,7 +189,6 @@ export default function BookingsView() {
     setAppliedDatePreset(datePreset);
     setAppliedCustomDateFrom(customDateFrom);
     setAppliedCustomDateTo(customDateTo);
-    setPage(1);
   }
 
   function handleClearFilters() {
@@ -186,7 +208,6 @@ export default function BookingsView() {
     setAppliedShippingLineFilter(0);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
-    setPage(1);
   }
 
   const hasActiveFilters =
@@ -196,6 +217,8 @@ export default function BookingsView() {
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
     appliedDatePreset !== "all";
+
+  const hasMore = bookings.length < totalCount;
 
   return (
     <>
@@ -240,7 +263,7 @@ export default function BookingsView() {
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      {loading ? (
+      {loading && bookings.length === 0 ? (
         <BookingsViewSkeleton />
       ) : (
         <>
@@ -250,12 +273,16 @@ export default function BookingsView() {
             onClearFilters={handleClearFilters}
           />
 
-          <TablePagination
-            page={page}
-            pageSize={PAGE_SIZE}
-            totalCount={totalCount}
-            onPageChange={setPage}
-          />
+          {bookings.length > 0 ? (
+            <InfiniteScrollFooter
+              hasMore={hasMore}
+              loading={loadingMore}
+              onLoadMore={loadMore}
+              loadedCount={bookings.length}
+              totalCount={totalCount}
+              itemLabel="reservas"
+            />
+          ) : null}
         </>
       )}
     </>

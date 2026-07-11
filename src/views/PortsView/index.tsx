@@ -7,6 +7,7 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField } from "@/components/ui/FormField";
+import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { createPort, fetchPorts } from "@/services/catalogs/portService";
 import type { Port } from "@/types/catalog";
@@ -14,7 +15,6 @@ import PortCard from "./PortCard";
 import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
 import PortsViewSkeleton from "./PortsViewSkeleton";
 
-/** Grid views: first batch + "Cargar más" (limit/offset via page API). */
 const BATCH_SIZE = 12;
 
 export default function PortsView() {
@@ -52,7 +52,8 @@ export default function PortsView() {
     loadInitial();
   }, [loadInitial]);
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
+    if (loadingMore || ports.length >= totalCount) return;
     setLoadingMore(true);
     setViewError(null);
     try {
@@ -71,7 +72,7 @@ export default function PortsView() {
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [loadingMore, ports.length, totalCount, page, appliedSearch]);
 
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
@@ -144,16 +145,14 @@ export default function PortsView() {
               <PortCard key={port.id} port={port} />
             ))}
           </div>
-          {hasMore && (
-            <div className="mt-8 flex flex-col items-center gap-2">
-              <DefaultButton type="button" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? "Cargando…" : "Cargar más"}
-              </DefaultButton>
-              <p className="text-xs text-zinc-500">
-                {ports.length} de {totalCount} puertos
-              </p>
-            </div>
-          )}
+          <InfiniteScrollFooter
+            hasMore={hasMore}
+            loading={loadingMore}
+            onLoadMore={loadMore}
+            loadedCount={ports.length}
+            totalCount={totalCount}
+            itemLabel="puertos"
+          />
         </>
       )}
 
