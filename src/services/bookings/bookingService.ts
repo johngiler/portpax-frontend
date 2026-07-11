@@ -169,7 +169,8 @@ export async function deleteBooking(id: number): Promise<void> {
 }
 
 export type FetchDashboardStatsParams = {
-  years: number[];
+  date_from: string;
+  date_to: string;
   port?: number;
   shipping_line?: number;
   shipping_line_group?: number;
@@ -179,9 +180,8 @@ export async function fetchDashboardStats(
   params: FetchDashboardStatsParams,
 ): Promise<import("@/types/dashboard").DashboardStats> {
   const query = new URLSearchParams();
-  for (const year of params.years) {
-    query.append("year", String(year));
-  }
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
   if (params.port) query.set("port", String(params.port));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.shipping_line_group) {

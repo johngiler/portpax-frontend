@@ -66,6 +66,7 @@ export type DashboardStats = {
   year: number | null;
   date_from: string;
   date_to: string;
+  day_count: number;
   kpis: DashboardKpis;
   by_shipping_line: DashboardNamedCount[];
   by_month: DashboardMonthRow[];

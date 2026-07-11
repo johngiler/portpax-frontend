@@ -16,7 +16,7 @@ export default function DashboardReservasCard({
   requested,
   confirmed,
   cancelled,
-  yearsLabel,
+  yearsLabel: periodLabel,
 }: DashboardReservasCardProps) {
   const cancelPct = total > 0 ? Math.round((cancelled / total) * 100) : 0;
 
@@ -41,8 +41,8 @@ export default function DashboardReservasCard({
             </p>
             <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
               {total > 0
-                ? `${yearsLabel} · ${cancelPct}% canceladas`
-                : `Sin reservas en ${yearsLabel}`}
+                ? `${periodLabel} · ${cancelPct}% canceladas`
+                : `Sin reservas en ${periodLabel}`}
             </p>
           </div>
           <div

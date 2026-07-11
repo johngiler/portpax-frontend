@@ -2,8 +2,7 @@
 
 import { useMemo } from "react";
 import { Filter, RotateCcw } from "lucide-react";
-import { FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
-import { OCCUPANCY_MAX_FORWARD_YEARS } from "@/utils/timeRange";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
@@ -14,10 +13,14 @@ type DashboardFiltersProps = {
   lines: ShippingLine[];
   selectedPortId: number | null;
   onPortChange: (portId: number | null) => void;
-  selectedYears: number[];
-  onYearsChange: (years: number[]) => void;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
   carrierFilter: DashboardCarrierFilter;
   onCarrierChange: (filter: DashboardCarrierFilter) => void;
+  defaultDateFrom: string;
+  defaultDateTo: string;
 };
 
 function carrierToValue(filter: DashboardCarrierFilter): string {
@@ -36,26 +39,20 @@ function valueToCarrier(value: string): DashboardCarrierFilter {
   return { type: "all" };
 }
 
-function yearOptions(): { value: number; label: string }[] {
-  const now = new Date().getFullYear();
-  const from = now - 5;
-  const to = now + OCCUPANCY_MAX_FORWARD_YEARS;
-  return Array.from({ length: to - from + 1 }, (_, index) => {
-    const year = from + index;
-    return { value: year, label: String(year) };
-  });
-}
-
 export default function DashboardFilters({
   ports,
   groups,
   lines,
   selectedPortId,
   onPortChange,
-  selectedYears,
-  onYearsChange,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   carrierFilter,
   onCarrierChange,
+  defaultDateFrom,
+  defaultDateTo,
 }: DashboardFiltersProps) {
   const portOptions = useMemo(
     () => [
@@ -68,8 +65,6 @@ export default function DashboardFilters({
     ],
     [ports],
   );
-
-  const years = useMemo(() => yearOptions(), []);
 
   const carrierOptions = useMemo(() => {
     const activeGroups = groups.filter((group) => group.is_active);
@@ -89,25 +84,31 @@ export default function DashboardFilters({
     ];
   }, [groups, lines]);
 
-  const currentYear = new Date().getFullYear();
   const hasCustomFilters =
     selectedPortId != null ||
     carrierFilter.type !== "all" ||
-    selectedYears.length !== 1 ||
-    selectedYears[0] !== currentYear;
-
-  function handleYearsChange(next: number[]) {
-    if (next.length === 0) {
-      onYearsChange([currentYear]);
-      return;
-    }
-    onYearsChange([...next].sort((a, b) => a - b));
-  }
+    dateFrom !== defaultDateFrom ||
+    dateTo !== defaultDateTo;
 
   function handleReset() {
     onPortChange(null);
-    onYearsChange([currentYear]);
+    onDateFromChange(defaultDateFrom);
+    onDateToChange(defaultDateTo);
     onCarrierChange({ type: "all" });
+  }
+
+  function handleFromChange(value: string) {
+    onDateFromChange(value);
+    if (value && dateTo && value > dateTo) {
+      onDateToChange(value);
+    }
+  }
+
+  function handleToChange(value: string) {
+    onDateToChange(value);
+    if (value && dateFrom && value < dateFrom) {
+      onDateFromChange(value);
+    }
   }
 
   return (
@@ -122,7 +123,7 @@ export default function DashboardFilters({
               Filtros operativos
             </p>
             <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-              Puerto, años y naviera para el resumen
+              Puerto, período y naviera para el resumen
             </p>
           </div>
         </div>
@@ -138,7 +139,7 @@ export default function DashboardFilters({
         ) : null}
       </div>
 
-      <div className="grid gap-3 px-4 py-3.5 sm:grid-cols-2 sm:px-5 lg:grid-cols-3 [&>div]:mb-0">
+      <div className="grid gap-3 px-4 py-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:mb-0">
         <FormFieldSelect<string>
           label="Puerto"
           name="dashboard_port"
@@ -150,14 +151,21 @@ export default function DashboardFilters({
           }
           options={portOptions}
         />
-        <FormFieldMultiSelect<number>
-          label="Año"
-          name="dashboard_year"
+        <FormField
+          label="Desde"
+          name="dashboard_date_from"
+          type="date"
           compact
-          value={selectedYears}
-          onChange={handleYearsChange}
-          options={years}
-          placeholder="Seleccionar años…"
+          value={dateFrom}
+          onChange={(value) => handleFromChange(String(value))}
+        />
+        <FormField
+          label="Hasta"
+          name="dashboard_date_to"
+          type="date"
+          compact
+          value={dateTo}
+          onChange={(value) => handleToChange(String(value))}
         />
         <FormFieldSelect<string>
           label="Naviera"

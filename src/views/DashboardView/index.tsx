@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Gauge, LayoutDashboard, Users } from "lucide-react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { toIsoDate } from "@/lib/bookingDates";
 import { fetchDashboardStats } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
@@ -18,18 +19,29 @@ import DashboardFilters from "./DashboardFilters";
 import DashboardReservasCard from "./DashboardReservasCard";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
 
-function currentYear(): number {
-  return new Date().getFullYear();
+function defaultYearRange(): { from: string; to: string } {
+  const year = new Date().getFullYear();
+  return {
+    from: toIsoDate(year, 0, 1),
+    to: toIsoDate(year, 11, 31),
+  };
+}
+
+function formatPeriodLabel(from: string, to: string): string {
+  if (from === to) return from;
+  return `${from} → ${to}`;
 }
 
 export default function DashboardView() {
+  const defaults = useMemo(() => defaultYearRange(), []);
   const [ports, setPorts] = useState<Port[]>([]);
   const [groups, setGroups] = useState<ShippingLineGroup[]>([]);
   const [lines, setLines] = useState<ShippingLine[]>([]);
   const [catalogReady, setCatalogReady] = useState(false);
 
   const [selectedPortId, setSelectedPortId] = useState<number | null>(null);
-  const [selectedYears, setSelectedYears] = useState<number[]>(() => [currentYear()]);
+  const [dateFrom, setDateFrom] = useState(defaults.from);
+  const [dateTo, setDateTo] = useState(defaults.to);
   const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
     type: "all",
   });
@@ -68,11 +80,13 @@ export default function DashboardView() {
   }, []);
 
   const loadStats = useCallback(async () => {
+    if (!dateFrom || !dateTo) return;
     setLoading(true);
     setViewError(null);
     try {
       const data = await fetchDashboardStats({
-        years: selectedYears,
+        date_from: dateFrom,
+        date_to: dateTo,
         port: selectedPortId ?? undefined,
         shipping_line:
           carrierFilter.type === "line" ? carrierFilter.id : undefined,
@@ -88,7 +102,7 @@ export default function DashboardView() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYears, selectedPortId, carrierFilter]);
+  }, [dateFrom, dateTo, selectedPortId, carrierFilter]);
 
   useEffect(() => {
     if (!catalogReady) return;
@@ -100,17 +114,14 @@ export default function DashboardView() {
   }
 
   const kpis = stats?.kpis;
-  const yearsLabel =
-    selectedYears.length === 1
-      ? String(selectedYears[0])
-      : selectedYears.join(", ");
+  const periodLabel = formatPeriodLabel(dateFrom, dateTo);
 
   return (
     <>
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="Vista operativa de los años seleccionados: ocupación, reservas, pax y cancelaciones."
+        description="Vista operativa del período seleccionado: ocupación, reservas, pax y cancelaciones."
       />
 
       {viewError && (
@@ -123,10 +134,14 @@ export default function DashboardView() {
         lines={lines}
         selectedPortId={selectedPortId}
         onPortChange={setSelectedPortId}
-        selectedYears={selectedYears}
-        onYearsChange={setSelectedYears}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
         carrierFilter={carrierFilter}
         onCarrierChange={setCarrierFilter}
+        defaultDateFrom={defaults.from}
+        defaultDateTo={defaults.to}
       />
 
       {kpis ? (
@@ -156,7 +171,7 @@ export default function DashboardView() {
             requested={kpis.requested}
             confirmed={kpis.confirmed}
             cancelled={kpis.cancelled}
-            yearsLabel={yearsLabel}
+            yearsLabel={periodLabel}
           />
         </div>
       ) : null}
