@@ -1,6 +1,6 @@
 "use client";
 
-import DefaultButton from "@/components/buttons/DefaultButton";
+import FilterActions from "@/components/layout/FilterActions";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import {
   BOOKING_STATUS_FILTER_OPTIONS,
@@ -30,6 +30,7 @@ type BookingFiltersProps = {
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
+  canClear: boolean;
   onStatusChange: (status: BookingListStatusFilter) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
@@ -39,6 +40,7 @@ type BookingFiltersProps = {
   onCustomDateFromChange: (value: string) => void;
   onCustomDateToChange: (value: string) => void;
   onApply: () => void;
+  onClear: () => void;
 };
 
 export default function BookingFilters({
@@ -53,6 +55,7 @@ export default function BookingFilters({
   portOptions,
   shippingLineOptions,
   vesselOptions,
+  canClear,
   onStatusChange,
   onSearchChange,
   onPortFilterChange,
@@ -62,6 +65,7 @@ export default function BookingFilters({
   onCustomDateFromChange,
   onCustomDateToChange,
   onApply,
+  onClear,
 }: BookingFiltersProps) {
   const timeRange =
     datePreset === "all"
@@ -130,9 +134,7 @@ export default function BookingFilters({
         emptyValue={0}
         compact
       />
-      <DefaultButton type="button" onClick={onApply} className="w-full text-xs">
-        Aplicar
-      </DefaultButton>
+      <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
     </>
   );
 }

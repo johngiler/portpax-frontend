@@ -3,6 +3,7 @@
 import { LayoutGrid, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
@@ -154,6 +155,20 @@ export default function PositionsView() {
     setAppliedPortFilter(portFilter);
   }
 
+  function clearFilters() {
+    setSearch("");
+    setPortFilter(0);
+    setAppliedSearch("");
+    setAppliedPortFilter(0);
+    setPage(1);
+  }
+
+  const canClearFilters =
+    Boolean(search.trim()) ||
+    portFilter > 0 ||
+    Boolean(appliedSearch) ||
+    appliedPortFilter > 0;
+
   if (loading && positions.length === 0 && !viewError) {
     return <PositionsViewSkeleton />;
   }
@@ -179,9 +194,11 @@ export default function PositionsView() {
           emptyValue={0}
           compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
-          Aplicar
-        </DefaultButton>
+        <FilterActions
+          onApply={applyFilters}
+          onClear={clearFilters}
+          canClear={canClearFilters}
+        />
       </FilterSidebarContent>
 
       <ViewPageHeader

@@ -182,6 +182,12 @@ export default function DashboardView() {
           customDateTo={customDateTo}
           setCustomDateTo={setCustomDateTo}
           timeRange={timeRange}
+          canClear={timeFilter !== "30d"}
+          onClear={() => {
+            setTimeFilter("30d");
+            setCustomDateFrom(defaultCustomFrom());
+            setCustomDateTo(defaultCustomTo());
+          }}
         />
       </FilterSidebarContent>
 

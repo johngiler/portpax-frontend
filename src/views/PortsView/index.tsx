@@ -3,6 +3,7 @@
 import { MapPin, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
@@ -91,6 +92,12 @@ export default function PortsView() {
     setAppliedSearch(search);
   }
 
+  function clearFilters() {
+    setSearch("");
+    setAppliedSearch("");
+  }
+
+  const canClearFilters = Boolean(search.trim()) || Boolean(appliedSearch);
   const hasMore = ports.length < totalCount;
 
   if (loading && ports.length === 0 && !viewError) {
@@ -108,9 +115,11 @@ export default function PortsView() {
           placeholder="Nombre, código, país…"
           compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
-          Aplicar
-        </DefaultButton>
+        <FilterActions
+          onApply={applyFilters}
+          onClear={clearFilters}
+          canClear={canClearFilters}
+        />
       </FilterSidebarContent>
 
       <ViewPageHeader

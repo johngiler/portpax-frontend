@@ -14,6 +14,8 @@ type TimeRangeFiltersProps = {
   customDateTo: string;
   setCustomDateTo: (v: string) => void;
   timeRange: TimeRange;
+  canClear?: boolean;
+  onClear?: () => void;
 };
 
 export default function TimeRangeFilters({
@@ -24,6 +26,8 @@ export default function TimeRangeFilters({
   customDateTo,
   setCustomDateTo,
   timeRange,
+  canClear = false,
+  onClear,
 }: TimeRangeFiltersProps) {
   return (
     <div className="space-y-4">
@@ -89,6 +93,15 @@ export default function TimeRangeFilters({
           {timeRange.date_from} → {timeRange.date_to}
         </p>
       )}
+      {canClear && onClear ? (
+        <button
+          type="button"
+          onClick={onClear}
+          className="w-full cursor-pointer rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        >
+          Limpiar filtros
+        </button>
+      ) : null}
     </div>
   );
 }

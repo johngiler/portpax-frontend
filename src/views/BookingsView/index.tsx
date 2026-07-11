@@ -218,6 +218,15 @@ export default function BookingsView() {
     appliedVesselFilter > 0 ||
     appliedDatePreset !== "all";
 
+  const canClearFilters =
+    hasActiveFilters ||
+    statusFilter !== "" ||
+    search.trim() !== "" ||
+    portFilter > 0 ||
+    shippingLineFilter > 0 ||
+    vesselFilter > 0 ||
+    datePreset !== "all";
+
   const hasMore = bookings.length < totalCount;
 
   return (
@@ -235,6 +244,7 @@ export default function BookingsView() {
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
+          canClear={canClearFilters}
           onStatusChange={setStatusFilter}
           onSearchChange={setSearch}
           onPortFilterChange={setPortFilter}
@@ -244,6 +254,7 @@ export default function BookingsView() {
           onCustomDateFromChange={setCustomDateFrom}
           onCustomDateToChange={setCustomDateTo}
           onApply={applyFilters}
+          onClear={handleClearFilters}
         />
       </FilterSidebarContent>
 

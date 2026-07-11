@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Anchor, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
@@ -113,7 +114,16 @@ export default function ShippingLinesView() {
     setAppliedGroupFilter(groupFilter);
   }
 
+  function clearFilters() {
+    setSearch("");
+    setGroupFilter(0);
+    setAppliedSearch("");
+    setAppliedGroupFilter(0);
+  }
+
   const hasActiveFilters = Boolean(appliedSearch) || appliedGroupFilter > 0;
+  const canClearFilters =
+    hasActiveFilters || Boolean(search.trim()) || groupFilter > 0;
 
   const hasMore = lines.length < totalCount;
 
@@ -142,9 +152,11 @@ export default function ShippingLinesView() {
           emptyValue={0}
           compact
         />
-        <DefaultButton type="button" onClick={applyFilters} className="w-full text-xs">
-          Aplicar
-        </DefaultButton>
+        <FilterActions
+          onApply={applyFilters}
+          onClear={clearFilters}
+          canClear={canClearFilters}
+        />
       </FilterSidebarContent>
 
       <ViewPageHeader
