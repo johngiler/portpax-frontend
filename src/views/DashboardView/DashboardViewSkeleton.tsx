@@ -13,8 +13,8 @@ export default function DashboardViewSkeleton() {
         description="Vista operativa del año seleccionado."
       />
       <Skeleton className="mb-6 h-24 w-full rounded-2xl" />
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={index} className="h-[130px] rounded-2xl" />
         ))}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Filter, RotateCcw } from "lucide-react";
 import { FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import { OCCUPANCY_MAX_FORWARD_YEARS } from "@/utils/timeRange";
 import { portDisplayName, type Port } from "@/types/catalog";
@@ -88,17 +89,56 @@ export default function DashboardFilters({
     ];
   }, [groups, lines]);
 
+  const currentYear = new Date().getFullYear();
+  const hasCustomFilters =
+    selectedPortId != null ||
+    carrierFilter.type !== "all" ||
+    selectedYears.length !== 1 ||
+    selectedYears[0] !== currentYear;
+
   function handleYearsChange(next: number[]) {
     if (next.length === 0) {
-      onYearsChange([new Date().getFullYear()]);
+      onYearsChange([currentYear]);
       return;
     }
     onYearsChange([...next].sort((a, b) => a - b));
   }
 
+  function handleReset() {
+    onPortChange(null);
+    onYearsChange([currentYear]);
+    onCarrierChange({ type: "all" });
+  }
+
   return (
-    <div className="mb-6 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80 sm:px-5 sm:py-3.5">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>div]:mb-0">
+    <div className="-mt-[11px] mb-6 overflow-hidden rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-[var(--admin-accent)]/[0.04] to-sky-50/80 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--admin-accent)]/10 px-4 py-2.5 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
+            <Filter className="h-4 w-4" strokeWidth={2.25} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              Filtros operativos
+            </p>
+            <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+              Puerto, años y naviera para el resumen
+            </p>
+          </div>
+        </div>
+        {hasCustomFilters ? (
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-600 transition-colors hover:border-[var(--admin-accent)]/30 hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Restablecer
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-3 px-4 py-3.5 sm:grid-cols-2 sm:px-5 lg:grid-cols-3 [&>div]:mb-0">
         <FormFieldSelect<string>
           label="Puerto"
           name="dashboard_port"

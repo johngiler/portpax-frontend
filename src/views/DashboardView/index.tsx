@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Ban,
-  ClipboardList,
-  Gauge,
-  LayoutDashboard,
-  Users,
-} from "lucide-react";
+import { Gauge, LayoutDashboard, Users } from "lucide-react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
@@ -21,6 +15,7 @@ import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter, DashboardStats } from "@/types/dashboard";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
+import DashboardReservasCard from "./DashboardReservasCard";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
 
 function currentYear(): number {
@@ -105,10 +100,6 @@ export default function DashboardView() {
   }
 
   const kpis = stats?.kpis;
-  const cancelLabel =
-    kpis != null
-      ? `${kpis.cancelled} de ${kpis.total_bookings}`
-      : "—";
   const yearsLabel =
     selectedYears.length === 1
       ? String(selectedYears[0])
@@ -139,7 +130,7 @@ export default function DashboardView() {
       />
 
       {kpis ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <ViewStatCard
             label="Ocupación"
             value={`${kpis.occupancy_pct}%`}
@@ -160,26 +151,12 @@ export default function DashboardView() {
             accentColor="#0d9488"
             gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
           />
-          <ViewStatCard
-            label="Cancelaciones"
-            value={cancelLabel}
-            description={
-              kpis.total_bookings > 0
-                ? `${Math.round((kpis.cancelled / kpis.total_bookings) * 100)}% del total`
-                : "Sin reservas en el período"
-            }
-            icon={Ban}
-            accentColor="#dc2626"
-            gradient="linear-gradient(160deg, rgba(220, 38, 38, 0.12) 0%, var(--background) 55%)"
-          />
-          <ViewStatCard
-            label="Solicitadas / confirmadas"
-            value={`${kpis.requested} / ${kpis.confirmed}`}
-            description={`${kpis.total_bookings} reservas en ${yearsLabel}`}
-            icon={ClipboardList}
-            accentColor="#d97706"
-            gradient="linear-gradient(160deg, rgba(217, 119, 6, 0.12) 0%, var(--background) 55%)"
-            href="/bookings"
+          <DashboardReservasCard
+            total={kpis.total_bookings}
+            requested={kpis.requested}
+            confirmed={kpis.confirmed}
+            cancelled={kpis.cancelled}
+            yearsLabel={yearsLabel}
           />
         </div>
       ) : null}

@@ -47,7 +47,8 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
     <div className="grid gap-5 lg:grid-cols-2">
       <ChartCard
         title="Solicitadas vs confirmadas"
-        description="Distribución de estados en el año filtrado."
+        description="Distribución de estados en el período filtrado."
+        accent="#3478b5"
       >
         <DonutChart
           centerLabel="Total"
@@ -66,6 +67,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       <ChartCard
         title="Reservas por mes"
         description="Tendencia mensual por estado."
+        accent="#d97706"
       >
         <VerticalGroupedBars
           categories={monthCategories}
@@ -81,8 +83,10 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       <ChartCard
         title="Totales por naviera"
         description="Reservas activas (sin canceladas) por marca."
+        accent="#3478b5"
       >
         <HorizontalBarChart
+          accent="#3478b5"
           items={stats.by_shipping_line.map((row) => ({
             label: row.name,
             value: row.bookings,
@@ -97,6 +101,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       <ChartCard
         title="Barcos principales"
         description="Flota con más escalas en el período."
+        accent="#7c3aed"
       >
         <HorizontalBarChart
           accent="#7c3aed"
@@ -111,6 +116,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       <ChartCard
         title="Escalas por puerto"
         description="Concentración operativa entre puertos."
+        accent="#0d9488"
       >
         <HorizontalBarChart
           accent="#0d9488"
@@ -124,6 +130,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       <ChartCard
         title="Carga por día de la semana"
         description="Qué días concentran más escalas activas."
+        accent="#0891b2"
       >
         <HorizontalBarChart
           accent="#0891b2"
@@ -139,9 +146,11 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
           title="Motivos de cancelación"
           description="Desglose de cancelaciones registradas."
           className="lg:col-span-2"
+          accent="#dc2626"
         >
           <HorizontalBarChart
             accent="#dc2626"
+            valueSuffix="cancelaciones"
             items={stats.by_cancellation_reason.map((row) => ({
               label: row.label,
               value: row.count,
