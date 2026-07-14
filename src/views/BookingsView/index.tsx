@@ -9,11 +9,18 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { fetchBookings } from "@/services/bookings/bookingService";
+import { toIsoDate } from "@/lib/bookingDates";
+import {
+  setDataExportHandler,
+  type DataExportFormat,
+} from "@/lib/dataExportStore";
+import {
+  exportBookingsReport,
+  fetchBookings,
+} from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchAllVessels } from "@/services/catalogs/vesselService";
-import { toIsoDate } from "@/lib/bookingDates";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingListStatusFilter } from "@/types/booking";
 import BookingFilters from "./BookingFilters";
@@ -228,6 +235,35 @@ export default function BookingsView() {
     datePreset !== "all";
 
   const hasMore = bookings.length < totalCount;
+
+  const handleExport = useCallback(
+    async (format: DataExportFormat) => {
+      setViewError(null);
+      try {
+        await exportBookingsReport({
+          exportFormat: format,
+          search: listParams.search,
+          status: listParams.status,
+          port: listParams.port,
+          shipping_line: listParams.shipping_line,
+          vessel: listParams.vessel,
+          call_date_from: listParams.call_date_from,
+          call_date_to: listParams.call_date_to,
+          ordering: listParams.ordering,
+        });
+      } catch (err) {
+        setViewError(
+          getApiErrorMessage(err, "No se pudo exportar el reporte de reservas."),
+        );
+      }
+    },
+    [listParams],
+  );
+
+  useEffect(() => {
+    setDataExportHandler(handleExport);
+    return () => setDataExportHandler(null);
+  }, [handleExport]);
 
   return (
     <>

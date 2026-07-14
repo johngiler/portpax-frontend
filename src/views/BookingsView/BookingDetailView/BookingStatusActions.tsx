@@ -168,7 +168,7 @@ export default function BookingStatusActions({
         onClose={() => setPendingAction(null)}
         onConfirm={applyConfirm}
         title="Confirmar reserva"
-        message={`¿Confirmar la escala de ${booking.vessel_name} en ${booking.port_name}? Se asignará folio y se generará el PDF de confirmación.`}
+        message={`¿Confirmar la escala de ${booking.vessel_name} en ${booking.port_name}? Se generará el PDF de confirmación.`}
         confirmLabel="Confirmar"
       />
 

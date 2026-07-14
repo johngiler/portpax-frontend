@@ -1,5 +1,11 @@
 import { fetchAllPages } from "@/lib/fetchAllPages";
-import { apiFetch, ApiError, type ApiListResponse } from "@/services/apiClient";
+import {
+  apiDownload,
+  apiFetch,
+  ApiError,
+  triggerBrowserDownload,
+  type ApiListResponse,
+} from "@/services/apiClient";
 import type {
   Booking,
   BookingBatchPayload,
@@ -25,9 +31,7 @@ export type FetchBookingsParams = {
   pageSize?: number;
 };
 
-export async function fetchBookings(
-  params: FetchBookingsParams = {},
-): Promise<ApiListResponse<Booking>> {
+function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
@@ -39,8 +43,27 @@ export async function fetchBookings(
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);
   if (params.ordering) query.set("ordering", params.ordering);
   if (params.pageSize) query.set("page_size", String(params.pageSize));
-  const qs = query.toString();
+  return query;
+}
+
+export async function fetchBookings(
+  params: FetchBookingsParams = {},
+): Promise<ApiListResponse<Booking>> {
+  const qs = bookingsQuery(params).toString();
   return apiFetch<ApiListResponse<Booking>>(`${BASE}${qs ? `?${qs}` : ""}`);
+}
+
+export async function exportBookingsReport(
+  params: Omit<FetchBookingsParams, "page" | "pageSize"> & {
+    exportFormat: "xlsx" | "csv";
+  },
+): Promise<void> {
+  const query = bookingsQuery(params);
+  // Do not use query key "format" — DRF content negotiation returns 404 for xlsx.
+  query.set("export_format", params.exportFormat);
+  const { blob, filename } = await apiDownload(`${BASE}export/?${query.toString()}`);
+  const fallback = `reservas.${params.exportFormat}`;
+  triggerBrowserDownload(blob, filename || fallback);
 }
 
 export async function fetchAllBookings(

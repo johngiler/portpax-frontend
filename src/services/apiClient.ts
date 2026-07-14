@@ -1,5 +1,4 @@
 import {
-  clearStoredTokens,
   getAuthHeaders,
   notifySessionExpired,
   refreshAccessToken,
@@ -75,11 +74,11 @@ async function parseError(res: Response): Promise<ApiError> {
   return new ApiError(message, res.status, Object.keys(fieldErrors).length ? fieldErrors : undefined);
 }
 
-export async function apiFetch<T>(
+async function authorizedFetch(
   path: string,
   init: RequestInit = {},
   retry = true,
-): Promise<T> {
+): Promise<Response> {
   const headers = new Headers(init.headers);
   const auth = getAuthHeaders() as Record<string, string>;
   if (auth.Authorization) headers.set("Authorization", auth.Authorization);
@@ -93,19 +92,65 @@ export async function apiFetch<T>(
     try {
       const access = await refreshAccessToken();
       headers.set("Authorization", `Bearer ${access}`);
-      const retryRes = await fetch(apiUrl(path), { ...init, headers });
-      if (!retryRes.ok) throw await parseError(retryRes);
-      if (retryRes.status === 204) return undefined as T;
-      return retryRes.json();
+      return fetch(apiUrl(path), { ...init, headers });
     } catch {
       notifySessionExpired();
       throw new ApiError("Tu sesión expiró. Inicia sesión de nuevo.", 401);
     }
   }
 
+  return res;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+  retry = true,
+): Promise<T> {
+  const res = await authorizedFetch(path, init, retry);
+
   if (!res.ok) throw await parseError(res);
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+function filenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const utfMatch = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1].trim());
+    } catch {
+      return utfMatch[1].trim();
+    }
+  }
+  const plainMatch = /filename="?([^";]+)"?/i.exec(header);
+  return plainMatch?.[1]?.trim() ?? null;
+}
+
+/** Authenticated binary download (CSV, XLSX, etc.). */
+export async function apiDownload(
+  path: string,
+  init: RequestInit = {},
+  retry = true,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const res = await authorizedFetch(path, init, retry);
+  if (!res.ok) throw await parseError(res);
+  const blob = await res.blob();
+  const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"));
+  return { blob, filename };
+}
+
+export function triggerBrowserDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 export async function apiHealth(): Promise<{ status: string; service: string }> {

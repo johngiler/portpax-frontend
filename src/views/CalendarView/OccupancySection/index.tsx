@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
@@ -11,24 +11,31 @@ import { fetchPorts } from "@/services/catalogs/portService";
 import type { Booking } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import OccupancyCalendar from "./OccupancyCalendar";
+import OccupancyDayTooltip, {
+  type TooltipAnchor,
+} from "./OccupancyDayTooltip";
 import OccupancyPortMatrix from "./OccupancyPortMatrix";
-import { buildOccupancySnapshot } from "./occupancyUtils";
+import { buildOccupancySnapshot, filterBookingsByPort } from "./occupancyUtils";
 
-type DashboardOccupancySectionProps = {
+type OccupancySectionProps = {
   dateFrom: string;
   dateTo: string;
 };
 
-export default function DashboardOccupancySection({
+export default function OccupancySection({
   dateFrom,
   dateTo,
-}: DashboardOccupancySectionProps) {
+}: OccupancySectionProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [ports, setPorts] = useState<Port[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedAnchor, setSelectedAnchor] = useState<TooltipAnchor | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [hoverAnchor, setHoverAnchor] = useState<TooltipAnchor | null>(null);
   const [selectedPortId, setSelectedPortId] = useState<number | null>(null);
+  const hoverClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadOccupancy = useCallback(async () => {
     setLoading(true);
@@ -58,36 +65,76 @@ export default function DashboardOccupancySection({
   }, [loadOccupancy]);
 
   useEffect(() => {
-    function refresh() {
-      loadOccupancy();
-    }
-
-    function onVisibilityChange() {
-      if (document.visibilityState === "visible") refresh();
-    }
-
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [loadOccupancy]);
-
-  useEffect(() => {
     setSelectedDate(null);
+    setSelectedAnchor(null);
+    setHoveredDate(null);
+    setHoverAnchor(null);
     setSelectedPortId(null);
   }, [dateFrom, dateTo]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverClearTimer.current) clearTimeout(hoverClearTimer.current);
+    };
+  }, []);
 
   const occupancy = useMemo(
     () => buildOccupancySnapshot(bookings, ports, dateFrom, dateTo),
     [bookings, ports, dateFrom, dateTo],
   );
 
-  function handleMatrixCell(portId: number, date: string) {
+  const detailDate = hoveredDate ?? selectedDate;
+  const tooltipAnchor = hoverAnchor ?? selectedAnchor;
+  const detailBookings = useMemo(() => {
+    if (!detailDate) return [];
+    return filterBookingsByPort(occupancy.byDate[detailDate] ?? [], selectedPortId);
+  }, [detailDate, occupancy.byDate, selectedPortId]);
+
+  const pinned = Boolean(selectedDate && !hoveredDate);
+
+  function clearHoverTimer() {
+    if (hoverClearTimer.current) {
+      clearTimeout(hoverClearTimer.current);
+      hoverClearTimer.current = null;
+    }
+  }
+
+  function handleSelectDate(date: string | null, anchor?: TooltipAnchor) {
+    clearHoverTimer();
+    setHoveredDate(null);
+    setHoverAnchor(null);
+    setSelectedDate(date);
+    setSelectedAnchor(date && anchor ? anchor : null);
+  }
+
+  function handleHoverDate(date: string | null, anchor?: TooltipAnchor) {
+    clearHoverTimer();
+    if (date && anchor) {
+      setHoveredDate(date);
+      setHoverAnchor(anchor);
+      return;
+    }
+    hoverClearTimer.current = setTimeout(() => {
+      setHoveredDate(null);
+      setHoverAnchor(null);
+    }, 140);
+  }
+
+  function handleCloseTooltip() {
+    clearHoverTimer();
+    setHoveredDate(null);
+    setHoverAnchor(null);
+    setSelectedDate(null);
+    setSelectedAnchor(null);
+  }
+
+  function handleMatrixCell(portId: number, date: string, anchor: TooltipAnchor) {
+    clearHoverTimer();
     setSelectedPortId(portId);
     setSelectedDate(date);
+    setSelectedAnchor(anchor);
+    setHoveredDate(null);
+    setHoverAnchor(null);
   }
 
   return (
@@ -112,10 +159,24 @@ export default function DashboardOccupancySection({
             ports={occupancy.ports}
             byDate={occupancy.byDate}
             selectedDate={selectedDate}
+            hoveredDate={hoveredDate}
             selectedPortId={selectedPortId}
-            onSelectDate={setSelectedDate}
+            onSelectDate={handleSelectDate}
+            onHoverDate={handleHoverDate}
             onSelectPort={setSelectedPortId}
           />
+
+          {detailDate && tooltipAnchor ? (
+            <OccupancyDayTooltip
+              date={detailDate}
+              bookings={detailBookings}
+              anchor={tooltipAnchor}
+              pinned={pinned}
+              onClose={handleCloseTooltip}
+              onKeepOpen={clearHoverTimer}
+              onHoverLeave={() => handleHoverDate(null)}
+            />
+          ) : null}
 
           <OccupancyPortMatrix
             dates={occupancy.dates}
@@ -124,6 +185,7 @@ export default function DashboardOccupancySection({
             selectedDate={selectedDate}
             selectedPortId={selectedPortId}
             onSelectCell={handleMatrixCell}
+            onHoverDate={handleHoverDate}
           />
         </>
       )}

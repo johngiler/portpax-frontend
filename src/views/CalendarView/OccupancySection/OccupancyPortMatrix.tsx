@@ -5,6 +5,10 @@ import { formatIsoDateLabel, parseIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import { portDisplayName, type Port } from "@/types/catalog";
 import { activeCountForDate } from "./occupancyUtils";
+import {
+  anchorFromElement,
+  type TooltipAnchor,
+} from "./OccupancyDayTooltip";
 import { portAccentColor } from "./portColors";
 
 type OccupancyPortMatrixProps = {
@@ -13,7 +17,8 @@ type OccupancyPortMatrixProps = {
   byPortDate: Record<number, Record<string, Booking[]>>;
   selectedDate: string | null;
   selectedPortId: number | null;
-  onSelectCell: (portId: number, date: string) => void;
+  onSelectCell: (portId: number, date: string, anchor: TooltipAnchor) => void;
+  onHoverDate?: (date: string | null, anchor?: TooltipAnchor) => void;
 };
 
 function shortDayLabel(iso: string): string {
@@ -36,6 +41,7 @@ export default function OccupancyPortMatrix({
   selectedDate,
   selectedPortId,
   onSelectCell,
+  onHoverDate,
 }: OccupancyPortMatrixProps) {
   const visibleDates = useMemo(() => {
     if (dates.length <= 21) return dates;
@@ -56,7 +62,7 @@ export default function OccupancyPortMatrix({
       <div className="border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
         <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Mapa por puerto</p>
         <p className="mt-0.5 text-xs text-zinc-500">
-          Intensidad de ocupación · toca una celda para ver el detalle del día
+          Intensidad de ocupación · hover o click para ver el detalle
         </p>
       </div>
 
@@ -104,16 +110,24 @@ export default function OccupancyPortMatrix({
               </div>
 
               {visibleDates.map((date) => {
-                const bookings = byPortDate[port.id]?.[date] ?? [];
-                const count = activeCountForDate(bookings);
-                const isSelected = selectedDate === date && (selectedPortId === null || selectedPortId === port.id);
+                const cellBookings = byPortDate[port.id]?.[date] ?? [];
+                const count = activeCountForDate(cellBookings);
+                const isSelected =
+                  selectedDate === date &&
+                  (selectedPortId === null || selectedPortId === port.id);
 
                 return (
                   <button
                     key={`${port.id}-${date}`}
                     type="button"
-                    onClick={() => onSelectCell(port.id, date)}
-                    title={`${portDisplayName(port)} · ${formatIsoDateLabel(date, "short")} · ${count} escala${count === 1 ? "" : "s"}`}
+                    onClick={(e) =>
+                      onSelectCell(port.id, date, anchorFromElement(e.currentTarget))
+                    }
+                    onMouseEnter={(e) =>
+                      onHoverDate?.(date, anchorFromElement(e.currentTarget))
+                    }
+                    onMouseLeave={() => onHoverDate?.(null)}
+                    aria-label={`${portDisplayName(port)} · ${formatIsoDateLabel(date, "short")} · ${count} escala${count === 1 ? "" : "s"}`}
                     className={[
                       "group relative h-11 border-b border-r border-zinc-200/40 transition-all hover:brightness-95 dark:border-zinc-800/60",
                       cellIntensity(count),

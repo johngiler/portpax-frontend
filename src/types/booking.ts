@@ -24,7 +24,6 @@ export type BookingAuditEntry = {
 export type Booking = {
   id: number;
   booking_code: string;
-  folio: string | null;
   port: number;
   port_code: string;
   port_name: string;
@@ -32,8 +31,10 @@ export type Booking = {
   shipping_line: number;
   shipping_line_code: string;
   shipping_line_name: string;
+  shipping_line_logo: string | null;
   vessel: number;
   vessel_name: string;
+  vessel_logo: string | null;
   position: number | null;
   position_code: string | null;
   call_date: string;

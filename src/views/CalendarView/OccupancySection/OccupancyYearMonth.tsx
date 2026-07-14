@@ -3,6 +3,8 @@
 import { formatIsoDateLabel, getCalendarGrid, type CalendarCell } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import { activeCountForDate } from "./occupancyUtils";
+import type { TooltipAnchor } from "./OccupancyDayTooltip";
+import { anchorFromElement } from "./OccupancyDayTooltip";
 import { occupancyHeatClass, portAccentColor } from "./portColors";
 
 type OccupancyYearMonthProps = {
@@ -13,8 +15,10 @@ type OccupancyYearMonthProps = {
   dateTo: string;
   todayIso: string;
   selectedDate: string | null;
+  hoveredDate: string | null;
   dayBookings: (iso: string) => Booking[];
-  onSelectDate: (date: string | null) => void;
+  onSelectDate: (date: string | null, anchor?: TooltipAnchor) => void;
+  onHoverDate: (date: string | null, anchor?: TooltipAnchor) => void;
 };
 
 export default function OccupancyYearMonth({
@@ -25,8 +29,10 @@ export default function OccupancyYearMonth({
   dateTo,
   todayIso,
   selectedDate,
+  hoveredDate,
   dayBookings,
   onSelectDate,
+  onHoverDate,
 }: OccupancyYearMonthProps) {
   const weeks = getCalendarGrid(year, monthIndex);
 
@@ -39,6 +45,7 @@ export default function OccupancyYearMonth({
     const bookings = dayBookings(cell.iso);
     const count = activeCountForDate(bookings);
     const isSelected = selectedDate === cell.iso;
+    const isHovered = hoveredDate === cell.iso;
     const isToday = cell.iso === todayIso;
     const portIds = [
       ...new Set(bookings.filter((b) => b.status !== "cancelled").map((b) => b.port)),
@@ -49,14 +56,31 @@ export default function OccupancyYearMonth({
         key={cell.iso}
         type="button"
         disabled={!inRange}
-        onClick={() => inRange && onSelectDate(isSelected ? null : cell.iso)}
+        onClick={(e) => {
+          if (!inRange) return;
+          if (isSelected) {
+            onSelectDate(null);
+            return;
+          }
+          onSelectDate(cell.iso, anchorFromElement(e.currentTarget));
+        }}
+        onMouseEnter={(e) => {
+          if (!inRange) return;
+          onHoverDate(cell.iso, anchorFromElement(e.currentTarget));
+        }}
+        onMouseLeave={() => onHoverDate(null)}
         className={[
           "relative flex h-7 w-7 shrink-0 cursor-pointer flex-col items-center justify-center rounded-md border text-[9px] font-bold leading-none transition-all",
           occupancyHeatClass(count, inRange),
           isSelected
             ? "ring-2 ring-[var(--admin-accent)] ring-offset-1 ring-offset-white dark:ring-offset-zinc-900"
             : "",
-          isToday && !isSelected ? "ring-1 ring-[var(--admin-accent)]/35" : "",
+          isHovered && !isSelected
+            ? "ring-1 ring-[var(--admin-accent)]/60"
+            : "",
+          isToday && !isSelected && !isHovered
+            ? "ring-1 ring-[var(--admin-accent)]/35"
+            : "",
           !inRange ? "cursor-default opacity-40" : "hover:shadow-sm",
         ].join(" ")}
         aria-label={

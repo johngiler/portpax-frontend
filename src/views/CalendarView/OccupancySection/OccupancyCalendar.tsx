@@ -12,6 +12,7 @@ import { useMotionTransition } from "@/lib/motionPresets";
 import { OCCUPANCY_MAX_FORWARD_YEARS } from "@/utils/timeRange";
 import type { Booking } from "@/types/booking";
 import { portDisplayName, type Port } from "@/types/catalog";
+import type { TooltipAnchor } from "./OccupancyDayTooltip";
 import { filterBookingsByPort } from "./occupancyUtils";
 import { portAccentColor } from "./portColors";
 import OccupancyYearMonth from "./OccupancyYearMonth";
@@ -25,8 +26,10 @@ type OccupancyCalendarProps = {
   ports: Port[];
   byDate: Record<string, Booking[]>;
   selectedDate: string | null;
+  hoveredDate: string | null;
   selectedPortId: number | null;
-  onSelectDate: (date: string | null) => void;
+  onSelectDate: (date: string | null, anchor?: TooltipAnchor) => void;
+  onHoverDate: (date: string | null, anchor?: TooltipAnchor) => void;
   onSelectPort: (portId: number | null) => void;
 };
 
@@ -50,8 +53,10 @@ export default function OccupancyCalendar({
   ports,
   byDate,
   selectedDate,
+  hoveredDate,
   selectedPortId,
   onSelectDate,
+  onHoverDate,
   onSelectPort,
 }: OccupancyCalendarProps) {
   const today = todayIso();
@@ -183,8 +188,10 @@ export default function OccupancyCalendar({
                 dateTo={dateTo}
                 todayIso={today}
                 selectedDate={selectedDate}
+                hoveredDate={hoveredDate}
                 dayBookings={dayBookings}
                 onSelectDate={onSelectDate}
+                onHoverDate={onHoverDate}
               />
             ))}
           </motion.div>

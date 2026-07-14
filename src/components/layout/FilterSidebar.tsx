@@ -5,6 +5,7 @@ import {
   useMainLayout,
   useMainLayoutOptional,
 } from "@/contexts/MainLayoutContext";
+import { useDataExport } from "@/lib/dataExportStore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -35,7 +36,7 @@ export function FilterSidebarContent({
 }
 
 const exportOptions = [
-  { id: "excel", label: "Exportar a Excel" },
+  { id: "xlsx", label: "Exportar a Excel" },
   { id: "csv", label: "Exportar a CSV" },
 ] as const;
 
@@ -47,8 +48,10 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const layout = useMainLayoutOptional();
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
+  const { canExport, runExport } = useDataExport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
   if (!setFilterOpen) return null;
@@ -66,11 +69,18 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     e.target.value = "";
   };
 
-  const handleExportOption = (id: string) => {
+  const handleExportOption = async (id: "xlsx" | "csv") => {
     setExportOpen(false);
-    // Placeholder: la lógica de exportación se implementará más adelante
-    console.info("[Export] Formato solicitado:", id);
+    if (!canExport || exporting) return;
+    setExporting(true);
+    try {
+      await runExport(id);
+    } finally {
+      setExporting(false);
+    }
   };
+
+  const exportDisabled = !canExport || exporting;
 
   // Cerrar menú export al hacer clic fuera
   useEffect(() => {
@@ -132,17 +142,24 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                   <div className="relative" ref={exportMenuRef}>
                     <button
                       type="button"
+                      disabled={exportDisabled}
                       onClick={() => setExportOpen((v) => !v)}
-                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
                       aria-label="Exportar"
                       aria-expanded={exportOpen}
                       aria-haspopup="true"
-                      title="Exportar a Excel o CSV"
+                      title={
+                        canExport
+                          ? exporting
+                            ? "Exportando…"
+                            : "Exportar a Excel o CSV"
+                          : "Exportación no disponible en esta vista"
+                      }
                     >
                       <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
-                      <span>Exportar</span>
+                      <span>{exporting ? "Exportando…" : "Exportar"}</span>
                     </button>
-                    {exportOpen && (
+                    {exportOpen && canExport && (
                       <div
                         className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1 shadow-lg dark:bg-zinc-800"
                         role="menu"
@@ -194,21 +211,28 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
             <div className="relative" ref={exportMenuRef}>
               <button
                 type="button"
+                disabled={exportDisabled}
                 onClick={() => setExportOpen((v) => !v)}
-                className={iconButtonClass}
+                className={`${iconButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
                 aria-label="Exportar"
                 aria-expanded={exportOpen}
-                title="Exportar a Excel o CSV"
+                title={
+                  canExport
+                    ? exporting
+                      ? "Exportando…"
+                      : "Exportar a Excel o CSV"
+                    : "Exportación no disponible en esta vista"
+                }
               >
                 <Download
                   className="h-[18px] w-[18px] shrink-0"
                   strokeWidth={2}
                 />
                 <span className="text-[11px] font-medium tracking-wide">
-                  Exportar
+                  {exporting ? "…" : "Exportar"}
                 </span>
               </button>
-              {exportOpen && (
+              {exportOpen && canExport && (
                 <div
                   className="absolute right-full top-0 z-20 mr-1 min-w-[180px] rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1 shadow-lg dark:bg-zinc-800"
                   role="menu"
