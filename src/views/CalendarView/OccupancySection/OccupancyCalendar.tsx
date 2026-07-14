@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPinned } from "lucide-react";
 import {
   getMonthOptions,
   parseIsoDate,
@@ -100,34 +100,64 @@ export default function OccupancyCalendar({
             type="button"
             onClick={() => onSelectPort(null)}
             className={[
-              "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+              "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
               selectedPortId === null
                 ? "bg-[var(--admin-accent)] text-white shadow-sm"
                 : "border border-zinc-200/80 bg-white text-zinc-600 hover:border-[var(--admin-accent)]/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
             ].join(" ")}
           >
+            <span
+              className={[
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                selectedPortId === null
+                  ? "bg-white/20 text-white"
+                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
+              ].join(" ")}
+            >
+              <MapPinned className="h-3 w-3" strokeWidth={2.25} />
+            </span>
             Todos los puertos
           </button>
-          {ports.map((port) => (
-            <button
-              key={port.id}
-              type="button"
-              onClick={() => onSelectPort(port.id)}
-              className={[
-                "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
-                selectedPortId === port.id
-                  ? "text-white shadow-sm"
-                  : "border border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
-              ].join(" ")}
-              style={
-                selectedPortId === port.id
-                  ? { backgroundColor: portAccentColor(port.id) }
-                  : undefined
-              }
-            >
-              {portDisplayName(port)}
-            </button>
-          ))}
+          {ports.map((port) => {
+            const selected = selectedPortId === port.id;
+            return (
+              <button
+                key={port.id}
+                type="button"
+                onClick={() => onSelectPort(port.id)}
+                className={[
+                  "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                  selected
+                    ? "text-white shadow-sm"
+                    : "border border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
+                ].join(" ")}
+                style={selected ? { backgroundColor: portAccentColor(port.id) } : undefined}
+              >
+                <span
+                  className={[
+                    "flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full",
+                    selected
+                      ? "bg-white/95"
+                      : "border border-zinc-200/80 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800",
+                  ].join(" ")}
+                >
+                  {port.logo ? (
+                    <img
+                      src={port.logo}
+                      alt=""
+                      className="h-full w-full object-contain p-0.5"
+                    />
+                  ) : (
+                    <MapPinned
+                      className={`h-3 w-3 ${selected ? "text-zinc-500" : "text-zinc-400"}`}
+                      strokeWidth={2.25}
+                    />
+                  )}
+                </span>
+                {portDisplayName(port)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
