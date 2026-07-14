@@ -42,19 +42,23 @@ function LogoThumb({
   alt,
   fallback,
   size = "md",
+  fit = "contain",
 }: {
   src: string | null | undefined;
   alt: string;
   fallback: ReactNode;
   size?: "sm" | "md";
+  /** Photos use cover; brand logos stay contain. */
+  fit?: "cover" | "contain";
 }) {
   const box = size === "sm" ? "h-6 w-6" : "h-9 w-9";
+  const imageFit = fit === "cover" ? "object-cover" : "object-contain p-0.5";
   return (
     <span
       className={`flex ${box} shrink-0 items-center justify-center overflow-hidden rounded-lg border border-zinc-200/80 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800`}
     >
       {src ? (
-        <img src={src} alt={alt} className="h-full w-full object-contain p-0.5" />
+        <img src={src} alt={alt} className={`h-full w-full ${imageFit}`} />
       ) : (
         <span className="text-zinc-400 dark:text-zinc-500">{fallback}</span>
       )}
@@ -182,6 +186,7 @@ export default function OccupancyDayTooltip({
                 <LogoThumb
                   src={booking.vessel_logo}
                   alt={booking.vessel_name}
+                  fit="cover"
                   fallback={<Ship className="h-4 w-4" />}
                 />
                 <div className="min-w-0 flex-1">
