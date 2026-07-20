@@ -32,7 +32,12 @@ type OccupancyDayTooltipProps = {
 };
 
 function statusTone(status: Booking["status"]): string {
-  if (status === "co") return "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]";
+  if (status === "co" || status === "cl") {
+    return "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]";
+  }
+  if (status === "lta" || status === "ltd") {
+    return "bg-sky-500/15 text-sky-700 dark:text-sky-400";
+  }
   if (status === "r") return "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300";
   if (status === "c") return "bg-red-500/10 text-red-600 dark:text-red-400";
   if (status === "h") return "bg-amber-500/15 text-amber-700 dark:text-amber-400";

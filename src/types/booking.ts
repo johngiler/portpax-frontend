@@ -1,7 +1,7 @@
 import { toIsoDate } from "@/lib/bookingDates";
 
-/** MVP status codes aligned with berthing docs (NR/H/CO/R/C). */
-export type BookingStatus = "nr" | "h" | "co" | "r" | "c";
+/** Status codes aligned with berthing docs (NR/H/CO/CL/LTA/LTD/R/C). */
+export type BookingStatus = "nr" | "h" | "co" | "cl" | "lta" | "ltd" | "r" | "c";
 
 export type CancellationReason =
   | "bad_weather"
@@ -119,6 +119,9 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   nr: "Solicitada",
   h: "En evaluación",
   co: "Confirmada",
+  cl: "Confirmada LTA",
+  lta: "LTA",
+  ltd: "Long Term Deployment",
   r: "Real",
   c: "Cancelada",
 };
@@ -135,6 +138,9 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
   { value: "nr", label: "Solicitadas" },
   { value: "h", label: "En evaluación" },
   { value: "co", label: "Confirmadas" },
+  { value: "cl", label: "Confirmadas LTA" },
+  { value: "lta", label: "LTA" },
+  { value: "ltd", label: "Long Term Deployment" },
   { value: "r", label: "Reales" },
   { value: "completed", label: "Completadas (fecha pasada)" },
   { value: "c", label: "Canceladas" },
@@ -176,7 +182,11 @@ export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
     case "h":
       return ["co", "c"];
     case "co":
+    case "cl":
+    case "ltd":
       return ["r", "c"];
+    case "lta":
+      return ["cl", "co", "r", "c"];
     default:
       return [];
   }

@@ -138,7 +138,8 @@ export default function BookingStatusActions({
         <div>
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Estado</h2>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Flujo NR → H → CO → R (o cancelación).
+            Flujo NR → H → CO → R (o cancelación). Estados LTA/CL/LTD del histórico también
+            pueden cerrarse a Real o cancelarse.
           </p>
         </div>
         <BookingStatusBadge status={booking.status} />
@@ -155,6 +156,17 @@ export default function BookingStatusActions({
             >
               <CirclePause className="h-4 w-4" strokeWidth={2} />
               Poner en evaluación
+            </button>
+          ) : null}
+          {nextStatuses.includes("cl") ? (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void applySimpleStatus("cl")}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-teal-900/50 dark:bg-teal-950/40 dark:text-teal-300"
+            >
+              <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+              Confirmar LTA
             </button>
           ) : null}
           {nextStatuses.includes("co") ? (
