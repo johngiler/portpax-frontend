@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 type ViewStatCardProps = {
   label: string;
@@ -9,6 +10,8 @@ type ViewStatCardProps = {
   accentColor: string;
   gradient: string;
   href?: string;
+  /** Optional chip under the value (e.g. YoY). */
+  badge?: ReactNode;
 };
 
 /** KPI / summary card used in dashboard and list views. */
@@ -20,11 +23,12 @@ export default function ViewStatCard({
   accentColor,
   gradient,
   href,
+  badge,
 }: ViewStatCardProps) {
   const card = (
     <div
       className={[
-        "relative flex min-h-[130px] items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80",
+        "relative flex h-full min-h-[130px] items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80",
         href
           ? "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
           : "",
@@ -36,13 +40,16 @@ export default function ViewStatCard({
       }}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           {label}
         </p>
         <p className="mt-1.5 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
           {value}
         </p>
-        <p className="mt-1 truncate text-[11px] text-zinc-500 dark:text-zinc-400">{description}</p>
+        {badge ? <div className="mt-2">{badge}</div> : null}
+        <p className="mt-1.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-400">
+          {description}
+        </p>
       </div>
       <div
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -56,7 +63,7 @@ export default function ViewStatCard({
 
   if (href) {
     return (
-      <Link href={href} className="block no-underline">
+      <Link href={href} className="block h-full no-underline">
         {card}
       </Link>
     );

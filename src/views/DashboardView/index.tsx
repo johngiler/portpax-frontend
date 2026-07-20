@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Gauge, LayoutDashboard, Users } from "lucide-react";
+import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Users } from "lucide-react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
@@ -14,10 +14,14 @@ import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter, DashboardStats } from "@/types/dashboard";
+import DashboardActionQueueSection from "./DashboardActionQueueSection";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
-import DashboardReservasCard from "./DashboardReservasCard";
+import DashboardNext30Section from "./DashboardNext30Section";
+import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
+import DashboardYoyBadge from "./DashboardYoyBadge";
+import { formatCompactNumber, formatYoyBadge } from "./formatDashboardKpi";
 
 function defaultYearRange(): { from: string; to: string } {
   const year = new Date().getFullYear();
@@ -121,7 +125,7 @@ export default function DashboardView() {
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="Vista operativa del período seleccionado: ocupación, reservas, pax y cancelaciones."
+        description="KPIs operativos del período, cola de acción, próximos 30 días y ocupación por puerto."
       />
 
       {viewError && (
@@ -144,8 +148,8 @@ export default function DashboardView() {
         defaultDateTo={defaults.to}
       />
 
-      {kpis ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {kpis && stats ? (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <ViewStatCard
             label="Ocupación"
             value={`${kpis.occupancy_pct}%`}
@@ -156,27 +160,63 @@ export default function DashboardView() {
           />
           <ViewStatCard
             label="PAX planificados"
-            value={kpis.planned_pax.toLocaleString("es")}
+            value={formatCompactNumber(kpis.planned_pax)}
             description={
               kpis.actual_pax > 0
-                ? `${kpis.actual_pax.toLocaleString("es")} pax reales`
-                : "Suma de pax en reservas activas"
+                ? `${formatCompactNumber(kpis.actual_pax)} pax reales · ${kpis.planned_pax.toLocaleString("es")} planificados`
+                : `${kpis.planned_pax.toLocaleString("es")} en reservas activas`
             }
             icon={Users}
             accentColor="#0d9488"
             gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
+            badge={<DashboardYoyBadge badge={formatYoyBadge(stats.yoy.planned_pax)} />}
           />
-          <DashboardReservasCard
-            total={kpis.total_bookings}
-            nr={kpis.nr}
-            co={kpis.co}
-            c={kpis.c}
-            yearsLabel={periodLabel}
+          <ViewStatCard
+            label="Reservas"
+            value={kpis.total_bookings.toLocaleString("es")}
+            description={
+              kpis.total_bookings > 0
+                ? `${periodLabel} · ${kpis.c > 0 ? `${Math.round((kpis.c / kpis.total_bookings) * 100)}% canceladas` : "sin cancelaciones"}`
+                : `Sin reservas en ${periodLabel}`
+            }
+            icon={ClipboardList}
+            accentColor="#3478b5"
+            gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
+            badge={<DashboardYoyBadge badge={formatYoyBadge(stats.yoy.calls)} />}
+            href="/bookings"
+          />
+          <ViewStatCard
+            label="Requieren acción"
+            value={(
+              stats.action_queue.holds + stats.action_queue.new_requests
+            ).toLocaleString("es")}
+            description={`${stats.action_queue.holds} Hold · ${stats.action_queue.new_requests} NR · desde ${stats.action_queue.as_of}`}
+            icon={AlertTriangle}
+            accentColor={
+              stats.action_queue.holds + stats.action_queue.new_requests > 0
+                ? "#d97706"
+                : "#71717a"
+            }
+            gradient={
+              stats.action_queue.holds + stats.action_queue.new_requests > 0
+                ? "linear-gradient(160deg, rgba(217, 119, 6, 0.16) 0%, var(--background) 55%)"
+                : "linear-gradient(160deg, rgba(113, 113, 122, 0.12) 0%, var(--background) 55%)"
+            }
+            href="/bookings?status=action"
           />
         </div>
       ) : null}
 
-      {stats ? <DashboardCharts stats={stats} /> : null}
+      {stats ? (
+        <>
+          <div className="mb-6 grid gap-6 lg:grid-cols-2">
+            <DashboardNext30Section data={stats.next_30_days} />
+            <DashboardActionQueueSection data={stats.action_queue} />
+          </div>
+          <DashboardOccupancyByPort rows={stats.occupancy_by_port} />
+          <DashboardCharts stats={stats} />
+        </>
+      ) : null}
     </>
   );
 }

@@ -16,6 +16,8 @@ export type NavItem = {
   icon: LucideIcon;
   /** If set, only these roles see the item. Omit = all frontend roles. */
   roles?: readonly UserRole[];
+  /** Key in /api/nav-counts/ for the sidebar badge. */
+  countKey?: "bookings" | "ports" | "shipping_lines" | "users";
 };
 
 export type NavSection = {
@@ -34,18 +36,30 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Operación",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: CATALOG_ROLES },
-      { href: "/bookings", label: "Reservas", icon: CalendarDays },
+      { href: "/bookings", label: "Reservas", icon: CalendarDays, countKey: "bookings" },
       { href: "/calendar", label: "Calendario", icon: CalendarRange },
       { href: "/reports", label: "Reportes", icon: BarChart3 },
-      { href: "/ports", label: "Puertos", icon: MapPin, roles: CATALOG_ROLES },
-      { href: "/shipping-lines", label: "Navieras", icon: Anchor, roles: CATALOG_ROLES },
+      { href: "/ports", label: "Puertos", icon: MapPin, roles: CATALOG_ROLES, countKey: "ports" },
+      {
+        href: "/shipping-lines",
+        label: "Navieras",
+        icon: Anchor,
+        roles: CATALOG_ROLES,
+        countKey: "shipping_lines",
+      },
     ],
   },
   {
     id: "system",
     label: "Sistema",
     items: [
-      { href: "/users", label: "Usuarios", icon: Users, roles: ADMIN_ONLY },
+      {
+        href: "/users",
+        label: "Usuarios",
+        icon: Users,
+        roles: ADMIN_ONLY,
+        countKey: "users",
+      },
     ],
   },
 ];

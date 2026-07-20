@@ -22,8 +22,6 @@ type MonthGridProps = {
   onMonthChange: (monthIndex: number) => void;
   bookings: Booking[];
   positions: Position[];
-  onDayHover: (date: string | null, el?: Element | null) => void;
-  onDaySelect: (date: string | null, el?: Element | null) => void;
 };
 
 export default function MonthGrid({
@@ -33,8 +31,6 @@ export default function MonthGrid({
   onMonthChange,
   bookings,
   positions,
-  onDayHover,
-  onDaySelect,
 }: MonthGridProps) {
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
@@ -132,10 +128,7 @@ export default function MonthGrid({
               return (
                 <div
                   key={iso}
-                  className="flex min-h-[6.5rem] cursor-default flex-col gap-1 bg-white p-1.5 dark:bg-zinc-900"
-                  onMouseEnter={(e) => onDayHover(iso, e.currentTarget)}
-                  onMouseLeave={() => onDayHover(null)}
-                  onClick={(e) => onDaySelect(iso, e.currentTarget)}
+                  className="flex min-h-[7.5rem] flex-col gap-1 bg-white p-1.5 dark:bg-zinc-900"
                 >
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">

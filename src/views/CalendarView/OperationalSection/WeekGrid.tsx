@@ -20,8 +20,6 @@ type WeekGridProps = {
   bookings: Booking[];
   positions: Position[];
   positionFilterId: number;
-  onDayHover: (date: string | null, el?: Element | null) => void;
-  onDaySelect: (date: string | null, el?: Element | null) => void;
 };
 
 function bookingsForCell(
@@ -42,8 +40,6 @@ export default function WeekGrid({
   bookings,
   positions,
   positionFilterId,
-  onDayHover,
-  onDaySelect,
 }: WeekGridProps) {
   const days = weekDatesFrom(weekAnchor);
   const pierAll = activePierPositions(positions);
@@ -113,10 +109,7 @@ export default function WeekGrid({
                 return (
                   <th
                     key={iso}
-                    className="min-w-[7.5rem] cursor-default px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-                    onMouseEnter={(e) => onDayHover(iso, e.currentTarget)}
-                    onMouseLeave={() => onDayHover(null)}
-                    onClick={(e) => onDaySelect(iso, e.currentTarget)}
+                    className="min-w-[8.5rem] cursor-default px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
                   >
                     <span className="inline-flex items-center justify-center gap-1.5">
                       <span className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`} />
@@ -142,11 +135,8 @@ export default function WeekGrid({
                     <td
                       key={iso}
                       className="px-1 py-1.5 align-top"
-                      onMouseEnter={(e) => onDayHover(iso, e.currentTarget)}
-                      onMouseLeave={() => onDayHover(null)}
-                      onClick={(e) => onDaySelect(iso, e.currentTarget)}
                     >
-                      <div className="flex min-h-[3.25rem] flex-col gap-1">
+                      <div className="flex min-h-[4.5rem] flex-col gap-1">
                         {cell.map((b) => (
                           <CallChip key={b.id} booking={b} />
                         ))}
@@ -167,11 +157,8 @@ export default function WeekGrid({
                     <td
                       key={iso}
                       className="bg-amber-50/30 px-1 py-1.5 align-top dark:bg-amber-950/20"
-                      onMouseEnter={(e) => onDayHover(iso, e.currentTarget)}
-                      onMouseLeave={() => onDayHover(null)}
-                      onClick={(e) => onDaySelect(iso, e.currentTarget)}
                     >
-                      <div className="flex min-h-[3.25rem] flex-col gap-1">
+                      <div className="flex min-h-[4.5rem] flex-col gap-1">
                         {cell.map((b) => (
                           <CallChip key={b.id} booking={b} />
                         ))}

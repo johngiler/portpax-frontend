@@ -9,7 +9,11 @@ export type CancellationReason =
   | "itm_decision";
 
 /** List filter: past open bookings (not a stored status) or real status. */
-export type BookingListStatusFilter = BookingStatus | "" | "completed";
+export type BookingListStatusFilter =
+  | BookingStatus
+  | ""
+  | "completed"
+  | "action";
 
 export type BookingBadgeStatus = BookingStatus;
 
@@ -136,6 +140,7 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "", label: "Todas" },
+  { value: "action", label: "Requieren acción" },
   { value: "nr", label: "Solicitadas" },
   { value: "h", label: "En evaluación" },
   { value: "co", label: "Confirmadas" },
@@ -146,6 +151,13 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
   { value: "completed", label: "Completadas (fecha pasada)" },
   { value: "c", label: "Canceladas" },
 ];
+
+export function isBookingListStatusFilter(
+  value: string | null | undefined,
+): value is BookingListStatusFilter {
+  if (value == null) return false;
+  return BOOKING_STATUS_FILTER_OPTIONS.some((option) => option.value === value);
+}
 
 export function bookingTodayIso(): string {
   const now = new Date();

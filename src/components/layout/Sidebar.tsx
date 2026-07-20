@@ -6,11 +6,23 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
+import { useNavCounts } from "@/hooks/useNavCounts";
+import { formatCompactCount } from "@/lib/formatCompactCount";
 import { canSeeNavItem, roleHomePath } from "@/lib/navAccess";
 import { NAV_SECTIONS, type NavItem } from "@/lib/navConfig";
+import type { NavCounts } from "@/services/core/navCountsService";
 import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
+
+function resolveNavCount(
+  item: NavItem,
+  counts: NavCounts | null,
+): number | null {
+  if (!item.countKey || !counts) return null;
+  const value = counts[item.countKey];
+  return typeof value === "number" ? value : null;
+}
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
@@ -20,6 +32,7 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
   const homeHref = roleHomePath(user?.role);
+  const navCounts = useNavCounts(Boolean(user));
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${MOBILE_BREAKPOINT}px)`);
@@ -55,14 +68,21 @@ export default function Sidebar() {
     isMobileView ? "w-52" : collapsed ? "w-16" : "w-52"
   }`;
 
-  function renderNavLink({ href, label, icon: Icon }: NavItem) {
+  function renderNavLink(item: NavItem) {
+    const { href, label, icon: Icon } = item;
     const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    const count = resolveNavCount(item, navCounts);
+    const countLabel = count != null ? formatCompactCount(count) : null;
+    const showLabel = !collapsed || isMobileView;
+    const title =
+      count != null ? `${label} (${count.toLocaleString("es")})` : label;
+
     return (
       <Link
         key={href}
         href={href}
         className={`${linkBase} ${collapsed && !isMobileView ? linkCollapsed : linkExpanded} ${isActive ? linkActive : linkInactive}`}
-        title={label}
+        title={title}
         onClick={isMobileView ? closeMobileSidebar : undefined}
       >
         {isActive && (
@@ -71,9 +91,31 @@ export default function Sidebar() {
             aria-hidden
           />
         )}
-        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-        {(!collapsed || isMobileView) && (
-          <span className={isActive ? "pl-0.5" : ""}>{label}</span>
+        <span className="relative shrink-0">
+          <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+          {!showLabel && countLabel ? (
+            <span className="absolute -right-2 -top-1.5 min-w-[1.1rem] rounded-full bg-zinc-200/90 px-1 text-center text-[9px] font-semibold tabular-nums leading-4 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
+              {countLabel}
+            </span>
+          ) : null}
+        </span>
+        {showLabel && (
+          <>
+            <span className={`min-w-0 flex-1 truncate ${isActive ? "pl-0.5" : ""}`}>
+              {label}
+            </span>
+            {countLabel ? (
+              <span
+                className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  isActive
+                    ? "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]"
+                    : "bg-zinc-200/80 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                }`}
+              >
+                {countLabel}
+              </span>
+            ) : null}
+          </>
         )}
       </Link>
     );

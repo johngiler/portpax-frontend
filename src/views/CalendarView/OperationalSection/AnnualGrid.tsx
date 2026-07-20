@@ -30,8 +30,6 @@ type AnnualGridProps = {
   previousYearBookings: Booking[];
   positions: Position[];
   onSelectMonth?: (monthIndex: number) => void;
-  onDayHover: (date: string | null, el?: Element | null) => void;
-  onDaySelect: (date: string | null, el?: Element | null) => void;
 };
 
 export default function AnnualGrid({
@@ -41,8 +39,6 @@ export default function AnnualGrid({
   previousYearBookings,
   positions,
   onSelectMonth,
-  onDayHover,
-  onDaySelect,
 }: AnnualGridProps) {
   const pierCount = activePierPositions(positions).length;
   const current = summarizeYear(bookings, year);
@@ -176,22 +172,8 @@ export default function AnnualGrid({
                     return (
                       <div
                         key={iso}
-                        role="button"
-                        tabIndex={0}
-                        onMouseEnter={(e) => onDayHover(iso, e.currentTarget)}
-                        onMouseLeave={() => onDayHover(null)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDaySelect(iso, e.currentTarget);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onDaySelect(iso, e.currentTarget);
-                          }
-                        }}
                         className={[
-                          "flex h-6 cursor-default items-center justify-center rounded text-[9px] font-medium",
+                          "flex h-6 items-center justify-center rounded text-[9px] font-medium",
                           TRAFFIC_CELL[traffic],
                         ].join(" ")}
                       >

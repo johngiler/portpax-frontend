@@ -15,7 +15,6 @@ import AnnualGrid from "./AnnualGrid";
 import MonthGrid from "./MonthGrid";
 import WeekGrid from "./WeekGrid";
 import { monthBounds, weekDatesFrom, yearBounds } from "./calendarOpsUtils";
-import { useDayTooltip } from "./useDayTooltip";
 
 type OperationalPortCardProps = {
   mode: CalendarViewMode;
@@ -55,7 +54,6 @@ export default function OperationalPortCard({
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const dayTooltip = useDayTooltip(bookings);
 
   const range = useMemo(() => {
     if (mode === "weekly") {
@@ -154,8 +152,6 @@ export default function OperationalPortCard({
             bookings={bookings}
             positions={positions}
             positionFilterId={positionId}
-            onDayHover={dayTooltip.onDayHover}
-            onDaySelect={dayTooltip.onDaySelect}
           />
         ) : mode === "monthly" ? (
           <MonthGrid
@@ -165,8 +161,6 @@ export default function OperationalPortCard({
             onMonthChange={onMonthChange}
             bookings={bookings}
             positions={positions}
-            onDayHover={dayTooltip.onDayHover}
-            onDaySelect={dayTooltip.onDaySelect}
           />
         ) : (
           <AnnualGrid
@@ -175,15 +169,12 @@ export default function OperationalPortCard({
             bookings={bookings}
             previousYearBookings={previousYearBookings}
             positions={positions}
-            onDayHover={dayTooltip.onDayHover}
-            onDaySelect={dayTooltip.onDaySelect}
             onSelectMonth={(m) => {
               onMonthChange(m);
               onModeChange("monthly");
             }}
           />
         )}
-        {dayTooltip.tooltip}
       </div>
     </ViewSection>
   );

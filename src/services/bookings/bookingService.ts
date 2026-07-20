@@ -114,6 +114,7 @@ export type BookingTotalsReport = {
     port_id: number;
     code: string;
     name: string;
+    logo: string | null;
     calls: number;
     planned_pax: number;
   }>;
@@ -121,6 +122,7 @@ export type BookingTotalsReport = {
     shipping_line_id: number;
     code: string;
     name: string;
+    logo: string | null;
     calls: number;
     planned_pax: number;
   }>;

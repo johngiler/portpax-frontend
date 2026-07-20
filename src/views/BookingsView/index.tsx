@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
@@ -20,17 +20,29 @@ import {
   exportBookingsReport,
   fetchBookings,
 } from "@/services/bookings/bookingService";
+import { ApiError } from "@/services/apiClient";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import { portDisplayName } from "@/types/catalog";
-import type { BookingListStatusFilter } from "@/types/booking";
+import {
+  isBookingListStatusFilter,
+  type BookingListStatusFilter,
+} from "@/types/booking";
 import BookingFilters from "./BookingFilters";
 import BookingsList from "./BookingsList";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import { resolveBookingsDateRange, type BookingsDatePreset } from "./BookingsDateFilters";
 
 const BATCH_SIZE = 20;
+
+function readStatusFromSearch(
+  searchParams: URLSearchParams,
+): BookingListStatusFilter {
+  const raw = searchParams.get("status");
+  if (isBookingListStatusFilter(raw)) return raw;
+  return "";
+}
 
 function defaultCustomFrom(): string {
   const d = new Date();
@@ -45,6 +57,7 @@ function defaultCustomTo(): string {
 
 export default function BookingsView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const canWrite = canWriteApp(user?.role);
   const [bookings, setBookings] = useState<Awaited<ReturnType<typeof fetchBookings>>["results"]>(
@@ -52,8 +65,12 @@ export default function BookingsView() {
   );
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<BookingListStatusFilter>("");
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingListStatusFilter>("");
+  const [statusFilter, setStatusFilter] = useState<BookingListStatusFilter>(() =>
+    readStatusFromSearch(searchParams),
+  );
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<BookingListStatusFilter>(() =>
+    readStatusFromSearch(searchParams),
+  );
   const [datePreset, setDatePreset] = useState<BookingsDatePreset>("all");
   const [appliedDatePreset, setAppliedDatePreset] = useState<BookingsDatePreset>("all");
   const [customDateFrom, setCustomDateFrom] = useState(defaultCustomFrom);
@@ -78,6 +95,13 @@ export default function BookingsView() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
+  const loadGenerationRef = useRef(0);
+
+  useEffect(() => {
+    const nextStatus = readStatusFromSearch(searchParams);
+    setStatusFilter(nextStatus);
+    setAppliedStatusFilter(nextStatus);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchPorts({ pageSize: 100 })
@@ -151,45 +175,67 @@ export default function BookingsView() {
   ]);
 
   const loadInitial = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
+    setLoadingMore(false);
     setViewError(null);
     try {
       const data = await fetchBookings({ ...listParams, page: 1 });
+      if (generation !== loadGenerationRef.current) return;
       setBookings(data.results);
       setTotalCount(data.count);
       setPage(1);
     } catch (err) {
+      if (generation !== loadGenerationRef.current) return;
       setViewError(
         getApiErrorMessage(err, "No se pudieron cargar las reservas."),
       );
       setBookings([]);
       setTotalCount(0);
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [listParams]);
 
   useEffect(() => {
-    loadInitial();
+    void loadInitial();
   }, [loadInitial]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || bookings.length >= totalCount) return;
+    if (loading || loadingMore || bookings.length >= totalCount) return;
+    const generation = loadGenerationRef.current;
+    const loadedBefore = bookings.length;
     setLoadingMore(true);
     setViewError(null);
     try {
       const nextPage = page + 1;
       const data = await fetchBookings({ ...listParams, page: nextPage });
+      if (generation !== loadGenerationRef.current) return;
+      if (data.results.length === 0) {
+        setTotalCount(loadedBefore);
+        return;
+      }
       setBookings((prev) => [...prev, ...data.results]);
+      setTotalCount(data.count);
       setPage(nextPage);
     } catch (err) {
+      if (generation !== loadGenerationRef.current) return;
+      // DRF returns 404 "Invalid page." past the last page — stop the scroll loop.
+      if (err instanceof ApiError && err.status === 404) {
+        setTotalCount(loadedBefore);
+        return;
+      }
       setViewError(
         getApiErrorMessage(err, "No se pudieron cargar más reservas."),
       );
     } finally {
-      setLoadingMore(false);
+      if (generation === loadGenerationRef.current) {
+        setLoadingMore(false);
+      }
     }
-  }, [loadingMore, bookings.length, totalCount, page, listParams]);
+  }, [loading, loadingMore, bookings.length, totalCount, page, listParams]);
 
   function applyFilters() {
     setAppliedSearch(search.trim());
@@ -219,6 +265,9 @@ export default function BookingsView() {
     setAppliedShippingLineFilter(0);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
+    if (searchParams.toString()) {
+      router.replace("/bookings");
+    }
   }
 
   const hasActiveFilters =

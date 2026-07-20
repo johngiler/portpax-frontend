@@ -36,7 +36,7 @@ type EntityThumbProps = {
 
 /**
  * User profile avatar: photo or letter initial when empty.
- * Do not use for catalog logos, calendar thumbs, or other non-avatar images.
+ * Only for users (header, users table, profile). Catalog logos use `CatalogLogoThumb`.
  */
 export default function EntityThumb({
   src,

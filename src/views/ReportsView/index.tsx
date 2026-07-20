@@ -29,6 +29,7 @@ import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine } from "@/types/cruise";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
+import ReportLogoName from "./ReportLogoName";
 
 function yearStart(): string {
   const y = new Date().getFullYear();
@@ -303,9 +304,11 @@ export default function ReportsView() {
                       key={row.port_id}
                       className="border-t border-zinc-100 dark:border-zinc-800"
                     >
-                      <td className="py-2 pr-4 font-medium">{row.name}</td>
-                      <td className="py-2 pr-4">{row.calls}</td>
-                      <td className="py-2">{row.planned_pax.toLocaleString("es-MX")}</td>
+                      <td className="py-2.5 pr-4">
+                        <ReportLogoName name={row.name} logo={row.logo} kind="port" />
+                      </td>
+                      <td className="py-2.5 pr-4">{row.calls}</td>
+                      <td className="py-2.5">{row.planned_pax.toLocaleString("es-MX")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -332,9 +335,15 @@ export default function ReportsView() {
                       key={row.shipping_line_id}
                       className="border-t border-zinc-100 dark:border-zinc-800"
                     >
-                      <td className="py-2 pr-4 font-medium">{row.name}</td>
-                      <td className="py-2 pr-4">{row.calls}</td>
-                      <td className="py-2">{row.planned_pax.toLocaleString("es-MX")}</td>
+                      <td className="py-2.5 pr-4">
+                        <ReportLogoName
+                          name={row.name}
+                          logo={row.logo}
+                          kind="shipping_line"
+                        />
+                      </td>
+                      <td className="py-2.5 pr-4">{row.calls}</td>
+                      <td className="py-2.5">{row.planned_pax.toLocaleString("es-MX")}</td>
                     </tr>
                   ))}
                 </tbody>
