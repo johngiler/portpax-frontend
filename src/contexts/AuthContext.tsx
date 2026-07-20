@@ -29,7 +29,7 @@ type AuthState = {
 };
 
 type AuthContextValue = AuthState & {
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<UserMe>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 };
@@ -107,9 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access, refresh } = await apiLogin(username, password);
       setStoredTokens(access, refresh);
       resetSessionExpiredState();
-      await loadUser();
+      const me = await fetchCurrentUser();
+      setUser(me);
+      setToken(getStoredAccessToken());
+      setLoading(false);
+      return me;
     },
-    [loadUser],
+    [],
   );
 
   const logout = useCallback(() => {

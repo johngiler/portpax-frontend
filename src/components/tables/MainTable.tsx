@@ -94,35 +94,49 @@ export function MainTableEmpty({ colSpan, children }: { colSpan: number; childre
 }
 
 /**
- * Fila con acordeón: la primera celda incluye un chevron que expande/colapsa
- * el contenido adicional debajo. Animación suave; el contenido expandido
- * puede usar grid/flex responsive para apilar en vertical cuando falte ancho.
- *
- * Uso: envuelve las celdas normales y pasa expandContent con el detalle.
- * Regla general: todas las tablas con datos pueden usar esto para mostrar
- * toda la info sin abrir el modal "Ver".
+ * Fila con acordeón: expande detalle debajo de la fila.
+ * Por defecto un chevron en la primera celda hace toggle; también se puede
+ * controlar desde fuera (p. ej. icono Ver en acciones) con `open` / `onOpenChange`.
  */
 export function AccordionTableRow({
   children,
   colSpan,
   expandContent,
   className = "",
+  open: openControlled,
+  defaultOpen = false,
+  onOpenChange,
+  showRowToggle = true,
 }: {
   children: React.ReactNode;
   colSpan: number;
   expandContent: React.ReactNode;
   className?: string;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Chevron en la primera celda. Desactivar si el toggle va en acciones (ojo). */
+  showRowToggle?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openUncontrolled, setOpenUncontrolled] = useState(defaultOpen);
+  const controlled = openControlled !== undefined;
+  const open = controlled ? openControlled : openUncontrolled;
+
+  function setOpen(next: boolean) {
+    if (!controlled) setOpenUncontrolled(next);
+    onOpenChange?.(next);
+  }
+
+  const toggle = () => setOpen(!open);
   const childArray = Children.toArray(children);
   const firstChild = childArray[0];
   const firstEl =
     isValidElement(firstChild) && "props" in firstChild
       ? (firstChild as React.ReactElement<{ children?: React.ReactNode }>)
       : null;
-  const toggle = () => setOpen((v) => !v);
+
   const firstCellWithToggle =
-    firstEl
+    showRowToggle && firstEl
       ? cloneElement(firstEl, {}, (
           <div
             role="button"
@@ -154,7 +168,7 @@ export function AccordionTableRow({
   return (
     <>
       <tr
-        className={`table-accordion-row transition-colors hover:bg-[var(--admin-surface-muted)]/75 ${open ? "bg-[var(--admin-surface-muted)]/50" : ""} ${className}`}
+        className={`table-accordion-row transition-colors hover:bg-[var(--admin-surface-muted)]/75 ${open ? "bg-[var(--admin-accent)]/[0.04]" : ""} ${className}`}
       >
         {firstCellWithToggle}
         {childArray.slice(1)}

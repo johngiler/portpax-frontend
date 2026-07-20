@@ -1,64 +1,16 @@
 "use client";
 
-import {
-  Anchor,
-  CalendarDays,
-  CalendarRange,
-  ChevronLeft,
-  ChevronRight,
-  LayoutDashboard,
-  MapPin,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import { canSeeNavItem, roleHomePath } from "@/lib/navAccess";
-import type { UserRole } from "@/types/auth";
+import { NAV_SECTIONS, type NavItem } from "@/lib/navConfig";
 import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  /** If set, only these roles see the item. Omit = all frontend roles. */
-  roles?: readonly UserRole[];
-};
-
-type NavSection = {
-  id: string;
-  label: string;
-  items: NavItem[];
-};
-
-const ADMIN_ONLY: readonly UserRole[] = ["admin"];
-const CATALOG_ROLES: readonly UserRole[] = ["admin", "viewer"];
-
-const NAV_SECTIONS: NavSection[] = [
-  {
-    id: "operation",
-    label: "Operación",
-    items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: CATALOG_ROLES },
-      { href: "/bookings", label: "Reservas", icon: CalendarDays },
-      { href: "/calendar", label: "Calendario", icon: CalendarRange },
-      { href: "/ports", label: "Puertos", icon: MapPin, roles: CATALOG_ROLES },
-      { href: "/shipping-lines", label: "Navieras", icon: Anchor, roles: CATALOG_ROLES },
-    ],
-  },
-  {
-    id: "system",
-    label: "Sistema",
-    items: [
-      { href: "/users", label: "Usuarios", icon: Users, roles: ADMIN_ONLY },
-    ],
-  },
-];
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";

@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types/auth";
+import { NAV_SECTIONS } from "@/lib/navConfig";
 
 /** Booking-flow roles: calendar + bookings only (no dashboard / catalogs / users). */
 export const OPERATOR_ROLES: readonly UserRole[] = [
@@ -30,10 +31,27 @@ export function canBrowseCatalogs(role: UserRole | null | undefined): boolean {
   return role != null && (CATALOG_BROWSER_ROLES as readonly string[]).includes(role);
 }
 
-/** Landing path after login / when a route is forbidden. */
+export function canSeeNavItem(
+  role: UserRole | null | undefined,
+  allowedRoles?: readonly UserRole[],
+): boolean {
+  if (!allowedRoles || allowedRoles.length === 0) {
+    return true;
+  }
+  if (!role) return false;
+  return allowedRoles.includes(role);
+}
+
+/** Landing path: first sidebar item visible for the role. */
 export function roleHomePath(role: UserRole | null | undefined): string {
-  if (isAdminRole(role) || isViewerRole(role)) return "/";
-  return "/calendar";
+  for (const section of NAV_SECTIONS) {
+    for (const item of section.items) {
+      if (canSeeNavItem(role, item.roles)) {
+        return item.href;
+      }
+    }
+  }
+  return "/bookings";
 }
 
 /**
@@ -74,15 +92,4 @@ export function canAccessPath(
   }
 
   return false;
-}
-
-export function canSeeNavItem(
-  role: UserRole | null | undefined,
-  allowedRoles?: readonly UserRole[],
-): boolean {
-  if (!allowedRoles || allowedRoles.length === 0) {
-    return true;
-  }
-  if (!role) return false;
-  return allowedRoles.includes(role);
 }

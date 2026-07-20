@@ -611,13 +611,14 @@ html.dark .main-waves-top::before {
   min-height: 0;
 }
 .table-accordion-expand-content {
-  padding: 1rem 1.25rem 1.25rem;
-  background: var(--admin-surface-muted);
-  border-top: 1px solid var(--admin-border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  align-items: flex-start;
+  padding: 0.85rem 1.1rem 1.1rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--admin-accent) 4%, transparent) 0%,
+    var(--admin-surface-muted) 100%
+  );
+  border-top: 1px solid color-mix(in srgb, var(--admin-accent) 12%, var(--admin-border));
+  display: block;
 }
 @media (prefers-reduced-motion: reduce) {
   .table-accordion-expand-wrapper {

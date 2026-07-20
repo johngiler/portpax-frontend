@@ -9,6 +9,8 @@ const btnClass =
 
 type TableActionButtonsProps = {
   onView?: () => void;
+  /** Highlight the view (eye) button when the row accordion is open. */
+  viewActive?: boolean;
   onEdit: () => void;
   onDelete?: () => void;
   /** Etiqueta del recurso para el confirm de borrar (ej. "puerto", "barco") */
@@ -17,6 +19,7 @@ type TableActionButtonsProps = {
 
 export default function TableActionButtons({
   onView,
+  viewActive = false,
   onEdit,
   onDelete,
   deleteLabel = "este elemento",
@@ -30,14 +33,19 @@ export default function TableActionButtons({
   }
 
   return (
-    <div className="flex items-center justify-center gap-1">
+    <div className="flex items-center justify-start gap-1">
       {onView != null && (
         <button
           type="button"
           onClick={onView}
-          className={btnClass}
-          aria-label="Ver"
-          title="Ver"
+          className={`${btnClass} ${
+            viewActive
+              ? "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] hover:bg-[var(--admin-accent)]/15 hover:text-[var(--admin-accent)]"
+              : ""
+          }`}
+          aria-label={viewActive ? "Ocultar detalle" : "Ver"}
+          title={viewActive ? "Ocultar detalle" : "Ver"}
+          aria-pressed={viewActive}
         >
           <Eye className="h-4 w-4" strokeWidth={1.5} />
         </button>

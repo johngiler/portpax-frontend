@@ -9,10 +9,10 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import MainTable, {
+  AccordionTableRow,
   MainTableBody,
   MainTableEmpty,
   MainTableHeader,
-  MainTableRow,
   MainTableTd,
   MainTableTh,
 } from "@/components/tables/MainTable";
@@ -22,6 +22,7 @@ import EntityThumb from "@/components/ui/EntityThumb";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { roleHomePath } from "@/lib/navAccess";
 import {
   createUser,
   deleteUser,
@@ -33,6 +34,7 @@ import type { ManagedUser, ManagedUserPayload } from "@/types/accounts";
 import { userRoleLabel } from "@/types/accounts";
 import { portDisplayName } from "@/types/catalog";
 import UserFormModal, { type UserFormMode } from "./UserFormModal";
+import UserRowDetail from "./UserRowDetail";
 import UsersViewSkeleton from "./UsersViewSkeleton";
 
 const PAGE_SIZE = 20;
@@ -55,10 +57,11 @@ export default function UsersView() {
   const [modalMode, setModalMode] = useState<UserFormMode>("create");
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [saving, setSaving] = useState(false);
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     if (user && !isAdmin) {
-      router.replace("/");
+      router.replace(roleHomePath(user?.role));
     }
   }, [user, isAdmin, router]);
 
@@ -96,6 +99,10 @@ export default function UsersView() {
     if (!isAdmin) return;
     loadUsers();
   }, [isAdmin, loadUsers]);
+
+  useEffect(() => {
+    setExpandedUserId(null);
+  }, [page, appliedSearch]);
 
   function openCreate() {
     setModalMode("create");
@@ -197,7 +204,7 @@ export default function UsersView() {
             <MainTableTh>Correo</MainTableTh>
             <MainTableTh>Rol</MainTableTh>
             <MainTableTh>Estado</MainTableTh>
-            <MainTableTh className="text-center">Acciones</MainTableTh>
+            <MainTableTh>Acciones</MainTableTh>
           </MainTableHeader>
           <MainTableBody>
             {loading ? (
@@ -213,8 +220,26 @@ export default function UsersView() {
                 const fullName = [managed.first_name, managed.last_name]
                   .filter(Boolean)
                   .join(" ");
+                const isExpanded = expandedUserId === managed.id;
+                const portLabels = managed.port_ids
+                  .map(
+                    (id) =>
+                      portOptions.find((option) => option.value === id)?.label,
+                  )
+                  .filter((label): label is string => Boolean(label));
                 return (
-                  <MainTableRow key={managed.id}>
+                  <AccordionTableRow
+                    key={managed.id}
+                    colSpan={6}
+                    showRowToggle={false}
+                    open={isExpanded}
+                    onOpenChange={(open) =>
+                      setExpandedUserId(open ? managed.id : null)
+                    }
+                    expandContent={
+                      <UserRowDetail user={managed} portLabels={portLabels} />
+                    }
+                  >
                     <MainTableTd className="font-medium">
                       <div className="flex items-center gap-2.5">
                         <EntityThumb
@@ -233,6 +258,10 @@ export default function UsersView() {
                     </MainTableTd>
                     <MainTableTd>
                       <TableActionButtons
+                        onView={() =>
+                          setExpandedUserId(isExpanded ? null : managed.id)
+                        }
+                        viewActive={isExpanded}
                         onEdit={() => openEdit(managed)}
                         onDelete={
                           managed.id === user?.id
@@ -242,7 +271,7 @@ export default function UsersView() {
                         deleteLabel={`el usuario ${managed.username}`}
                       />
                     </MainTableTd>
-                  </MainTableRow>
+                  </AccordionTableRow>
                 );
               })
             )}

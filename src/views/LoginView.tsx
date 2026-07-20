@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { roleHomePath } from "@/lib/navAccess";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--admin-border)] bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 transition-all focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder-zinc-500";
@@ -81,8 +82,8 @@ export default function LoginView() {
       }
       setSubmitting(true);
       try {
-        await login(username.trim(), password);
-        router.replace("/");
+        const me = await login(username.trim(), password);
+        router.replace(roleHomePath(me.role));
         router.refresh();
       } catch (err) {
         setError(
