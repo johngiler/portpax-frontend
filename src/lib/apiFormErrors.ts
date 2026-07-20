@@ -21,6 +21,10 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
   "Not found.": "No encontrado.",
   "Authentication credentials were not provided.":
     "Debes iniciar sesión para continuar.",
+  "No active account found with the given credentials":
+    "Usuario o contraseña incorrectos.",
+  "No active account found with the given credentials.":
+    "Usuario o contraseña incorrectos.",
 };
 
 const MESSAGE_PATTERNS: Array<{

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
+import { useAuthOptional } from "@/contexts/AuthContext";
+import { canBrowseCatalogs } from "@/lib/navAccess";
 import { globalSearch } from "@/services/searchService";
 import type { GlobalSearchResult } from "@/types/search";
 
@@ -24,6 +26,8 @@ function formatScaleDate(d: string | null): string {
 }
 
 export default function GlobalSearch() {
+  const auth = useAuthOptional();
+  const showCatalogResults = canBrowseCatalogs(auth?.user?.role);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GlobalSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,9 +89,10 @@ export default function GlobalSearch() {
 
   const hasAny =
     results &&
-    (results.ships.length > 0 ||
-      results.shipping_lines.length > 0 ||
-      results.ports.length > 0 ||
+    ((showCatalogResults &&
+      (results.ships.length > 0 ||
+        results.shipping_lines.length > 0 ||
+        results.ports.length > 0)) ||
       results.scales.length > 0);
 
   return (
@@ -144,7 +149,11 @@ export default function GlobalSearch() {
                 }
               }
             }}
-            placeholder="Barco, naviera, puerto, escala..."
+            placeholder={
+              showCatalogResults
+                ? "Reserva, puerto, naviera, barco..."
+                : "Buscar reservas..."
+            }
             className="h-10 w-full cursor-pointer bg-transparent pr-4 pl-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
             aria-label="Buscador global"
             aria-expanded={expanded && (loading || results !== null)}
@@ -175,7 +184,7 @@ export default function GlobalSearch() {
                 </div>
               ) : (
                 <div className="py-2">
-                  {results!.ships.length > 0 && (
+                  {showCatalogResults && results!.ships.length > 0 && (
                     <div className="px-2 pb-1 pt-1">
                       <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Barcos
@@ -183,7 +192,7 @@ export default function GlobalSearch() {
                       {results!.ships.map((s) => (
                         <Link
                           key={s.id}
-                          href="/shipping-lines"
+                          href={`/shipping-lines/detail?code=${encodeURIComponent(s.shipping_line_code)}`}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -198,7 +207,7 @@ export default function GlobalSearch() {
                       ))}
                     </div>
                   )}
-                  {results!.shipping_lines.length > 0 && (
+                  {showCatalogResults && results!.shipping_lines.length > 0 && (
                     <div className="px-2 pb-1 pt-1">
                       <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Navieras
@@ -216,7 +225,7 @@ export default function GlobalSearch() {
                       ))}
                     </div>
                   )}
-                  {results!.ports.length > 0 && (
+                  {showCatalogResults && results!.ports.length > 0 && (
                     <div className="px-2 pb-1 pt-1">
                       <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Puertos
@@ -224,7 +233,7 @@ export default function GlobalSearch() {
                       {results!.ports.map((p) => (
                         <Link
                           key={p.id}
-                          href="/ports"
+                          href={`/ports/detail?code=${encodeURIComponent(p.code)}`}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -237,19 +246,21 @@ export default function GlobalSearch() {
                   {results!.scales.length > 0 && (
                     <div className="px-2 pb-1 pt-1">
                       <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        Escalas
+                        Reservas
                       </p>
                       {results!.scales.map((sc) => (
                         <Link
                           key={sc.id}
-                          href="/scales"
+                          href={`/bookings/detail?code=${encodeURIComponent(sc.booking_code)}`}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
                           <CalendarDays className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                          <span className="font-medium">{sc.ship_name}</span>
-                          <span className="text-zinc-500 dark:text-zinc-400">
-                            @ {sc.port_name}
+                          <span className="min-w-0 truncate font-medium">
+                            {sc.booking_code}
+                          </span>
+                          <span className="truncate text-zinc-500 dark:text-zinc-400">
+                            {sc.ship_name} · {sc.port_name}
                           </span>
                           <span className="ml-auto shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
                             {formatScaleDate(sc.date)}

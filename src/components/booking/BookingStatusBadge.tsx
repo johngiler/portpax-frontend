@@ -9,14 +9,11 @@ type BookingStatusBadgeProps = {
 };
 
 const STATUS_STYLES: Record<BookingBadgeStatus, string> = {
-  confirmed:
-    "bg-emerald-100 text-emerald-700 ring-emerald-600/15 dark:bg-emerald-950/50 dark:text-emerald-400 dark:ring-emerald-500/20",
-  cancelled:
-    "bg-red-100 text-red-700 ring-red-600/15 dark:bg-red-950/50 dark:text-red-400 dark:ring-red-500/20",
-  requested:
-    "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] ring-[var(--admin-accent)]/20",
-  completed:
-    "bg-zinc-100 text-zinc-600 ring-zinc-500/15 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600/20",
+  nr: "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] ring-[var(--admin-accent)]/20",
+  h: "bg-amber-100 text-amber-800 ring-amber-600/15 dark:bg-amber-950/50 dark:text-amber-400 dark:ring-amber-500/20",
+  co: "bg-emerald-100 text-emerald-700 ring-emerald-600/15 dark:bg-emerald-950/50 dark:text-emerald-400 dark:ring-emerald-500/20",
+  r: "bg-zinc-100 text-zinc-600 ring-zinc-500/15 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600/20",
+  c: "bg-red-100 text-red-700 ring-red-600/15 dark:bg-red-950/50 dark:text-red-400 dark:ring-red-500/20",
 };
 
 export default function BookingStatusBadge({ status, className = "" }: BookingStatusBadgeProps) {

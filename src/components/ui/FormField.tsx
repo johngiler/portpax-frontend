@@ -154,7 +154,7 @@ export function buildCatalogSelectStyles<T extends string | number>(
 type FormFieldProps = {
   label: string;
   name: string;
-  type?: "text" | "number" | "email" | "date";
+  type?: "text" | "number" | "email" | "date" | "password";
   value: string | number | "";
   onChange: (value: any) => void;
   placeholder?: string;

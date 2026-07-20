@@ -96,7 +96,7 @@ export default function ImageDropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
           multiple={multiple}
           className="sr-only"
           onChange={(e) => void processFiles(e.target.files)}
@@ -133,7 +133,7 @@ export default function ImageDropZone({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
         multiple={multiple}
         className="sr-only"
         onChange={(e) => void processFiles(e.target.files)}

@@ -8,8 +8,10 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
+import { canWriteApp } from "@/lib/navAccess";
 import {
   setDataExportHandler,
   type DataExportFormat,
@@ -43,6 +45,8 @@ function defaultCustomTo(): string {
 
 export default function BookingsView() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const [bookings, setBookings] = useState<Awaited<ReturnType<typeof fetchBookings>>["results"]>(
     [],
   );
@@ -299,12 +303,14 @@ export default function BookingsView() {
         title="Reservas"
         description="Solicitudes de escala por puerto, naviera y barco."
         actions={
-          <DefaultButton type="button" onClick={() => router.push("/bookings/new")}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              Reservar
-            </span>
-          </DefaultButton>
+          canWrite ? (
+            <DefaultButton type="button" onClick={() => router.push("/bookings/new")}>
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Reservar
+              </span>
+            </DefaultButton>
+          ) : undefined
         }
       />
 

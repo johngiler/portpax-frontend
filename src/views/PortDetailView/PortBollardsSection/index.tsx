@@ -21,6 +21,7 @@ type PortBollardsSectionProps = {
   bollards: PortBollard[];
   total: number;
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
 export default function PortBollardsSection({
@@ -28,6 +29,7 @@ export default function PortBollardsSection({
   bollards,
   total,
   onChange,
+  canWrite = true,
 }: PortBollardsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<BollardFormMode>("create");
@@ -80,7 +82,11 @@ export default function PortBollardsSection({
         icon={Anchor}
         title="Inventario de bitas"
         description="Cantidad de bitas por capacidad y tipo."
-        actions={<SectionAddButton label="Agregar bita" onClick={openCreate} />}
+        actions={
+          canWrite ? (
+            <SectionAddButton label="Agregar bita" onClick={openCreate} />
+          ) : undefined
+        }
       >
         <FormErrorAlert message={error} className="mb-3" />
 
@@ -96,7 +102,9 @@ export default function PortBollardsSection({
                     <th className="px-4 py-3">Tipo</th>
                     <th className="px-4 py-3">Cantidad</th>
                     <th className="px-4 py-3">Notas</th>
-                    <th className="px-4 py-3 text-center">Acciones</th>
+                    {canWrite ? (
+                      <th className="px-4 py-3 text-center">Acciones</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -111,13 +119,15 @@ export default function PortBollardsSection({
                       </td>
                       <td className="px-4 py-3 font-mono">{b.quantity}</td>
                       <td className="px-4 py-3 text-zinc-500">{b.notes || "—"}</td>
-                      <td className="px-4 py-3 text-center">
-                        <TableActionButtons
-                          onEdit={() => openEdit(b)}
-                          onDelete={() => handleDelete(b)}
-                          deleteLabel={`${b.quantity} bitas de ${b.capacity_t} t`}
-                        />
-                      </td>
+                      {canWrite ? (
+                        <td className="px-4 py-3 text-center">
+                          <TableActionButtons
+                            onEdit={() => openEdit(b)}
+                            onDelete={() => handleDelete(b)}
+                            deleteLabel={`${b.quantity} bitas de ${b.capacity_t} t`}
+                          />
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -128,15 +138,17 @@ export default function PortBollardsSection({
         )}
       </ViewSection>
 
-      <BollardFormModal
-        open={formOpen}
-        mode={formMode}
-        portId={portId}
-        initial={editing}
-        saving={saving}
-        onClose={() => !saving && setFormOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <BollardFormModal
+          open={formOpen}
+          mode={formMode}
+          portId={portId}
+          initial={editing}
+          saving={saving}
+          onClose={() => !saving && setFormOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </>
   );
 }

@@ -10,7 +10,7 @@ const CLEAR_BUTTON_CLASS =
 
 type ShippingLinesEmptyStateProps = {
   variant: "empty" | "filtered";
-  onCreate: () => void;
+  onCreate?: () => void;
   onClearFilters?: () => void;
 };
 
@@ -37,15 +37,21 @@ export default function ShippingLinesEmptyState({
 
       <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
         {isFiltered
-          ? "Ajusta la búsqueda o el grupo, o registra una nueva marca operativa."
-          : "Registra marcas operativas y su grupo corporativo para asociar barcos."}
+          ? onCreate
+            ? "Ajusta la búsqueda o el grupo, o registra una nueva marca operativa."
+            : "Ajusta la búsqueda o el grupo para ver otras navieras."
+          : onCreate
+            ? "Registra marcas operativas y su grupo corporativo para asociar barcos."
+            : "No hay navieras registradas aún."}
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <button type="button" onClick={onCreate} className={CREATE_BUTTON_CLASS}>
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          Nueva naviera
-        </button>
+        {onCreate ? (
+          <button type="button" onClick={onCreate} className={CREATE_BUTTON_CLASS}>
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Nueva naviera
+          </button>
+        ) : null}
 
         {isFiltered && onClearFilters ? (
           <button type="button" onClick={onClearFilters} className={CLEAR_BUTTON_CLASS}>

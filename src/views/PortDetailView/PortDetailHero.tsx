@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Pencil, Ship, Trash2 } from "lucide-react";
+import { ArrowLeft, MapPin, Pencil, Ship, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
@@ -15,6 +15,7 @@ type PortDetailHeroProps = {
   port: PortDetail;
   onEdit: () => void;
   onDelete: () => void;
+  canWrite?: boolean;
 };
 
 const LOGO_SIZE_MIN_EXPANDED = 48;
@@ -47,7 +48,12 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHeroProps) {
+export default function PortDetailHero({
+  port,
+  onEdit,
+  onDelete,
+  canWrite = true,
+}: PortDetailHeroProps) {
   const largestVessel = formatLargestVessel(port);
   const textCoreRef = useRef<HTMLDivElement>(null);
   const textExpandedRef = useRef<HTMLDivElement>(null);
@@ -173,12 +179,11 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                         className="h-full w-full object-contain p-1.5"
                       />
                     ) : (
-                      <span
-                        className="font-bold text-[var(--admin-accent)]/40"
-                        style={{ fontSize: Math.max(logoSize * 0.38, 14) }}
-                      >
-                        {port.name.charAt(0)}
-                      </span>
+                      <MapPin
+                        className="text-[var(--admin-accent)]/50"
+                        style={{ width: logoSize * 0.45, height: logoSize * 0.45 }}
+                        strokeWidth={1.5}
+                      />
                     )}
                   </div>
                   <div ref={textExpandedRef} className="min-w-0 flex flex-col">
@@ -255,29 +260,31 @@ export default function PortDetailHero({ port, onEdit, onDelete }: PortDetailHer
                   </div>
                 </div>
               </div>
-              <div
-                className={[
-                  "flex shrink-0 flex-wrap gap-2 justify-end",
-                  isStuck ? "self-center sm:self-center" : "w-full self-end sm:w-auto sm:self-start",
-                ].join(" ")}
-              >
-                <DefaultButton type="button" onClick={onEdit}>
-                  <span className="inline-flex items-center gap-2">
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                  </span>
-                </DefaultButton>
-                <ConfirmDeleteButton
-                  deleteLabel={`el puerto ${port.name}`}
-                  onDelete={onDelete}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
-                  ariaLabel="Eliminar puerto"
-                  title="Eliminar puerto"
+              {canWrite ? (
+                <div
+                  className={[
+                    "flex shrink-0 flex-wrap gap-2 justify-end",
+                    isStuck ? "self-center sm:self-center" : "w-full self-end sm:w-auto sm:self-start",
+                  ].join(" ")}
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar
-                </ConfirmDeleteButton>
-              </div>
+                  <DefaultButton type="button" onClick={onEdit}>
+                    <span className="inline-flex items-center gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </span>
+                  </DefaultButton>
+                  <ConfirmDeleteButton
+                    deleteLabel={`el puerto ${port.name}`}
+                    onDelete={onDelete}
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    ariaLabel="Eliminar puerto"
+                    title="Eliminar puerto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar
+                  </ConfirmDeleteButton>
+                </div>
+              ) : null}
             </div>
           </motion.div>
         </div>

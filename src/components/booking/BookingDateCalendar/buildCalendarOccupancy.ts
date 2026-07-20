@@ -19,7 +19,7 @@ export function buildCalendarOccupancy(
   byDate: Record<string, CalendarDayBooking[]>;
   blockedDates: string[];
 } {
-  const active = bookings.filter((booking) => booking.status !== "cancelled");
+  const active = bookings.filter((booking) => booking.status !== "c");
   const byDate: Record<string, CalendarDayBooking[]> = {};
   const blockedDates: string[] = [];
 

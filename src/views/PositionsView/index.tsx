@@ -18,7 +18,9 @@ import MainTable, {
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import { positionDisplayCode } from "@/lib/positionCode";
 import { syncCoverImage } from "@/lib/syncCoverImage";
 import { fetchPorts } from "@/services/catalogs/portService";
@@ -40,6 +42,8 @@ import PositionsViewSkeleton from "./PositionsViewSkeleton";
 const PAGE_SIZE = 20;
 
 export default function PositionsView() {
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const [positions, setPositions] = useState<Position[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -206,12 +210,14 @@ export default function PositionsView() {
         title="Posiciones"
         description="Slots operativos por puerto — P1, P2, fondeos (atraque y booking)."
         actions={
-          <DefaultButton type="button" onClick={openCreate}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              Nueva posición
-            </span>
-          </DefaultButton>
+          canWrite ? (
+            <DefaultButton type="button" onClick={openCreate}>
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Nueva posición
+              </span>
+            </DefaultButton>
+          ) : undefined
         }
       />
 
@@ -227,13 +233,13 @@ export default function PositionsView() {
             <MainTableTh>Eslora</MainTableTh>
             <MainTableTh>Calado</MainTableTh>
             <MainTableTh>Estado</MainTableTh>
-            <MainTableTh className="text-center">Acciones</MainTableTh>
+            {canWrite ? <MainTableTh className="text-center">Acciones</MainTableTh> : null}
           </MainTableHeader>
           <MainTableBody>
             {loading ? (
-              <MainTableEmpty colSpan={8}>Cargando…</MainTableEmpty>
+              <MainTableEmpty colSpan={canWrite ? 8 : 7}>Cargando…</MainTableEmpty>
             ) : positions.length === 0 ? (
-              <MainTableEmpty colSpan={8}>
+              <MainTableEmpty colSpan={canWrite ? 8 : 7}>
                 {appliedSearch || appliedPortFilter
                   ? "Ninguna posición coincide con los filtros."
                   : "No hay posiciones registradas."}
@@ -259,13 +265,15 @@ export default function PositionsView() {
                     {position.min_draft_m != null ? `${position.min_draft_m} m` : "—"}
                   </MainTableTd>
                   <MainTableTd>{position.is_active ? "Activa" : "Inactiva"}</MainTableTd>
-                  <MainTableTd className="text-center">
-                    <TableActionButtons
-                      onEdit={() => openEdit(position)}
-                      onDelete={() => handleDelete(position)}
-                      deleteLabel={`la posición ${positionDisplayCode(position)}`}
-                    />
-                  </MainTableTd>
+                  {canWrite ? (
+                    <MainTableTd className="text-center">
+                      <TableActionButtons
+                        onEdit={() => openEdit(position)}
+                        onDelete={() => handleDelete(position)}
+                        deleteLabel={`la posición ${positionDisplayCode(position)}`}
+                      />
+                    </MainTableTd>
+                  ) : null}
                 </MainTableRow>
               ))
             )}

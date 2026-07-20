@@ -4,9 +4,11 @@ export type DashboardKpis = {
   occupied_slot_days: number;
   position_count: number;
   total_bookings: number;
-  requested: number;
-  confirmed: number;
-  cancelled: number;
+  nr: number;
+  h: number;
+  co: number;
+  r: number;
+  c: number;
   planned_pax: number;
   actual_pax: number;
   ports_count: number;
@@ -22,9 +24,11 @@ export type DashboardNamedCount = {
 
 export type DashboardMonthRow = {
   month: number;
-  requested: number;
-  confirmed: number;
-  cancelled: number;
+  nr: number;
+  h: number;
+  co: number;
+  r: number;
+  c: number;
   total: number;
 };
 

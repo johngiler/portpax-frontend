@@ -71,12 +71,10 @@ export default function CatalogLogoField({
               deleteLabel={deleteLabel}
               onDelete={onRemove}
               disabled={disabled}
-              className={`cursor-pointer text-sm text-red-600 hover:underline disabled:opacity-50 dark:text-red-400 ${compact ? "text-center" : "text-left"}`}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-red-600 transition-colors hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/15 ${compact ? "mx-auto" : ""}`}
               ariaLabel="Quitar imagen"
               title="Quitar imagen"
-            >
-              Quitar imagen
-            </ConfirmDeleteButton>
+            />
           )}
         </div>
       </div>

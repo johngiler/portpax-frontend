@@ -3,7 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import {
   deletePort,
   fetchPortDetail,
@@ -23,6 +25,8 @@ import PortPositionsSection from "./PortPositionsSection";
 
 export default function PortDetailView() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
 
@@ -107,7 +111,12 @@ export default function PortDetailView() {
     <div className="pb-8">
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      <PortDetailHero port={port} onEdit={() => setEditOpen(true)} onDelete={handleDelete} />
+      <PortDetailHero
+        port={port}
+        canWrite={canWrite}
+        onEdit={() => setEditOpen(true)}
+        onDelete={handleDelete}
+      />
 
       <div className="mt-6 space-y-6">
       <PortDetailsSection port={port} />
@@ -117,6 +126,7 @@ export default function PortDetailView() {
         bollards={port.bollards}
         total={port.bollard_total}
         onChange={loadPort}
+        canWrite={canWrite}
       />
 
       <PortFendersSection
@@ -124,23 +134,36 @@ export default function PortDetailView() {
         fenders={port.fenders}
         total={port.fender_total}
         onChange={loadPort}
+        canWrite={canWrite}
       />
 
-      <PortGallerySection portId={port.id} images={port.images} onChange={loadPort} />
+      <PortGallerySection
+        portId={port.id}
+        images={port.images}
+        onChange={loadPort}
+        canWrite={canWrite}
+      />
 
-      <PortBerthsSection portId={port.id} berths={port.berths} onChange={loadPort} />
+      <PortBerthsSection
+        portId={port.id}
+        berths={port.berths}
+        onChange={loadPort}
+        canWrite={canWrite}
+      />
 
-      <PortPositionsSection port={port} onChange={loadPort} />
+      <PortPositionsSection port={port} onChange={loadPort} canWrite={canWrite} />
       </div>
 
-      <PortFormModal
-        open={editOpen}
-        mode="edit"
-        initial={port}
-        saving={saving}
-        onClose={() => !saving && setEditOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <PortFormModal
+          open={editOpen}
+          mode="edit"
+          initial={port}
+          saving={saving}
+          onClose={() => !saving && setEditOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import {
   deleteShippingLine,
   fetchShippingLineByCode,
@@ -19,6 +21,8 @@ import ShippingLineVesselsSection from "./ShippingLineVesselsSection";
 
 export default function ShippingLineDetailView() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
 
@@ -92,21 +96,28 @@ export default function ShippingLineDetailView() {
     <div className="pb-8">
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      <ShippingLineDetailHero line={line} onEdit={() => setEditOpen(true)} onDelete={handleDelete} />
+      <ShippingLineDetailHero
+        line={line}
+        canWrite={canWrite}
+        onEdit={() => setEditOpen(true)}
+        onDelete={handleDelete}
+      />
 
       <div className="mt-6 space-y-6">
         <ShippingLineDetailsSection line={line} />
-        <ShippingLineVesselsSection line={line} onChange={loadLine} />
+        <ShippingLineVesselsSection line={line} onChange={loadLine} canWrite={canWrite} />
       </div>
 
-      <ShippingLineFormModal
-        open={editOpen}
-        mode="edit"
-        initial={line}
-        saving={saving}
-        onClose={() => !saving && setEditOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <ShippingLineFormModal
+          open={editOpen}
+          mode="edit"
+          initial={line}
+          saving={saving}
+          onClose={() => !saving && setEditOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </div>
   );
 }

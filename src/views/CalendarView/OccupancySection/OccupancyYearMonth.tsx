@@ -48,7 +48,7 @@ export default function OccupancyYearMonth({
     const isHovered = hoveredDate === cell.iso;
     const isToday = cell.iso === todayIso;
     const portIds = [
-      ...new Set(bookings.filter((b) => b.status !== "cancelled").map((b) => b.port)),
+      ...new Set(bookings.filter((b) => b.status !== "c").map((b) => b.port)),
     ];
 
     return (

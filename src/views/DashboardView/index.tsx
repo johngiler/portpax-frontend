@@ -168,9 +168,9 @@ export default function DashboardView() {
           />
           <DashboardReservasCard
             total={kpis.total_bookings}
-            requested={kpis.requested}
-            confirmed={kpis.confirmed}
-            cancelled={kpis.cancelled}
+            nr={kpis.nr}
+            co={kpis.co}
+            c={kpis.c}
             yearsLabel={periodLabel}
           />
         </div>

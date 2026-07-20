@@ -10,7 +10,7 @@ const CLEAR_BUTTON_CLASS =
 
 type PortsEmptyStateProps = {
   variant: "empty" | "filtered";
-  onCreate: () => void;
+  onCreate?: () => void;
   onClearFilters?: () => void;
 };
 
@@ -37,15 +37,21 @@ export default function PortsEmptyState({
 
       <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
         {isFiltered
-          ? "Ajusta la búsqueda o registra un nuevo puerto en el catálogo."
-          : "Registra puertos operativos para gestionar muelles, posiciones y escalas."}
+          ? onCreate
+            ? "Ajusta la búsqueda o registra un nuevo puerto en el catálogo."
+            : "Ajusta la búsqueda para ver otros puertos."
+          : onCreate
+            ? "Registra puertos operativos para gestionar muelles, posiciones y escalas."
+            : "No hay puertos registrados aún."}
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <button type="button" onClick={onCreate} className={CREATE_BUTTON_CLASS}>
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          Nuevo puerto
-        </button>
+        {onCreate ? (
+          <button type="button" onClick={onCreate} className={CREATE_BUTTON_CLASS}>
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Nuevo puerto
+          </button>
+        ) : null}
 
         {isFiltered && onClearFilters ? (
           <button type="button" onClick={onClearFilters} className={CLEAR_BUTTON_CLASS}>

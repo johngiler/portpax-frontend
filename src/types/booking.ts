@@ -1,16 +1,17 @@
 import { toIsoDate } from "@/lib/bookingDates";
 
-export type BookingStatus = "requested" | "confirmed" | "cancelled";
+/** MVP status codes aligned with berthing docs (NR/H/CO/R/C). */
+export type BookingStatus = "nr" | "h" | "co" | "r" | "c";
 
 export type CancellationReason =
   | "bad_weather"
   | "shipping_line_decision"
   | "itm_decision";
 
-/** List filter: past active bookings (not a stored status). */
+/** List filter: past open bookings (not a stored status) or real status. */
 export type BookingListStatusFilter = BookingStatus | "" | "completed";
 
-export type BookingBadgeStatus = BookingStatus | "completed";
+export type BookingBadgeStatus = BookingStatus;
 
 export type BookingAuditEntry = {
   id: number;
@@ -40,6 +41,8 @@ export type Booking = {
   call_date: string;
   eta: string | null;
   etd: string | null;
+  eta_real: string | null;
+  etd_real: string | null;
   planned_pax: number | null;
   actual_pax: number | null;
   actual_crew: number | null;
@@ -94,6 +97,8 @@ export type BookingUpdatePayload = {
   position?: number | null;
   eta?: string | null;
   etd?: string | null;
+  eta_real?: string | null;
+  etd_real?: string | null;
   planned_pax?: number | null;
   actual_pax?: number | null;
   actual_crew?: number | null;
@@ -111,14 +116,15 @@ export const CANCELLATION_REASON_OPTIONS: {
 ];
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
-  requested: "Solicitada",
-  confirmed: "Confirmada",
-  cancelled: "Cancelada",
+  nr: "Solicitada",
+  h: "En evaluación",
+  co: "Confirmada",
+  r: "Real",
+  c: "Cancelada",
 };
 
 export const BOOKING_BADGE_STATUS_LABELS: Record<BookingBadgeStatus, string> = {
   ...BOOKING_STATUS_LABELS,
-  completed: "Completada",
 };
 
 export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
@@ -126,10 +132,12 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "", label: "Todas" },
-  { value: "requested", label: "Solicitadas" },
-  { value: "confirmed", label: "Confirmadas" },
-  { value: "completed", label: "Completadas" },
-  { value: "cancelled", label: "Canceladas" },
+  { value: "nr", label: "Solicitadas" },
+  { value: "h", label: "En evaluación" },
+  { value: "co", label: "Confirmadas" },
+  { value: "r", label: "Reales" },
+  { value: "completed", label: "Completadas (fecha pasada)" },
+  { value: "c", label: "Canceladas" },
 ];
 
 export function bookingTodayIso(): string {
@@ -137,18 +145,20 @@ export function bookingTodayIso(): string {
   return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+/** True when status is R, or open booking with past call_date (legacy list filter). */
 export function isBookingCompleted(
   booking: Pick<Booking, "status" | "call_date">,
   todayIso = bookingTodayIso(),
 ): boolean {
-  if (booking.status === "cancelled") return false;
+  if (booking.status === "c") return false;
+  if (booking.status === "r") return true;
   return booking.call_date < todayIso;
 }
 
 export function getBookingBadgeStatus(
   booking: Pick<Booking, "status" | "call_date">,
 ): BookingBadgeStatus {
-  return isBookingCompleted(booking) ? "completed" : booking.status;
+  return booking.status;
 }
 
 export function bookingBadgeStatusLabel(status: BookingBadgeStatus): string {
@@ -161,10 +171,12 @@ export function bookingStatusLabel(status: BookingStatus): string {
 
 export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
   switch (status) {
-    case "requested":
-      return ["confirmed", "cancelled"];
-    case "confirmed":
-      return ["cancelled"];
+    case "nr":
+      return ["h", "co", "c"];
+    case "h":
+      return ["co", "c"];
+    case "co":
+      return ["r", "c"];
     default:
       return [];
   }

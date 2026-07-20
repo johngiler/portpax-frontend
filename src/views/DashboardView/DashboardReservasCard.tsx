@@ -5,20 +5,20 @@ import Link from "next/link";
 
 type DashboardReservasCardProps = {
   total: number;
-  requested: number;
-  confirmed: number;
-  cancelled: number;
+  nr: number;
+  co: number;
+  c: number;
   yearsLabel: string;
 };
 
 export default function DashboardReservasCard({
   total,
-  requested,
-  confirmed,
-  cancelled,
+  nr,
+  co,
+  c,
   yearsLabel: periodLabel,
 }: DashboardReservasCardProps) {
-  const cancelPct = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+  const cancelPct = total > 0 ? Math.round((c / total) * 100) : 0;
 
   return (
     <Link href="/bookings" className="block no-underline">
@@ -60,7 +60,7 @@ export default function DashboardReservasCard({
               Solicitadas
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {requested}
+              {nr}
             </p>
           </div>
           <div>
@@ -68,7 +68,7 @@ export default function DashboardReservasCard({
               Confirmadas
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {confirmed}
+              {co}
             </p>
           </div>
           <div>
@@ -76,7 +76,7 @@ export default function DashboardReservasCard({
               Canceladas
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {cancelled}
+              {c}
             </p>
           </div>
         </div>

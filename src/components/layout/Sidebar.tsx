@@ -8,29 +8,66 @@ import {
   ChevronRight,
   LayoutDashboard,
   MapPin,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
+import { canSeeNavItem, roleHomePath } from "@/lib/navAccess";
+import type { UserRole } from "@/types/auth";
 import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendario", icon: CalendarRange },
-  { href: "/bookings", label: "Reservas", icon: CalendarDays },
-  { href: "/ports", label: "Puertos", icon: MapPin },
-  { href: "/shipping-lines", label: "Navieras", icon: Anchor },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** If set, only these roles see the item. Omit = all frontend roles. */
+  roles?: readonly UserRole[];
+};
+
+type NavSection = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+const ADMIN_ONLY: readonly UserRole[] = ["admin"];
+const CATALOG_ROLES: readonly UserRole[] = ["admin", "viewer"];
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    id: "operation",
+    label: "Operación",
+    items: [
+      { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: CATALOG_ROLES },
+      { href: "/bookings", label: "Reservas", icon: CalendarDays },
+      { href: "/calendar", label: "Calendario", icon: CalendarRange },
+      { href: "/ports", label: "Puertos", icon: MapPin, roles: CATALOG_ROLES },
+      { href: "/shipping-lines", label: "Navieras", icon: Anchor, roles: CATALOG_ROLES },
+    ],
+  },
+  {
+    id: "system",
+    label: "Sistema",
+    items: [
+      { href: "/users", label: "Usuarios", icon: Users, roles: ADMIN_ONLY },
+    ],
+  },
+];
 
 export default function Sidebar() {
   const pathname = usePathname() ?? "";
+  const { user } = useAuth();
   const layout = useMainLayoutOptional();
   const isMobileFromContext = layout?.isMobile ?? false;
   const [isMobile, setIsMobile] = useState(false);
   const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
+  const homeHref = roleHomePath(user?.role);
 
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${MOBILE_BREAKPOINT}px)`);
@@ -66,6 +103,30 @@ export default function Sidebar() {
     isMobileView ? "w-52" : collapsed ? "w-16" : "w-52"
   }`;
 
+  function renderNavLink({ href, label, icon: Icon }: NavItem) {
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={`${linkBase} ${collapsed && !isMobileView ? linkCollapsed : linkExpanded} ${isActive ? linkActive : linkInactive}`}
+        title={label}
+        onClick={isMobileView ? closeMobileSidebar : undefined}
+      >
+        {isActive && (
+          <span
+            className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--admin-accent)]"
+            aria-hidden
+          />
+        )}
+        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+        {(!collapsed || isMobileView) && (
+          <span className={isActive ? "pl-0.5" : ""}>{label}</span>
+        )}
+      </Link>
+    );
+  }
+
   const sidebarInner = (
     <>
       <div
@@ -79,34 +140,21 @@ export default function Sidebar() {
       </div>
 
       <nav className="relative z-10 min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3">
-        <div className={`flex flex-col gap-1.5 ${collapsed && !isMobileView ? "" : "mb-2"}`}>
-          {(!collapsed || isMobileView) && (
-            <span className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              PortPax
-            </span>
-          )}
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive =
-              pathname === href || (href !== "/" && pathname.startsWith(href));
+        <div className="flex flex-col gap-5">
+          {NAV_SECTIONS.map((section) => {
+            const items = section.items.filter((item) =>
+              canSeeNavItem(user?.role, item.roles),
+            );
+            if (items.length === 0) return null;
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`${linkBase} ${collapsed && !isMobileView ? linkCollapsed : linkExpanded} ${isActive ? linkActive : linkInactive}`}
-                title={label}
-                onClick={isMobileView ? closeMobileSidebar : undefined}
-              >
-                {isActive && (
-                  <span
-                    className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--admin-accent)]"
-                    aria-hidden
-                  />
-                )}
-                <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              <div key={section.id} className="flex flex-col gap-1.5">
                 {(!collapsed || isMobileView) && (
-                  <span className={isActive ? "pl-0.5" : ""}>{label}</span>
+                  <span className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                    {section.label}
+                  </span>
                 )}
-              </Link>
+                {items.map(renderNavLink)}
+              </div>
             );
           })}
         </div>
@@ -132,9 +180,9 @@ export default function Sidebar() {
         >
           <header className="flex shrink-0 items-center border-b border-[var(--admin-border)] px-4 py-3">
             <Link
-              href="/"
+              href={homeHref}
               className="cursor-pointer"
-              aria-label="Ir al Dashboard"
+              aria-label="Ir al inicio"
               onClick={closeMobileSidebar}
             >
               <PortPaxLogo showSlogan sloganClassName="hidden" />

@@ -22,9 +22,11 @@ const MONTH_LABELS = [
 ];
 
 const STATUS_COLORS = {
-  requested: "#d97706",
-  confirmed: "#3478b5",
-  cancelled: "#dc2626",
+  nr: "#d97706",
+  h: "#ca8a04",
+  co: "#3478b5",
+  r: "#71717a",
+  c: "#dc2626",
 };
 
 type DashboardChartsProps = {
@@ -37,9 +39,9 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
   for (const row of stats.by_month) {
     const label = MONTH_LABELS[row.month - 1];
     monthValues[label] = {
-      requested: row.requested,
-      confirmed: row.confirmed,
-      cancelled: row.cancelled,
+      nr: row.nr,
+      co: row.co,
+      c: row.c,
     };
   }
 
@@ -72,9 +74,9 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
         <VerticalGroupedBars
           categories={monthCategories}
           series={[
-            { key: "confirmed", label: "Confirmadas", color: STATUS_COLORS.confirmed },
-            { key: "requested", label: "Solicitadas", color: STATUS_COLORS.requested },
-            { key: "cancelled", label: "Canceladas", color: STATUS_COLORS.cancelled },
+            { key: "co", label: "Confirmadas", color: STATUS_COLORS.co },
+            { key: "nr", label: "Solicitadas", color: STATUS_COLORS.nr },
+            { key: "c", label: "Canceladas", color: STATUS_COLORS.c },
           ]}
           values={monthValues}
         />

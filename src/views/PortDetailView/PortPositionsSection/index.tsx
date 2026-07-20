@@ -27,6 +27,7 @@ import PositionCardInventory from "./PositionCardInventory";
 type PortPositionsSectionProps = {
   port: PortDetail;
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
 function PositionCard({
@@ -35,12 +36,14 @@ function PositionCard({
   fenders,
   onEdit,
   onDelete,
+  canWrite = true,
 }: {
   position: PositionDetail;
   bollards: PortBollard[];
   fenders: PortFender[];
   onEdit: () => void;
   onDelete: () => void;
+  canWrite?: boolean;
 }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -110,11 +113,13 @@ function PositionCard({
               fenders={fenders}
             />
           </div>
-          <TableActionButtons
-            onEdit={onEdit}
-            onDelete={onDelete}
-            deleteLabel={`la posición ${positionDisplayCode(position)}`}
-          />
+          {canWrite ? (
+            <TableActionButtons
+              onEdit={onEdit}
+              onDelete={onDelete}
+              deleteLabel={`la posición ${positionDisplayCode(position)}`}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -130,7 +135,11 @@ function PositionCard({
   );
 }
 
-export default function PortPositionsSection({ port, onChange }: PortPositionsSectionProps) {
+export default function PortPositionsSection({
+  port,
+  onChange,
+  canWrite = true,
+}: PortPositionsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<PositionFormMode>("create");
   const [editing, setEditing] = useState<PositionDetail | null>(null);
@@ -199,7 +208,11 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         icon={LayoutGrid}
         title="Posiciones"
         description="Posiciones de atraque y fondeo con sus características."
-        actions={<SectionAddButton label="Agregar posición" onClick={openCreate} />}
+        actions={
+          canWrite ? (
+            <SectionAddButton label="Agregar posición" onClick={openCreate} />
+          ) : undefined
+        }
       >
         <FormErrorAlert message={error} className="mb-3" />
         {port.positions.length === 0 ? (
@@ -212,6 +225,7 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
                 position={position}
                 bollards={port.bollards}
                 fenders={port.fenders}
+                canWrite={canWrite}
                 onEdit={() => openEdit(position)}
                 onDelete={() => handleDelete(position)}
               />
@@ -220,16 +234,18 @@ export default function PortPositionsSection({ port, onChange }: PortPositionsSe
         )}
       </ViewSection>
 
-      <PositionFormModal
-        open={formOpen}
-        mode={formMode}
-        lockedPortId={port.id}
-        lockedPortCode={port.code}
-        initial={editing}
-        saving={saving}
-        onClose={() => !saving && setFormOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <PositionFormModal
+          open={formOpen}
+          mode={formMode}
+          lockedPortId={port.id}
+          lockedPortCode={port.code}
+          initial={editing}
+          saving={saving}
+          onClose={() => !saving && setFormOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </>
   );
 }

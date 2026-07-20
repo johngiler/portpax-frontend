@@ -2,12 +2,12 @@
 
 import {
   Bell,
-  CircleUser,
   LogOut,
   Menu,
   MessageSquare,
   Moon,
   Sun,
+  UserCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMainLayout } from "@/contexts/MainLayoutContext";
 import { useTheme } from "@/hooks/useTheme";
 import DropdownMenu from "@/components/ui/DropdownMenu";
+import EntityThumb from "@/components/ui/EntityThumb";
 import GlobalSearch from "@/components/search/GlobalSearch";
+import { userRoleLabel } from "@/types/accounts";
+import { userDisplayName } from "@/types/auth";
+import { roleHomePath } from "@/lib/navAccess";
 import PortPaxLogo from "./PortPaxLogo";
 
 const iconBtnClass =
@@ -77,6 +81,7 @@ export default function Header() {
 
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
+  const homeHref = roleHomePath(user?.role);
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "notifications" | "messages" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
@@ -121,9 +126,9 @@ export default function Header() {
           </button>
         )}
         <Link
-          href="/"
+          href={homeHref}
           className="cursor-pointer shrink-0"
-          aria-label="Ir al Dashboard"
+          aria-label="Ir al inicio"
         >
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
@@ -161,7 +166,7 @@ export default function Header() {
             >
               <Bell className="h-5 w-5" strokeWidth={1.5} />
               {notificationCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--admin-accent)] px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-0.5 -top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--admin-accent)] px-1 text-[10px] font-bold leading-none text-white">
                   {notificationCount > 9 ? "9+" : notificationCount}
                 </span>
               )}
@@ -272,9 +277,6 @@ export default function Header() {
           className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5"
           aria-hidden
         />
-        <span className="hidden rounded-full px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300 sm:inline md:px-3 md:py-1.5">
-          admin
-        </span>
 
         <DropdownMenu
           open={openMenu === "user"}
@@ -283,24 +285,52 @@ export default function Header() {
           trigger={
             <button
               type="button"
-              className={iconBtnClass}
+              className="flex max-w-[12rem] cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/10 sm:max-w-[16rem]"
               aria-label="Perfil del usuario"
               title="Perfil"
               onClick={() => toggle("user")}
             >
-              <CircleUser className="h-5 w-5" strokeWidth={1.5} />
+              <EntityThumb
+                src={user?.avatar}
+                label={user ? userDisplayName(user) : "?"}
+                size="sm"
+                className="!h-9 !w-9 border-transparent"
+              />
+              <span className="hidden min-w-0 flex-col sm:flex">
+                <span className="truncate text-xs font-medium leading-tight text-zinc-800 dark:text-zinc-100">
+                  {user ? userDisplayName(user) : "—"}
+                </span>
+                <span className="truncate text-[11px] leading-tight text-zinc-500 dark:text-zinc-400">
+                  {userRoleLabel(user?.role)}
+                </span>
+              </span>
             </button>
           }
         >
           <div className="dropdown-panel overflow-hidden py-2">
-            <div className="border-b border-zinc-200/80 px-4 pb-3 dark:border-zinc-700/70">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                Cuenta
-              </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {user?.email || user?.username || "—"}
-              </p>
+            <div className="flex items-center gap-3 border-b border-zinc-200/80 px-4 pb-3 dark:border-zinc-700/70">
+              <EntityThumb
+                src={user?.avatar}
+                label={user ? userDisplayName(user) : "?"}
+                size="md"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  {user ? userDisplayName(user) : "Cuenta"}
+                </p>
+                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                  {userRoleLabel(user?.role)}
+                </p>
+              </div>
             </div>
+            <Link
+              href="/profile"
+              onClick={closeAll}
+              className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-zinc-600 transition-colors hover:bg-black/5 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+            >
+              <UserCircle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+              Mi perfil
+            </Link>
             <div className="border-t border-zinc-200/80 pt-1 dark:border-zinc-700/70">
               <button
                 type="button"

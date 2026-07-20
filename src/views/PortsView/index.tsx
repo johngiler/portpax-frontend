@@ -9,7 +9,9 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import { createPort, fetchPorts } from "@/services/catalogs/portService";
 import type { Port } from "@/types/catalog";
 import PortCard from "./PortCard";
@@ -20,6 +22,8 @@ import PortsViewSkeleton from "./PortsViewSkeleton";
 const BATCH_SIZE = 12;
 
 export default function PortsView() {
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const [ports, setPorts] = useState<Port[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -129,12 +133,14 @@ export default function PortsView() {
         title="Puertos"
         description="Selecciona un puerto para ver su ficha, muelles, bitas y posiciones."
         actions={
-          <DefaultButton type="button" onClick={() => setModalOpen(true)}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              Nuevo puerto
-            </span>
-          </DefaultButton>
+          canWrite ? (
+            <DefaultButton type="button" onClick={() => setModalOpen(true)}>
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Nuevo puerto
+              </span>
+            </DefaultButton>
+          ) : undefined
         }
       />
 
@@ -145,7 +151,7 @@ export default function PortsView() {
       ) : ports.length === 0 ? (
         <PortsEmptyState
           variant={hasActiveFilters ? "filtered" : "empty"}
-          onCreate={() => setModalOpen(true)}
+          onCreate={canWrite ? () => setModalOpen(true) : undefined}
           onClearFilters={clearFilters}
         />
       ) : (

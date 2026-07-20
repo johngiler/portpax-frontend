@@ -22,6 +22,7 @@ type PortFendersSectionProps = {
   fenders: PortFender[];
   total: number;
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
 function buildTypeOptions(fenders: PortFender[]): FenderTypeOption[] {
@@ -36,6 +37,7 @@ export default function PortFendersSection({
   fenders,
   total,
   onChange,
+  canWrite = true,
 }: PortFendersSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FenderFormMode>("create");
@@ -89,7 +91,11 @@ export default function PortFendersSection({
         icon={Shield}
         title="Inventario de defensas"
         description="Cantidad de defensas por tipo."
-        actions={<SectionAddButton label="Agregar defensa" onClick={openCreate} />}
+        actions={
+          canWrite ? (
+            <SectionAddButton label="Agregar defensa" onClick={openCreate} />
+          ) : undefined
+        }
       >
         <FormErrorAlert message={error} className="mb-3" />
 
@@ -104,7 +110,9 @@ export default function PortFendersSection({
                     <th className="px-4 py-3">Cantidad</th>
                     <th className="px-4 py-3">Tipo</th>
                     <th className="px-4 py-3">Notas</th>
-                    <th className="px-4 py-3 text-center">Acciones</th>
+                    {canWrite ? (
+                      <th className="px-4 py-3 text-center">Acciones</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -116,13 +124,15 @@ export default function PortFendersSection({
                       <td className="px-4 py-3 font-mono">{fender.quantity}</td>
                       <td className="px-4 py-3 font-medium">{fender.fender_type}</td>
                       <td className="px-4 py-3 text-zinc-500">{fender.notes || "—"}</td>
-                      <td className="px-4 py-3 text-center">
-                        <TableActionButtons
-                          onEdit={() => openEdit(fender)}
-                          onDelete={() => handleDelete(fender)}
-                          deleteLabel={`${fender.quantity} defensas ${fender.fender_type}`}
-                        />
-                      </td>
+                      {canWrite ? (
+                        <td className="px-4 py-3 text-center">
+                          <TableActionButtons
+                            onEdit={() => openEdit(fender)}
+                            onDelete={() => handleDelete(fender)}
+                            deleteLabel={`${fender.quantity} defensas ${fender.fender_type}`}
+                          />
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -133,16 +143,18 @@ export default function PortFendersSection({
         )}
       </ViewSection>
 
-      <FenderFormModal
-        open={formOpen}
-        mode={formMode}
-        portId={portId}
-        typeOptions={typeOptions}
-        initial={editing}
-        saving={saving}
-        onClose={() => !saving && setFormOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <FenderFormModal
+          open={formOpen}
+          mode={formMode}
+          portId={portId}
+          typeOptions={typeOptions}
+          initial={editing}
+          saving={saving}
+          onClose={() => !saving && setFormOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </>
   );
 }

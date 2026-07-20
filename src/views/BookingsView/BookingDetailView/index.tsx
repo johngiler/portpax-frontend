@@ -3,7 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import { fetchBookingByCode } from "@/services/bookings/bookingService";
 import type { Booking } from "@/types/booking";
 import BookingDetailHero from "./BookingDetailHero";
@@ -15,8 +17,10 @@ import BookingStatusActions from "./BookingStatusActions";
 
 export default function BookingDetailView() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
+  const canWrite = canWriteApp(user?.role);
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,12 +78,14 @@ export default function BookingDetailView() {
         booking={booking}
         onUpdated={setBooking}
         onError={setViewError}
+        canWrite={canWrite}
       />
       <BookingStatusActions
         booking={booking}
         onUpdated={setBooking}
         onDeleted={() => router.push("/bookings")}
         onError={setViewError}
+        canWrite={canWrite}
       />
       <BookingAuditSection entries={booking.audit_entries} />
     </div>

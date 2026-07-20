@@ -16,9 +16,15 @@ type PortGallerySectionProps = {
   portId: number;
   images: PortImage[];
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
-export default function PortGallerySection({ portId, images, onChange }: PortGallerySectionProps) {
+export default function PortGallerySection({
+  portId,
+  images,
+  onChange,
+  canWrite = true,
+}: PortGallerySectionProps) {
   const galleryImages = images ?? [];
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,13 +83,15 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
 
       {!hasImages && (
         <>
-          <ImageDropZone
-            className="mb-4"
-            busy={uploading}
-            onFiles={handleFiles}
-            onReject={handleReject}
-            hint="Arrastra varias imágenes o haz clic para seleccionar archivos"
-          />
+          {canWrite ? (
+            <ImageDropZone
+              className="mb-4"
+              busy={uploading}
+              onFiles={handleFiles}
+              onReject={handleReject}
+              hint="Arrastra varias imágenes o haz clic para seleccionar archivos"
+            />
+          ) : null}
           <p className="text-sm text-zinc-500">Sin imágenes en la galería.</p>
         </>
       )}
@@ -110,17 +118,21 @@ export default function PortGallerySection({ portId, images, onChange }: PortGal
                     Portada
                   </span>
                 )}
-                <ConfirmDeleteButton
-                  deleteLabel="esta imagen de la galería"
-                  onDelete={() => handleDelete(img.id)}
-                  className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  ariaLabel="Eliminar imagen"
-                />
+                {canWrite ? (
+                  <ConfirmDeleteButton
+                    deleteLabel="esta imagen de la galería"
+                    onDelete={() => handleDelete(img.id)}
+                    className="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    ariaLabel="Eliminar imagen"
+                  />
+                ) : null}
               </figure>
             ))}
           </div>
 
-          <ImageDropZone compact busy={uploading} onFiles={handleFiles} onReject={handleReject} hint="" />
+          {canWrite ? (
+            <ImageDropZone compact busy={uploading} onFiles={handleFiles} onReject={handleReject} hint="" />
+          ) : null}
         </>
       )}
 

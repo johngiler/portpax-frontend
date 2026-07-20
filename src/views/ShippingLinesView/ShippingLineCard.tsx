@@ -30,9 +30,7 @@ export default function ShippingLineCard({ line }: ShippingLineCardProps) {
             className="max-h-[70%] max-w-[75%] object-contain transition-transform duration-200 group-hover:scale-105"
           />
         ) : (
-          <span
-            className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] transition-transform duration-200 group-hover:scale-105"
-          >
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] transition-transform duration-200 group-hover:scale-105">
             <Anchor className="h-8 w-8" strokeWidth={1.75} />
           </span>
         )}

@@ -20,9 +20,15 @@ type PortBerthsSectionProps = {
   portId: number;
   berths: BerthDetail[];
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
-export default function PortBerthsSection({ portId, berths, onChange }: PortBerthsSectionProps) {
+export default function PortBerthsSection({
+  portId,
+  berths,
+  onChange,
+  canWrite = true,
+}: PortBerthsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<BerthFormMode>("create");
   const [editing, setEditing] = useState<BerthDetail | null>(null);
@@ -92,7 +98,11 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
         icon={Warehouse}
         title="Muelles"
         description="Muelles registrados con dimensiones y calado."
-        actions={<SectionAddButton label="Agregar muelle" onClick={openCreate} />}
+        actions={
+          canWrite ? (
+            <SectionAddButton label="Agregar muelle" onClick={openCreate} />
+          ) : undefined
+        }
       >
         <FormErrorAlert message={error} className="mb-3" />
 
@@ -104,6 +114,7 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
               <BerthCard
                 key={berth.id}
                 berth={berth}
+                canWrite={canWrite}
                 onEdit={() => openEdit(berth)}
                 onDelete={() => handleDelete(berth)}
               />
@@ -112,15 +123,17 @@ export default function PortBerthsSection({ portId, berths, onChange }: PortBert
         )}
       </ViewSection>
 
-      <BerthFormModal
-        open={formOpen}
-        mode={formMode}
-        portId={portId}
-        initial={editing}
-        saving={saving}
-        onClose={() => !saving && setFormOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <BerthFormModal
+          open={formOpen}
+          mode={formMode}
+          portId={portId}
+          initial={editing}
+          saving={saving}
+          onClose={() => !saving && setFormOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </>
   );
 }

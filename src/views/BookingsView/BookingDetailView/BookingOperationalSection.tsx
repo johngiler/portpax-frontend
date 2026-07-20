@@ -15,12 +15,14 @@ type BookingOperationalSectionProps = {
   booking: Booking;
   onUpdated: (booking: Booking) => void;
   onError: (message: string | null) => void;
+  canWrite?: boolean;
 };
 
 export default function BookingOperationalSection({
   booking,
   onUpdated,
   onError,
+  canWrite = true,
 }: BookingOperationalSectionProps) {
   const [positionId, setPositionId] = useState(booking.position ?? 0);
   const [eta, setEta] = useState(booking.eta?.slice(0, 5) ?? "");
@@ -37,6 +39,7 @@ export default function BookingOperationalSection({
   const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const readOnly = !canWrite || booking.status === "c";
 
   const loadSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -59,7 +62,7 @@ export default function BookingOperationalSection({
   }, [booking.position]);
 
   useEffect(() => {
-    if (booking.status !== "cancelled") {
+    if (booking.status !== "c") {
       loadSuggestions();
     }
   }, [booking.status, loadSuggestions]);
@@ -127,7 +130,7 @@ export default function BookingOperationalSection({
           options={positionOptions}
           optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
           emptyValue={0}
-          disabled={booking.status === "cancelled"}
+          disabled={readOnly}
         />
         <FormField
           label="ETA"
@@ -136,7 +139,7 @@ export default function BookingOperationalSection({
           value={eta}
           onChange={(value) => setEta(String(value))}
           placeholder="08:00"
-          disabled={booking.status === "cancelled"}
+          disabled={readOnly}
         />
         <FormField
           label="ETD"
@@ -145,7 +148,7 @@ export default function BookingOperationalSection({
           value={etd}
           onChange={(value) => setEtd(String(value))}
           placeholder="18:00"
-          disabled={booking.status === "cancelled"}
+          disabled={readOnly}
         />
         <FormField
           label="PAX planificado"
@@ -154,7 +157,7 @@ export default function BookingOperationalSection({
           min={0}
           value={plannedPax}
           onChange={(value) => setPlannedPax(String(value))}
-          disabled={booking.status === "cancelled"}
+          disabled={readOnly}
         />
         <FormField
           label="PAX real (post-arribo)"
@@ -163,6 +166,7 @@ export default function BookingOperationalSection({
           min={0}
           value={actualPax}
           onChange={(value) => setActualPax(String(value))}
+          disabled={readOnly}
         />
         <FormField
           label="Tripulación real (post-arribo)"
@@ -171,6 +175,7 @@ export default function BookingOperationalSection({
           min={0}
           value={actualCrew}
           onChange={(value) => setActualCrew(String(value))}
+          disabled={readOnly}
         />
       </div>
 
@@ -186,7 +191,7 @@ export default function BookingOperationalSection({
         />
       ) : null}
 
-      {booking.status !== "cancelled" ? (
+      {canWrite && booking.status !== "c" ? (
         <div className="mt-4">
           <DefaultButton type="button" onClick={handleSave} disabled={saving}>
             {saving ? "Guardando…" : "Guardar operación"}

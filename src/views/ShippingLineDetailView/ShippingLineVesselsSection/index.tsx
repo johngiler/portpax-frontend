@@ -15,11 +15,13 @@ import VesselCard from "./VesselCard";
 type ShippingLineVesselsSectionProps = {
   line: ShippingLineDetail;
   onChange: () => Promise<void>;
+  canWrite?: boolean;
 };
 
 export default function ShippingLineVesselsSection({
   line,
   onChange,
+  canWrite = true,
 }: ShippingLineVesselsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<VesselFormMode>("create");
@@ -75,7 +77,11 @@ export default function ShippingLineVesselsSection({
         icon={Ship}
         title="Barcos"
         description="Flota asociada a esta naviera — LOA, capacidad y datos operativos."
-        actions={<SectionAddButton label="Agregar barco" onClick={openCreate} />}
+        actions={
+          canWrite ? (
+            <SectionAddButton label="Agregar barco" onClick={openCreate} />
+          ) : undefined
+        }
       >
         <FormErrorAlert message={error} className="mb-3" />
 
@@ -87,6 +93,7 @@ export default function ShippingLineVesselsSection({
               <VesselCard
                 key={vessel.id}
                 vessel={vessel}
+                canWrite={canWrite}
                 onEdit={() => openEdit(vessel)}
                 onDelete={() => handleDelete(vessel)}
               />
@@ -95,16 +102,18 @@ export default function ShippingLineVesselsSection({
         )}
       </ViewSection>
 
-      <VesselFormModal
-        open={formOpen}
-        mode={formMode}
-        initial={editing}
-        lockedShippingLineId={line.id}
-        lockedShippingLineName={line.name}
-        saving={saving}
-        onClose={() => !saving && setFormOpen(false)}
-        onSubmit={handleSave}
-      />
+      {canWrite ? (
+        <VesselFormModal
+          open={formOpen}
+          mode={formMode}
+          initial={editing}
+          lockedShippingLineId={line.id}
+          lockedShippingLineName={line.name}
+          saving={saving}
+          onClose={() => !saving && setFormOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
     </>
   );
 }

@@ -1,9 +1,11 @@
+import { apiFetch } from "@/services/apiClient";
 import type { GlobalSearchResult } from "@/types/search";
 
-/** Stub until catalog/booking search endpoints exist. */
 export async function globalSearch(q: string): Promise<GlobalSearchResult> {
-  if (q.trim().length < 2) {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) {
     return { shipping_lines: [], ports: [], ships: [], scales: [] };
   }
-  return { shipping_lines: [], ports: [], ships: [], scales: [] };
+  const params = new URLSearchParams({ q: trimmed });
+  return apiFetch<GlobalSearchResult>(`/api/search/?${params.toString()}`);
 }

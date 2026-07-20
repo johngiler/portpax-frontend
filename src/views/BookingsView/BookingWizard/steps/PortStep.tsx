@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import type { Port } from "@/types/catalog";
 import { portDisplayName, portStatusLabel } from "@/types/catalog";
@@ -105,8 +105,8 @@ export default function PortStep({ ports, selectedId, onSelect, loading }: PortS
                       className="max-h-[70%] max-w-[75%] relative z-[1] object-contain transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
-                    <span className="relative z-[1] text-3xl font-bold text-[var(--admin-accent)]/25">
-                      {port.name.charAt(0)}
+                    <span className="relative z-[1] flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
+                      <MapPin className="h-5 w-5" strokeWidth={2} />
                     </span>
                   )}
                   {selected && (

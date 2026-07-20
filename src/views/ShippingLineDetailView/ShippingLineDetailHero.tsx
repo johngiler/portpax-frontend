@@ -14,6 +14,7 @@ type ShippingLineDetailHeroProps = {
   line: ShippingLineDetail;
   onEdit: () => void;
   onDelete: () => void;
+  canWrite?: boolean;
 };
 
 const LOGO_SIZE_MIN_EXPANDED = 48;
@@ -50,6 +51,7 @@ export default function ShippingLineDetailHero({
   line,
   onEdit,
   onDelete,
+  canWrite = true,
 }: ShippingLineDetailHeroProps) {
   const textCoreRef = useRef<HTMLDivElement>(null);
   const textExpandedRef = useRef<HTMLDivElement>(null);
@@ -260,22 +262,26 @@ export default function ShippingLineDetailHero({
                   isStuck ? "self-center sm:self-center" : "w-full self-end sm:w-auto sm:self-start",
                 ].join(" ")}
               >
-                <DefaultButton type="button" onClick={onEdit}>
-                  <span className="inline-flex items-center gap-2">
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                  </span>
-                </DefaultButton>
-                <ConfirmDeleteButton
-                  deleteLabel={`la naviera ${line.name}`}
-                  onDelete={onDelete}
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
-                  ariaLabel="Eliminar naviera"
-                  title="Eliminar naviera"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar
-                </ConfirmDeleteButton>
+              {canWrite ? (
+                <>
+                  <DefaultButton type="button" onClick={onEdit}>
+                    <span className="inline-flex items-center gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </span>
+                  </DefaultButton>
+                  <ConfirmDeleteButton
+                    deleteLabel={`la naviera ${line.name}`}
+                    onDelete={onDelete}
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    ariaLabel="Eliminar naviera"
+                    title="Eliminar naviera"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar
+                  </ConfirmDeleteButton>
+                </>
+              ) : null}
               </div>
             </div>
           </motion.div>

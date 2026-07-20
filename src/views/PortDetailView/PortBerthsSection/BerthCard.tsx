@@ -10,9 +10,15 @@ type BerthCardProps = {
   berth: BerthDetail;
   onEdit: () => void;
   onDelete: () => void;
+  canWrite?: boolean;
 };
 
-export default function BerthCard({ berth, onEdit, onDelete }: BerthCardProps) {
+export default function BerthCard({
+  berth,
+  onEdit,
+  onDelete,
+  canWrite = true,
+}: BerthCardProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -66,11 +72,13 @@ export default function BerthCard({ berth, onEdit, onDelete }: BerthCardProps) {
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
             {berth.name || berth.code}
           </h3>
-          <TableActionButtons
-            onEdit={onEdit}
-            onDelete={onDelete}
-            deleteLabel={`el muelle ${berth.code}`}
-          />
+          {canWrite ? (
+            <TableActionButtons
+              onEdit={onEdit}
+              onDelete={onDelete}
+              deleteLabel={`el muelle ${berth.code}`}
+            />
+          ) : null}
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">

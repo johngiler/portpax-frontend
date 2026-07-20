@@ -10,7 +10,7 @@ export type OccupancySnapshot = {
 };
 
 function isActiveBooking(booking: Booking): boolean {
-  return booking.status !== "cancelled";
+  return booking.status !== "c";
 }
 
 export function buildOccupancySnapshot(

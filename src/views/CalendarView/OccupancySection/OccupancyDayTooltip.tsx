@@ -32,9 +32,11 @@ type OccupancyDayTooltipProps = {
 };
 
 function statusTone(status: Booking["status"]): string {
-  if (status === "confirmed") return "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]";
-  if (status === "cancelled") return "bg-red-500/10 text-red-600 dark:text-red-400";
-  return "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+  if (status === "co") return "bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]";
+  if (status === "r") return "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300";
+  if (status === "c") return "bg-red-500/10 text-red-600 dark:text-red-400";
+  if (status === "h") return "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+  return "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]";
 }
 
 function LogoThumb({
@@ -125,7 +127,7 @@ export default function OccupancyDayTooltip({
 
   if (typeof document === "undefined") return null;
 
-  const active = bookings.filter((b) => b.status !== "cancelled");
+  const active = bookings.filter((b) => b.status !== "c");
 
   return createPortal(
     <div

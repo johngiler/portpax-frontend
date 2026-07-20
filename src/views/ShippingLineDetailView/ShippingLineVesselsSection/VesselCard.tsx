@@ -10,9 +10,15 @@ type VesselCardProps = {
   vessel: Vessel;
   onEdit: () => void;
   onDelete: () => void;
+  canWrite?: boolean;
 };
 
-export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps) {
+export default function VesselCard({
+  vessel,
+  onEdit,
+  onDelete,
+  canWrite = true,
+}: VesselCardProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
 
   return (
@@ -53,11 +59,13 @@ export default function VesselCard({ vessel, onEdit, onDelete }: VesselCardProps
               </p>
             ) : null}
           </div>
-          <TableActionButtons
-            onEdit={onEdit}
-            onDelete={onDelete}
-            deleteLabel={`el barco ${vessel.name}`}
-          />
+          {canWrite ? (
+            <TableActionButtons
+              onEdit={onEdit}
+              onDelete={onDelete}
+              deleteLabel={`el barco ${vessel.name}`}
+            />
+          ) : null}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
           <div>

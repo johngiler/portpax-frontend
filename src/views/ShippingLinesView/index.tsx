@@ -9,7 +9,9 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
+import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canWriteApp } from "@/lib/navAccess";
 import { createShippingLine, fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
@@ -21,6 +23,8 @@ import ShippingLinesViewSkeleton from "./ShippingLinesViewSkeleton";
 const BATCH_SIZE = 12;
 
 export default function ShippingLinesView() {
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
   const [lines, setLines] = useState<Awaited<ReturnType<typeof fetchShippingLines>>["results"]>(
     [],
   );
@@ -164,12 +168,14 @@ export default function ShippingLinesView() {
         title="Navieras"
         description="Selecciona una naviera para ver su ficha y la flota de barcos asociada."
         actions={
-          <DefaultButton type="button" onClick={() => setModalOpen(true)}>
-            <span className="inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" strokeWidth={2} />
-              Nueva naviera
-            </span>
-          </DefaultButton>
+          canWrite ? (
+            <DefaultButton type="button" onClick={() => setModalOpen(true)}>
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Nueva naviera
+              </span>
+            </DefaultButton>
+          ) : undefined
         }
       />
 
@@ -180,7 +186,7 @@ export default function ShippingLinesView() {
       ) : lines.length === 0 ? (
         <ShippingLinesEmptyState
           variant={hasActiveFilters ? "filtered" : "empty"}
-          onCreate={() => setModalOpen(true)}
+          onCreate={canWrite ? () => setModalOpen(true) : undefined}
           onClearFilters={clearFilters}
         />
       ) : (
