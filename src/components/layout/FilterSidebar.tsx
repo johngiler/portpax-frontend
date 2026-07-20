@@ -6,6 +6,7 @@ import {
   useMainLayoutOptional,
 } from "@/contexts/MainLayoutContext";
 import { useDataExport } from "@/lib/dataExportStore";
+import { useDataImport } from "@/lib/dataImportStore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -49,24 +50,41 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
   const { canExport, runExport } = useDataExport();
+  const { canImport, runImport } = useDataImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú export al hacer clic fuera
+  useEffect(() => {
+    if (!exportOpen) return;
+    const close = (e: MouseEvent) => {
+      if (exportMenuRef.current?.contains(e.target as Node)) return;
+      setExportOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [exportOpen]);
 
   if (!setFilterOpen) return null;
 
   const handleImportClick = () => {
+    if (!canImport || importing) return;
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Placeholder: la lógica de importación se implementará más adelante
-      console.info("[Import] Archivo seleccionado:", file.name);
-    }
     e.target.value = "";
+    if (!file || !canImport || importing) return;
+    setImporting(true);
+    try {
+      await runImport(file);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleExportOption = async (id: "xlsx" | "csv") => {
@@ -81,20 +99,22 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   };
 
   const exportDisabled = !canExport || exporting;
-
-  // Cerrar menú export al hacer clic fuera
-  useEffect(() => {
-    if (!exportOpen) return;
-    const close = (e: MouseEvent) => {
-      if (exportMenuRef.current?.contains(e.target as Node)) return;
-      setExportOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [exportOpen]);
+  const importDisabled = !canImport || importing;
 
   const iconButtonClass =
     "flex w-full cursor-pointer flex-col items-center gap-2 rounded-md py-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200";
+
+  const importTitle = canImport
+    ? importing
+      ? "Importando…"
+      : "Importar desde Excel o CSV"
+    : "Importación no disponible en esta vista";
+
+  const exportTitle = canExport
+    ? exporting
+      ? "Exportando…"
+      : "Exportar a Excel o CSV"
+    : "Exportación no disponible en esta vista";
 
   return (
     <aside
@@ -110,7 +130,8 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         accept=".xlsx,.xls,.csv"
         className="hidden"
         aria-hidden
-        onChange={handleFileChange}
+        disabled={importDisabled}
+        onChange={(e) => void handleFileChange(e)}
       />
 
       <nav
@@ -131,13 +152,14 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"
+                    disabled={importDisabled}
                     onClick={handleImportClick}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
                     aria-label="Importar desde Excel/CSV"
-                    title="Importar desde Excel o CSV"
+                    title={importTitle}
                   >
                     <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    <span>Importar</span>
+                    <span>{importing ? "Importando…" : "Importar"}</span>
                   </button>
                   <div className="relative" ref={exportMenuRef}>
                     <button
@@ -148,13 +170,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                       aria-label="Exportar"
                       aria-expanded={exportOpen}
                       aria-haspopup="true"
-                      title={
-                        canExport
-                          ? exporting
-                            ? "Exportando…"
-                            : "Exportar a Excel o CSV"
-                          : "Exportación no disponible en esta vista"
-                      }
+                      title={exportTitle}
                     >
                       <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
                       <span>{exporting ? "Exportando…" : "Exportar"}</span>
@@ -198,14 +214,15 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
             </button>
             <button
               type="button"
+              disabled={importDisabled}
               onClick={handleImportClick}
-              className={iconButtonClass}
+              className={`${iconButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
               aria-label="Importar"
-              title="Importar desde Excel o CSV"
+              title={importTitle}
             >
               <Upload className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
               <span className="text-[11px] font-medium tracking-wide">
-                Importar
+                {importing ? "…" : "Importar"}
               </span>
             </button>
             <div className="relative" ref={exportMenuRef}>
@@ -216,13 +233,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                 className={`${iconButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
                 aria-label="Exportar"
                 aria-expanded={exportOpen}
-                title={
-                  canExport
-                    ? exporting
-                      ? "Exportando…"
-                      : "Exportar a Excel o CSV"
-                    : "Exportación no disponible en esta vista"
-                }
+                title={exportTitle}
               >
                 <Download
                   className="h-[18px] w-[18px] shrink-0"

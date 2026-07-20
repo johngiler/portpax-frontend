@@ -72,6 +72,124 @@ export async function fetchAllBookings(
   return fetchAllPages((page, pageSize) => fetchBookings({ ...params, page, pageSize }));
 }
 
+export async function exportCalendarReport(
+  params: {
+    ports: number[];
+    call_date_from: string;
+    call_date_to: string;
+    shipping_line?: number;
+    status?: BookingListStatusFilter;
+    exportFormat: "xlsx" | "csv";
+  },
+): Promise<void> {
+  const query = new URLSearchParams();
+  query.set("port", params.ports.join(","));
+  query.set("call_date_from", params.call_date_from);
+  query.set("call_date_to", params.call_date_to);
+  query.set("export_format", params.exportFormat);
+  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.status) query.set("status", params.status);
+  const { blob, filename } = await apiDownload(
+    `${BASE}calendar-export/?${query.toString()}`,
+  );
+  triggerBrowserDownload(blob, filename || `calendario.${params.exportFormat}`);
+}
+
+export type BookingTotalsReport = {
+  date_from: string;
+  date_to: string;
+  without_lta: boolean;
+  total_calls: number;
+  planned_pax: number;
+  actual_pax: number;
+  by_status: Record<string, number>;
+  by_month: Array<{
+    year: number;
+    month: number;
+    calls: number;
+    planned_pax: number;
+    actual_pax: number;
+  }>;
+  by_port: Array<{
+    port_id: number;
+    code: string;
+    name: string;
+    calls: number;
+    planned_pax: number;
+  }>;
+  by_shipping_line: Array<{
+    shipping_line_id: number;
+    code: string;
+    name: string;
+    calls: number;
+    planned_pax: number;
+  }>;
+};
+
+export type MovementsReport = {
+  date_from: string;
+  date_to: string;
+  confirmations_count: number;
+  cancellations_count: number;
+  confirmations: Array<{
+    id: number;
+    at: string;
+    from_status: string | null;
+    to_status: string;
+    booking_code: string;
+    call_date: string;
+    port_code: string;
+    shipping_line_name: string;
+    vessel_name: string;
+    user: string | null;
+  }>;
+  cancellations: Array<{
+    id: number;
+    at: string;
+    from_status: string | null;
+    to_status: string;
+    booking_code: string;
+    call_date: string;
+    port_code: string;
+    shipping_line_name: string;
+    vessel_name: string;
+    user: string | null;
+  }>;
+  by_shipping_line: Array<{
+    name: string;
+    confirmations: number;
+    cancellations: number;
+  }>;
+};
+
+export async function fetchBookingTotalsReport(params: {
+  date_from: string;
+  date_to: string;
+  port?: number;
+  shipping_line?: number;
+  without_lta?: boolean;
+}): Promise<BookingTotalsReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  if (params.port) query.set("port", String(params.port));
+  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.without_lta) query.set("without_lta", "true");
+  return apiFetch<BookingTotalsReport>(`${BASE}report-totals/?${query.toString()}`);
+}
+
+export async function fetchMovementsReport(params: {
+  date_from: string;
+  date_to: string;
+  port?: number;
+}): Promise<MovementsReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  if (params.port) query.set("port", String(params.port));
+  return apiFetch<MovementsReport>(`${BASE}report-movements/?${query.toString()}`);
+}
+
 export async function fetchBooking(id: number): Promise<Booking> {
   return apiFetch<Booking>(`${BASE}${id}/`);
 }

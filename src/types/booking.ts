@@ -36,6 +36,7 @@ export type Booking = {
   vessel: number;
   vessel_name: string;
   vessel_logo: string | null;
+  vessel_loa_m: string | null;
   position: number | null;
   position_code: string | null;
   call_date: string;

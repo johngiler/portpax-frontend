@@ -1,24 +1,23 @@
 "use client";
 
-import { CalendarRange } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import Skeleton from "@/components/ui/Skeleton";
 
-export default function CalendarViewSkeleton() {
+export default function ReportsViewSkeleton() {
   return (
     <>
       <ViewPageHeader
-        icon={CalendarRange}
-        title="Calendario"
-        description="Grilla operativa semanal y mensual por puerto."
+        icon={BarChart3}
+        title="Reportes"
+        description="Totales de calls/PAX y movimientos."
       />
-      <Skeleton className="mb-4 h-10 w-full max-w-md rounded-xl" />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Skeleton className="h-28 rounded-2xl" />
         <Skeleton className="h-28 rounded-2xl" />
         <Skeleton className="h-28 rounded-2xl" />
       </div>
-      <Skeleton className="h-[32rem] rounded-2xl" />
+      <Skeleton className="h-80 rounded-2xl" />
     </>
   );
 }

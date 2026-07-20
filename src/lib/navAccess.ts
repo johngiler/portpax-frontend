@@ -90,6 +90,9 @@ export function canAccessPath(
   if (path === "/bookings" || path.startsWith("/bookings/")) {
     return true;
   }
+  if (path === "/reports" || path.startsWith("/reports/")) {
+    return true;
+  }
 
   return false;
 }
