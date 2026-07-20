@@ -19,7 +19,7 @@ type UserFormModalProps = {
   open: boolean;
   mode: UserFormMode;
   initial?: ManagedUser | null;
-  portOptions: { value: number; label: string }[];
+  portOptions: { value: number; label: string; logoUrl?: string | null }[];
   saving: boolean;
   onClose: () => void;
   onSubmit: (payload: ManagedUserPayload) => Promise<void>;
@@ -239,6 +239,8 @@ export default function UserFormModal({
             placeholder="Seleccionar puertos…"
             error={errors.port_ids}
             disabled={saving}
+            showLogo
+            logoKind="port"
           />
         )}
         {isAdminRole && (

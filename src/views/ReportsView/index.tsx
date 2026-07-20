@@ -128,13 +128,31 @@ export default function ReportsView() {
   }, [ready, load]);
 
   const portOptions = useMemo(
-    () => ports.map((p) => ({ value: p.id, label: p.name })),
+    () => ports.map((p) => ({ value: p.id, label: p.name, logoUrl: p.logo })),
     [ports],
   );
   const lineOptions = useMemo(
-    () => lines.map((l) => ({ value: l.id, label: l.name })),
+    () => lines.map((l) => ({ value: l.id, label: l.name, logoUrl: l.logo })),
     [lines],
   );
+
+  const defaultDateFrom = tab === "movements" ? weekAgoIso() : yearStart();
+  const defaultDateTo = todayIso();
+
+  const canClearFilters =
+    dateFrom !== defaultDateFrom ||
+    dateTo !== defaultDateTo ||
+    portFilter > 0 ||
+    lineFilter > 0 ||
+    withoutLta;
+
+  function clearFilters() {
+    setDateFrom(tab === "movements" ? weekAgoIso() : yearStart());
+    setDateTo(todayIso());
+    setPortFilter(0);
+    setLineFilter(0);
+    setWithoutLta(false);
+  }
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
@@ -171,10 +189,11 @@ export default function ReportsView() {
           value={tab}
           onChange={(value) => {
             setTab(value);
-            if (value === "movements") {
-              setDateFrom(weekAgoIso());
-              setDateTo(todayIso());
-            }
+            setDateFrom(value === "movements" ? weekAgoIso() : yearStart());
+            setDateTo(todayIso());
+            setPortFilter(0);
+            setLineFilter(0);
+            setWithoutLta(false);
           }}
           options={[
             { value: "totals", label: "Booking Totals" },
@@ -210,6 +229,8 @@ export default function ReportsView() {
           optionLabel="Todos los puertos"
           emptyValue={0}
           compact
+          showLogo
+          logoKind="port"
         />
         {tab !== "movements" ? (
           <FormFieldSelect<number>
@@ -221,6 +242,8 @@ export default function ReportsView() {
             optionLabel="Todas las navieras"
             emptyValue={0}
             compact
+            showLogo
+            logoKind="shipping_line"
           />
         ) : null}
         {tab === "totals" ? (
@@ -236,14 +259,8 @@ export default function ReportsView() {
         ) : null}
         <FilterActions
           onApply={() => void load()}
-          onClear={() => {
-            setDateFrom(tab === "movements" ? weekAgoIso() : yearStart());
-            setDateTo(todayIso());
-            setPortFilter(0);
-            setLineFilter(0);
-            setWithoutLta(false);
-          }}
-          canClear
+          onClear={clearFilters}
+          canClear={canClearFilters}
         />
       </FilterSidebarContent>
 

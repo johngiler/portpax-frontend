@@ -85,13 +85,15 @@ export default function BookingsView() {
   const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
   const [vesselFilter, setVesselFilter] = useState(0);
   const [appliedVesselFilter, setAppliedVesselFilter] = useState(0);
-  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
-  const [shippingLineOptions, setShippingLineOptions] = useState<{ value: number; label: string }[]>(
-    [],
-  );
-  const [allVessels, setAllVessels] = useState<{ value: number; label: string; lineId: number }[]>(
-    [],
-  );
+  const [portOptions, setPortOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
+  const [shippingLineOptions, setShippingLineOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
+  const [allVessels, setAllVessels] = useState<
+    { value: number; label: string; lineId: number; logoUrl?: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -109,7 +111,11 @@ export default function BookingsView() {
         setPortOptions(
           data.results
             .filter((port) => port.is_active)
-            .map((port) => ({ value: port.id, label: portDisplayName(port) })),
+            .map((port) => ({
+              value: port.id,
+              label: portDisplayName(port),
+              logoUrl: port.logo,
+            })),
         ),
       )
       .catch(() => setPortOptions([]));
@@ -119,7 +125,11 @@ export default function BookingsView() {
         setShippingLineOptions(
           lines
             .filter((line) => line.is_active)
-            .map((line) => ({ value: line.id, label: line.name })),
+            .map((line) => ({
+              value: line.id,
+              label: line.name,
+              logoUrl: line.logo,
+            })),
         ),
       )
       .catch(() => setShippingLineOptions([]));
@@ -133,6 +143,7 @@ export default function BookingsView() {
               value: vessel.id,
               label: vessel.name,
               lineId: vessel.shipping_line,
+              logoUrl: vessel.logo,
             })),
         ),
       )

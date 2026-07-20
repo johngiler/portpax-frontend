@@ -1,12 +1,13 @@
 "use client";
 
+import FilterActions from "@/components/layout/FilterActions";
 import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import {
   BOOKING_STATUS_FILTER_OPTIONS,
   type BookingListStatusFilter,
 } from "@/types/booking";
 
-type FilterOption = { value: number; label: string };
+type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 export type CalendarViewMode = "weekly" | "monthly" | "annual";
 
@@ -26,6 +27,9 @@ type CalendarFiltersProps = {
   onPositionFilterChange: (positionId: number) => void;
   onStatusChange: (status: BookingListStatusFilter) => void;
   onSearchChange: (search: string) => void;
+  onApply: () => void;
+  onClear: () => void;
+  canClear: boolean;
 };
 
 const MODE_OPTIONS: { value: CalendarViewMode; label: string }[] = [
@@ -57,6 +61,9 @@ export default function CalendarFilters({
   onPositionFilterChange,
   onStatusChange,
   onSearchChange,
+  onApply,
+  onClear,
+  canClear,
 }: CalendarFiltersProps) {
   return (
     <>
@@ -76,6 +83,8 @@ export default function CalendarFilters({
         options={portOptions}
         placeholder="Seleccionar puertos…"
         compact
+        showLogo
+        logoKind="port"
       />
       <FormFieldSelect<number>
         label="Naviera"
@@ -86,6 +95,8 @@ export default function CalendarFilters({
         optionLabel="Todas las navieras"
         emptyValue={0}
         compact
+        showLogo
+        logoKind="shipping_line"
       />
       {mode === "weekly" && portIds.length === 1 ? (
         <FormFieldSelect<number>
@@ -117,6 +128,7 @@ export default function CalendarFilters({
         placeholder="Barco, código…"
         compact
       />
+      <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
     </>
   );
 }

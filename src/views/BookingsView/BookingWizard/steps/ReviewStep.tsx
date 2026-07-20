@@ -11,6 +11,7 @@ import {
   Ship,
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
+import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
 import { previewAssignedPositions, validateBookings } from "@/services/bookings/bookingService";
@@ -117,14 +118,12 @@ export default function ReviewStep({
       <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryItem icon={MapPin} label="Puerto">
           <div className="flex items-center gap-2">
-            {port?.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={port.logo}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded object-contain"
-              />
-            ) : null}
+            <CatalogLogoThumb
+              src={port?.logo}
+              alt=""
+              size="xs"
+              kind="port"
+            />
             <span className="truncate">{port ? portDisplayName(port) : "—"}</span>
           </div>
           {port ? (
@@ -135,13 +134,29 @@ export default function ReviewStep({
           ) : null}
         </SummaryItem>
         <SummaryItem icon={Anchor} label="Naviera">
-          <span className="truncate">{line?.name ?? "—"}</span>
+          <div className="flex items-center gap-2">
+            <CatalogLogoThumb
+              src={line?.logo}
+              alt=""
+              size="xs"
+              kind="shipping_line"
+            />
+            <span className="truncate">{line?.name ?? "—"}</span>
+          </div>
           {line ? (
             <p className="mt-0.5 truncate text-xs font-normal text-zinc-500">{line.code}</p>
           ) : null}
         </SummaryItem>
         <SummaryItem icon={Ship} label="Barco">
-          <span className="truncate">{vessel?.name ?? "—"}</span>
+          <div className="flex items-center gap-2">
+            <CatalogLogoThumb
+              src={vessel?.logo}
+              alt=""
+              size="xs"
+              kind="vessel"
+            />
+            <span className="truncate">{vessel?.name ?? "—"}</span>
+          </div>
           {vessel?.loa_m ? (
             <p className="mt-0.5 text-xs font-normal text-zinc-500">LOA {vessel.loa_m} m</p>
           ) : null}

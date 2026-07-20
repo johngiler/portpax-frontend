@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Users } from "lucide-react";
+import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
@@ -122,6 +123,25 @@ export default function DashboardView() {
 
   return (
     <>
+      <FilterSidebarContent>
+        <DashboardFilters
+          ports={ports}
+          groups={groups}
+          lines={lines}
+          selectedPortId={selectedPortId}
+          onPortChange={setSelectedPortId}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+          carrierFilter={carrierFilter}
+          onCarrierChange={setCarrierFilter}
+          defaultDateFrom={defaults.from}
+          defaultDateTo={defaults.to}
+          onApply={() => void loadStats()}
+        />
+      </FilterSidebarContent>
+
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
@@ -131,22 +151,6 @@ export default function DashboardView() {
       {viewError && (
         <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
       )}
-
-      <DashboardFilters
-        ports={ports}
-        groups={groups}
-        lines={lines}
-        selectedPortId={selectedPortId}
-        onPortChange={setSelectedPortId}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        onDateFromChange={setDateFrom}
-        onDateToChange={setDateTo}
-        carrierFilter={carrierFilter}
-        onCarrierChange={setCarrierFilter}
-        defaultDateFrom={defaults.from}
-        defaultDateTo={defaults.to}
-      />
 
       {kpis && stats ? (
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

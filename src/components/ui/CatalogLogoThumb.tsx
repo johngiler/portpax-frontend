@@ -1,8 +1,18 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { Anchor, MapPin, Ship } from "lucide-react";
 
 export type CatalogLogoThumbSize = "xs" | "sm" | "md";
+
+/** Catalog entity for empty-state icon (never a letter initial). */
+export type CatalogLogoKind = "port" | "shipping_line" | "vessel";
+
+export const CATALOG_LOGO_FALLBACK: Record<CatalogLogoKind, LucideIcon> = {
+  port: MapPin,
+  shipping_line: Anchor,
+  vessel: Ship,
+};
 
 const SIZE_CLASS: Record<CatalogLogoThumbSize, string> = {
   xs: "h-5 w-5",
@@ -20,7 +30,9 @@ type CatalogLogoThumbProps = {
   src?: string | null;
   alt?: string;
   size?: CatalogLogoThumbSize;
-  /** Shown only when there is no logo — never a letter initial. */
+  /** Prefer this over a bare empty box — maps to MapPin / Anchor / Ship. */
+  kind?: CatalogLogoKind;
+  /** Overrides `kind` when set. */
   fallbackIcon?: LucideIcon;
   className?: string;
 };
@@ -33,9 +45,13 @@ export default function CatalogLogoThumb({
   src,
   alt = "",
   size = "sm",
-  fallbackIcon: FallbackIcon,
+  kind,
+  fallbackIcon,
   className = "",
 }: CatalogLogoThumbProps) {
+  const FallbackIcon =
+    fallbackIcon ?? (kind ? CATALOG_LOGO_FALLBACK[kind] : undefined);
+
   return (
     <span
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-200/80 bg-white dark:border-zinc-700 dark:bg-zinc-900 ${SIZE_CLASS[size]} ${className}`}

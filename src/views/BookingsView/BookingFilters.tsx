@@ -16,7 +16,7 @@ const STATUS_OPTIONS = BOOKING_STATUS_FILTER_OPTIONS
     label: option.label,
   }));
 
-type FilterOption = { value: number; label: string };
+type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 type BookingFiltersProps = {
   status: BookingListStatusFilter;
@@ -110,6 +110,8 @@ export default function BookingFilters({
         optionLabel="Todos los puertos"
         emptyValue={0}
         compact
+        showLogo
+        logoKind="port"
       />
       <FormFieldSelect<number>
         label="Naviera"
@@ -123,6 +125,8 @@ export default function BookingFilters({
         optionLabel="Todas las navieras"
         emptyValue={0}
         compact
+        showLogo
+        logoKind="shipping_line"
       />
       <FormFieldSelect<number>
         label="Barco"
@@ -133,6 +137,8 @@ export default function BookingFilters({
         optionLabel="Todos los barcos"
         emptyValue={0}
         compact
+        showLogo
+        logoKind="vessel"
       />
       <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
     </>

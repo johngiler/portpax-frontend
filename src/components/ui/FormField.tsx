@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Select, { type StylesConfig } from "react-select";
+import CatalogLogoThumb, {
+  type CatalogLogoKind,
+} from "@/components/ui/CatalogLogoThumb";
 
 const labelClass =
   "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200";
@@ -29,26 +32,24 @@ function SelectOptionLabel({
   label,
   logoUrl,
   showLogo,
+  logoKind,
   compact,
 }: {
   label: string;
   logoUrl?: string | null;
   showLogo?: boolean;
+  logoKind?: CatalogLogoKind;
   compact?: boolean;
 }) {
   if (!showLogo) return <>{label}</>;
-  const size = compact ? "h-5 w-5" : "h-6 w-6";
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <span
-        className={`flex ${size} shrink-0 items-center justify-center overflow-hidden rounded border border-zinc-200/80 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800`}
-      >
-        {logoUrl ? (
-          <img src={logoUrl} alt="" className="h-full w-full object-contain" />
-        ) : (
-          <span className="text-[8px] font-medium text-zinc-400">—</span>
-        )}
-      </span>
+      <CatalogLogoThumb
+        src={logoUrl}
+        alt=""
+        size={compact ? "xs" : "sm"}
+        kind={logoKind}
+      />
       <span className="truncate">{label}</span>
     </span>
   );
@@ -257,6 +258,7 @@ export function FormFieldSelect<T extends string | number>({
   disabled,
   compact = false,
   showLogo = false,
+  logoKind,
 }: {
   label: string;
   name: string;
@@ -272,6 +274,8 @@ export function FormFieldSelect<T extends string | number>({
   compact?: boolean;
   /** Render logo thumbnail from option.logoUrl */
   showLogo?: boolean;
+  /** Placeholder icon when logo is missing (port / shipping_line / vessel). */
+  logoKind?: CatalogLogoKind;
 }) {
   const handleChange = (selected: CatalogSelectOption<T> | null) => {
     if (!selected) {
@@ -313,6 +317,7 @@ export function FormFieldSelect<T extends string | number>({
             label={option.label}
             logoUrl={option.logoUrl}
             showLogo={showLogo}
+            logoKind={logoKind}
             compact={compact}
           />
         )}
@@ -376,6 +381,7 @@ export function FormFieldMultiSelect<T extends string | number>({
   disabled,
   compact = false,
   showLogo = false,
+  logoKind,
 }: {
   label: string;
   name: string;
@@ -387,6 +393,7 @@ export function FormFieldMultiSelect<T extends string | number>({
   disabled?: boolean;
   compact?: boolean;
   showLogo?: boolean;
+  logoKind?: CatalogLogoKind;
 }) {
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
   const styles = buildCatalogMultiSelectStyles<T>(Boolean(error), compact);
@@ -413,6 +420,7 @@ export function FormFieldMultiSelect<T extends string | number>({
             label={option.label}
             logoUrl={option.logoUrl}
             showLogo={showLogo}
+            logoKind={logoKind}
             compact={compact}
           />
         )}

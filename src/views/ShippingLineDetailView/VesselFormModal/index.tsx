@@ -96,7 +96,9 @@ export default function VesselFormModal({
   const [form, setForm] = useState<VesselFormState>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [lineOptions, setLineOptions] = useState<{ value: number; label: string }[]>([]);
+  const [lineOptions, setLineOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -123,6 +125,7 @@ export default function VesselFormModal({
           lines.map((line) => ({
             value: line.id,
             label: line.group_name !== line.name ? `${line.name} (${line.group_name})` : line.name,
+            logoUrl: line.logo,
           })),
         ),
       )

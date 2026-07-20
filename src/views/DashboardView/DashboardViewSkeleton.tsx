@@ -12,7 +12,6 @@ export default function DashboardViewSkeleton() {
         title="Dashboard"
         description="KPIs operativos del período, cola de acción, próximos 30 días y ocupación por puerto."
       />
-      <Skeleton className="mb-6 h-24 w-full rounded-2xl" />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={`kpi-${index}`} className="h-[150px] rounded-2xl" />

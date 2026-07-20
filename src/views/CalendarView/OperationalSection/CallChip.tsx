@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Ship } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import {
   bookingDetailHref,
@@ -39,7 +38,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         src={logo}
         alt=""
         size={compact ? "xs" : "sm"}
-        fallbackIcon={Ship}
+        kind={booking.shipping_line_logo ? "shipping_line" : "vessel"}
         className="mt-0.5 border-white/40 bg-white/90 dark:border-zinc-700 dark:bg-zinc-900/90"
       />
       <span className="min-w-0 flex-1">

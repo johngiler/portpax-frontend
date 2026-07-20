@@ -30,16 +30,32 @@ import {
 
 const DEFAULT_PORT_CODES = ["roatan", "la_paz", "puerto_plata"] as const;
 
+function samePortIds(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort((x, y) => x - y);
+  const sortedB = [...b].sort((x, y) => x - y);
+  return sortedA.every((id, index) => id === sortedB[index]);
+}
+
 export default function CalendarView() {
-  const [mode, setMode] = useState<CalendarViewMode>("weekly");
   const [hasLoadedPrefs, setHasLoadedPrefs] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
 
+  const [defaultPortIds, setDefaultPortIds] = useState<number[]>([]);
+
+  const [mode, setMode] = useState<CalendarViewMode>("weekly");
   const [portIds, setPortIds] = useState<number[]>([]);
   const [shippingLineFilter, setShippingLineFilter] = useState(0);
   const [positionFilter, setPositionFilter] = useState(0);
   const [status, setStatus] = useState<BookingListStatusFilter>("");
   const [search, setSearch] = useState("");
+
+  const [appliedMode, setAppliedMode] = useState<CalendarViewMode>("weekly");
+  const [appliedPortIds, setAppliedPortIds] = useState<number[]>([]);
+  const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
+  const [appliedPositionFilter, setAppliedPositionFilter] = useState(0);
+  const [appliedStatus, setAppliedStatus] = useState<BookingListStatusFilter>("");
+  const [appliedSearch, setAppliedSearch] = useState("");
 
   const [weekAnchor, setWeekAnchor] = useState(() => {
     const d = new Date();
@@ -70,14 +86,19 @@ export default function CalendarView() {
         const activePorts = portsList.filter((p) => p.is_active);
         setPorts(activePorts);
         setShippingLines(linesPage.results.filter((l) => l.is_active));
-        setPortIds((prev) => {
-          if (prev.length > 0) return prev;
-          const defaults = DEFAULT_PORT_CODES.map(
-            (code) => activePorts.find((p) => p.code === code)?.id,
-          ).filter((id): id is number => id != null);
-          if (defaults.length > 0) return defaults;
-          return activePorts.length === 1 ? [activePorts[0].id] : [];
-        });
+
+        const defaults = DEFAULT_PORT_CODES.map(
+          (code) => activePorts.find((p) => p.code === code)?.id,
+        ).filter((id): id is number => id != null);
+        const initial =
+          defaults.length > 0
+            ? defaults
+            : activePorts.length === 1
+              ? [activePorts[0].id]
+              : [];
+        setDefaultPortIds(initial);
+        setPortIds((prev) => (prev.length > 0 ? prev : initial));
+        setAppliedPortIds((prev) => (prev.length > 0 ? prev : initial));
       } catch {
         if (!cancelled) {
           setPorts([]);
@@ -121,52 +142,58 @@ export default function CalendarView() {
   }, [portIds]);
 
   const exportRange = useMemo(() => {
-    if (mode === "weekly") {
+    if (appliedMode === "weekly") {
       const days = weekDatesFrom(weekAnchor);
       return { from: days[0], to: days[6] };
     }
-    if (mode === "annual") return yearBounds(year);
+    if (appliedMode === "annual") return yearBounds(year);
     return monthBounds(year, monthIndex);
-  }, [mode, weekAnchor, year, monthIndex]);
+  }, [appliedMode, weekAnchor, year, monthIndex]);
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
       setViewError(null);
-      if (portIds.length === 0) {
+      if (appliedPortIds.length === 0) {
         setViewError("Selecciona al menos un puerto para exportar.");
         return;
       }
       try {
         await exportCalendarReport({
-          ports: portIds,
+          ports: appliedPortIds,
           call_date_from: exportRange.from,
           call_date_to: exportRange.to,
-          shipping_line: shippingLineFilter > 0 ? shippingLineFilter : undefined,
-          status: status || undefined,
+          shipping_line:
+            appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+          status: appliedStatus || undefined,
           exportFormat: format,
         });
       } catch (err) {
         setViewError(getApiErrorMessage(err, "No se pudo exportar el calendario."));
       }
     },
-    [portIds, exportRange, shippingLineFilter, status],
+    [appliedPortIds, exportRange, appliedShippingLineFilter, appliedStatus],
   );
 
   useEffect(() => {
-    if (portIds.length === 0) {
+    if (appliedPortIds.length === 0) {
       setDataExportHandler(null);
       return () => setDataExportHandler(null);
     }
     setDataExportHandler(handleExport);
     return () => setDataExportHandler(null);
-  }, [handleExport, portIds.length]);
+  }, [handleExport, appliedPortIds.length]);
 
   const portOptions = useMemo(
-    () => ports.map((p) => ({ value: p.id, label: p.name })),
+    () => ports.map((p) => ({ value: p.id, label: p.name, logoUrl: p.logo })),
     [ports],
   );
   const shippingLineOptions = useMemo(
-    () => shippingLines.map((l) => ({ value: l.id, label: l.name })),
+    () =>
+      shippingLines.map((l) => ({
+        value: l.id,
+        label: l.name,
+        logoUrl: l.logo,
+      })),
     [shippingLines],
   );
   const portsById = useMemo(() => {
@@ -175,14 +202,61 @@ export default function CalendarView() {
     return map;
   }, [ports]);
 
+  function applyFilters() {
+    setAppliedMode(mode);
+    setAppliedPortIds(portIds);
+    setAppliedShippingLineFilter(shippingLineFilter);
+    setAppliedPositionFilter(positionFilter);
+    setAppliedStatus(status);
+    setAppliedSearch(search.trim());
+  }
+
+  function clearFilters() {
+    setMode("weekly");
+    setPortIds(defaultPortIds);
+    setShippingLineFilter(0);
+    setPositionFilter(0);
+    setStatus("");
+    setSearch("");
+    setAppliedMode("weekly");
+    setAppliedPortIds(defaultPortIds);
+    setAppliedShippingLineFilter(0);
+    setAppliedPositionFilter(0);
+    setAppliedStatus("");
+    setAppliedSearch("");
+  }
+
+  const draftDirty =
+    mode !== "weekly" ||
+    !samePortIds(portIds, defaultPortIds) ||
+    shippingLineFilter > 0 ||
+    positionFilter > 0 ||
+    status !== "" ||
+    search.trim() !== "";
+
+  const appliedDirty =
+    appliedMode !== "weekly" ||
+    !samePortIds(appliedPortIds, defaultPortIds) ||
+    appliedShippingLineFilter > 0 ||
+    appliedPositionFilter > 0 ||
+    appliedStatus !== "" ||
+    appliedSearch !== "";
+
+  const canClear = draftDirty || appliedDirty;
+
+  function handleModeChangeFromView(next: CalendarViewMode) {
+    setMode(next);
+    setAppliedMode(next);
+  }
+
   if (!hasLoadedPrefs) {
     return <CalendarViewSkeleton />;
   }
 
   const description =
-    mode === "weekly"
+    appliedMode === "weekly"
       ? "Una card por puerto: muelles × días de la semana. Exporta desde Datos en el panel."
-      : mode === "monthly"
+      : appliedMode === "monthly"
         ? "Una card por puerto con el mes completo y totales. Exporta desde Datos en el panel."
         : "Una card por puerto con 12 meses y comparativa anual. Exporta desde Datos en el panel.";
 
@@ -205,6 +279,9 @@ export default function CalendarView() {
           onPositionFilterChange={setPositionFilter}
           onStatusChange={setStatus}
           onSearchChange={setSearch}
+          onApply={applyFilters}
+          onClear={clearFilters}
+          canClear={canClear}
         />
       </FilterSidebarContent>
 
@@ -216,14 +293,14 @@ export default function CalendarView() {
       {viewError ? <ViewErrorBanner message={viewError} /> : null}
 
       <OperationalSection
-        mode={mode}
-        onModeChange={setMode}
-        portIds={portIds}
+        mode={appliedMode}
+        onModeChange={handleModeChangeFromView}
+        portIds={appliedPortIds}
         portsById={portsById}
-        shippingLineId={shippingLineFilter}
-        status={status}
-        positionId={positionFilter}
-        search={search}
+        shippingLineId={appliedShippingLineFilter}
+        status={appliedStatus}
+        positionId={appliedPositionFilter}
+        search={appliedSearch}
         weekAnchor={weekAnchor}
         onWeekAnchorChange={setWeekAnchor}
         year={year}

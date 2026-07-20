@@ -1,19 +1,14 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-import { Anchor, MapPin } from "lucide-react";
-import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import CatalogLogoThumb, {
+  type CatalogLogoKind,
+} from "@/components/ui/CatalogLogoThumb";
 
 type ReportLogoNameProps = {
   name: string;
   logo: string | null;
-  /** Port vs shipping line empty-state icon (never a letter initial). */
-  kind?: "port" | "shipping_line";
-};
-
-const FALLBACK: Record<"port" | "shipping_line", LucideIcon> = {
-  port: MapPin,
-  shipping_line: Anchor,
+  /** Port / shipping line / vessel empty-state icon (never a letter initial). */
+  kind?: CatalogLogoKind;
 };
 
 /** Name cell with catalog logo — no letter initials (avatars only). */
@@ -24,12 +19,7 @@ export default function ReportLogoName({
 }: ReportLogoNameProps) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <CatalogLogoThumb
-        src={logo}
-        alt=""
-        size="sm"
-        fallbackIcon={FALLBACK[kind]}
-      />
+      <CatalogLogoThumb src={logo} alt="" size="sm" kind={kind} />
       <span className="truncate font-medium text-zinc-900 dark:text-zinc-50">{name}</span>
     </div>
   );

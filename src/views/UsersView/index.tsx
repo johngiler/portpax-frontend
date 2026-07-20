@@ -49,7 +49,9 @@ export default function UsersView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portOptions, setPortOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
@@ -69,7 +71,11 @@ export default function UsersView() {
     fetchPorts({ pageSize: 100 })
       .then((data) =>
         setPortOptions(
-          data.results.map((port) => ({ value: port.id, label: portDisplayName(port) })),
+          data.results.map((port) => ({
+            value: port.id,
+            label: portDisplayName(port),
+            logoUrl: port.logo,
+          })),
         ),
       )
       .catch(() => setPortOptions([]));

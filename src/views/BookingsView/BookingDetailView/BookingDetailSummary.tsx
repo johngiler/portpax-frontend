@@ -2,6 +2,7 @@
 
 import { Anchor, CalendarDays, MapPin, Ship } from "lucide-react";
 import type { ReactNode } from "react";
+import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 
@@ -38,24 +39,38 @@ export default function BookingDetailSummary({ booking }: BookingDetailSummaryPr
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryItem icon={MapPin} label="Puerto">
           <div className="flex items-center gap-2">
-            {booking.port_logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={booking.port_logo}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded object-contain"
-              />
-            ) : null}
+            <CatalogLogoThumb
+              src={booking.port_logo}
+              alt=""
+              size="xs"
+              kind="port"
+            />
             <span className="truncate">{booking.port_name}</span>
           </div>
           <p className="mt-0.5 text-xs font-normal text-zinc-500">{booking.port_code}</p>
         </SummaryItem>
         <SummaryItem icon={Anchor} label="Naviera">
-          <span className="truncate">{booking.shipping_line_name}</span>
+          <div className="flex items-center gap-2">
+            <CatalogLogoThumb
+              src={booking.shipping_line_logo}
+              alt=""
+              size="xs"
+              kind="shipping_line"
+            />
+            <span className="truncate">{booking.shipping_line_name}</span>
+          </div>
           <p className="mt-0.5 text-xs font-normal text-zinc-500">{booking.shipping_line_code}</p>
         </SummaryItem>
         <SummaryItem icon={Ship} label="Barco">
-          <span className="truncate">{booking.vessel_name}</span>
+          <div className="flex items-center gap-2">
+            <CatalogLogoThumb
+              src={booking.vessel_logo}
+              alt=""
+              size="xs"
+              kind="vessel"
+            />
+            <span className="truncate">{booking.vessel_name}</span>
+          </div>
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fecha de escala">
           <span>{formatIsoDateLabel(booking.call_date, "long")}</span>

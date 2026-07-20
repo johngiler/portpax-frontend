@@ -7,7 +7,7 @@ export type VesselFormState = VesselPayload;
 type VesselFormFieldsProps = {
   form: VesselFormState;
   errors: Partial<Record<keyof VesselFormState, string>>;
-  lineOptions: { value: number; label: string }[];
+  lineOptions: { value: number; label: string; logoUrl?: string | null }[];
   lockedShippingLineId?: number;
   lockedShippingLineName?: string;
   onFieldChange: <K extends keyof VesselFormState>(key: K, value: VesselFormState[K]) => void;
@@ -41,6 +41,8 @@ export default function VesselFormFields({
             emptyValue={0}
             required
             error={errors.shipping_line}
+            showLogo
+            logoKind="shipping_line"
           />
         ) : lockedShippingLineName ? (
           <div className="mb-4">

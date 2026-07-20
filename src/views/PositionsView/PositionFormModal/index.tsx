@@ -141,7 +141,9 @@ export default function PositionFormModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [berthOptions, setBerthOptions] = useState<{ value: number; label: string }[]>([]);
-  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portOptions, setPortOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
   const [portCodesById, setPortCodesById] = useState<Record<number, string>>({});
   const [isCombined, setIsCombined] = useState(false);
   const [componentAId, setComponentAId] = useState(0);
@@ -177,7 +179,13 @@ export default function PositionFormModal({
     setComponentBId(initial?.component_positions[1]?.id ?? 0);
     fetchPorts({ pageSize: 100 })
       .then((data) => {
-        setPortOptions(data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })));
+        setPortOptions(
+          data.results.map((p) => ({
+            value: p.id,
+            label: portDisplayName(p),
+            logoUrl: p.logo,
+          })),
+        );
         setPortCodesById(Object.fromEntries(data.results.map((p) => [p.id, p.code])));
       })
       .catch(() => {
@@ -528,6 +536,8 @@ export default function PositionFormModal({
                   required
                   error={errors.port}
                   disabled={mode === "edit"}
+                  showLogo
+                  logoKind="port"
                 />
               )}
               {isCombined && form.port > 0 && (

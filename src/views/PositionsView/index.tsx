@@ -51,7 +51,9 @@ export default function PositionsView() {
   const [portFilter, setPortFilter] = useState(0);
   const [appliedSearch, setAppliedSearch] = useState("");
   const [appliedPortFilter, setAppliedPortFilter] = useState(0);
-  const [portOptions, setPortOptions] = useState<{ value: number; label: string }[]>([]);
+  const [portOptions, setPortOptions] = useState<
+    { value: number; label: string; logoUrl?: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
@@ -64,7 +66,11 @@ export default function PositionsView() {
     fetchPorts({ pageSize: 100 })
       .then((data) =>
         setPortOptions(
-          data.results.map((p) => ({ value: p.id, label: portDisplayName(p) })),
+          data.results.map((p) => ({
+            value: p.id,
+            label: portDisplayName(p),
+            logoUrl: p.logo,
+          })),
         ),
       )
       .catch(() => setPortOptions([]));
@@ -197,6 +203,8 @@ export default function PositionsView() {
           optionLabel="Todos los puertos"
           emptyValue={0}
           compact
+          showLogo
+          logoKind="port"
         />
         <FilterActions
           onApply={applyFilters}
