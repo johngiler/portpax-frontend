@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import Select, { type StylesConfig } from "react-select";
 
 const labelClass =
@@ -181,35 +183,58 @@ export function FormField({
   disabled,
   compact = false,
 }: FormFieldProps) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword && passwordVisible ? "text" : type;
+
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
       <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
         {label}
         {required && <span className="text-red-500"> *</span>}
       </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value ?? ""}
-        onChange={(e) => {
-          const v =
-            type === "number"
-              ? e.target.value === ""
-                ? ""
-                : Number(e.target.value)
-              : e.target.value;
-          onChange(v);
-        }}
-        placeholder={placeholder}
-        className={`${compact ? inputCompactClass : inputClass} ${error ? inputErrorClass : ""}`}
-        required={required}
-        min={min}
-        step={step}
-        disabled={disabled}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${name}-error` : undefined}
-      />
+      <div className="relative">
+        <input
+          id={name}
+          name={name}
+          type={inputType}
+          value={value ?? ""}
+          onChange={(e) => {
+            const v =
+              type === "number"
+                ? e.target.value === ""
+                  ? ""
+                  : Number(e.target.value)
+                : e.target.value;
+            onChange(v);
+          }}
+          placeholder={placeholder}
+          className={`${compact ? inputCompactClass : inputClass} ${isPassword ? "pr-11" : ""} ${error ? inputErrorClass : ""}`}
+          required={required}
+          min={min}
+          step={step}
+          disabled={disabled}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${name}-error` : undefined}
+          autoComplete={isPassword ? "new-password" : undefined}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setPasswordVisible((v) => !v)}
+            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-black/5 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+            aria-label={passwordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            title={passwordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            disabled={disabled}
+          >
+            {passwordVisible ? (
+              <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+            ) : (
+              <Eye className="h-4 w-4" strokeWidth={1.75} />
+            )}
+          </button>
+        )}
+      </div>
       {error && (
         <p id={`${name}-error`} className={errorClass} role="alert">
           {error}

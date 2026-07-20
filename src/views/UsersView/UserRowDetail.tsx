@@ -96,7 +96,9 @@ export default function UserRowDetail({ user, portLabels }: UserRowDetailProps) 
             {formatDateTime(user.date_joined)}
           </MetaCard>
           <MetaCard icon={CalendarClock} label="Último acceso">
-            {formatDateTime(user.last_login)}
+            {user.last_login
+              ? formatDateTime(user.last_login)
+              : "Nunca ha iniciado sesión"}
           </MetaCard>
           <MetaCard icon={MapPin} label="Puertos">
             {user.role === "admin" ? (
