@@ -7,8 +7,9 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewSection from "@/components/layout/ViewSection";
 import ViewStatCard from "@/components/layout/ViewStatCard";
-import { FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import FilterActions from "@/components/layout/FilterActions";
+import EmptyState from "@/components/ui/EmptyState";
 import Skeleton from "@/components/ui/Skeleton";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
@@ -19,15 +20,25 @@ import {
 import { fetchAllPages } from "@/lib/fetchAllPages";
 import {
   exportBookingsReport,
+  exportStructuredReport,
+  fetchAvailabilityReport,
   fetchBookingTotalsReport,
+  fetchCarrierPanoramaReport,
+  fetchCumplimientoRealReport,
   fetchMovementsReport,
+  type AvailabilityReport,
   type BookingTotalsReport,
+  type CarrierPanoramaReport,
+  type CumplimientoRealReport,
   type MovementsReport,
 } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine } from "@/types/cruise";
+import AvailabilityChartSection from "./AvailabilityChartSection";
+import CarrierPanoramaSection from "./CarrierPanoramaSection";
+import CumplimientoRealSection from "./CumplimientoRealSection";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
 import ReportLogoName from "./ReportLogoName";
 
@@ -47,7 +58,21 @@ function weekAgoIso(): string {
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-type ReportTab = "totals" | "movements" | "by_line";
+type ReportTab =
+  | "totals"
+  | "movements"
+  | "availability"
+  | "panorama"
+  | "cumplimiento";
+
+type AppliedReportFilters = {
+  tab: ReportTab;
+  dateFrom: string;
+  dateTo: string;
+  portFilter: number;
+  lineFilter: number;
+  withoutLta: boolean;
+};
 
 export default function ReportsView() {
   const [tab, setTab] = useState<ReportTab>("totals");
@@ -56,11 +81,24 @@ export default function ReportsView() {
   const [portFilter, setPortFilter] = useState(0);
   const [lineFilter, setLineFilter] = useState(0);
   const [withoutLta, setWithoutLta] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<AppliedReportFilters>({
+    tab: "totals",
+    dateFrom: yearStart(),
+    dateTo: todayIso(),
+    portFilter: 0,
+    lineFilter: 0,
+    withoutLta: false,
+  });
 
   const [ports, setPorts] = useState<Port[]>([]);
   const [lines, setLines] = useState<ShippingLine[]>([]);
   const [totals, setTotals] = useState<BookingTotalsReport | null>(null);
   const [movements, setMovements] = useState<MovementsReport | null>(null);
+  const [panorama, setPanorama] = useState<CarrierPanoramaReport | null>(null);
+  const [cumplimiento, setCumplimiento] = useState<CumplimientoRealReport | null>(
+    null,
+  );
+  const [availability, setAvailability] = useState<AvailabilityReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -91,36 +129,97 @@ export default function ReportsView() {
   }, []);
 
   const load = useCallback(async () => {
+    const {
+      tab: appliedTab,
+      dateFrom: appliedDateFrom,
+      dateTo: appliedDateTo,
+      portFilter: appliedPortFilter,
+      lineFilter: appliedLineFilter,
+      withoutLta: appliedWithoutLta,
+    } = appliedFilters;
     setLoading(true);
     setError(null);
     try {
-      if (tab === "movements") {
+      if (appliedTab === "movements") {
         const data = await fetchMovementsReport({
-          date_from: dateFrom,
-          date_to: dateTo,
-          port: portFilter > 0 ? portFilter : undefined,
+          date_from: appliedDateFrom,
+          date_to: appliedDateTo,
+          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
         });
         setMovements(data);
         setTotals(null);
+        setPanorama(null);
+        setCumplimiento(null);
+        setAvailability(null);
+      } else if (appliedTab === "availability") {
+        setTotals(null);
+        setMovements(null);
+        setPanorama(null);
+        setCumplimiento(null);
+        if (!appliedPortFilter) {
+          setAvailability(null);
+          setError("Selecciona un puerto para Availability Chart.");
+        } else {
+          const data = await fetchAvailabilityReport({
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            port: appliedPortFilter,
+          });
+          setAvailability(data);
+        }
+      } else if (appliedTab === "panorama") {
+        if (!appliedLineFilter) {
+          setError("Selecciona una naviera para el panorama.");
+          setPanorama(null);
+        } else {
+          const data = await fetchCarrierPanoramaReport({
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            shipping_line: appliedLineFilter,
+          });
+          setPanorama(data);
+        }
+        setTotals(null);
+        setMovements(null);
+        setCumplimiento(null);
+        setAvailability(null);
+      } else if (appliedTab === "cumplimiento") {
+        const data = await fetchCumplimientoRealReport({
+          date_from: appliedDateFrom,
+          date_to: appliedDateTo,
+          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+        });
+        setCumplimiento(data);
+        setTotals(null);
+        setMovements(null);
+        setPanorama(null);
+        setAvailability(null);
       } else {
         const data = await fetchBookingTotalsReport({
-          date_from: dateFrom,
-          date_to: dateTo,
-          port: portFilter > 0 ? portFilter : undefined,
-          shipping_line: lineFilter > 0 ? lineFilter : undefined,
-          without_lta: withoutLta,
+          date_from: appliedDateFrom,
+          date_to: appliedDateTo,
+          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+          shipping_line:
+            appliedLineFilter > 0 ? appliedLineFilter : undefined,
+          without_lta: appliedWithoutLta,
         });
         setTotals(data);
         setMovements(null);
+        setPanorama(null);
+        setCumplimiento(null);
+        setAvailability(null);
       }
     } catch (err) {
       setError(getApiErrorMessage(err, "No se pudo cargar el reporte."));
       setTotals(null);
       setMovements(null);
+      setPanorama(null);
+      setCumplimiento(null);
+      setAvailability(null);
     } finally {
       setLoading(false);
     }
-  }, [tab, dateFrom, dateTo, portFilter, lineFilter, withoutLta]);
+  }, [appliedFilters]);
 
   useEffect(() => {
     if (!ready) return;
@@ -147,30 +246,113 @@ export default function ReportsView() {
     withoutLta;
 
   function clearFilters() {
-    setDateFrom(tab === "movements" ? weekAgoIso() : yearStart());
-    setDateTo(todayIso());
+    const cleanDateFrom = tab === "movements" ? weekAgoIso() : yearStart();
+    const cleanDateTo = todayIso();
+    setDateFrom(cleanDateFrom);
+    setDateTo(cleanDateTo);
     setPortFilter(0);
     setLineFilter(0);
     setWithoutLta(false);
+    setAppliedFilters({
+      tab,
+      dateFrom: cleanDateFrom,
+      dateTo: cleanDateTo,
+      portFilter: 0,
+      lineFilter: 0,
+      withoutLta: false,
+    });
+  }
+
+  function applyFilters() {
+    setAppliedFilters({
+      tab,
+      dateFrom,
+      dateTo,
+      portFilter,
+      lineFilter,
+      withoutLta,
+    });
   }
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
+      const {
+        tab: appliedTab,
+        dateFrom: appliedDateFrom,
+        dateTo: appliedDateTo,
+        portFilter: appliedPortFilter,
+        lineFilter: appliedLineFilter,
+      } = appliedFilters;
       setError(null);
       try {
-        await exportBookingsReport({
+        if (appliedTab === "totals") {
+          await exportBookingsReport({
+            exportFormat: format,
+            port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+            shipping_line:
+              appliedLineFilter > 0 ? appliedLineFilter : undefined,
+            call_date_from: appliedDateFrom,
+            call_date_to: appliedDateTo,
+            ordering: "call_date",
+          });
+          return;
+        }
+        if (appliedTab === "movements" && format === "csv") {
+          setError("El reporte WEEK solo se exporta a Excel (.xlsx).");
+          return;
+        }
+        if (appliedTab === "availability") {
+          if (!appliedPortFilter) {
+            setError("Selecciona un puerto para exportar Availability Chart.");
+            return;
+          }
+          await exportStructuredReport({
+            report_type: "availability",
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            port: appliedPortFilter,
+            exportFormat: format,
+          });
+          return;
+        }
+        if (appliedTab === "movements") {
+          await exportStructuredReport({
+            report_type: "week",
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+            shipping_line:
+              appliedLineFilter > 0 ? appliedLineFilter : undefined,
+            exportFormat: "xlsx",
+          });
+          return;
+        }
+        if (appliedTab === "panorama") {
+          if (!appliedLineFilter) {
+            setError("Selecciona una naviera para exportar el panorama.");
+            return;
+          }
+          await exportStructuredReport({
+            report_type: "carrier_panorama",
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            shipping_line: appliedLineFilter,
+            exportFormat: format,
+          });
+          return;
+        }
+        await exportStructuredReport({
+          report_type: "cumplimiento_real",
+          date_from: appliedDateFrom,
+          date_to: appliedDateTo,
+          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
           exportFormat: format,
-          port: portFilter > 0 ? portFilter : undefined,
-          shipping_line: lineFilter > 0 ? lineFilter : undefined,
-          call_date_from: dateFrom,
-          call_date_to: dateTo,
-          ordering: "call_date",
         });
       } catch (err) {
         setError(getApiErrorMessage(err, "No se pudo exportar el reporte."));
       }
     },
-    [portFilter, lineFilter, dateFrom, dateTo],
+    [appliedFilters],
   );
 
   useEffect(() => {
@@ -179,6 +361,9 @@ export default function ReportsView() {
   }, [handleExport]);
 
   if (!ready) return <ReportsViewSkeleton />;
+
+  const showLineFilter = tab !== "movements" && tab !== "availability";
+  const showPortFilter = tab !== "panorama";
 
   return (
     <>
@@ -194,60 +379,67 @@ export default function ReportsView() {
             setPortFilter(0);
             setLineFilter(0);
             setWithoutLta(false);
+            setError(null);
           }}
           options={[
             { value: "totals", label: "Booking Totals" },
-            { value: "movements", label: "Movimientos" },
-            { value: "by_line", label: "Por naviera (export)" },
+            { value: "movements", label: "WEEK / Movimientos" },
+            { value: "availability", label: "Availability Chart" },
+            { value: "panorama", label: "Panorama por naviera" },
+            { value: "cumplimiento", label: "Cumplimiento REAL" },
           ]}
           compact
         />
-        <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-300">
-          Desde
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        {showPortFilter ? (
+          <FormFieldSelect<number>
+            label="Puerto"
+            name="report_port"
+            value={portFilter}
+            onChange={(v) => setPortFilter(Number(v))}
+            options={portOptions}
+            optionLabel={
+              tab === "availability" ? "Selecciona un puerto" : "Todos los puertos"
+            }
+            emptyValue={0}
+            compact
+            showLogo
+            logoKind="port"
           />
-        </label>
-        <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-300">
-          Hasta
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
-        <FormFieldSelect<number>
-          label="Puerto"
-          name="report_port"
-          value={portFilter}
-          onChange={(v) => setPortFilter(Number(v))}
-          options={portOptions}
-          optionLabel="Todos los puertos"
-          emptyValue={0}
-          compact
-          showLogo
-          logoKind="port"
-        />
-        {tab !== "movements" ? (
+        ) : null}
+        {showLineFilter ? (
           <FormFieldSelect<number>
             label="Naviera"
             name="report_line"
             value={lineFilter}
             onChange={(v) => setLineFilter(Number(v))}
             options={lineOptions}
-            optionLabel="Todas las navieras"
+            optionLabel={
+              tab === "panorama" ? "Selecciona una naviera" : "Todas las navieras"
+            }
             emptyValue={0}
             compact
             showLogo
             logoKind="shipping_line"
           />
         ) : null}
+        <FormField
+          label="Desde"
+          name="report_date_from"
+          type="date"
+          value={dateFrom}
+          onChange={(value) => setDateFrom(String(value))}
+          compact
+        />
+        <FormField
+          label="Hasta"
+          name="report_date_to"
+          type="date"
+          value={dateTo}
+          onChange={(value) => setDateTo(String(value))}
+          compact
+        />
         {tab === "totals" ? (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
             <input
               type="checkbox"
               checked={withoutLta}
@@ -258,7 +450,7 @@ export default function ReportsView() {
           </label>
         ) : null}
         <FilterActions
-          onApply={() => void load()}
+          onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
         />
@@ -267,13 +459,21 @@ export default function ReportsView() {
       <ViewPageHeader
         icon={BarChart3}
         title="Reportes"
-        description="Totales de calls/PAX, movimientos de la semana y export por naviera."
+        description="Totales, Availability Chart, WEEK, panorama por naviera y cumplimiento REAL (sin proyección ni garantías)."
       />
       {error ? <ViewErrorBanner message={error} /> : null}
 
       {loading ? (
         <Skeleton className="h-96 rounded-2xl" />
-      ) : tab === "totals" && totals ? (
+      ) : appliedFilters.tab === "totals" && totals && totals.total_calls === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          filtered
+          title="Sin datos con estos filtros"
+          description="No hay reservas en el período o filtros seleccionados. Ajusta el rango, el puerto o la naviera."
+          onClearFilters={clearFilters}
+        />
+      ) : appliedFilters.tab === "totals" && totals ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <ViewStatCard
@@ -368,7 +568,17 @@ export default function ReportsView() {
             </div>
           </ViewSection>
         </div>
-      ) : tab === "movements" && movements ? (
+      ) : appliedFilters.tab === "movements" &&
+        movements &&
+        movements.confirmations_count + movements.cancellations_count === 0 ? (
+        <EmptyState
+          icon={FileText}
+          filtered
+          title="Sin movimientos en el rango"
+          description="No hay confirmaciones ni cancelaciones auditadas en este período (el histórico importado no genera movimientos)."
+          onClearFilters={clearFilters}
+        />
+      ) : appliedFilters.tab === "movements" && movements ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <ViewStatCard
@@ -391,7 +601,7 @@ export default function ReportsView() {
           <ViewSection
             icon={FileText}
             title="Detalle de movimientos"
-            description="Basado en auditoría de cambios de estado."
+            description="Excel genera el WEEK (movimientos + matrices mes × naviera)."
           >
             <div className="overflow-x-auto px-5 py-4 sm:px-6">
               <table className="min-w-full text-left text-sm">
@@ -429,26 +639,37 @@ export default function ReportsView() {
                     ))}
                 </tbody>
               </table>
-              {movements.confirmations_count + movements.cancellations_count === 0 ? (
-                <p className="py-6 text-sm text-zinc-500">
-                  No hay cambios de estado auditados en este rango (el histórico importado
-                  no genera movimientos).
-                </p>
-              ) : null}
             </div>
           </ViewSection>
         </div>
-      ) : tab === "by_line" ? (
-        <ViewSection
+      ) : appliedFilters.tab === "availability" && !appliedFilters.portFilter ? (
+        <EmptyState
           icon={FileText}
-          title="Reporte por naviera"
-          description="Usa los filtros del panel y exporta desde Datos → Exportar (Excel o CSV)."
-        >
-          <p className="px-5 py-6 text-sm text-zinc-600 dark:text-zinc-300 sm:px-6">
-            El archivo incluye las mismas columnas que el export de Reservas, acotado al
-            puerto/naviera y rango de fechas seleccionados.
-          </p>
-        </ViewSection>
+          title="Selecciona un puerto"
+          description="Availability Chart requiere un puerto. Elígelo en el panel de filtros y pulsa Aplicar."
+        />
+      ) : appliedFilters.tab === "availability" && availability ? (
+        availability.rows.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            filtered
+            title="Sin datos con estos filtros"
+            description="No hay posiciones activas o escalas en el rango seleccionado. Ajusta el puerto o las fechas."
+            onClearFilters={clearFilters}
+          />
+        ) : (
+          <AvailabilityChartSection data={availability} />
+        )
+      ) : appliedFilters.tab === "panorama" && panorama ? (
+        <CarrierPanoramaSection
+          data={panorama}
+          onClearFilters={clearFilters}
+        />
+      ) : appliedFilters.tab === "cumplimiento" && cumplimiento ? (
+        <CumplimientoRealSection
+          data={cumplimiento}
+          onClearFilters={clearFilters}
+        />
       ) : null}
     </>
   );

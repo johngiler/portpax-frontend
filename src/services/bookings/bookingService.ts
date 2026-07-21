@@ -192,6 +192,135 @@ export async function fetchMovementsReport(params: {
   return apiFetch<MovementsReport>(`${BASE}report-movements/?${query.toString()}`);
 }
 
+export type CarrierPanoramaReport = {
+  shipping_line: { id: number; code: string; name: string };
+  date_from: string;
+  date_to: string;
+  years: number[];
+  ports: Array<{
+    port_id: number;
+    code: string;
+    name: string;
+    by_year: Array<{ year: number; calls: number; pax: number }>;
+    total_calls: number;
+    total_pax: number;
+  }>;
+  note: string;
+};
+
+export type CumplimientoRealReport = {
+  date_from: string;
+  date_to: string;
+  years: number[];
+  year_totals: Array<{ year: number; pax: number }>;
+  grand_total_pax: number;
+  lines: Array<{
+    shipping_line_id: number;
+    code: string;
+    name: string;
+    by_year: Array<{ year: number; pax: number; share_pct: number }>;
+    total_pax: number;
+  }>;
+  note: string;
+};
+
+export type StructuredReportType =
+  | "availability"
+  | "week"
+  | "carrier_panorama"
+  | "cumplimiento_real";
+
+export type AvailabilityReport = {
+  port_id: number;
+  port_code: string;
+  port_name: string;
+  date_from: string;
+  date_to: string;
+  columns: Array<{
+    id: number;
+    code: string;
+    label: string;
+    berth_name: string;
+    max_loa_m: string | null;
+  }>;
+  rows: Array<{
+    date: string;
+    cells: Array<
+      Array<{
+        booking_code: string;
+        shipping_line_name: string;
+        shipping_line_logo: string | null;
+        vessel_name: string;
+        loa_m: string | null;
+      }>
+    >;
+  }>;
+};
+
+export async function fetchAvailabilityReport(params: {
+  date_from: string;
+  date_to: string;
+  port: number;
+}): Promise<AvailabilityReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  query.set("port", String(params.port));
+  return apiFetch<AvailabilityReport>(
+    `${BASE}report-availability/?${query.toString()}`,
+  );
+}
+
+export async function fetchCarrierPanoramaReport(params: {
+  date_from: string;
+  date_to: string;
+  shipping_line: number;
+}): Promise<CarrierPanoramaReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  query.set("shipping_line", String(params.shipping_line));
+  return apiFetch<CarrierPanoramaReport>(
+    `${BASE}report-carrier-panorama/?${query.toString()}`,
+  );
+}
+
+export async function fetchCumplimientoRealReport(params: {
+  date_from: string;
+  date_to: string;
+  port?: number;
+}): Promise<CumplimientoRealReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  if (params.port) query.set("port", String(params.port));
+  return apiFetch<CumplimientoRealReport>(
+    `${BASE}report-cumplimiento-real/?${query.toString()}`,
+  );
+}
+
+export async function exportStructuredReport(params: {
+  report_type: StructuredReportType;
+  date_from: string;
+  date_to: string;
+  port?: number;
+  shipping_line?: number;
+  exportFormat?: "xlsx" | "csv";
+}): Promise<void> {
+  const format = params.exportFormat ?? "xlsx";
+  const query = new URLSearchParams();
+  query.set("report_type", params.report_type);
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  query.set("export_format", format);
+  if (params.port) query.set("port", String(params.port));
+  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  const { blob, filename } = await apiDownload(
+    `${BASE}report-export/?${query.toString()}`,
+  );
+  triggerBrowserDownload(blob, filename || `${params.report_type}.${format}`);
+}
+
 export async function fetchBooking(id: number): Promise<Booking> {
   return apiFetch<Booking>(`${BASE}${id}/`);
 }

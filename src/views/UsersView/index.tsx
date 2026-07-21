@@ -18,6 +18,7 @@ import MainTable, {
 } from "@/components/tables/MainTable";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
+import EmptyState from "@/components/ui/EmptyState";
 import EntityThumb from "@/components/ui/EntityThumb";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
@@ -202,7 +203,29 @@ export default function UsersView() {
 
       {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
 
-      <MainTable>
+      {!loading && users.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          filtered={Boolean(appliedSearch)}
+          title={
+            appliedSearch
+              ? "Sin usuarios con esta búsqueda"
+              : "Aún no hay usuarios"
+          }
+          description={
+            appliedSearch
+              ? "Ajusta la búsqueda o registra una nueva cuenta del sistema."
+              : "Registra cuentas para asignar roles y acceso por puerto."
+          }
+          primaryAction={{
+            label: "Nuevo usuario",
+            onClick: openCreate,
+            icon: Plus,
+          }}
+          onClearFilters={clearFilters}
+        />
+      ) : (
+        <MainTable>
         <table className="w-full min-w-[48rem]">
           <MainTableHeader>
             <MainTableTh>Usuario</MainTableTh>
@@ -215,12 +238,6 @@ export default function UsersView() {
           <MainTableBody>
             {loading ? (
               <MainTableEmpty colSpan={6}>Cargando…</MainTableEmpty>
-            ) : users.length === 0 ? (
-              <MainTableEmpty colSpan={6}>
-                {appliedSearch
-                  ? "Ningún usuario coincide con la búsqueda."
-                  : "No hay usuarios registrados."}
-              </MainTableEmpty>
             ) : (
               users.map((managed) => {
                 const fullName = [managed.first_name, managed.last_name]
@@ -283,14 +300,17 @@ export default function UsersView() {
             )}
           </MainTableBody>
         </table>
-      </MainTable>
+        </MainTable>
+      )}
 
-      <TablePagination
-        page={page}
-        pageSize={PAGE_SIZE}
-        totalCount={totalCount}
-        onPageChange={setPage}
-      />
+      {users.length > 0 ? (
+        <TablePagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          totalCount={totalCount}
+          onPageChange={setPage}
+        />
+      ) : null}
 
       <UserFormModal
         open={modalOpen}

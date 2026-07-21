@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarRange } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
+import EmptyState from "@/components/ui/EmptyState";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import Skeleton from "@/components/ui/Skeleton";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
@@ -25,6 +26,8 @@ type OperationalPortCardProps = {
   status: BookingListStatusFilter;
   positionId: number;
   search: string;
+  hasFilters?: boolean;
+  onClearFilters?: () => void;
   weekAnchor: string;
   onWeekAnchorChange: (iso: string) => void;
   year: number;
@@ -42,6 +45,8 @@ export default function OperationalPortCard({
   status,
   positionId,
   search,
+  hasFilters = false,
+  onClearFilters,
   weekAnchor,
   onWeekAnchorChange,
   year,
@@ -145,6 +150,14 @@ export default function OperationalPortCard({
         {error ? <FormErrorAlert message={error} className="mb-4" /> : null}
         {loading ? (
           <Skeleton className="h-[28rem] w-full rounded-xl" />
+        ) : !error && bookings.length === 0 && hasFilters ? (
+          <EmptyState
+            icon={CalendarRange}
+            filtered
+            title="Sin escalas con estos filtros"
+            description={`No hay escalas para ${portName} en el período con los filtros aplicados. Ajusta la naviera, el estado, el muelle o la búsqueda.`}
+            onClearFilters={onClearFilters}
+          />
         ) : mode === "weekly" ? (
           <WeekGrid
             weekAnchor={weekAnchor}

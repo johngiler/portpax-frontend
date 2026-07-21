@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarRange } from "lucide-react";
-import ViewSection from "@/components/layout/ViewSection";
+import EmptyState from "@/components/ui/EmptyState";
 import type { BookingListStatusFilter } from "@/types/booking";
 import type { CalendarViewMode } from "../CalendarFilters";
 import OperationalPortCard from "./OperationalPortCard";
@@ -21,6 +21,7 @@ type OperationalSectionProps = {
   onYearChange: (year: number) => void;
   monthIndex: number;
   onMonthChange: (monthIndex: number) => void;
+  onClearFilters?: () => void;
 };
 
 export default function OperationalSection({
@@ -38,20 +39,20 @@ export default function OperationalSection({
   onYearChange,
   monthIndex,
   onMonthChange,
+  onClearFilters,
 }: OperationalSectionProps) {
   if (portIds.length === 0) {
     return (
-      <ViewSection
+      <EmptyState
         icon={CalendarRange}
-        title="Calendario operativo"
-        description="Selecciona uno o más puertos en el panel de filtros."
-      >
-        <p className="px-5 py-8 text-sm text-zinc-500 dark:text-zinc-400 sm:px-6">
-          Cada puerto seleccionado se muestra en su propia card (semana, mes o año).
-        </p>
-      </ViewSection>
+        title="Selecciona uno o más puertos"
+        description="Cada puerto seleccionado se muestra en su propia card (semana, mes o año). Elige puertos en el panel de filtros y pulsa Aplicar."
+      />
     );
   }
+
+  const hasFilters =
+    shippingLineId > 0 || positionId > 0 || Boolean(status) || Boolean(search.trim());
 
   return (
     <div className="space-y-4">
@@ -66,6 +67,8 @@ export default function OperationalSection({
           status={status}
           positionId={portIds.length === 1 ? positionId : 0}
           search={search}
+          hasFilters={hasFilters}
+          onClearFilters={onClearFilters}
           weekAnchor={weekAnchor}
           onWeekAnchorChange={onWeekAnchorChange}
           year={year}

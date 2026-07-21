@@ -307,6 +307,7 @@ export default function CalendarView() {
         onYearChange={setYear}
         monthIndex={monthIndex}
         onMonthChange={setMonthIndex}
+        onClearFilters={clearFilters}
       />
     </>
   );

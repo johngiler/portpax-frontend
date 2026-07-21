@@ -22,6 +22,7 @@ type DashboardFiltersProps = {
   defaultDateFrom: string;
   defaultDateTo: string;
   onApply: () => void;
+  onClear: () => void;
 };
 
 function carrierToValue(filter: DashboardCarrierFilter): string {
@@ -55,6 +56,7 @@ export default function DashboardFilters({
   defaultDateFrom,
   defaultDateTo,
   onApply,
+  onClear,
 }: DashboardFiltersProps) {
   const portOptions = useMemo(
     () =>
@@ -90,13 +92,6 @@ export default function DashboardFilters({
     dateFrom !== defaultDateFrom ||
     dateTo !== defaultDateTo;
 
-  function handleClear() {
-    onPortChange(null);
-    onDateFromChange(defaultDateFrom);
-    onDateToChange(defaultDateTo);
-    onCarrierChange({ type: "all" });
-  }
-
   function handleFromChange(value: string) {
     onDateFromChange(value);
     if (value && dateTo && value > dateTo) {
@@ -127,6 +122,18 @@ export default function DashboardFilters({
         optionLabel="Todos los puertos"
         emptyValue=""
       />
+      <FormFieldSelect<string>
+        label="Naviera"
+        name="dashboard_carrier"
+        compact
+        showLogo
+        logoKind="shipping_line"
+        value={carrierValue === "all" ? "" : carrierValue}
+        onChange={(value) => onCarrierChange(valueToCarrier(value || "all"))}
+        options={carrierOptions}
+        optionLabel="Todas las navieras"
+        emptyValue=""
+      />
       <FormField
         label="Desde"
         name="dashboard_date_from"
@@ -143,19 +150,7 @@ export default function DashboardFilters({
         value={dateTo}
         onChange={(value) => handleToChange(String(value))}
       />
-      <FormFieldSelect<string>
-        label="Naviera"
-        name="dashboard_carrier"
-        compact
-        showLogo
-        logoKind="shipping_line"
-        value={carrierValue === "all" ? "" : carrierValue}
-        onChange={(value) => onCarrierChange(valueToCarrier(value || "all"))}
-        options={carrierOptions}
-        optionLabel="Todas las navieras"
-        emptyValue=""
-      />
-      <FilterActions onApply={onApply} onClear={handleClear} canClear={canClear} />
+      <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
     </>
   );
 }

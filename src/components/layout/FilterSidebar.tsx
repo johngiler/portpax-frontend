@@ -143,7 +143,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
               Filtros
             </span>
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
-              {children}
+              <div className="flex flex-col gap-3 [&>*]:!mb-0">{children}</div>
 
               <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
                 <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">

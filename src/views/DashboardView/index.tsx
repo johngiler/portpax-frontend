@@ -50,6 +50,13 @@ export default function DashboardView() {
   const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
     type: "all",
   });
+  const [appliedSelectedPortId, setAppliedSelectedPortId] = useState<number | null>(
+    null,
+  );
+  const [appliedDateFrom, setAppliedDateFrom] = useState(defaults.from);
+  const [appliedDateTo, setAppliedDateTo] = useState(defaults.to);
+  const [appliedCarrierFilter, setAppliedCarrierFilter] =
+    useState<DashboardCarrierFilter>({ type: "all" });
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,18 +92,22 @@ export default function DashboardView() {
   }, []);
 
   const loadStats = useCallback(async () => {
-    if (!dateFrom || !dateTo) return;
+    if (!appliedDateFrom || !appliedDateTo) return;
     setLoading(true);
     setViewError(null);
     try {
       const data = await fetchDashboardStats({
-        date_from: dateFrom,
-        date_to: dateTo,
-        port: selectedPortId ?? undefined,
+        date_from: appliedDateFrom,
+        date_to: appliedDateTo,
+        port: appliedSelectedPortId ?? undefined,
         shipping_line:
-          carrierFilter.type === "line" ? carrierFilter.id : undefined,
+          appliedCarrierFilter.type === "line"
+            ? appliedCarrierFilter.id
+            : undefined,
         shipping_line_group:
-          carrierFilter.type === "group" ? carrierFilter.id : undefined,
+          appliedCarrierFilter.type === "group"
+            ? appliedCarrierFilter.id
+            : undefined,
       });
       setStats(data);
     } catch (err) {
@@ -107,7 +118,12 @@ export default function DashboardView() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, selectedPortId, carrierFilter]);
+  }, [
+    appliedDateFrom,
+    appliedDateTo,
+    appliedSelectedPortId,
+    appliedCarrierFilter,
+  ]);
 
   useEffect(() => {
     if (!catalogReady) return;
@@ -119,7 +135,26 @@ export default function DashboardView() {
   }
 
   const kpis = stats?.kpis;
-  const periodLabel = formatPeriodLabel(dateFrom, dateTo);
+  const periodLabel = formatPeriodLabel(appliedDateFrom, appliedDateTo);
+
+  function applyFilters() {
+    setAppliedSelectedPortId(selectedPortId);
+    setAppliedDateFrom(dateFrom);
+    setAppliedDateTo(dateTo);
+    setAppliedCarrierFilter(carrierFilter);
+  }
+
+  function clearFilters() {
+    const allCarriers: DashboardCarrierFilter = { type: "all" };
+    setSelectedPortId(null);
+    setDateFrom(defaults.from);
+    setDateTo(defaults.to);
+    setCarrierFilter(allCarriers);
+    setAppliedSelectedPortId(null);
+    setAppliedDateFrom(defaults.from);
+    setAppliedDateTo(defaults.to);
+    setAppliedCarrierFilter(allCarriers);
+  }
 
   return (
     <>
@@ -138,7 +173,8 @@ export default function DashboardView() {
           onCarrierChange={setCarrierFilter}
           defaultDateFrom={defaults.from}
           defaultDateTo={defaults.to}
-          onApply={() => void loadStats()}
+          onApply={applyFilters}
+          onClear={clearFilters}
         />
       </FilterSidebarContent>
 

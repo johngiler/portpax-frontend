@@ -74,15 +74,6 @@ export default function BookingFilters({
 
   return (
     <>
-      <BookingsDateFilters
-        datePreset={datePreset}
-        customDateFrom={customDateFrom}
-        customDateTo={customDateTo}
-        timeRange={timeRange}
-        onDatePresetChange={onDatePresetChange}
-        onCustomDateFromChange={onCustomDateFromChange}
-        onCustomDateToChange={onCustomDateToChange}
-      />
       <FormField
         label="Buscar"
         name="booking_search"
@@ -139,6 +130,15 @@ export default function BookingFilters({
         compact
         showLogo
         logoKind="vessel"
+      />
+      <BookingsDateFilters
+        datePreset={datePreset}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
+        timeRange={timeRange}
+        onDatePresetChange={onDatePresetChange}
+        onCustomDateFromChange={onCustomDateFromChange}
+        onCustomDateToChange={onCustomDateToChange}
       />
       <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
     </>

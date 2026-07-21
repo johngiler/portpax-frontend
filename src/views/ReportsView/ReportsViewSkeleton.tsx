@@ -10,7 +10,7 @@ export default function ReportsViewSkeleton() {
       <ViewPageHeader
         icon={BarChart3}
         title="Reportes"
-        description="Totales de calls/PAX y movimientos."
+        description="Totales, Availability, WEEK, panorama y cumplimiento REAL."
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Skeleton className="h-28 rounded-2xl" />
