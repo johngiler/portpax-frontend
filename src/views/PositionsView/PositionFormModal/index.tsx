@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CatalogLogoField from "@/components/ui/CatalogLogoField";
 import FormSection from "@/components/ui/FormSection";
@@ -148,6 +148,9 @@ export default function PositionFormModal({
   const [isCombined, setIsCombined] = useState(false);
   const [componentAId, setComponentAId] = useState(0);
   const [componentBId, setComponentBId] = useState(0);
+  // Auto-derive combined defaults (LOA sum, etc.) only after the user changes the
+  // base selection — never on hydration, so a stored combined LOA is preserved.
+  const componentsDirtyRef = useRef(false);
   const [basePositions, setBasePositions] = useState<Position[]>([]);
   const [loadingBasePositions, setLoadingBasePositions] = useState(false);
   const [bollardOptions, setBollardOptions] = useState<{ value: number; label: string }[]>([]);
@@ -177,6 +180,7 @@ export default function PositionFormModal({
     setIsCombined(Boolean(initial?.is_combined));
     setComponentAId(initial?.component_positions[0]?.id ?? 0);
     setComponentBId(initial?.component_positions[1]?.id ?? 0);
+    componentsDirtyRef.current = false;
     fetchPorts({ pageSize: 100 })
       .then((data) => {
         setPortOptions(
@@ -209,6 +213,7 @@ export default function PositionFormModal({
   }, [open, imageFile, removeImage, initial]);
 
   useEffect(() => {
+    if (!componentsDirtyRef.current) return;
     if (!isCombined || !componentAId || !componentBId || componentAId === componentBId) return;
     const first = basePositions.find((p) => p.id === componentAId);
     const second = basePositions.find((p) => p.id === componentBId);
@@ -310,7 +315,13 @@ export default function PositionFormModal({
     });
   }
 
+  function handleComponentChange(setId: (id: number) => void, id: number) {
+    componentsDirtyRef.current = true;
+    setId(id);
+  }
+
   function handleCombinedToggle(next: boolean) {
+    componentsDirtyRef.current = true;
     setIsCombined(next);
     setComponentAId(0);
     setComponentBId(0);
@@ -548,8 +559,8 @@ export default function PositionFormModal({
                   loading={loadingBasePositions}
                   disabled={saving}
                   error={errors.component}
-                  onChangeA={setComponentAId}
-                  onChangeB={setComponentBId}
+                  onChangeA={(id) => handleComponentChange(setComponentAId, id)}
+                  onChangeB={(id) => handleComponentChange(setComponentBId, id)}
                 />
               )}
               <FormField
