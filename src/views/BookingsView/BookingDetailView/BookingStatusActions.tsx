@@ -6,10 +6,13 @@ import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Modal from "@/components/ui/Modal";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import NoticeAlert from "@/components/ui/NoticeAlert";
 import { FormField } from "@/components/ui/FormField";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/services/apiClient";
 import { getApiErrorMessage, translateApiMessage } from "@/lib/apiFormErrors";
+import { canAuthorizeExceptions } from "@/lib/navAccess";
 import { deleteBooking, updateBooking } from "@/services/bookings/bookingService";
 import {
   bookingNextStatuses,
@@ -37,6 +40,12 @@ function formatValidationError(err: unknown): string {
   return getApiErrorMessage(err, "No se pudo actualizar el estado de la reserva.");
 }
 
+function apiErrorMentionsCode(err: unknown, code: string): boolean {
+  if (!(err instanceof ApiError)) return false;
+  const blob = `${err.message} ${JSON.stringify(err.fieldErrors ?? {})}`;
+  return blob.includes(code);
+}
+
 export default function BookingStatusActions({
   booking,
   onUpdated,
@@ -44,6 +53,9 @@ export default function BookingStatusActions({
   onError,
   canWrite = true,
 }: BookingStatusActionsProps) {
+  const { user } = useAuth();
+  const mayAuthorize = canAuthorizeExceptions(user?.role);
+
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
   const [cancelEvidence, setCancelEvidence] = useState<File | null>(null);
@@ -54,6 +66,8 @@ export default function BookingStatusActions({
   const [etdReal, setEtdReal] = useState(booking.etd_real?.slice(0, 5) ?? "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [ackCombinedRed, setAckCombinedRed] = useState(false);
+  const [needsCombinedRedAck, setNeedsCombinedRedAck] = useState(false);
 
   const nextStatuses = canWrite ? bookingNextStatuses(booking.status) : [];
 
@@ -74,20 +88,30 @@ export default function BookingStatusActions({
     setSaving(true);
     onError(null);
     try {
-      const updated = await updateBooking(booking.id, { status });
+      const updated = await updateBooking(booking.id, {
+        status,
+        acknowledge_combined_red:
+          status === "co" && ackCombinedRed ? true : undefined,
+      });
       onUpdated(updated);
+      setPendingAction(null);
+      setAckCombinedRed(false);
+      setNeedsCombinedRedAck(false);
     } catch (err) {
+      if (status === "co" && apiErrorMentionsCode(err, "combined_loa_red")) {
+        setNeedsCombinedRedAck(true);
+        setPendingAction("co");
+      }
       onError(formatValidationError(err));
     } finally {
       setSaving(false);
-      setPendingAction(null);
     }
   }
 
   async function applyCloseReal() {
     const pax = Number(actualPax);
     if (!Number.isFinite(pax) || pax < 0 || actualPax.trim() === "") {
-      onError("Ingresa el PAX real para cerrar la escala.");
+      onError("Ingresa el PAX real (desembarcados) para cerrar la escala.");
       return;
     }
     setSaving(true);
@@ -173,7 +197,11 @@ export default function BookingStatusActions({
             <button
               type="button"
               disabled={saving}
-              onClick={() => setPendingAction("co")}
+              onClick={() => {
+                setAckCombinedRed(false);
+                setNeedsCombinedRedAck(false);
+                setPendingAction("co");
+              }}
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
@@ -244,7 +272,7 @@ export default function BookingStatusActions({
         </div>
       ) : booking.status === "r" ? (
         <p className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
-          Escala cerrada (Real). PAX real: {booking.actual_pax ?? "—"}.
+          Escala cerrada (Real). PAX real (desembarcados): {booking.actual_pax ?? "—"}.
         </p>
       ) : null}
 
@@ -257,14 +285,70 @@ export default function BookingStatusActions({
         confirmLabel="Confirmar"
       />
 
-      <ConfirmModal
+      <Modal
         open={pendingAction === "co"}
-        onClose={() => setPendingAction(null)}
-        onConfirm={() => applySimpleStatus("co")}
+        onClose={() => {
+          setPendingAction(null);
+          setAckCombinedRed(false);
+          setNeedsCombinedRedAck(false);
+        }}
         title="Confirmar reserva"
-        message={`¿Confirmar la escala de ${booking.vessel_name} en ${booking.port_name}? Se generará el PDF. La posición puede quedar por asignar.`}
-        confirmLabel="Confirmar"
-      />
+        footer={
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setPendingAction(null);
+                setAckCombinedRed(false);
+                setNeedsCombinedRedAck(false);
+              }}
+              className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+            >
+              Volver
+            </button>
+            <DefaultButton
+              type="button"
+              onClick={() => void applySimpleStatus("co")}
+              disabled={saving || (needsCombinedRedAck && mayAuthorize && !ackCombinedRed)}
+            >
+              {saving ? "Confirmando…" : "Confirmar"}
+            </DefaultButton>
+          </div>
+        }
+      >
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          ¿Confirmar la escala de {booking.vessel_name} en {booking.port_name}? Se
+          generará el PDF. La posición puede quedar por asignar.
+        </p>
+        {needsCombinedRedAck ? (
+          <div className="mt-4 space-y-2">
+            <NoticeAlert
+              variant="error"
+              messages={[
+                "LOA combinada en zona roja: requiere autorización de port-operator o admin (RN-05).",
+              ]}
+            />
+            {mayAuthorize ? (
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-red-200/80 bg-red-50/50 px-4 py-3 text-sm text-zinc-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-zinc-100">
+                <input
+                  type="checkbox"
+                  checked={ackCombinedRed}
+                  onChange={(e) => setAckCombinedRed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
+                />
+                <span className="font-medium">
+                  Autorizar zona roja de LOA combinada
+                </span>
+              </label>
+            ) : (
+              <p className="text-sm text-red-700 dark:text-red-300">
+                No tienes permiso para autorizar este riesgo. Contacta a un
+                port-operator o admin.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal
         open={pendingAction === "r"}
@@ -286,11 +370,12 @@ export default function BookingStatusActions({
         }
       >
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
-          Registra los datos reales de la operación. El PAX real es obligatorio.
+          Registra los datos reales de la operación. El PAX real es el total absoluto
+          de pasajeros desembarcados (obligatorio).
         </p>
         <div className="space-y-3">
           <FormField
-            label="PAX real"
+            label="PAX real (desembarcados)"
             name="actual_pax_close"
             type="number"
             required

@@ -220,6 +220,9 @@ export async function validateBookings(params: {
   vessel: number;
   call_dates: string[];
   position?: number | null;
+  eta?: string | null;
+  etd?: string | null;
+  acknowledge_combined_red?: boolean;
 }): Promise<BookingValidationResult> {
   return apiFetch<BookingValidationResult>(`${BASE}validate/`, {
     method: "POST",
@@ -290,11 +293,22 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.position !== undefined) body.position = payload.position;
   if (payload.eta !== undefined) body.eta = payload.eta;
   if (payload.etd !== undefined) body.etd = payload.etd;
+  if (payload.eta_real !== undefined) body.eta_real = payload.eta_real;
+  if (payload.etd_real !== undefined) body.etd_real = payload.etd_real;
   if (payload.planned_pax !== undefined) body.planned_pax = payload.planned_pax;
   if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
   if (payload.actual_crew !== undefined) body.actual_crew = payload.actual_crew;
   if (payload.cancellation_reason !== undefined) {
     body.cancellation_reason = payload.cancellation_reason;
+  }
+  if (payload.port_operator_override !== undefined) {
+    body.port_operator_override = payload.port_operator_override;
+  }
+  if (payload.acknowledge_combined_red !== undefined) {
+    body.acknowledge_combined_red = payload.acknowledge_combined_red;
+  }
+  if (payload.override_reason !== undefined) {
+    body.override_reason = payload.override_reason;
   }
 
   return apiFetch<Booking>(`${BASE}${id}/`, {

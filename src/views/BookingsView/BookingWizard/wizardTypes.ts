@@ -19,6 +19,9 @@ export type BookingWizardForm = {
   vesselId: number | null;
   callDates: string[];
   notes: string;
+  eta: string;
+  etd: string;
+  plannedPax: string;
 };
 
 export const emptyBookingWizardForm = (): BookingWizardForm => ({
@@ -27,4 +30,7 @@ export const emptyBookingWizardForm = (): BookingWizardForm => ({
   vesselId: null,
   callDates: [],
   notes: "",
+  eta: "",
+  etd: "",
+  plannedPax: "",
 });

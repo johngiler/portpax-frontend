@@ -27,6 +27,9 @@ type ReviewStepProps = {
   callDates: string[];
   notes: string;
   onNotesChange: (notes: string) => void;
+  eta: string;
+  etd: string;
+  plannedPax: string;
 };
 
 type SummaryItemProps = {
@@ -60,6 +63,9 @@ export default function ReviewStep({
   callDates,
   notes,
   onNotesChange,
+  eta,
+  etd,
+  plannedPax,
 }: ReviewStepProps) {
   const [validation, setValidation] = useState<BookingValidationResult | null>(null);
   const [positionsByDate, setPositionsByDate] = useState<
@@ -76,10 +82,12 @@ export default function ReviewStep({
       port: port.id,
       vessel: vessel.id,
       call_dates: callDates,
+      eta: eta || null,
+      etd: etd || null,
     })
       .then(setValidation)
       .catch(() => setValidation(null));
-  }, [port, vessel, callDates]);
+  }, [port, vessel, callDates, eta, etd]);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -163,6 +171,17 @@ export default function ReviewStep({
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fechas">
           <span>{callDates.length} día{callDates.length === 1 ? "" : "s"} seleccionado{callDates.length === 1 ? "" : "s"}</span>
+          {(eta || etd || plannedPax) && (
+            <p className="mt-1 text-xs font-normal text-zinc-500">
+              {[
+                eta ? `ETA ${eta}` : null,
+                etd ? `ETD ${etd}` : null,
+                plannedPax ? `PAX ${plannedPax}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </SummaryItem>
       </div>
 

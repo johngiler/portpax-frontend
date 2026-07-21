@@ -27,6 +27,11 @@ export function canWriteApp(role: UserRole | null | undefined): boolean {
   return role != null && role !== "viewer";
 }
 
+/** Admin or port_operator may override CL moves (RN-06) and RN-05 red combined LOA. */
+export function canAuthorizeExceptions(role: UserRole | null | undefined): boolean {
+  return role === "admin" || role === "port_operator";
+}
+
 export function canBrowseCatalogs(role: UserRole | null | undefined): boolean {
   return role != null && (CATALOG_BROWSER_ROLES as readonly string[]).includes(role);
 }

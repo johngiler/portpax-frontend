@@ -95,6 +95,9 @@ export type BookingBatchPayload = {
   vessel: number;
   call_dates: string[];
   notes?: string;
+  eta?: string | null;
+  etd?: string | null;
+  planned_pax?: number | null;
 };
 
 export type BookingUpdatePayload = {
@@ -109,6 +112,9 @@ export type BookingUpdatePayload = {
   actual_crew?: number | null;
   cancellation_reason?: CancellationReason | null;
   cancellation_evidence?: File | null;
+  port_operator_override?: boolean;
+  acknowledge_combined_red?: boolean;
+  override_reason?: string;
 };
 
 export const CANCELLATION_REASON_OPTIONS: {

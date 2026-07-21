@@ -202,6 +202,9 @@ export default function BookingWizard() {
         vessel: form.vesselId,
         call_dates: form.callDates,
         notes: form.notes,
+        eta: form.eta || null,
+        etd: form.etd || null,
+        planned_pax: form.plannedPax === "" ? null : Number(form.plannedPax),
       });
       setCreatedBookings(created);
     } catch (err) {
@@ -297,6 +300,14 @@ export default function BookingWizard() {
                 vesselId={form.vesselId}
                 selectedDates={form.callDates}
                 onChange={(d) => setForm((p) => ({ ...p, callDates: d }))}
+                eta={form.eta}
+                etd={form.etd}
+                plannedPax={form.plannedPax}
+                onEtaChange={(eta) => setForm((p) => ({ ...p, eta }))}
+                onEtdChange={(etd) => setForm((p) => ({ ...p, etd }))}
+                onPlannedPaxChange={(plannedPax) =>
+                  setForm((p) => ({ ...p, plannedPax }))
+                }
               />
             )}
             {step === "review" && (
@@ -307,6 +318,9 @@ export default function BookingWizard() {
                 callDates={form.callDates}
                 notes={form.notes}
                 onNotesChange={(notes) => setForm((p) => ({ ...p, notes }))}
+                eta={form.eta}
+                etd={form.etd}
+                plannedPax={form.plannedPax}
               />
             )}
           </motion.div>
