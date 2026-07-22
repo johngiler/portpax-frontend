@@ -112,8 +112,8 @@ export default function BookingStatusGuideTable({
         </tbody>
       </table>
       <p className="border-t border-[var(--admin-border)]/70 px-3 py-2 text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-        Flujo principal: NR → H → CO → R (o cancelación). Estados LTA / CL / LTD del
-        histórico también pueden cerrarse a Real o cancelarse.
+        Pista general (sin LTA): NR → H → CO → R. Pista LTA: NR → LTA → CL → R. En ambos
+        casos puede cancelarse (C). LTD es variante LTA del histórico.
       </p>
     </div>
   );

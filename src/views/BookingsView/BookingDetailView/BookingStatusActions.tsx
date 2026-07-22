@@ -173,8 +173,8 @@ export default function BookingStatusActions({
             />
           </div>
           <p className="mt-1 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-            Flujo NR → H → CO → R (o cancelación). Estados LTA/CL/LTD del histórico también
-            pueden cerrarse a Real o cancelarse.
+            Pista general: NR → H → CO → R. Pista LTA: NR → LTA → CL → R. En ambos casos
+            puede cancelarse (C). LTD es variante LTA del histórico.
           </p>
         </div>
         <BookingStatusBadge status={booking.status} className="shrink-0" />

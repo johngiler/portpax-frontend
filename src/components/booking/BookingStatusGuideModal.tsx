@@ -34,7 +34,8 @@ export default function BookingStatusGuideModal({
       }
     >
       <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
-        Referencia de códigos y transiciones del flujo de booking.
+        Referencia de códigos según el flujo de berthing / booking (documentación
+        funcional).
       </p>
       <BookingStatusGuideTable includeFilterExtras={includeFilterExtras} />
     </Modal>

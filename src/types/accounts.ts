@@ -59,16 +59,16 @@ export const USER_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "viewer", label: "Solo lectura" },
 ];
 
-/** Spanish UI copy — what each MVP role can do in the app. */
+/** Spanish UI — role purpose from PORT_PAX_FUNCIONALIDADES / SPEC (MVP roles only). */
 export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   admin:
-    "Acceso completo: dashboard, catálogos, calendario, reservas, reportes y gestión de usuarios. Ve todos los puertos. Puede autorizar excepciones operativas (p. ej. CL y LOA combinado).",
+    "Acceso total al sistema. Crea y asigna usuarios a puertos; gestiona tarifas, muelles y reglas de negocio.",
   booking_operator:
-    "Opera calendario, reservas y reportes en los puertos asignados. Puede crear y editar reservas. Sin acceso a dashboard, catálogos ni usuarios. No autoriza excepciones operativas.",
+    "Rol principal de trabajo diario: registra y gestiona calls (crea NR, cambia status, asigna muelles). Acceso por uno o varios puertos.",
   port_operator:
-    "Opera calendario, reservas y reportes en los puertos asignados. Puede crear y editar reservas, y autorizar excepciones operativas (CL / LOA). Sin acceso a dashboard, catálogos ni usuarios.",
+    "Autoriza excepciones operativas (mover un call CL, eslora combinada, fuerza mayor). Cierra la ventana operativa del call en Real (R): datos reales de la escala.",
   viewer:
-    "Consulta dashboard, catálogos, calendario, reservas y reportes en solo lectura. No puede crear ni editar datos. Sin acceso a gestión de usuarios.",
+    "Solo lectura: consulta la información sin capacidad de modificar nada.",
 };
 
 export type UserRoleGuideRow = {
