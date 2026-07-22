@@ -59,7 +59,37 @@ export const USER_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "viewer", label: "Solo lectura" },
 ];
 
+/** Spanish UI copy — what each MVP role can do in the app. */
+export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  admin:
+    "Acceso completo: dashboard, catálogos, calendario, reservas, reportes y gestión de usuarios. Ve todos los puertos. Puede autorizar excepciones operativas (p. ej. CL y LOA combinado).",
+  booking_operator:
+    "Opera calendario, reservas y reportes en los puertos asignados. Puede crear y editar reservas. Sin acceso a dashboard, catálogos ni usuarios. No autoriza excepciones operativas.",
+  port_operator:
+    "Opera calendario, reservas y reportes en los puertos asignados. Puede crear y editar reservas, y autorizar excepciones operativas (CL / LOA). Sin acceso a dashboard, catálogos ni usuarios.",
+  viewer:
+    "Consulta dashboard, catálogos, calendario, reservas y reportes en solo lectura. No puede crear ni editar datos. Sin acceso a gestión de usuarios.",
+};
+
+export type UserRoleGuideRow = {
+  value: UserRole;
+  label: string;
+  description: string;
+};
+
+export const USER_ROLE_GUIDE: UserRoleGuideRow[] = USER_ROLE_OPTIONS.map(
+  (option) => ({
+    ...option,
+    description: USER_ROLE_DESCRIPTIONS[option.value],
+  }),
+);
+
 export function userRoleLabel(role: UserRole | null | undefined): string {
   if (!role) return "Sin rol";
   return USER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
+}
+
+export function userRoleDescription(role: UserRole | null | undefined): string {
+  if (!role) return "Sin rol asignado; no puede usar la aplicación.";
+  return USER_ROLE_DESCRIPTIONS[role] ?? "";
 }

@@ -4,6 +4,7 @@ import { CalendarClock, Mail, MapPin, Shield, UserRound } from "lucide-react";
 import EntityThumb from "@/components/ui/EntityThumb";
 import type { ManagedUser } from "@/types/accounts";
 import { userRoleLabel } from "@/types/accounts";
+import RoleLabelWithInfo from "./RoleLabelWithInfo";
 
 type UserRowDetailProps = {
   user: ManagedUser;
@@ -87,7 +88,7 @@ export default function UserRowDetail({ user, portLabels }: UserRowDetailProps) 
             <span className="break-all">{user.email || "—"}</span>
           </MetaCard>
           <MetaCard icon={Shield} label="Rol">
-            {userRoleLabel(user.role)}
+            <RoleLabelWithInfo role={user.role} />
           </MetaCard>
           <MetaCard icon={UserRound} label="Estado">
             {user.is_active ? "Cuenta activa" : "Cuenta inactiva"}

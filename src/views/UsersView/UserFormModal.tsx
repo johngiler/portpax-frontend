@@ -12,6 +12,7 @@ import ModalFormError from "@/components/ui/ModalFormError";
 import { submitModalForm } from "@/lib/apiFormErrors";
 import type { ManagedUser, ManagedUserPayload, UserRole } from "@/types/accounts";
 import { USER_ROLE_OPTIONS } from "@/types/accounts";
+import RolesGuideTable, { RolesGuideToggle } from "./RolesGuidePanel";
 
 export type UserFormMode = "create" | "edit";
 
@@ -90,12 +91,14 @@ export default function UserFormModal({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [rolesGuideOpen, setRolesGuideOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setForm(initial ? userToForm(initial) : emptyForm());
     setErrors({});
     setSubmitError(null);
+    setRolesGuideOpen(false);
   }, [open, initial]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -228,7 +231,14 @@ export default function UserFormModal({
           required
           error={errors.role}
           disabled={saving}
+          labelEnd={
+            <RolesGuideToggle
+              open={rolesGuideOpen}
+              onToggle={() => setRolesGuideOpen((prev) => !prev)}
+            />
+          }
         />
+        {rolesGuideOpen && <RolesGuideTable />}
         {!isAdminRole && (
           <FormFieldMultiSelect<number>
             label="Puertos asignados"

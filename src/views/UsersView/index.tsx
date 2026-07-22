@@ -32,8 +32,8 @@ import {
 } from "@/services/accounts/userService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import type { ManagedUser, ManagedUserPayload } from "@/types/accounts";
-import { userRoleLabel } from "@/types/accounts";
 import { portDisplayName } from "@/types/catalog";
+import RoleLabelWithInfo from "./RoleLabelWithInfo";
 import UserFormModal, { type UserFormMode } from "./UserFormModal";
 import UserRowDetail from "./UserRowDetail";
 import UsersViewSkeleton from "./UsersViewSkeleton";
@@ -275,7 +275,9 @@ export default function UsersView() {
                     </MainTableTd>
                     <MainTableTd>{fullName || "—"}</MainTableTd>
                     <MainTableTd>{managed.email || "—"}</MainTableTd>
-                    <MainTableTd>{userRoleLabel(managed.role)}</MainTableTd>
+                    <MainTableTd>
+                      <RoleLabelWithInfo role={managed.role} />
+                    </MainTableTd>
                     <MainTableTd>
                       {managed.is_active ? "Activo" : "Inactivo"}
                     </MainTableTd>

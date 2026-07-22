@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Select, { type StylesConfig } from "react-select";
 import CatalogLogoThumb, {
@@ -259,6 +259,7 @@ export function FormFieldSelect<T extends string | number>({
   compact = false,
   showLogo = false,
   logoKind,
+  labelEnd,
 }: {
   label: string;
   name: string;
@@ -276,6 +277,8 @@ export function FormFieldSelect<T extends string | number>({
   showLogo?: boolean;
   /** Placeholder icon when logo is missing (port / shipping_line / vessel). */
   logoKind?: CatalogLogoKind;
+  /** Optional control aligned to the right of the label (e.g. help link). */
+  labelEnd?: ReactNode;
 }) {
   const handleChange = (selected: CatalogSelectOption<T> | null) => {
     if (!selected) {
@@ -297,10 +300,31 @@ export function FormFieldSelect<T extends string | number>({
 
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
-      <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </label>
+      {labelEnd ? (
+        <div
+          className={`flex items-center justify-between gap-2 ${
+            compact ? "mb-1" : "mb-1.5"
+          }`}
+        >
+          <label
+            htmlFor={name}
+            className={
+              compact
+                ? "text-xs font-medium text-zinc-700 dark:text-zinc-200"
+                : "text-sm font-medium text-zinc-700 dark:text-zinc-200"
+            }
+          >
+            {label}
+            {required && <span className="text-red-500"> *</span>}
+          </label>
+          {labelEnd}
+        </div>
+      ) : (
+        <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
+          {label}
+          {required && <span className="text-red-500"> *</span>}
+        </label>
+      )}
       <Select<CatalogSelectOption<T>, false>
         inputId={name}
         name={name}
