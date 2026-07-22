@@ -39,6 +39,7 @@ import type { ShippingLine } from "@/types/cruise";
 import AvailabilityChartSection from "./AvailabilityChartSection";
 import CarrierPanoramaSection from "./CarrierPanoramaSection";
 import CumplimientoRealSection from "./CumplimientoRealSection";
+import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
 import ReportLogoName from "./ReportLogoName";
 
@@ -102,6 +103,7 @@ export default function ReportsView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [reportGuideOpen, setReportGuideOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -389,6 +391,13 @@ export default function ReportsView() {
             { value: "cumplimiento", label: "Cumplimiento REAL" },
           ]}
           compact
+          labelEnd={
+            <ReportGuideToggle onOpen={() => setReportGuideOpen(true)} />
+          }
+        />
+        <ReportGuideModal
+          open={reportGuideOpen}
+          onClose={() => setReportGuideOpen(false)}
         />
         {showPortFilter ? (
           <FormFieldSelect<number>
