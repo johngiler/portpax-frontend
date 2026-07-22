@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import FilterActions from "@/components/layout/FilterActions";
+import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
+import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
 import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import {
   BOOKING_STATUS_FILTER_OPTIONS,
@@ -65,6 +68,8 @@ export default function CalendarFilters({
   onClear,
   canClear,
 }: CalendarFiltersProps) {
+  const [statusGuideOpen, setStatusGuideOpen] = useState(false);
+
   return (
     <>
       <FormFieldSelect<CalendarViewMode>
@@ -119,6 +124,17 @@ export default function CalendarFilters({
         optionLabel="Todos los estados"
         emptyValue=""
         compact
+        labelEnd={
+          <BookingStatusGuideToggle
+            accordion={false}
+            onToggle={() => setStatusGuideOpen(true)}
+          />
+        }
+      />
+      <BookingStatusGuideModal
+        open={statusGuideOpen}
+        onClose={() => setStatusGuideOpen(false)}
+        includeFilterExtras
       />
       <FormField
         label="Buscar barco / código"

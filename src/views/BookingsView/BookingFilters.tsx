@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import FilterActions from "@/components/layout/FilterActions";
+import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
+import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import {
   BOOKING_STATUS_FILTER_OPTIONS,
@@ -67,6 +70,7 @@ export default function BookingFilters({
   onApply,
   onClear,
 }: BookingFiltersProps) {
+  const [statusGuideOpen, setStatusGuideOpen] = useState(false);
   const timeRange =
     datePreset === "all"
       ? getTimeRange("hoy")
@@ -91,6 +95,17 @@ export default function BookingFilters({
         optionLabel="Todos los estados"
         emptyValue=""
         compact
+        labelEnd={
+          <BookingStatusGuideToggle
+            accordion={false}
+            onToggle={() => setStatusGuideOpen(true)}
+          />
+        }
+      />
+      <BookingStatusGuideModal
+        open={statusGuideOpen}
+        onClose={() => setStatusGuideOpen(false)}
+        includeFilterExtras
       />
       <FormFieldSelect<number>
         label="Puerto"

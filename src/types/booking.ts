@@ -137,6 +137,57 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   c: "Cancelada",
 };
 
+/** Spanish UI — what each booking status means in the operational flow. */
+export const BOOKING_STATUS_DESCRIPTIONS: Record<BookingStatus, string> = {
+  nr: "Solicitud nueva (NR). Puede pasar a evaluación (H), confirmarse (CO) o cancelarse.",
+  h: "En evaluación / Hold (H). Escala en revisión. Puede confirmarse (CO) o cancelarse.",
+  co: "Confirmada (CO). Genera PDF de confirmación; la posición puede quedar por asignar. Puede cerrarse a Real (R) o cancelarse.",
+  cl: "Confirmada LTA (CL). Track LTA del histórico: ocupa como confirmada. Puede cerrarse a Real (R) o cancelarse.",
+  lta: "LTA (histórico). Puede pasar a Confirmada LTA (CL), Confirmada (CO), Real (R) o cancelarse.",
+  ltd: "Long Term Deployment (LTD, histórico). Puede cerrarse a Real (R) o cancelarse.",
+  r: "Real (R). Escala cerrada con datos reales (PAX desembarcados). Estado final.",
+  c: "Cancelada (C). Requiere motivo (y evidencia opcional). Estado final.",
+};
+
+export type BookingStatusGuideRow = {
+  code: string;
+  value: BookingStatus;
+  label: string;
+  description: string;
+};
+
+/** Core statuses in operational order for the guide table. */
+export const BOOKING_STATUS_GUIDE: BookingStatusGuideRow[] = [
+  { code: "NR", value: "nr", label: BOOKING_STATUS_LABELS.nr, description: BOOKING_STATUS_DESCRIPTIONS.nr },
+  { code: "H", value: "h", label: BOOKING_STATUS_LABELS.h, description: BOOKING_STATUS_DESCRIPTIONS.h },
+  { code: "CO", value: "co", label: BOOKING_STATUS_LABELS.co, description: BOOKING_STATUS_DESCRIPTIONS.co },
+  { code: "CL", value: "cl", label: BOOKING_STATUS_LABELS.cl, description: BOOKING_STATUS_DESCRIPTIONS.cl },
+  { code: "LTA", value: "lta", label: BOOKING_STATUS_LABELS.lta, description: BOOKING_STATUS_DESCRIPTIONS.lta },
+  { code: "LTD", value: "ltd", label: BOOKING_STATUS_LABELS.ltd, description: BOOKING_STATUS_DESCRIPTIONS.ltd },
+  { code: "R", value: "r", label: BOOKING_STATUS_LABELS.r, description: BOOKING_STATUS_DESCRIPTIONS.r },
+  { code: "C", value: "c", label: BOOKING_STATUS_LABELS.c, description: BOOKING_STATUS_DESCRIPTIONS.c },
+];
+
+/** Extra list-filter buckets (not booking.status values). */
+export const BOOKING_STATUS_FILTER_GUIDE: {
+  code: string;
+  label: string;
+  description: string;
+}[] = [
+  {
+    code: "—",
+    label: "Requieren acción",
+    description:
+      "Filtro de lista: solicitudes (NR) y en evaluación (H) con fecha de escala desde hoy.",
+  },
+  {
+    code: "—",
+    label: "Completadas (fecha pasada)",
+    description:
+      "Filtro de lista: escalas no canceladas con fecha de escala pasada, o ya cerradas en Real (R).",
+  },
+];
+
 export const BOOKING_BADGE_STATUS_LABELS: Record<BookingBadgeStatus, string> = {
   ...BOOKING_STATUS_LABELS,
 };

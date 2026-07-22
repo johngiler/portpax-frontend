@@ -9,6 +9,8 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import NoticeAlert from "@/components/ui/NoticeAlert";
 import { FormField } from "@/components/ui/FormField";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
+import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/services/apiClient";
 import { getApiErrorMessage, translateApiMessage } from "@/lib/apiFormErrors";
@@ -68,6 +70,7 @@ export default function BookingStatusActions({
   const [deleting, setDeleting] = useState(false);
   const [ackCombinedRed, setAckCombinedRed] = useState(false);
   const [needsCombinedRedAck, setNeedsCombinedRedAck] = useState(false);
+  const [statusGuideOpen, setStatusGuideOpen] = useState(false);
 
   const nextStatuses = canWrite ? bookingNextStatuses(booking.status) : [];
 
@@ -158,16 +161,29 @@ export default function BookingStatusActions({
 
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Estado</h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              Estado
+            </h2>
+            <BookingStatusGuideToggle
+              accordion={false}
+              onToggle={() => setStatusGuideOpen(true)}
+            />
+          </div>
+          <p className="mt-1 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
             Flujo NR → H → CO → R (o cancelación). Estados LTA/CL/LTD del histórico también
             pueden cerrarse a Real o cancelarse.
           </p>
         </div>
-        <BookingStatusBadge status={booking.status} />
+        <BookingStatusBadge status={booking.status} className="shrink-0" />
       </div>
+
+      <BookingStatusGuideModal
+        open={statusGuideOpen}
+        onClose={() => setStatusGuideOpen(false)}
+      />
 
       {nextStatuses.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
