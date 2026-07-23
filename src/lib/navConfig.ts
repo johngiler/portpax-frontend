@@ -2,7 +2,6 @@ import {
   Anchor,
   BarChart3,
   CalendarDays,
-  CalendarRange,
   LayoutDashboard,
   MapPin,
   Users,
@@ -37,7 +36,6 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: CATALOG_ROLES },
       { href: "/bookings", label: "Reservas", icon: CalendarDays, countKey: "bookings" },
-      { href: "/calendar", label: "Calendario", icon: CalendarRange },
       { href: "/reports", label: "Reportes", icon: BarChart3 },
       { href: "/ports", label: "Puertos", icon: MapPin, roles: CATALOG_ROLES, countKey: "ports" },
       {

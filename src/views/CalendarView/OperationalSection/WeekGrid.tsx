@@ -7,7 +7,6 @@ import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
-  TRAFFIC_LABEL,
   activePierPositions,
   addDaysIso,
   dayTrafficLight,
@@ -20,6 +19,7 @@ type WeekGridProps = {
   bookings: Booking[];
   positions: Position[];
   positionFilterId: number;
+  multiPort?: boolean;
 };
 
 function bookingsForCell(
@@ -40,6 +40,7 @@ export default function WeekGrid({
   bookings,
   positions,
   positionFilterId,
+  multiPort = false,
 }: WeekGridProps) {
   const days = weekDatesFrom(weekAnchor);
   const pierAll = activePierPositions(positions);
@@ -47,6 +48,12 @@ export default function WeekGrid({
     positionFilterId > 0
       ? pierAll.filter((p) => p.id === positionFilterId)
       : pierAll;
+
+  const portNames = multiPort
+    ? [...new Set(bookings.map((b) => b.port_name || "Puerto"))].sort((a, b) =>
+        a.localeCompare(b, "es"),
+      )
+    : [];
 
   return (
     <div className="space-y-3">
@@ -61,7 +68,8 @@ export default function WeekGrid({
             <ChevronLeft className="h-4 w-4" />
           </button>
           <p className="min-w-[12rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-            {formatIsoDateLabel(days[0], "short")} – {formatIsoDateLabel(days[6], "short")}
+            {formatIsoDateLabel(days[0], "short")} –{" "}
+            {formatIsoDateLabel(days[6], "short")}
           </p>
           <button
             type="button"
@@ -84,93 +92,161 @@ export default function WeekGrid({
             Ir a hoy
           </button>
         </div>
-        <ul className="flex flex-wrap gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
-          {(["free", "limited", "full"] as const).map((key) => (
-            <li key={key} className="inline-flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[key]}`} />
-              {TRAFFIC_LABEL[key]}
-            </li>
-          ))}
-        </ul>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-[52rem] w-full border-collapse text-left">
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 w-28 bg-white px-2 py-2 text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                Muelle
-              </th>
-              {days.map((iso) => {
-                const dayBookings = bookings.filter(
-                  (b) => b.call_date === iso && b.status !== "c",
-                );
-                const traffic = dayTrafficLight(dayBookings, pierAll.length);
-                return (
-                  <th
-                    key={iso}
-                    className="min-w-[8.5rem] cursor-default px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+      {multiPort ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-[52rem] w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 w-36 bg-white px-2 py-2 text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                  Puerto
+                </th>
+                {days.map((iso) => {
+                  const dayBookings = bookings.filter(
+                    (b) => b.call_date === iso && b.status !== "c",
+                  );
+                  const traffic =
+                    dayBookings.length === 0
+                      ? "free"
+                      : dayBookings.length <= 2
+                        ? "limited"
+                        : "full";
+                  return (
+                    <th
+                      key={iso}
+                      className="min-w-[8.5rem] px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+                    >
+                      <span className="inline-flex items-center justify-center gap-1.5">
+                        <span
+                          className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
+                        />
+                        {formatIsoDateLabel(iso, "short")}
+                      </span>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {portNames.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-3 py-8 text-center text-sm text-zinc-500"
                   >
-                    <span className="inline-flex items-center justify-center gap-1.5">
-                      <span className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`} />
-                      {formatIsoDateLabel(iso, "short")}
-                    </span>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {pierRows.map((position) => (
-              <tr
-                key={position.id}
-                className="border-t border-zinc-100 dark:border-zinc-800"
-              >
-                <td className="sticky left-0 z-10 bg-white px-2 py-2 align-top text-xs font-semibold text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
-                  {position.short_code || position.code}
-                </td>
-                {days.map((iso) => {
-                  const cell = bookingsForCell(bookings, iso, position.id);
-                  return (
-                    <td
-                      key={iso}
-                      className="px-1 py-1.5 align-top"
-                    >
-                      <div className="flex min-h-[4.5rem] flex-col gap-1">
-                        {cell.map((b) => (
-                          <CallChip key={b.id} booking={b} />
-                        ))}
-                      </div>
+                    Sin escalas en esta semana.
+                  </td>
+                </tr>
+              ) : (
+                portNames.map((portName) => (
+                  <tr
+                    key={portName}
+                    className="border-t border-zinc-100 dark:border-zinc-800"
+                  >
+                    <td className="sticky left-0 z-10 bg-white px-2 py-2 align-top text-xs font-semibold text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                      {portName}
                     </td>
+                    {days.map((iso) => {
+                      const cell = bookings.filter(
+                        (b) =>
+                          b.call_date === iso &&
+                          (b.port_name || "Puerto") === portName,
+                      );
+                      return (
+                        <td key={iso} className="px-1 py-1.5 align-top">
+                          <div className="flex min-h-[4.5rem] flex-col gap-1">
+                            {cell.map((b) => (
+                              <CallChip key={b.id} booking={b} />
+                            ))}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-[52rem] w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 w-28 bg-white px-2 py-2 text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                  Muelle
+                </th>
+                {days.map((iso) => {
+                  const dayBookings = bookings.filter(
+                    (b) => b.call_date === iso && b.status !== "c",
+                  );
+                  const traffic = dayTrafficLight(dayBookings, pierAll.length);
+                  return (
+                    <th
+                      key={iso}
+                      className="min-w-[8.5rem] cursor-default px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+                    >
+                      <span className="inline-flex items-center justify-center gap-1.5">
+                        <span
+                          className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
+                        />
+                        {formatIsoDateLabel(iso, "short")}
+                      </span>
+                    </th>
                   );
                 })}
               </tr>
-            ))}
-            {positionFilterId === 0 ? (
-              <tr className="border-t border-dashed border-zinc-200 dark:border-zinc-700">
-                <td className="sticky left-0 z-10 bg-amber-50/80 px-2 py-2 align-top text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                  Sin asignar
-                </td>
-                {days.map((iso) => {
-                  const cell = bookingsForCell(bookings, iso, null);
-                  return (
-                    <td
-                      key={iso}
-                      className="bg-amber-50/30 px-1 py-1.5 align-top dark:bg-amber-950/20"
-                    >
-                      <div className="flex min-h-[4.5rem] flex-col gap-1">
-                        {cell.map((b) => (
-                          <CallChip key={b.id} booking={b} />
-                        ))}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {pierRows.map((position) => (
+                <tr
+                  key={position.id}
+                  className="border-t border-zinc-100 dark:border-zinc-800"
+                >
+                  <td className="sticky left-0 z-10 bg-white px-2 py-2 align-top text-xs font-semibold text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                    {position.short_code || position.code}
+                  </td>
+                  {days.map((iso) => {
+                    const cell = bookingsForCell(bookings, iso, position.id);
+                    return (
+                      <td key={iso} className="px-1 py-1.5 align-top">
+                        <div className="flex min-h-[4.5rem] flex-col gap-1">
+                          {cell.map((b) => (
+                            <CallChip key={b.id} booking={b} />
+                          ))}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              {positionFilterId === 0 ? (
+                <tr className="border-t border-dashed border-zinc-200 dark:border-zinc-700">
+                  <td className="sticky left-0 z-10 bg-amber-50/80 px-2 py-2 align-top text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                    Sin asignar
+                  </td>
+                  {days.map((iso) => {
+                    const cell = bookingsForCell(bookings, iso, null);
+                    return (
+                      <td
+                        key={iso}
+                        className="bg-amber-50/30 px-1 py-1.5 align-top dark:bg-amber-950/20"
+                      >
+                        <div className="flex min-h-[4.5rem] flex-col gap-1">
+                          {cell.map((b) => (
+                            <CallChip key={b.id} booking={b} />
+                          ))}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -19,6 +19,8 @@ type BookingsDateFiltersProps = {
   customDateFrom: string;
   customDateTo: string;
   timeRange: TimeRange;
+  /** Show resolved range under "Todas las fechas" (e.g. availability hoy→+3y). */
+  showAllRangeHint?: boolean;
   onDatePresetChange: (preset: BookingsDatePreset) => void;
   onCustomDateFromChange: (value: string) => void;
   onCustomDateToChange: (value: string) => void;
@@ -39,6 +41,7 @@ export default function BookingsDateFilters({
   customDateFrom,
   customDateTo,
   timeRange,
+  showAllRangeHint = false,
   onDatePresetChange,
   onCustomDateFromChange,
   onCustomDateToChange,
@@ -102,11 +105,12 @@ export default function BookingsDateFilters({
           </div>
         </div>
       )}
-      {datePreset !== "all" && datePreset !== "custom" && (
+      {(datePreset === "all" && showAllRangeHint) ||
+      (datePreset !== "all" && datePreset !== "custom") ? (
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           {timeRange.date_from} → {timeRange.date_to}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

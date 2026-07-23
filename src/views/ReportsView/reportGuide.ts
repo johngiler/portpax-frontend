@@ -1,7 +1,6 @@
 export type ReportGuideId =
   | "totals"
   | "movements"
-  | "availability"
   | "panorama"
   | "cumplimiento";
 
@@ -30,13 +29,6 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Movimientos del período (confirmaciones y cancelaciones) y matrices tipo WEEK usadas en el seguimiento semanal de booking.",
     notes: "Solo exporta Excel (libro multi-hoja). El rango por defecto es la última semana.",
-  },
-  {
-    id: "availability",
-    name: "Availability Chart",
-    description:
-      "Matriz día × posición del puerto: ocupación planificada por muelle/posición (equivalente al Availability Chart operativo).",
-    notes: "Requiere seleccionar un puerto. Exporta CSV o Excel.",
   },
   {
     id: "panorama",

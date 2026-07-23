@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import { useMotionTransition } from "@/lib/motionPresets";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { sanitizeReturnTo } from "@/lib/safeReturnTo";
 import { createBookingBatch } from "@/services/bookings/bookingService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
@@ -30,6 +31,8 @@ import {
   type BookingWizardStepId,
   emptyBookingWizardForm,
 } from "./wizardTypes";
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function stepIndex(stepId: BookingWizardStepId): number {
   return BOOKING_WIZARD_STEPS.findIndex((s) => s.id === stepId);
@@ -60,9 +63,33 @@ function canAdvance(stepId: BookingWizardStepId, form: BookingWizardForm): boole
   }
 }
 
+function parsePrefill(searchParams: URLSearchParams): {
+  portId: number | null;
+  callDate: string | null;
+  positionId: number | null;
+  positionLabel: string;
+} {
+  const portId = Number.parseInt(searchParams.get("port") || "", 10);
+  const dateRaw = searchParams.get("date")?.trim() ?? "";
+  const positionId = Number.parseInt(searchParams.get("position") || "", 10);
+  const positionLabel = searchParams.get("positionLabel")?.trim() ?? "";
+  return {
+    portId: Number.isFinite(portId) && portId > 0 ? portId : null,
+    callDate: ISO_DATE_RE.test(dateRaw) ? dateRaw : null,
+    positionId:
+      Number.isFinite(positionId) && positionId > 0 ? positionId : null,
+    positionLabel,
+  };
+}
+
 export default function BookingWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const transition = useMotionTransition(0.22);
+  const prefillDoneRef = useRef(false);
+  const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
+  const cancelHref = returnTo ?? "/bookings";
+
   const [step, setStep] = useState<BookingWizardStepId>("port");
   const [form, setForm] = useState<BookingWizardForm>(emptyBookingWizardForm);
   const [direction, setDirection] = useState(1);
@@ -132,6 +159,21 @@ export default function BookingWizard() {
     }
   }, [form.shippingLineId, loadVessels]);
 
+  useEffect(() => {
+    if (prefillDoneRef.current) return;
+    const prefill = parsePrefill(searchParams);
+    if (!prefill.portId) return;
+    prefillDoneRef.current = true;
+    setForm((prev) => ({
+      ...prev,
+      portId: prefill.portId,
+      callDates: prefill.callDate ? [prefill.callDate] : prev.callDates,
+      preferredPositionId: prefill.positionId,
+      preferredPositionLabel: prefill.positionLabel,
+    }));
+    setStep("line");
+  }, [searchParams]);
+
   const reachable = useMemo(() => maxReachableIndex(form), [form]);
 
   function goToStep(target: BookingWizardStepId) {
@@ -163,6 +205,8 @@ export default function BookingWizard() {
     setForm((prev) => ({
       ...prev,
       portId,
+      preferredPositionId: null,
+      preferredPositionLabel: "",
     }));
   }
 
@@ -171,7 +215,7 @@ export default function BookingWizard() {
       ...prev,
       shippingLineId: lineId,
       vesselId: null,
-      callDates: [],
+      callDates: prev.callDates,
     }));
   }
 
@@ -179,7 +223,6 @@ export default function BookingWizard() {
     setForm((prev) => ({
       ...prev,
       vesselId,
-      callDates: [],
     }));
   }
 
@@ -205,6 +248,7 @@ export default function BookingWizard() {
         eta: form.eta || null,
         etd: form.etd || null,
         planned_pax: form.plannedPax === "" ? null : Number(form.plannedPax),
+        position: form.preferredPositionId,
       });
       setCreatedBookings(created);
     } catch (err) {
@@ -220,11 +264,12 @@ export default function BookingWizard() {
     return (
       <BookingWizardSuccess
         bookings={createdBookings}
-        onViewAll={() => router.push("/bookings")}
+        onViewAll={() => router.push(returnTo ?? "/bookings")}
         onNewBooking={() => {
           setForm(emptyBookingWizardForm());
           setStep("port");
           setCreatedBookings(null);
+          prefillDoneRef.current = true;
         }}
       />
     );
@@ -247,6 +292,7 @@ export default function BookingWizard() {
         line={selectedLine}
         vessel={selectedVessel}
         dateCount={form.callDates.length}
+        positionLabel={form.preferredPositionLabel || null}
       />
 
       <div className="rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[var(--admin-card-shadow)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 sm:p-8">
@@ -321,6 +367,8 @@ export default function BookingWizard() {
                 eta={form.eta}
                 etd={form.etd}
                 plannedPax={form.plannedPax}
+                preferredPositionId={form.preferredPositionId}
+                preferredPositionLabel={form.preferredPositionLabel}
               />
             )}
           </motion.div>
@@ -329,7 +377,7 @@ export default function BookingWizard() {
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/80 pt-6 dark:border-zinc-800">
           <div className="flex gap-2">
             <Link
-              href="/bookings"
+              href={cancelHref}
               className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               <X className="h-4 w-4" />

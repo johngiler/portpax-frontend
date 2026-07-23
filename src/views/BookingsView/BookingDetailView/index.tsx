@@ -6,6 +6,7 @@ import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { canWriteApp } from "@/lib/navAccess";
+import { sanitizeReturnTo } from "@/lib/safeReturnTo";
 import { fetchBookingByCode } from "@/services/bookings/bookingService";
 import type { Booking } from "@/types/booking";
 import BookingDetailHero from "./BookingDetailHero";
@@ -20,6 +21,7 @@ export default function BookingDetailView() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
+  const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
   const canWrite = canWriteApp(user?.role);
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -83,7 +85,7 @@ export default function BookingDetailView() {
       <BookingStatusActions
         booking={booking}
         onUpdated={setBooking}
-        onDeleted={() => router.push("/bookings")}
+        onDeleted={() => router.push(returnTo ?? "/bookings")}
         onError={setViewError}
         canWrite={canWrite}
       />

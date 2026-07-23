@@ -98,6 +98,8 @@ export type BookingBatchPayload = {
   eta?: string | null;
   etd?: string | null;
   planned_pax?: number | null;
+  /** Preferred pier from availability matrix; falls back to auto-assign. */
+  position?: number | null;
 };
 
 export type BookingUpdatePayload = {
@@ -265,6 +267,37 @@ export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
   }
 }
 
-export function bookingDetailHref(booking: Pick<Booking, "booking_code">): string {
-  return `/bookings/detail?code=${encodeURIComponent(booking.booking_code)}`;
+export function bookingDetailHref(
+  booking: Pick<Booking, "booking_code">,
+  options?: { returnTo?: string | null },
+): string {
+  const params = new URLSearchParams();
+  params.set("code", booking.booking_code);
+  if (options?.returnTo) {
+    params.set("returnTo", options.returnTo);
+  }
+  return `/bookings/detail?${params.toString()}`;
+}
+
+/** Prefill wizard from availability (or other entry points). */
+export function newBookingHref(options: {
+  portId: number;
+  callDate: string;
+  positionId?: number;
+  positionLabel?: string;
+  returnTo?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  params.set("port", String(options.portId));
+  params.set("date", options.callDate);
+  if (options.positionId && options.positionId > 0) {
+    params.set("position", String(options.positionId));
+  }
+  if (options.positionLabel?.trim()) {
+    params.set("positionLabel", options.positionLabel.trim());
+  }
+  if (options.returnTo) {
+    params.set("returnTo", options.returnTo);
+  }
+  return `/bookings/new?${params.toString()}`;
 }

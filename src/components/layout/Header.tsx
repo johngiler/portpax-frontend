@@ -4,7 +4,6 @@ import {
   Bell,
   LogOut,
   Menu,
-  MessageSquare,
   Moon,
   Sun,
   UserCircle,
@@ -50,40 +49,17 @@ const NOTIFICATIONS_DUMMY = [
   },
 ];
 
-const MESSAGES_DUMMY = [
-  {
-    id: "1",
-    from: "Equipo PortPax",
-    preview: "Recordatorio: cierre de manifiestos a las 18:00",
-    time: "10:30",
-  },
-  {
-    id: "2",
-    from: "Soporte",
-    preview: "Tu solicitud de acceso a reportes fue aprobada.",
-    time: "Ayer",
-  },
-  {
-    id: "3",
-    from: "Sistema",
-    preview: "Backup completado correctamente.",
-    time: "Lun",
-  },
-];
-
 export default function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState<
-    "notifications" | "messages" | "user" | null
-  >(null);
+  const [openMenu, setOpenMenu] = useState<"notifications" | "user" | null>(null);
   const notificationCount = NOTIFICATIONS_DUMMY.filter((n) => n.unread).length;
 
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
   const homeHref = roleHomePath(user?.role);
   const closeAll = () => setOpenMenu(null);
-  const toggle = (key: "notifications" | "messages" | "user") =>
+  const toggle = (key: "notifications" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
 
   const handleLogout = () => {
@@ -211,63 +187,6 @@ export default function Header() {
                 className="w-full cursor-pointer rounded-lg border border-[var(--admin-fuchsia)]/40 bg-[var(--admin-fuchsia)]/10 py-2.5 text-center text-sm font-semibold text-[var(--admin-fuchsia)] transition-colors hover:bg-[var(--admin-fuchsia)]/20 dark:border-[var(--admin-fuchsia)]/50 dark:bg-[var(--admin-fuchsia)]/15 dark:hover:bg-[var(--admin-fuchsia)]/25"
               >
                 Ver todas
-              </button>
-            </div>
-          </div>
-        </DropdownMenu>
-
-        <DropdownMenu
-          open={openMenu === "messages"}
-          onClose={closeAll}
-          width="min-w-[20rem] max-w-[22rem]"
-          trigger={
-            <button
-              type="button"
-              className={iconBtnClass}
-              aria-label="Mensajes"
-              title="Mensajes"
-              onClick={() => toggle("messages")}
-            >
-              <MessageSquare className="h-5 w-5" strokeWidth={1.5} />
-            </button>
-          }
-        >
-          <div className="dropdown-panel overflow-hidden">
-            <div className="border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-700/70">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                Mensajes
-              </h3>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                Bandeja de entrada
-              </p>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {MESSAGES_DUMMY.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className="flex w-full cursor-pointer flex-col gap-0.5 border-b border-zinc-100 px-4 py-3 text-left transition-colors hover:bg-[var(--admin-accent)]/10 dark:border-zinc-800 dark:hover:bg-[var(--admin-accent)]/15"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                      {m.from}
-                    </span>
-                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                      {m.time}
-                    </span>
-                  </div>
-                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                    {m.preview}
-                  </p>
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-zinc-200/80 p-2 dark:border-zinc-700/70">
-              <button
-                type="button"
-                className="w-full cursor-pointer rounded-lg border border-[var(--admin-fuchsia)]/40 bg-[var(--admin-fuchsia)]/10 py-2.5 text-center text-sm font-semibold text-[var(--admin-fuchsia)] transition-colors hover:bg-[var(--admin-fuchsia)]/20 dark:border-[var(--admin-fuchsia)]/50 dark:bg-[var(--admin-fuchsia)]/15 dark:hover:bg-[var(--admin-fuchsia)]/25"
-              >
-                Ver todos los mensajes
               </button>
             </div>
           </div>

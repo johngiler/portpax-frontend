@@ -1,7 +1,7 @@
 import type { UserRole } from "@/types/auth";
 import { NAV_SECTIONS } from "@/lib/navConfig";
 
-/** Booking-flow roles: calendar + bookings only (no dashboard / catalogs / users). */
+/** Booking-flow roles: Reservas (list/calendar/availability tabs) only (no dashboard / catalogs / users). */
 export const OPERATOR_ROLES: readonly UserRole[] = [
   "booking_operator",
   "port_operator",
@@ -63,7 +63,7 @@ export function roleHomePath(role: UserRole | null | undefined): string {
  * Frontend route access by MVP role.
  * - admin: full app
  * - viewer: full app except user management (/users); writes blocked in UI
- * - booking_operator / port_operator: calendar, bookings, profile only
+ * - booking_operator / port_operator: bookings (incl. calendar/availability tabs), profile only
  */
 export function canAccessPath(
   role: UserRole | null | undefined,
@@ -90,7 +90,7 @@ export function canAccessPath(
   }
 
   if (path === "/calendar" || path.startsWith("/calendar/")) {
-    return true;
+    return true; // redirect page; operators still allowed
   }
   if (path === "/bookings" || path.startsWith("/bookings/")) {
     return true;

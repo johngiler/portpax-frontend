@@ -22,6 +22,9 @@ export type BookingWizardForm = {
   eta: string;
   etd: string;
   plannedPax: string;
+  /** Preferred pier from availability click; optional. */
+  preferredPositionId: number | null;
+  preferredPositionLabel: string;
 };
 
 export const emptyBookingWizardForm = (): BookingWizardForm => ({
@@ -33,4 +36,6 @@ export const emptyBookingWizardForm = (): BookingWizardForm => ({
   eta: "",
   etd: "",
   plannedPax: "",
+  preferredPositionId: null,
+  preferredPositionLabel: "",
 });

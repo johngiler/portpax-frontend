@@ -1,11 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, MapPin, Ship, Users } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import ViewStatCard from "@/components/layout/ViewStatCard";
-import { CalendarDays, Ship, Users } from "lucide-react";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
@@ -22,7 +21,21 @@ type MonthGridProps = {
   onMonthChange: (monthIndex: number) => void;
   bookings: Booking[];
   positions: Position[];
+  multiPort?: boolean;
 };
+
+function groupByPort(bookings: Booking[]): { port: string; items: Booking[] }[] {
+  const map = new Map<string, Booking[]>();
+  for (const b of bookings) {
+    const key = b.port_name || "Puerto";
+    const list = map.get(key) ?? [];
+    list.push(b);
+    map.set(key, list);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, "es"))
+    .map(([port, items]) => ({ port, items }));
+}
 
 export default function MonthGrid({
   year,
@@ -31,6 +44,7 @@ export default function MonthGrid({
   onMonthChange,
   bookings,
   positions,
+  multiPort = false,
 }: MonthGridProps) {
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
@@ -40,6 +54,7 @@ export default function MonthGrid({
   });
   const calls = monthBookings.length;
   const plannedPax = monthBookings.reduce((sum, b) => sum + (b.planned_pax ?? 0), 0);
+  const portCount = new Set(monthBookings.map((b) => b.port)).size;
   const monthOptions = getMonthOptions();
 
   function shiftMonth(delta: number) {
@@ -92,17 +107,19 @@ export default function MonthGrid({
           gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
         />
         <ViewStatCard
-          label="Muelles pier"
-          value={String(pierCount)}
-          description="Posiciones activas del puerto"
-          icon={CalendarDays}
+          label={multiPort ? "Puertos con escala" : "Muelles pier"}
+          value={String(multiPort ? portCount : pierCount)}
+          description={
+            multiPort ? "Puertos con al menos un call" : "Posiciones activas del puerto"
+          }
+          icon={multiPort ? MapPin : CalendarDays}
           accentColor="#7c3aed"
           gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.12) 0%, var(--background) 55%)"
         />
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[48rem] grid grid-cols-7 gap-px rounded-xl border border-zinc-200 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-700">
+        <div className="min-w-[52rem] grid grid-cols-7 gap-px rounded-xl border border-zinc-200 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-700">
           {WEEKDAYS.map((label) => (
             <div
               key={label}
@@ -117,32 +134,59 @@ export default function MonthGrid({
                 return (
                   <div
                     key={`e-${wi}-${di}`}
-                    className="min-h-[6.5rem] bg-zinc-50/80 dark:bg-zinc-950/40"
+                    className="min-h-[7rem] bg-zinc-50/80 dark:bg-zinc-950/40"
                   />
                 );
               }
               const iso = toIsoDate(year, monthIndex, day);
               const dayBookings = bookings.filter((b) => b.call_date === iso);
               const active = dayBookings.filter((b) => b.status !== "c");
-              const traffic = dayTrafficLight(active, pierCount);
+              const traffic = multiPort
+                ? active.length === 0
+                  ? "free"
+                  : active.length <= 2
+                    ? "limited"
+                    : "full"
+                : dayTrafficLight(active, pierCount);
+              const byPort = multiPort ? groupByPort(dayBookings) : null;
+              const maxShow = multiPort ? 6 : 4;
+
               return (
                 <div
                   key={iso}
-                  className="flex min-h-[7.5rem] flex-col gap-1 bg-white p-1.5 dark:bg-zinc-900"
+                  className="flex min-h-[8.5rem] flex-col gap-1 bg-white p-1.5 dark:bg-zinc-900"
                 >
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
                       {day}
                     </span>
-                    <span className={`h-1.5 w-1.5 rounded-full ${TRAFFIC_DOT[traffic]}`} />
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${TRAFFIC_DOT[traffic]}`}
+                    />
                   </div>
-                  <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-                    {dayBookings.slice(0, 4).map((b) => (
-                      <CallChip key={b.id} booking={b} compact />
-                    ))}
-                    {dayBookings.length > 4 ? (
+                  <div className="flex flex-1 flex-col gap-1 overflow-hidden">
+                    {byPort
+                      ? byPort.map((group) => (
+                          <div key={group.port} className="min-w-0 space-y-0.5">
+                            <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
+                              {group.port}
+                            </p>
+                            {group.items.slice(0, 2).map((b) => (
+                              <CallChip key={b.id} booking={b} compact />
+                            ))}
+                            {group.items.length > 2 ? (
+                              <span className="text-[9px] text-zinc-500">
+                                +{group.items.length - 2}
+                              </span>
+                            ) : null}
+                          </div>
+                        ))
+                      : dayBookings.slice(0, maxShow).map((b) => (
+                          <CallChip key={b.id} booking={b} compact />
+                        ))}
+                    {!byPort && dayBookings.length > maxShow ? (
                       <span className="text-[10px] text-zinc-500">
-                        +{dayBookings.length - 4} más
+                        +{dayBookings.length - maxShow} más
                       </span>
                     ) : null}
                   </div>

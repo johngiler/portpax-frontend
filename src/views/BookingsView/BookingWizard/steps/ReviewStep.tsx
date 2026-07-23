@@ -30,6 +30,8 @@ type ReviewStepProps = {
   eta: string;
   etd: string;
   plannedPax: string;
+  preferredPositionId?: number | null;
+  preferredPositionLabel?: string;
 };
 
 type SummaryItemProps = {
@@ -66,6 +68,8 @@ export default function ReviewStep({
   eta,
   etd,
   plannedPax,
+  preferredPositionId = null,
+  preferredPositionLabel = "",
 }: ReviewStepProps) {
   const [validation, setValidation] = useState<BookingValidationResult | null>(null);
   const [positionsByDate, setPositionsByDate] = useState<
@@ -82,12 +86,13 @@ export default function ReviewStep({
       port: port.id,
       vessel: vessel.id,
       call_dates: callDates,
+      position: preferredPositionId,
       eta: eta || null,
       etd: etd || null,
     })
       .then(setValidation)
       .catch(() => setValidation(null));
-  }, [port, vessel, callDates, eta, etd]);
+  }, [port, vessel, callDates, eta, etd, preferredPositionId]);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -225,7 +230,12 @@ export default function ReviewStep({
                   <p className="mt-0.5 text-[11px] text-zinc-400">Escala {index + 1}</p>
                 </div>
                 <div className="min-w-[4.5rem] text-center">
-                  {loadingPositions ? (
+                  {preferredPositionId && preferredPositionLabel ? (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                      <LayoutGrid className="h-3 w-3" strokeWidth={2} />
+                      {preferredPositionLabel}
+                    </span>
+                  ) : loadingPositions ? (
                     <span className="text-xs text-zinc-400">…</span>
                   ) : assigned ? (
                     <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
@@ -251,8 +261,9 @@ export default function ReviewStep({
           </ul>
         </div>
         <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          La posición se calcula automáticamente (LOA, calado y disponibilidad) al crear la
-          reserva.
+          {preferredPositionId
+            ? "Se intentará asignar la posición elegida en disponibilidad; si no es viable, se usará la mejor alternativa."
+            : "La posición se calcula automáticamente (LOA, calado y disponibilidad) al crear la reserva."}
         </p>
       </div>
 

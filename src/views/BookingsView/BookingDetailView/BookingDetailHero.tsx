@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, CalendarDays, Hash } from "lucide-react";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
+import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
 import type { Booking } from "@/types/booking";
 
 type BookingDetailHeroProps = {
@@ -11,15 +13,20 @@ type BookingDetailHeroProps = {
 };
 
 export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
+  const searchParams = useSearchParams();
+  const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
+  const backHref = returnTo ?? "/bookings";
+  const backLabel = returnToLabel(returnTo);
+
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <div className="border-b border-zinc-200/80 bg-gradient-to-r from-[var(--admin-accent)]/12 via-[var(--admin-accent)]/5 to-transparent px-5 py-4 dark:border-zinc-800">
         <Link
-          href="/bookings"
+          href={backHref}
           className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-[var(--admin-accent)] dark:text-zinc-400"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} aria-hidden />
-          Volver a reservas
+          {backLabel}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">

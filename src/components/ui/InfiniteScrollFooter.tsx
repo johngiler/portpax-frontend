@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import type { RefObject } from "react";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 type InfiniteScrollFooterProps = {
@@ -13,11 +14,14 @@ type InfiniteScrollFooterProps = {
   itemLabel: string;
   disabled?: boolean;
   className?: string;
+  /** Nested scroll panel — loads only when scrolling inside this element. */
+  scrollRootRef?: RefObject<Element | null>;
+  rootMargin?: string;
 };
 
 /**
  * Bottom sentinel + loading indicator for grid/list infinite scroll.
- * Prefetches ~320px before the fold for smooth mobile scrolling.
+ * Prefetches before the fold; pass `scrollRootRef` for card-scoped scroll.
  */
 export default function InfiniteScrollFooter({
   hasMore,
@@ -28,12 +32,16 @@ export default function InfiniteScrollFooter({
   itemLabel,
   disabled = false,
   className = "",
+  scrollRootRef,
+  rootMargin,
 }: InfiniteScrollFooterProps) {
   const sentinelRef = useInfiniteScroll({
     hasMore,
     loading,
     onLoadMore,
     disabled,
+    scrollRootRef,
+    rootMargin,
   });
 
   if (totalCount <= 0) return null;

@@ -64,22 +64,13 @@ export const TIME_FILTER_LABELS: Record<TimeFilterPreset, string> = {
   custom: "Rango personalizado",
 };
 
-/** Max years ahead (from today) for the dashboard occupancy calendar and data load. */
-export const OCCUPANCY_MAX_FORWARD_YEARS = 5;
+/** Max years ahead for availability "Todas las fechas". */
+export const AVAILABILITY_FORWARD_YEARS = 3;
 
-/** Widen the occupancy calendar so upcoming port calls stay visible beyond a short filter window. */
-export function expandRangeForOccupancy(
-  range: TimeRange,
-  forwardYears = OCCUPANCY_MAX_FORWARD_YEARS,
-  refDate?: Date,
-): TimeRange {
+export function availabilityDefaultRange(refDate?: Date): TimeRange {
   const now = refDate || new Date();
   const today = toLocalISO(now);
-  const horizonYear = now.getFullYear() + forwardYears;
-  const horizon = toIsoDate(horizonYear, 11, 31);
-
-  return {
-    date_from: range.date_from < today ? range.date_from : today,
-    date_to: range.date_to > horizon ? range.date_to : horizon,
-  };
+  const to = new Date(now);
+  to.setFullYear(to.getFullYear() + AVAILABILITY_FORWARD_YEARS);
+  return { date_from: today, date_to: toLocalISO(to) };
 }

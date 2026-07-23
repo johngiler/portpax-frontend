@@ -21,12 +21,10 @@ import { fetchAllPages } from "@/lib/fetchAllPages";
 import {
   exportBookingsReport,
   exportStructuredReport,
-  fetchAvailabilityReport,
   fetchBookingTotalsReport,
   fetchCarrierPanoramaReport,
   fetchCumplimientoRealReport,
   fetchMovementsReport,
-  type AvailabilityReport,
   type BookingTotalsReport,
   type CarrierPanoramaReport,
   type CumplimientoRealReport,
@@ -36,7 +34,6 @@ import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine } from "@/types/cruise";
-import AvailabilityChartSection from "./AvailabilityChartSection";
 import CarrierPanoramaSection from "./CarrierPanoramaSection";
 import CumplimientoRealSection from "./CumplimientoRealSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
@@ -59,12 +56,7 @@ function weekAgoIso(): string {
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-type ReportTab =
-  | "totals"
-  | "movements"
-  | "availability"
-  | "panorama"
-  | "cumplimiento";
+type ReportTab = "totals" | "movements" | "panorama" | "cumplimiento";
 
 type AppliedReportFilters = {
   tab: ReportTab;
@@ -99,7 +91,6 @@ export default function ReportsView() {
   const [cumplimiento, setCumplimiento] = useState<CumplimientoRealReport | null>(
     null,
   );
-  const [availability, setAvailability] = useState<AvailabilityReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -152,23 +143,6 @@ export default function ReportsView() {
         setTotals(null);
         setPanorama(null);
         setCumplimiento(null);
-        setAvailability(null);
-      } else if (appliedTab === "availability") {
-        setTotals(null);
-        setMovements(null);
-        setPanorama(null);
-        setCumplimiento(null);
-        if (!appliedPortFilter) {
-          setAvailability(null);
-          setError("Selecciona un puerto para Availability Chart.");
-        } else {
-          const data = await fetchAvailabilityReport({
-            date_from: appliedDateFrom,
-            date_to: appliedDateTo,
-            port: appliedPortFilter,
-          });
-          setAvailability(data);
-        }
       } else if (appliedTab === "panorama") {
         if (!appliedLineFilter) {
           setError("Selecciona una naviera para el panorama.");
@@ -184,7 +158,6 @@ export default function ReportsView() {
         setTotals(null);
         setMovements(null);
         setCumplimiento(null);
-        setAvailability(null);
       } else if (appliedTab === "cumplimiento") {
         const data = await fetchCumplimientoRealReport({
           date_from: appliedDateFrom,
@@ -195,7 +168,6 @@ export default function ReportsView() {
         setTotals(null);
         setMovements(null);
         setPanorama(null);
-        setAvailability(null);
       } else {
         const data = await fetchBookingTotalsReport({
           date_from: appliedDateFrom,
@@ -209,7 +181,6 @@ export default function ReportsView() {
         setMovements(null);
         setPanorama(null);
         setCumplimiento(null);
-        setAvailability(null);
       }
     } catch (err) {
       setError(getApiErrorMessage(err, "No se pudo cargar el reporte."));
@@ -217,7 +188,6 @@ export default function ReportsView() {
       setMovements(null);
       setPanorama(null);
       setCumplimiento(null);
-      setAvailability(null);
     } finally {
       setLoading(false);
     }
@@ -303,20 +273,6 @@ export default function ReportsView() {
           setError("El reporte WEEK solo se exporta a Excel (.xlsx).");
           return;
         }
-        if (appliedTab === "availability") {
-          if (!appliedPortFilter) {
-            setError("Selecciona un puerto para exportar Availability Chart.");
-            return;
-          }
-          await exportStructuredReport({
-            report_type: "availability",
-            date_from: appliedDateFrom,
-            date_to: appliedDateTo,
-            port: appliedPortFilter,
-            exportFormat: format,
-          });
-          return;
-        }
         if (appliedTab === "movements") {
           await exportStructuredReport({
             report_type: "week",
@@ -364,7 +320,7 @@ export default function ReportsView() {
 
   if (!ready) return <ReportsViewSkeleton />;
 
-  const showLineFilter = tab !== "movements" && tab !== "availability";
+  const showLineFilter = tab !== "movements";
   const showPortFilter = tab !== "panorama";
 
   return (
@@ -386,7 +342,6 @@ export default function ReportsView() {
           options={[
             { value: "totals", label: "Booking Totals" },
             { value: "movements", label: "WEEK / Movimientos" },
-            { value: "availability", label: "Availability Chart" },
             { value: "panorama", label: "Panorama por naviera" },
             { value: "cumplimiento", label: "Cumplimiento REAL" },
           ]}
@@ -406,9 +361,7 @@ export default function ReportsView() {
             value={portFilter}
             onChange={(v) => setPortFilter(Number(v))}
             options={portOptions}
-            optionLabel={
-              tab === "availability" ? "Selecciona un puerto" : "Todos los puertos"
-            }
+            optionLabel="Todos los puertos"
             emptyValue={0}
             compact
             showLogo
@@ -468,7 +421,7 @@ export default function ReportsView() {
       <ViewPageHeader
         icon={BarChart3}
         title="Reportes"
-        description="Totales, Availability Chart, WEEK, panorama por naviera y cumplimiento REAL (sin proyección ni garantías)."
+        description="Totales, WEEK, panorama por naviera y cumplimiento REAL (sin proyección ni garantías)."
       />
       {error ? <ViewErrorBanner message={error} /> : null}
 
@@ -651,24 +604,6 @@ export default function ReportsView() {
             </div>
           </ViewSection>
         </div>
-      ) : appliedFilters.tab === "availability" && !appliedFilters.portFilter ? (
-        <EmptyState
-          icon={FileText}
-          title="Selecciona un puerto"
-          description="Availability Chart requiere un puerto. Elígelo en el panel de filtros y pulsa Aplicar."
-        />
-      ) : appliedFilters.tab === "availability" && availability ? (
-        availability.rows.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            filtered
-            title="Sin datos con estos filtros"
-            description="No hay posiciones activas o escalas en el rango seleccionado. Ajusta el puerto o las fechas."
-            onClearFilters={clearFilters}
-          />
-        ) : (
-          <AvailabilityChartSection data={availability} />
-        )
       ) : appliedFilters.tab === "panorama" && panorama ? (
         <CarrierPanoramaSection
           data={panorama}

@@ -90,17 +90,7 @@ export const TRAFFIC_LABEL: Record<DayTraffic, string> = {
   full: "Sin disponibilidad",
 };
 
-export function formatTimeShort(value: string | null | undefined): string {
-  if (!value) return "—";
-  return value.slice(0, 5);
-}
-
-export function formatLoa(value: string | null | undefined): string {
-  if (value == null || value === "") return "—";
-  const n = Number(value);
-  if (Number.isNaN(n)) return "—";
-  return `${Math.round(n)} m`;
-}
+export { formatLoa, formatTimeShort } from "@/lib/bookingDisplay";
 
 export function activePierPositions(positions: Position[]): Position[] {
   return positions
