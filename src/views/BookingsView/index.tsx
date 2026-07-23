@@ -10,6 +10,12 @@ import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  useActivePortsCatalog,
+  useActiveShippingLinesCatalog,
+  useActiveVesselsCatalog,
+} from "@/hooks/swr/useCatalogs";
+import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
 import { canWriteApp } from "@/lib/navAccess";
@@ -29,13 +35,8 @@ import {
   exportBookingsReport,
   exportCalendarReport,
   exportStructuredReport,
-  fetchBookings,
 } from "@/services/bookings/bookingService";
-import { ApiError } from "@/services/apiClient";
-import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchPositions } from "@/services/catalogs/positionService";
-import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
-import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingListStatusFilter } from "@/types/booking";
 import {
@@ -80,7 +81,6 @@ export default function BookingsView() {
   const { user } = useAuth();
   const canWrite = canWriteApp(user?.role);
   const skipUrlHydrateRef = useRef(false);
-  const loadGenerationRef = useRef(0);
 
   const navDefaults = useMemo(
     () => ({
@@ -93,7 +93,44 @@ export default function BookingsView() {
     [],
   );
 
-  const [portsReady, setPortsReady] = useState(false);
+  const { ports, isLoading: portsLoading } = useActivePortsCatalog();
+  const { lines, isLoading: linesLoading } = useActiveShippingLinesCatalog();
+  const { vessels, isLoading: vesselsLoading } = useActiveVesselsCatalog();
+  const portsReady = !portsLoading && !linesLoading && !vesselsLoading;
+
+  const portOptions = useMemo(
+    () =>
+      ports.map((port) => ({
+        value: port.id,
+        label: portDisplayName(port),
+        logoUrl: port.logo,
+      })),
+    [ports],
+  );
+  const portsById = useMemo(() => {
+    const byId = new Map<number, string>();
+    for (const port of ports) byId.set(port.id, portDisplayName(port));
+    return byId;
+  }, [ports]);
+  const shippingLineOptions = useMemo(
+    () =>
+      lines.map((line) => ({
+        value: line.id,
+        label: line.name,
+        logoUrl: line.logo,
+      })),
+    [lines],
+  );
+  const allVessels = useMemo(
+    () =>
+      vessels.map((vessel) => ({
+        value: vessel.id,
+        label: vessel.name,
+        lineId: vessel.shipping_line,
+        logoUrl: vessel.logo,
+      })),
+    [vessels],
+  );
 
   const [tab, setTab] = useState<BookingsTabQuery>("list");
   const [statusFilter, setStatusFilter] = useState<BookingListStatusFilter>("");
@@ -128,27 +165,9 @@ export default function BookingsView() {
   const [year, setYear] = useState(navDefaults.year);
   const [monthIndex, setMonthIndex] = useState(navDefaults.month);
 
-  const [portOptions, setPortOptions] = useState<
-    { value: number; label: string; logoUrl?: string | null }[]
-  >([]);
-  const [shippingLineOptions, setShippingLineOptions] = useState<
-    { value: number; label: string; logoUrl?: string | null }[]
-  >([]);
-  const [allVessels, setAllVessels] = useState<
-    { value: number; label: string; lineId: number; logoUrl?: string | null }[]
-  >([]);
   const [positionOptions, setPositionOptions] = useState<
     { value: number; label: string }[]
   >([]);
-  const [portsById, setPortsById] = useState<Map<number, string>>(new Map());
-
-  const [bookings, setBookings] = useState<
-    Awaited<ReturnType<typeof fetchBookings>>["results"]
-  >([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
 
   function workspaceState(
@@ -179,57 +198,6 @@ export default function BookingsView() {
     skipUrlHydrateRef.current = true;
     router.replace(qs ? `/bookings?${qs}` : "/bookings");
   }
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [portsPage, lines, vessels] = await Promise.all([
-          fetchPorts({ pageSize: 100 }),
-          fetchAllShippingLines(),
-          fetchAllVessels(),
-        ]);
-        if (cancelled) return;
-        const activePorts = portsPage.results.filter((p) => p.is_active);
-        setPortOptions(
-          activePorts.map((port) => ({
-            value: port.id,
-            label: portDisplayName(port),
-            logoUrl: port.logo,
-          })),
-        );
-        const byId = new Map<number, string>();
-        for (const p of activePorts) byId.set(p.id, portDisplayName(p));
-        setPortsById(byId);
-
-        setShippingLineOptions(
-          lines
-            .filter((line) => line.is_active)
-            .map((line) => ({
-              value: line.id,
-              label: line.name,
-              logoUrl: line.logo,
-            })),
-        );
-        setAllVessels(
-          vessels
-            .filter((vessel) => vessel.is_active)
-            .map((vessel) => ({
-              value: vessel.id,
-              label: vessel.name,
-              lineId: vessel.shipping_line,
-              logoUrl: vessel.logo,
-            })),
-        );
-        setPortsReady(true);
-      } catch {
-        if (!cancelled) setPortsReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!portsReady) return;
@@ -346,73 +314,23 @@ export default function BookingsView() {
     return { from: range.date_from, to: range.date_to };
   }, [appliedDatePreset, appliedCustomDateFrom, appliedCustomDateTo]);
 
-  const loadInitial = useCallback(async () => {
-    if (tab !== "list") return;
-    const generation = ++loadGenerationRef.current;
-    setLoading(true);
-    setLoadingMore(false);
-    setViewError(null);
-    try {
-      const data = await fetchBookings({ ...listParams, page: 1 });
-      if (generation !== loadGenerationRef.current) return;
-      setBookings(data.results);
-      setTotalCount(data.count);
-      setPage(1);
-    } catch (err) {
-      if (generation !== loadGenerationRef.current) return;
-      setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar las reservas."),
-      );
-      setBookings([]);
-      setTotalCount(0);
-    } finally {
-      if (generation === loadGenerationRef.current) setLoading(false);
-    }
-  }, [listParams, tab]);
+  const {
+    bookings,
+    totalCount,
+    hasMore,
+    isLoading: loading,
+    loadingMore,
+    error: bookingsError,
+    loadMore,
+  } = useBookingsInfinite(listParams, tab === "list" && portsReady);
 
   useEffect(() => {
-    void loadInitial();
-  }, [loadInitial]);
-
-  const loadMore = useCallback(async () => {
-    if (tab !== "list") return;
-    if (loading || loadingMore || bookings.length >= totalCount) return;
-    const generation = loadGenerationRef.current;
-    const loadedBefore = bookings.length;
-    setLoadingMore(true);
-    setViewError(null);
-    try {
-      const nextPage = page + 1;
-      const data = await fetchBookings({ ...listParams, page: nextPage });
-      if (generation !== loadGenerationRef.current) return;
-      if (data.results.length === 0) {
-        setTotalCount(loadedBefore);
-        return;
-      }
-      setBookings((prev) => [...prev, ...data.results]);
-      setTotalCount(data.count);
-      setPage(nextPage);
-    } catch (err) {
-      if (generation !== loadGenerationRef.current) return;
-      if (err instanceof ApiError && err.status === 404) {
-        setTotalCount(loadedBefore);
-        return;
-      }
+    if (bookingsError) {
       setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar más reservas."),
+        getApiErrorMessage(bookingsError, "No se pudieron cargar las reservas."),
       );
-    } finally {
-      if (generation === loadGenerationRef.current) setLoadingMore(false);
     }
-  }, [
-    tab,
-    loading,
-    loadingMore,
-    bookings.length,
-    totalCount,
-    page,
-    listParams,
-  ]);
+  }, [bookingsError]);
 
   function applyFilters() {
     setAppliedStatusFilter(statusFilter);
@@ -707,7 +625,7 @@ export default function BookingsView() {
             />
             {bookings.length > 0 ? (
               <InfiniteScrollFooter
-                hasMore={bookings.length < totalCount}
+                hasMore={hasMore}
                 loading={loadingMore}
                 onLoadMore={loadMore}
                 loadedCount={bookings.length}

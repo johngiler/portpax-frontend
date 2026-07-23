@@ -19,6 +19,7 @@ import {
   setSessionExpiredHandler,
   setStoredTokens,
 } from "@/services/authService";
+import { clearSwrCache } from "@/lib/swr/mutateHelpers";
 import type { UserMe } from "@/types/auth";
 
 type AuthState = {
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setSessionExpiredHandler(() => {
+      void clearSwrCache();
       setUser(null);
       setToken(null);
       window.location.assign("/login?session=expired");
@@ -117,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    void clearSwrCache();
     clearStoredTokens();
     setUser(null);
     setToken(null);

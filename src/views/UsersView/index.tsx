@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -22,15 +22,16 @@ import EmptyState from "@/components/ui/EmptyState";
 import EntityThumb from "@/components/ui/EntityThumb";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePortsCatalog } from "@/hooks/swr/useCatalogs";
+import { useUsersPage } from "@/hooks/swr/useUsersPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { roleHomePath } from "@/lib/navAccess";
+import { revalidateUsersLists } from "@/lib/swr/mutateHelpers";
 import {
   createUser,
   deleteUser,
-  fetchUsers,
   updateUser,
 } from "@/services/accounts/userService";
-import { fetchPorts } from "@/services/catalogs/portService";
 import type { ManagedUser, ManagedUserPayload } from "@/types/accounts";
 import { portDisplayName } from "@/types/catalog";
 import RoleLabelWithInfo from "./RoleLabelWithInfo";
@@ -45,15 +46,9 @@ export default function UsersView() {
   const router = useRouter();
   const isAdmin = user?.role === "admin";
 
-  const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [portOptions, setPortOptions] = useState<
-    { value: number; label: string; logoUrl?: string | null }[]
-  >([]);
-  const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -62,6 +57,24 @@ export default function UsersView() {
   const [saving, setSaving] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
+  const { ports } = useActivePortsCatalog(isAdmin);
+  const portOptions = useMemo(
+    () =>
+      ports.map((port) => ({
+        value: port.id,
+        label: portDisplayName(port),
+        logoUrl: port.logo,
+      })),
+    [ports],
+  );
+
+  const { users, totalCount, isLoading, error, mutate } = useUsersPage(
+    page,
+    appliedSearch,
+    isAdmin,
+    PAGE_SIZE,
+  );
+
   useEffect(() => {
     if (user && !isAdmin) {
       router.replace(roleHomePath(user?.role));
@@ -69,43 +82,10 @@ export default function UsersView() {
   }, [user, isAdmin, router]);
 
   useEffect(() => {
-    fetchPorts({ pageSize: 100 })
-      .then((data) =>
-        setPortOptions(
-          data.results.map((port) => ({
-            value: port.id,
-            label: portDisplayName(port),
-            logoUrl: port.logo,
-          })),
-        ),
-      )
-      .catch(() => setPortOptions([]));
-  }, []);
-
-  const loadUsers = useCallback(async () => {
-    setLoading(true);
-    setViewError(null);
-    try {
-      const data = await fetchUsers({
-        page,
-        search: appliedSearch,
-        pageSize: PAGE_SIZE,
-      });
-      setUsers(data.results);
-      setTotalCount(data.count);
-    } catch (err) {
-      setViewError(getApiErrorMessage(err, "No se pudieron cargar los usuarios."));
-      setUsers([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
+    if (error) {
+      setViewError(getApiErrorMessage(error, "No se pudieron cargar los usuarios."));
     }
-  }, [page, appliedSearch]);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    loadUsers();
-  }, [isAdmin, loadUsers]);
+  }, [error]);
 
   useEffect(() => {
     setExpandedUserId(null);
@@ -132,7 +112,8 @@ export default function UsersView() {
         await updateUser(editingUser.id, payload);
       }
       setModalOpen(false);
-      await loadUsers();
+      await revalidateUsersLists();
+      await mutate();
     } catch (err) {
       throw err;
     } finally {
@@ -144,7 +125,8 @@ export default function UsersView() {
     setViewError(null);
     try {
       await deleteUser(managed.id);
-      await loadUsers();
+      await revalidateUsersLists();
+      await mutate();
     } catch (err) {
       setViewError(getApiErrorMessage(err, "No se pudo eliminar el usuario."));
     }
@@ -153,19 +135,21 @@ export default function UsersView() {
   function applyFilters() {
     setPage(1);
     setAppliedSearch(search);
+    setViewError(null);
   }
 
   function clearFilters() {
     setSearch("");
     setAppliedSearch("");
     setPage(1);
+    setViewError(null);
   }
 
   if (!isAdmin) {
     return null;
   }
 
-  if (loading && users.length === 0 && !viewError) {
+  if (isLoading && users.length === 0 && !viewError) {
     return <UsersViewSkeleton />;
   }
 
@@ -201,9 +185,11 @@ export default function UsersView() {
         }
       />
 
-      {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
+      {viewError && (
+        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+      )}
 
-      {!loading && users.length === 0 ? (
+      {!isLoading && users.length === 0 ? (
         <EmptyState
           icon={Users}
           filtered={Boolean(appliedSearch)}
@@ -226,82 +212,82 @@ export default function UsersView() {
         />
       ) : (
         <MainTable>
-        <table className="w-full min-w-[48rem]">
-          <MainTableHeader>
-            <MainTableTh>Usuario</MainTableTh>
-            <MainTableTh>Nombre</MainTableTh>
-            <MainTableTh>Correo</MainTableTh>
-            <MainTableTh>Rol</MainTableTh>
-            <MainTableTh>Estado</MainTableTh>
-            <MainTableTh>Acciones</MainTableTh>
-          </MainTableHeader>
-          <MainTableBody>
-            {loading ? (
-              <MainTableEmpty colSpan={6}>Cargando…</MainTableEmpty>
-            ) : (
-              users.map((managed) => {
-                const fullName = [managed.first_name, managed.last_name]
-                  .filter(Boolean)
-                  .join(" ");
-                const isExpanded = expandedUserId === managed.id;
-                const portLabels = managed.port_ids
-                  .map(
-                    (id) =>
-                      portOptions.find((option) => option.value === id)?.label,
-                  )
-                  .filter((label): label is string => Boolean(label));
-                return (
-                  <AccordionTableRow
-                    key={managed.id}
-                    colSpan={6}
-                    showRowToggle={false}
-                    open={isExpanded}
-                    onOpenChange={(open) =>
-                      setExpandedUserId(open ? managed.id : null)
-                    }
-                    expandContent={
-                      <UserRowDetail user={managed} portLabels={portLabels} />
-                    }
-                  >
-                    <MainTableTd className="font-medium">
-                      <div className="flex items-center gap-2.5">
-                        <EntityThumb
-                          src={managed.avatar}
-                          label={fullName || managed.username}
-                          size="sm"
+          <table className="w-full min-w-[48rem]">
+            <MainTableHeader>
+              <MainTableTh>Usuario</MainTableTh>
+              <MainTableTh>Nombre</MainTableTh>
+              <MainTableTh>Correo</MainTableTh>
+              <MainTableTh>Rol</MainTableTh>
+              <MainTableTh>Estado</MainTableTh>
+              <MainTableTh>Acciones</MainTableTh>
+            </MainTableHeader>
+            <MainTableBody>
+              {isLoading ? (
+                <MainTableEmpty colSpan={6}>Cargando…</MainTableEmpty>
+              ) : (
+                users.map((managed) => {
+                  const fullName = [managed.first_name, managed.last_name]
+                    .filter(Boolean)
+                    .join(" ");
+                  const isExpanded = expandedUserId === managed.id;
+                  const portLabels = managed.port_ids
+                    .map(
+                      (id) =>
+                        portOptions.find((option) => option.value === id)?.label,
+                    )
+                    .filter((label): label is string => Boolean(label));
+                  return (
+                    <AccordionTableRow
+                      key={managed.id}
+                      colSpan={6}
+                      showRowToggle={false}
+                      open={isExpanded}
+                      onOpenChange={(open) =>
+                        setExpandedUserId(open ? managed.id : null)
+                      }
+                      expandContent={
+                        <UserRowDetail user={managed} portLabels={portLabels} />
+                      }
+                    >
+                      <MainTableTd className="font-medium">
+                        <div className="flex items-center gap-2.5">
+                          <EntityThumb
+                            src={managed.avatar}
+                            label={fullName || managed.username}
+                            size="sm"
+                          />
+                          <span>{managed.username}</span>
+                        </div>
+                      </MainTableTd>
+                      <MainTableTd>{fullName || "—"}</MainTableTd>
+                      <MainTableTd>{managed.email || "—"}</MainTableTd>
+                      <MainTableTd>
+                        <RoleLabelWithInfo role={managed.role} />
+                      </MainTableTd>
+                      <MainTableTd>
+                        {managed.is_active ? "Activo" : "Inactivo"}
+                      </MainTableTd>
+                      <MainTableTd>
+                        <TableActionButtons
+                          onView={() =>
+                            setExpandedUserId(isExpanded ? null : managed.id)
+                          }
+                          viewActive={isExpanded}
+                          onEdit={() => openEdit(managed)}
+                          onDelete={
+                            managed.id === user?.id
+                              ? undefined
+                              : () => handleDelete(managed)
+                          }
+                          deleteLabel={`el usuario ${managed.username}`}
                         />
-                        <span>{managed.username}</span>
-                      </div>
-                    </MainTableTd>
-                    <MainTableTd>{fullName || "—"}</MainTableTd>
-                    <MainTableTd>{managed.email || "—"}</MainTableTd>
-                    <MainTableTd>
-                      <RoleLabelWithInfo role={managed.role} />
-                    </MainTableTd>
-                    <MainTableTd>
-                      {managed.is_active ? "Activo" : "Inactivo"}
-                    </MainTableTd>
-                    <MainTableTd>
-                      <TableActionButtons
-                        onView={() =>
-                          setExpandedUserId(isExpanded ? null : managed.id)
-                        }
-                        viewActive={isExpanded}
-                        onEdit={() => openEdit(managed)}
-                        onDelete={
-                          managed.id === user?.id
-                            ? undefined
-                            : () => handleDelete(managed)
-                        }
-                        deleteLabel={`el usuario ${managed.username}`}
-                      />
-                    </MainTableTd>
-                  </AccordionTableRow>
-                );
-              })
-            )}
-          </MainTableBody>
-        </table>
+                      </MainTableTd>
+                    </AccordionTableRow>
+                  );
+                })
+              )}
+            </MainTableBody>
+          </table>
         </MainTable>
       )}
 

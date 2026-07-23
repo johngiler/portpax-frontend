@@ -1,20 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Users } from "lucide-react";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
+import {
+  useActivePortsCatalog,
+  useActiveShippingLinesCatalog,
+  useShippingLineGroupsCatalog,
+} from "@/hooks/swr/useCatalogs";
+import { useDashboardStats } from "@/hooks/swr/useDashboardStats";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
-import { fetchDashboardStats } from "@/services/bookings/bookingService";
-import { fetchPorts } from "@/services/catalogs/portService";
-import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
-import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
-import type { Port } from "@/types/catalog";
-import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
-import type { DashboardCarrierFilter, DashboardStats } from "@/types/dashboard";
+import type { DashboardCarrierFilter } from "@/types/dashboard";
 import DashboardActionQueueSection from "./DashboardActionQueueSection";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
@@ -39,10 +39,16 @@ function formatPeriodLabel(from: string, to: string): string {
 
 export default function DashboardView() {
   const defaults = useMemo(() => defaultYearRange(), []);
-  const [ports, setPorts] = useState<Port[]>([]);
-  const [groups, setGroups] = useState<ShippingLineGroup[]>([]);
-  const [lines, setLines] = useState<ShippingLine[]>([]);
-  const [catalogReady, setCatalogReady] = useState(false);
+
+  const { ports, isLoading: portsLoading, error: portsError } =
+    useActivePortsCatalog();
+  const { groups, isLoading: groupsLoading, error: groupsError } =
+    useShippingLineGroupsCatalog();
+  const { lines, isLoading: linesLoading, error: linesError } =
+    useActiveShippingLinesCatalog();
+
+  const catalogReady = !portsLoading && !groupsLoading && !linesLoading;
+  const catalogError = portsError || groupsError || linesError;
 
   const [selectedPortId, setSelectedPortId] = useState<number | null>(null);
   const [dateFrom, setDateFrom] = useState(defaults.from);
@@ -57,80 +63,34 @@ export default function DashboardView() {
   const [appliedDateTo, setAppliedDateTo] = useState(defaults.to);
   const [appliedCarrierFilter, setAppliedCarrierFilter] =
     useState<DashboardCarrierFilter>({ type: "all" });
-
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCatalogs() {
-      try {
-        const [portsRes, groupsRes, linesRes] = await Promise.all([
-          fetchPorts({ pageSize: 100 }),
-          fetchShippingLineGroups(),
-          fetchAllShippingLines({ pageSize: 100 }),
-        ]);
-        if (cancelled) return;
-        setPorts(portsRes.results.filter((port) => port.is_active));
-        setGroups(groupsRes);
-        setLines(linesRes.filter((line) => line.is_active));
-      } catch (err) {
-        if (!cancelled) {
-          setViewError(
-            getApiErrorMessage(err, "No se pudieron cargar los filtros del dashboard."),
-          );
-        }
-      } finally {
-        if (!cancelled) setCatalogReady(true);
-      }
-    }
-    loadCatalogs();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { stats, isLoading, error: statsError } = useDashboardStats(
+    {
+      dateFrom: appliedDateFrom,
+      dateTo: appliedDateTo,
+      portId: appliedSelectedPortId,
+      carrier: appliedCarrierFilter,
+    },
+    catalogReady,
+  );
 
-  const loadStats = useCallback(async () => {
-    if (!appliedDateFrom || !appliedDateTo) return;
-    setLoading(true);
-    setViewError(null);
-    try {
-      const data = await fetchDashboardStats({
-        date_from: appliedDateFrom,
-        date_to: appliedDateTo,
-        port: appliedSelectedPortId ?? undefined,
-        shipping_line:
-          appliedCarrierFilter.type === "line"
-            ? appliedCarrierFilter.id
-            : undefined,
-        shipping_line_group:
-          appliedCarrierFilter.type === "group"
-            ? appliedCarrierFilter.id
-            : undefined,
-      });
-      setStats(data);
-    } catch (err) {
+  useEffect(() => {
+    if (catalogError) {
       setViewError(
-        getApiErrorMessage(err, "No se pudo cargar el resumen operativo."),
+        getApiErrorMessage(
+          catalogError,
+          "No se pudieron cargar los filtros del dashboard.",
+        ),
       );
-      setStats(null);
-    } finally {
-      setLoading(false);
+    } else if (statsError) {
+      setViewError(
+        getApiErrorMessage(statsError, "No se pudo cargar el resumen operativo."),
+      );
     }
-  }, [
-    appliedDateFrom,
-    appliedDateTo,
-    appliedSelectedPortId,
-    appliedCarrierFilter,
-  ]);
+  }, [catalogError, statsError]);
 
-  useEffect(() => {
-    if (!catalogReady) return;
-    loadStats();
-  }, [catalogReady, loadStats]);
-
-  if (!catalogReady || (loading && !stats)) {
+  if (!catalogReady || (isLoading && !stats)) {
     return <DashboardViewSkeleton />;
   }
 
@@ -142,6 +102,7 @@ export default function DashboardView() {
     setAppliedDateFrom(dateFrom);
     setAppliedDateTo(dateTo);
     setAppliedCarrierFilter(carrierFilter);
+    setViewError(null);
   }
 
   function clearFilters() {
@@ -154,6 +115,7 @@ export default function DashboardView() {
     setAppliedDateFrom(defaults.from);
     setAppliedDateTo(defaults.to);
     setAppliedCarrierFilter(allCarriers);
+    setViewError(null);
   }
 
   return (

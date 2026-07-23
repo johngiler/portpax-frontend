@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -10,10 +10,11 @@ import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortsInfinite } from "@/hooks/swr/usePortsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { canWriteApp } from "@/lib/navAccess";
-import { createPort, fetchPorts } from "@/services/catalogs/portService";
-import type { Port } from "@/types/catalog";
+import { revalidatePortsLists } from "@/lib/swr/mutateHelpers";
+import { createPort } from "@/services/catalogs/portService";
 import PortCard from "./PortCard";
 import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
 import PortsEmptyState from "./PortsEmptyState";
@@ -24,68 +25,38 @@ const BATCH_SIZE = 12;
 export default function PortsView() {
   const { user } = useAuth();
   const canWrite = canWriteApp(user?.role);
-  const [ports, setPorts] = useState<Port[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const loadInitial = useCallback(async () => {
-    setLoading(true);
-    setViewError(null);
-    try {
-      const data = await fetchPorts({ page: 1, search: appliedSearch, pageSize: BATCH_SIZE });
-      setPorts(data.results);
-      setTotalCount(data.count);
-      setPage(1);
-    } catch (err) {
-      setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar los puertos."),
-      );
-      setPorts([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [appliedSearch]);
+  const {
+    ports,
+    totalCount,
+    hasMore,
+    isLoading,
+    loadingMore,
+    error,
+    loadMore,
+    refresh,
+  } = usePortsInfinite(appliedSearch, BATCH_SIZE);
 
   useEffect(() => {
-    loadInitial();
-  }, [loadInitial]);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMore || ports.length >= totalCount) return;
-    setLoadingMore(true);
-    setViewError(null);
-    try {
-      const nextPage = page + 1;
-      const data = await fetchPorts({
-        page: nextPage,
-        search: appliedSearch,
-        pageSize: BATCH_SIZE,
-      });
-      setPorts((prev) => [...prev, ...data.results]);
-      setPage(nextPage);
-    } catch (err) {
+    if (error) {
       setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar más puertos."),
+        getApiErrorMessage(error, "No se pudieron cargar los puertos."),
       );
-    } finally {
-      setLoadingMore(false);
     }
-  }, [loadingMore, ports.length, totalCount, page, appliedSearch]);
+  }, [error]);
 
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
     try {
       await createPort(payload, { logoFile, removeLogo });
       setModalOpen(false);
-      await loadInitial();
+      await revalidatePortsLists();
+      await refresh();
     } catch (err) {
       throw err;
     } finally {
@@ -95,18 +66,19 @@ export default function PortsView() {
 
   function applyFilters() {
     setAppliedSearch(search);
+    setViewError(null);
   }
 
   function clearFilters() {
     setSearch("");
     setAppliedSearch("");
+    setViewError(null);
   }
 
   const canClearFilters = Boolean(search.trim()) || Boolean(appliedSearch);
   const hasActiveFilters = Boolean(appliedSearch);
-  const hasMore = ports.length < totalCount;
 
-  if (loading && ports.length === 0 && !viewError) {
+  if (isLoading && ports.length === 0 && !viewError) {
     return <PortsViewSkeleton />;
   }
 
@@ -144,9 +116,11 @@ export default function PortsView() {
         }
       />
 
-      {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
+      {viewError && (
+        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+      )}
 
-      {loading && ports.length === 0 ? (
+      {isLoading && ports.length === 0 ? (
         <p className="text-sm text-zinc-500">Cargando…</p>
       ) : ports.length === 0 ? (
         <PortsEmptyState

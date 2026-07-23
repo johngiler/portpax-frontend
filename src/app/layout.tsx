@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/layout/AuthLayout";
+import SwrProvider from "@/lib/swr/SwrProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,8 +33,10 @@ export default function RootLayout({
         className={`${geistSans.className} ${geistSans.variable} overflow-x-hidden antialiased`}
       >
         <AuthProvider>
-        <AuthLayout>{children}</AuthLayout>
-      </AuthProvider>
+          <SwrProvider>
+            <AuthLayout>{children}</AuthLayout>
+          </SwrProvider>
+        </AuthProvider>
       </body>
     </html>
   );

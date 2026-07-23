@@ -11,29 +11,25 @@ import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import FilterActions from "@/components/layout/FilterActions";
 import EmptyState from "@/components/ui/EmptyState";
 import Skeleton from "@/components/ui/Skeleton";
+import {
+  useActivePortsCatalog,
+  useActiveShippingLinesCatalog,
+} from "@/hooks/swr/useCatalogs";
+import {
+  useReportData,
+  type ReportFilters,
+  type ReportTab,
+} from "@/hooks/swr/useReportData";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
 import {
   setDataExportHandler,
   type DataExportFormat,
 } from "@/lib/dataExportStore";
-import { fetchAllPages } from "@/lib/fetchAllPages";
 import {
   exportBookingsReport,
   exportStructuredReport,
-  fetchBookingTotalsReport,
-  fetchCarrierPanoramaReport,
-  fetchCumplimientoRealReport,
-  fetchMovementsReport,
-  type BookingTotalsReport,
-  type CarrierPanoramaReport,
-  type CumplimientoRealReport,
-  type MovementsReport,
 } from "@/services/bookings/bookingService";
-import { fetchPorts } from "@/services/catalogs/portService";
-import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
-import type { Port } from "@/types/catalog";
-import type { ShippingLine } from "@/types/cruise";
 import CarrierPanoramaSection from "./CarrierPanoramaSection";
 import CumplimientoRealSection from "./CumplimientoRealSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
@@ -56,17 +52,6 @@ function weekAgoIso(): string {
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-type ReportTab = "totals" | "movements" | "panorama" | "cumplimiento";
-
-type AppliedReportFilters = {
-  tab: ReportTab;
-  dateFrom: string;
-  dateTo: string;
-  portFilter: number;
-  lineFilter: number;
-  withoutLta: boolean;
-};
-
 export default function ReportsView() {
   const [tab, setTab] = useState<ReportTab>("totals");
   const [dateFrom, setDateFrom] = useState(yearStart);
@@ -74,7 +59,7 @@ export default function ReportsView() {
   const [portFilter, setPortFilter] = useState(0);
   const [lineFilter, setLineFilter] = useState(0);
   const [withoutLta, setWithoutLta] = useState(false);
-  const [appliedFilters, setAppliedFilters] = useState<AppliedReportFilters>({
+  const [appliedFilters, setAppliedFilters] = useState<ReportFilters>({
     tab: "totals",
     dateFrom: yearStart(),
     dateTo: todayIso(),
@@ -82,121 +67,30 @@ export default function ReportsView() {
     lineFilter: 0,
     withoutLta: false,
   });
-
-  const [ports, setPorts] = useState<Port[]>([]);
-  const [lines, setLines] = useState<ShippingLine[]>([]);
-  const [totals, setTotals] = useState<BookingTotalsReport | null>(null);
-  const [movements, setMovements] = useState<MovementsReport | null>(null);
-  const [panorama, setPanorama] = useState<CarrierPanoramaReport | null>(null);
-  const [cumplimiento, setCumplimiento] = useState<CumplimientoRealReport | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
   const [reportGuideOpen, setReportGuideOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [portsList, linesPage] = await Promise.all([
-          fetchAllPages((page, pageSize) => fetchPorts({ page, pageSize })),
-          fetchShippingLines({ pageSize: 100 }),
-        ]);
-        if (cancelled) return;
-        setPorts(portsList.filter((p) => p.is_active));
-        setLines(linesPage.results.filter((l) => l.is_active));
-      } catch {
-        if (!cancelled) {
-          setPorts([]);
-          setLines([]);
-        }
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { ports, isLoading: portsLoading } = useActivePortsCatalog();
+  const { lines, isLoading: linesLoading } = useActiveShippingLinesCatalog();
+  const ready = !portsLoading && !linesLoading;
 
-  const load = useCallback(async () => {
-    const {
-      tab: appliedTab,
-      dateFrom: appliedDateFrom,
-      dateTo: appliedDateTo,
-      portFilter: appliedPortFilter,
-      lineFilter: appliedLineFilter,
-      withoutLta: appliedWithoutLta,
-    } = appliedFilters;
-    setLoading(true);
-    setError(null);
-    try {
-      if (appliedTab === "movements") {
-        const data = await fetchMovementsReport({
-          date_from: appliedDateFrom,
-          date_to: appliedDateTo,
-          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
-        });
-        setMovements(data);
-        setTotals(null);
-        setPanorama(null);
-        setCumplimiento(null);
-      } else if (appliedTab === "panorama") {
-        if (!appliedLineFilter) {
-          setError("Selecciona una naviera para el panorama.");
-          setPanorama(null);
-        } else {
-          const data = await fetchCarrierPanoramaReport({
-            date_from: appliedDateFrom,
-            date_to: appliedDateTo,
-            shipping_line: appliedLineFilter,
-          });
-          setPanorama(data);
-        }
-        setTotals(null);
-        setMovements(null);
-        setCumplimiento(null);
-      } else if (appliedTab === "cumplimiento") {
-        const data = await fetchCumplimientoRealReport({
-          date_from: appliedDateFrom,
-          date_to: appliedDateTo,
-          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
-        });
-        setCumplimiento(data);
-        setTotals(null);
-        setMovements(null);
-        setPanorama(null);
-      } else {
-        const data = await fetchBookingTotalsReport({
-          date_from: appliedDateFrom,
-          date_to: appliedDateTo,
-          port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
-          shipping_line:
-            appliedLineFilter > 0 ? appliedLineFilter : undefined,
-          without_lta: appliedWithoutLta,
-        });
-        setTotals(data);
-        setMovements(null);
-        setPanorama(null);
-        setCumplimiento(null);
-      }
-    } catch (err) {
-      setError(getApiErrorMessage(err, "No se pudo cargar el reporte."));
-      setTotals(null);
-      setMovements(null);
-      setPanorama(null);
-      setCumplimiento(null);
-    } finally {
-      setLoading(false);
+  const { payload, isLoading, error: reportError } = useReportData(
+    appliedFilters,
+    ready,
+  );
+
+  const totals = payload?.tab === "totals" ? payload.data : null;
+  const movements = payload?.tab === "movements" ? payload.data : null;
+  const panorama = payload?.tab === "panorama" ? payload.data : null;
+  const cumplimiento = payload?.tab === "cumplimiento" ? payload.data : null;
+
+  useEffect(() => {
+    if (reportError) {
+      setError(
+        getApiErrorMessage(reportError, "No se pudo cargar el reporte."),
+      );
     }
-  }, [appliedFilters]);
-
-  useEffect(() => {
-    if (!ready) return;
-    void load();
-  }, [ready, load]);
+  }, [reportError]);
 
   const portOptions = useMemo(
     () => ports.map((p) => ({ value: p.id, label: p.name, logoUrl: p.logo })),
@@ -225,6 +119,7 @@ export default function ReportsView() {
     setPortFilter(0);
     setLineFilter(0);
     setWithoutLta(false);
+    setError(null);
     setAppliedFilters({
       tab,
       dateFrom: cleanDateFrom,
@@ -236,6 +131,7 @@ export default function ReportsView() {
   }
 
   function applyFilters() {
+    setError(null);
     setAppliedFilters({
       tab,
       dateFrom,
@@ -322,6 +218,7 @@ export default function ReportsView() {
 
   const showLineFilter = tab !== "movements";
   const showPortFilter = tab !== "panorama";
+  const loading = isLoading;
 
   return (
     <>

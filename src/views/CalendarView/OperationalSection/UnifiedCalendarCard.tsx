@@ -1,15 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CalendarRange } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
 import EmptyState from "@/components/ui/EmptyState";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { useCalendarBookings } from "@/hooks/swr/useCalendarBookings";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { fetchAllBookings } from "@/services/bookings/bookingService";
-import { fetchPositions } from "@/services/catalogs/positionService";
-import type { Booking, BookingListStatusFilter } from "@/types/booking";
-import type { Position } from "@/types/catalog";
+import type { BookingListStatusFilter } from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import AnnualGrid from "./AnnualGrid";
@@ -59,11 +57,6 @@ export default function UnifiedCalendarCard({
   onMonthChange,
 }: UnifiedCalendarCardProps) {
   const multiPort = portId <= 0;
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [previousYearBookings, setPreviousYearBookings] = useState<Booking[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const range = useMemo(() => {
     if (mode === "weekly") {
@@ -74,78 +67,18 @@ export default function UnifiedCalendarCard({
     return monthBounds(year, monthIndex);
   }, [mode, weekAnchor, year, monthIndex]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const common = {
-        port: portId > 0 ? portId : undefined,
-        shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
-        vessel: vesselId > 0 ? vesselId : undefined,
-        status: status || undefined,
-        search: search.trim() || undefined,
-        ordering: "call_date" as const,
-        pageSize: 500,
-      };
-
-      if (mode === "annual") {
-        const prev = yearBounds(year - 1);
-        const [currentRows, prevRows] = await Promise.all([
-          fetchAllBookings({
-            ...common,
-            call_date_from: range.from,
-            call_date_to: range.to,
-          }),
-          fetchAllBookings({
-            ...common,
-            call_date_from: prev.from,
-            call_date_to: prev.to,
-          }),
-        ]);
-        setBookings(currentRows);
-        setPreviousYearBookings(prevRows);
-      } else {
-        const rows = await fetchAllBookings({
-          ...common,
-          call_date_from: range.from,
-          call_date_to: range.to,
-        });
-        setBookings(rows);
-        setPreviousYearBookings([]);
-      }
-
-      if (portId > 0) {
-        const positionsResponse = await fetchPositions({
-          port: portId,
-          pageSize: 100,
-        });
-        setPositions(positionsResponse.results.filter((p) => p.is_active));
-      } else {
-        setPositions([]);
-      }
-    } catch (err) {
-      setError(getApiErrorMessage(err, "No se pudo cargar el calendario operativo."));
-      setBookings([]);
-      setPreviousYearBookings([]);
-      setPositions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    portId,
-    shippingLineId,
-    vesselId,
-    status,
-    search,
-    range.from,
-    range.to,
-    mode,
-    year,
-  ]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { bookings, previousYearBookings, positions, isLoading, error } =
+    useCalendarBookings({
+      mode,
+      portId,
+      shippingLineId,
+      vesselId,
+      status,
+      search,
+      from: range.from,
+      to: range.to,
+      year,
+    });
 
   const modeLabel =
     mode === "weekly"
@@ -168,6 +101,9 @@ export default function UnifiedCalendarCard({
           : "12 meses, totales anuales y comparativa YoY.";
 
   const effectivePositionId = multiPort ? 0 : positionId;
+  const errorMessage = error
+    ? getApiErrorMessage(error, "No se pudo cargar el calendario operativo.")
+    : null;
 
   return (
     <ViewSection
@@ -182,10 +118,12 @@ export default function UnifiedCalendarCard({
             showTraffic={mode === "weekly" || mode === "monthly"}
           />
         </div>
-        {error ? <FormErrorAlert message={error} className="mb-4" /> : null}
-        {loading ? (
+        {errorMessage ? (
+          <FormErrorAlert message={errorMessage} className="mb-4" />
+        ) : null}
+        {isLoading ? (
           <BookingsViewSkeleton variant="calendar" />
-        ) : !error && bookings.length === 0 && hasFilters ? (
+        ) : !errorMessage && bookings.length === 0 && hasFilters ? (
           <EmptyState
             icon={CalendarRange}
             filtered

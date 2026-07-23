@@ -1,30 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { swrKeys } from "@/lib/swr/keys";
 import { fetchNavCounts, type NavCounts } from "@/services/core/navCountsService";
 
-/** Load sidebar counts once per mount (layout lifetime). */
+/** Sidebar badge counts — cached across navigations. */
 export function useNavCounts(enabled: boolean): NavCounts | null {
-  const [counts, setCounts] = useState<NavCounts | null>(null);
-
-  useEffect(() => {
-    if (!enabled) {
-      setCounts(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await fetchNavCounts();
-        if (!cancelled) setCounts(data);
-      } catch {
-        if (!cancelled) setCounts(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
-
-  return counts;
+  const { data } = useSWR(
+    enabled ? swrKeys.navCounts : null,
+    () => fetchNavCounts(),
+  );
+  return data ?? null;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Anchor, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
@@ -10,10 +10,12 @@ import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useShippingLineGroupsCatalog } from "@/hooks/swr/useCatalogs";
+import { useShippingLinesInfinite } from "@/hooks/swr/useShippingLinesInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { canWriteApp } from "@/lib/navAccess";
-import { createShippingLine, fetchShippingLines } from "@/services/catalogs/shippingLineService";
-import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
+import { revalidateShippingLinesLists } from "@/lib/swr/mutateHelpers";
+import { createShippingLine } from "@/services/catalogs/shippingLineService";
 import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
 import ShippingLineCard from "./ShippingLineCard";
 import ShippingLineFormModal from "./ShippingLineFormModal";
@@ -25,87 +27,46 @@ const BATCH_SIZE = 12;
 export default function ShippingLinesView() {
   const { user } = useAuth();
   const canWrite = canWriteApp(user?.role);
-  const [lines, setLines] = useState<Awaited<ReturnType<typeof fetchShippingLines>>["results"]>(
-    [],
-  );
-  const [totalCount, setTotalCount] = useState(0);
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState(0);
   const [appliedSearch, setAppliedSearch] = useState("");
   const [appliedGroupFilter, setAppliedGroupFilter] = useState(0);
-  const [groupOptions, setGroupOptions] = useState<{ value: number; label: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchShippingLineGroups()
-      .then((groups) =>
-        setGroupOptions(groups.map((group) => ({ value: group.id, label: group.name }))),
-      )
-      .catch(() => setGroupOptions([]));
-  }, []);
+  const { groups } = useShippingLineGroupsCatalog();
+  const groupOptions = useMemo(
+    () => groups.map((group) => ({ value: group.id, label: group.name })),
+    [groups],
+  );
 
-  const loadInitial = useCallback(async () => {
-    setLoading(true);
-    setViewError(null);
-    try {
-      const data = await fetchShippingLines({
-        page: 1,
-        search: appliedSearch,
-        group: appliedGroupFilter > 0 ? appliedGroupFilter : undefined,
-        pageSize: BATCH_SIZE,
-      });
-      setLines(data.results);
-      setTotalCount(data.count);
-      setPage(1);
-    } catch (err) {
-      setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar las navieras."),
-      );
-      setLines([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [appliedSearch, appliedGroupFilter]);
+  const {
+    lines,
+    totalCount,
+    hasMore,
+    isLoading,
+    loadingMore,
+    error,
+    loadMore,
+    refresh,
+  } = useShippingLinesInfinite(appliedSearch, appliedGroupFilter, BATCH_SIZE);
 
   useEffect(() => {
-    loadInitial();
-  }, [loadInitial]);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMore || lines.length >= totalCount) return;
-    setLoadingMore(true);
-    setViewError(null);
-    try {
-      const nextPage = page + 1;
-      const data = await fetchShippingLines({
-        page: nextPage,
-        search: appliedSearch,
-        group: appliedGroupFilter > 0 ? appliedGroupFilter : undefined,
-        pageSize: BATCH_SIZE,
-      });
-      setLines((prev) => [...prev, ...data.results]);
-      setPage(nextPage);
-    } catch (err) {
+    if (error) {
       setViewError(
-        getApiErrorMessage(err, "No se pudieron cargar más navieras."),
+        getApiErrorMessage(error, "No se pudieron cargar las navieras."),
       );
-    } finally {
-      setLoadingMore(false);
     }
-  }, [loadingMore, lines.length, totalCount, page, appliedSearch, appliedGroupFilter]);
+  }, [error]);
 
   async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     setSaving(true);
     try {
       await createShippingLine(payload, { logoFile, removeLogo });
       setModalOpen(false);
-      await loadInitial();
+      await revalidateShippingLinesLists();
+      await refresh();
     } catch (err) {
       throw err;
     } finally {
@@ -116,6 +77,7 @@ export default function ShippingLinesView() {
   function applyFilters() {
     setAppliedSearch(search);
     setAppliedGroupFilter(groupFilter);
+    setViewError(null);
   }
 
   function clearFilters() {
@@ -123,15 +85,14 @@ export default function ShippingLinesView() {
     setGroupFilter(0);
     setAppliedSearch("");
     setAppliedGroupFilter(0);
+    setViewError(null);
   }
 
   const hasActiveFilters = Boolean(appliedSearch) || appliedGroupFilter > 0;
   const canClearFilters =
     hasActiveFilters || Boolean(search.trim()) || groupFilter > 0;
 
-  const hasMore = lines.length < totalCount;
-
-  if (loading && lines.length === 0 && !viewError) {
+  if (isLoading && lines.length === 0 && !viewError) {
     return <ShippingLinesViewSkeleton />;
   }
 
@@ -179,9 +140,11 @@ export default function ShippingLinesView() {
         }
       />
 
-      {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
+      {viewError && (
+        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+      )}
 
-      {loading && lines.length === 0 ? (
+      {isLoading && lines.length === 0 ? (
         <p className="text-sm text-zinc-500">Cargando…</p>
       ) : lines.length === 0 ? (
         <ShippingLinesEmptyState
