@@ -1,31 +1,45 @@
-import { redirect } from "next/navigation";
+"use client";
 
-type CalendarPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
+import { useEffect } from "react";
 
-/** Legacy route — calendar lives under Reservas tabs. */
-export default async function CalendarPage({ searchParams }: CalendarPageProps) {
-  const params = (await searchParams) ?? {};
-  const qs = new URLSearchParams();
-  qs.set("tab", "calendar");
+/**
+ * Legacy route — calendar lives under Reservas tabs.
+ * Client redirect: static export cannot await searchParams.
+ */
+export default function CalendarPage() {
+  useEffect(() => {
+    const incoming = new URLSearchParams(window.location.search);
+    const qs = new URLSearchParams();
+    qs.set("tab", "calendar");
 
-  const ports = params.ports;
-  const portRaw = Array.isArray(ports) ? ports[0] : ports;
-  if (portRaw) {
-    const first = String(portRaw).split(",")[0]?.trim();
-    if (first) qs.set("port", first);
-  }
-  const port = params.port;
-  if (port && !qs.has("port")) {
-    qs.set("port", Array.isArray(port) ? String(port[0]) : String(port));
-  }
+    const ports = incoming.get("ports");
+    if (ports) {
+      const first = ports.split(",")[0]?.trim();
+      if (first) qs.set("port", first);
+    }
+    const port = incoming.get("port");
+    if (port && !qs.has("port")) qs.set("port", port);
 
-  for (const key of ["mode", "line", "status", "q", "week", "year", "month", "position"] as const) {
-    const value = params[key];
-    if (value == null) continue;
-    qs.set(key, Array.isArray(value) ? String(value[0]) : String(value));
-  }
+    for (const key of [
+      "mode",
+      "line",
+      "status",
+      "q",
+      "week",
+      "year",
+      "month",
+      "position",
+    ] as const) {
+      const value = incoming.get(key);
+      if (value) qs.set(key, value);
+    }
 
-  redirect(`/bookings?${qs.toString()}`);
+    window.location.replace(`/bookings?${qs.toString()}`);
+  }, []);
+
+  return (
+    <p className="p-6 text-sm text-zinc-500 dark:text-zinc-400">
+      Redirigiendo al calendario…
+    </p>
+  );
 }
