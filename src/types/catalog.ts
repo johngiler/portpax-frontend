@@ -285,6 +285,24 @@ export type Position = {
   updated_at: string;
 };
 
+/** First-in / last-out nesting between two pier positions. */
+export type PositionNestingRule = {
+  id: number;
+  port: number;
+  outer_position: number;
+  outer_position_code: string;
+  outer_position_label: string;
+  inner_position: number;
+  inner_position_code: string;
+  inner_position_label: string;
+  enforce_eta: boolean;
+  enforce_etd: boolean;
+  is_active: boolean;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type PositionPayload = {
   port: number;
   berth: number | null;

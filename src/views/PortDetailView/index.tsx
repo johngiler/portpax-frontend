@@ -21,6 +21,7 @@ import PortDetailHero from "./PortDetailHero";
 import PortDetailSkeleton from "./PortDetailSkeleton";
 import PortDetailsSection from "./PortDetailsSection";
 import PortGallerySection from "./PortGallerySection";
+import PortNestingRulesSection from "./PortNestingRulesSection";
 import PortPositionsSection from "./PortPositionsSection";
 
 export default function PortDetailView() {
@@ -152,6 +153,8 @@ export default function PortDetailView() {
       />
 
       <PortPositionsSection port={port} onChange={loadPort} canWrite={canWrite} />
+
+      <PortNestingRulesSection port={port} canWrite={canWrite} />
       </div>
 
       {canWrite ? (
