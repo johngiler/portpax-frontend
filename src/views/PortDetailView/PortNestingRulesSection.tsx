@@ -187,9 +187,10 @@ export default function PortNestingRulesSection({
 
       <Modal
         open={modalOpen}
-        onClose={() => !saving && setModalOpen(false)}
+        onClose={() => {
+          if (!saving) setModalOpen(false);
+        }}
         title="Regla first-in / last-out"
-        description="Define la posición de entrada (first-in) y la de fondo (last-out)."
         footer={
           <div className="flex justify-end gap-3">
             <button
@@ -207,6 +208,9 @@ export default function PortNestingRulesSection({
         }
       >
         <div className="space-y-4">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Define la posición de entrada (first-in) y la de fondo (last-out).
+          </p>
           <FormFieldSelect<number>
             label="Posición entrada (first-in)"
             name="nesting_outer"
