@@ -93,11 +93,6 @@ export default function PortsView() {
           onChange={setSearch}
           loadSuggestions={suggestPorts}
           placeholder="Nombre, código, país…"
-          onPick={(s) => {
-            setSearch(s.applyValue);
-            setAppliedSearch(s.applyValue);
-            setViewError(null);
-          }}
         />
         <FilterActions
           onApply={applyFilters}

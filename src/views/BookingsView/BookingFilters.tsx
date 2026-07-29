@@ -161,7 +161,6 @@ export default function BookingFilters({
           onChange={onSearchChange}
           loadSuggestions={suggestBookings}
           placeholder="Código, puerto, barco…"
-          onPick={() => onApply()}
         />
       ) : null}
 

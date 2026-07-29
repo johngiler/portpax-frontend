@@ -207,13 +207,6 @@ export default function PositionsView() {
           onChange={setSearch}
           loadSuggestions={suggestPositions}
           placeholder="Código, puerto, muelle…"
-          onPick={(s) => {
-            setSearch(s.applyValue);
-            setAppliedSearch(s.applyValue);
-            setAppliedPortFilter(portFilter);
-            setPage(1);
-            setViewError(null);
-          }}
         />
         <FormFieldSelect<number>
           label="Puerto"

@@ -29,19 +29,18 @@ function formatScaleDate(d: string | null): string {
   }
 }
 
-/** Bookings filter: ports, lines, vessels, booking codes from global search. */
+/** Bookings filter: vessels, ports, then booking codes from global search. */
 export async function suggestBookings(query: string): Promise<FilterSuggestion[]> {
   const data = await globalSearch(query);
   const items: FilterSuggestion[] = [];
 
-  for (const sc of data.scales) {
-    const dateHint = formatScaleDate(sc.date);
+  for (const s of data.ships) {
     items.push({
-      id: `scale-${sc.id}`,
-      label: sc.booking_code,
-      hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
-      applyValue: sc.booking_code,
-      group: "Reservas",
+      id: `ship-${s.id}`,
+      label: s.name,
+      hint: s.shipping_line_name ?? s.shipping_line_code,
+      applyValue: s.name,
+      group: "Barcos",
     });
   }
   for (const p of data.ports) {
@@ -62,13 +61,14 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       group: "Navieras",
     });
   }
-  for (const s of data.ships) {
+  for (const sc of data.scales) {
+    const dateHint = formatScaleDate(sc.date);
     items.push({
-      id: `ship-${s.id}`,
-      label: s.name,
-      hint: s.shipping_line_name ?? s.shipping_line_code,
-      applyValue: s.name,
-      group: "Barcos",
+      id: `scale-${sc.id}`,
+      label: sc.booking_code,
+      hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
+      applyValue: sc.booking_code,
+      group: "Reservas",
     });
   }
   return items;

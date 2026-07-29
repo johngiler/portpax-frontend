@@ -135,12 +135,6 @@ export default function LtaAgreementsView() {
           onChange={setSearch}
           loadSuggestions={suggestLtaAgreements}
           placeholder="Código, nombre, puerto, naviera…"
-          onPick={(s) => {
-            setSearch(s.applyValue);
-            setAppliedSearch(s.applyValue);
-            setPage(1);
-            setViewError(null);
-          }}
         />
         <FilterActions
           onApply={() => {
