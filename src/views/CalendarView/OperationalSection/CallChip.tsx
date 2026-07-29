@@ -38,7 +38,6 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
       onClick={(e) => e.stopPropagation()}
     >
       <span className="block truncate font-semibold">{booking.vessel_name}</span>
-      <span className="mt-0.5 block truncate opacity-90">{booking.port_name}</span>
       <BookingMetaRow
         className="mt-0.5"
         compact={compact}
