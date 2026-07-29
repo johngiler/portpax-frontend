@@ -120,3 +120,18 @@ export async function updateLongTermAgreement(
 export async function deleteLongTermAgreement(id: number): Promise<void> {
   await apiFetch<void>(`${BASE}${id}/`, { method: "DELETE" });
 }
+
+export type LinkLtaBookingsResult = {
+  linked: number;
+  skipped: number;
+  agreement_code?: string;
+  detail?: string;
+};
+
+export async function linkLongTermAgreementBookings(
+  id: number,
+): Promise<LinkLtaBookingsResult> {
+  return apiFetch<LinkLtaBookingsResult>(`${BASE}${id}/link-bookings/`, {
+    method: "POST",
+  });
+}

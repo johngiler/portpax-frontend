@@ -11,7 +11,7 @@ type TableActionButtonsProps = {
   onView?: () => void;
   /** Highlight the view (eye) button when the row accordion is open. */
   viewActive?: boolean;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
   /** Etiqueta del recurso para el confirm de borrar (ej. "puerto", "barco") */
   deleteLabel?: string;
@@ -50,15 +50,17 @@ export default function TableActionButtons({
           <Eye className="h-4 w-4" strokeWidth={1.5} />
         </button>
       )}
-      <button
-        type="button"
-        onClick={onEdit}
-        className={btnClass}
-        aria-label="Editar"
-        title="Editar"
-      >
-        <Pencil className="h-4 w-4" strokeWidth={1.5} />
-      </button>
+      {onEdit != null && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className={btnClass}
+          aria-label="Editar"
+          title="Editar"
+        >
+          <Pencil className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+      )}
       {onDelete != null && (
         <button
           type="button"

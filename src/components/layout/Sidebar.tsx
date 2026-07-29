@@ -14,6 +14,14 @@ import type { NavCounts } from "@/services/core/navCountsService";
 import PortPaxLogo from "./PortPaxLogo";
 
 const MOBILE_BREAKPOINT = 768;
+const SIDEBAR_COLLAPSED_KEY = "portpax_sidebar_collapsed";
+
+function getStoredCollapsed(): boolean | null {
+  if (typeof window === "undefined") return null;
+  const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+  if (stored === null) return null;
+  return stored === "true";
+}
 
 function resolveNavCount(
   item: NavItem,
@@ -30,7 +38,9 @@ export default function Sidebar() {
   const layout = useMainLayoutOptional();
   const isMobileFromContext = layout?.isMobile ?? false;
   const [isMobile, setIsMobile] = useState(false);
-  const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
+  const [userCollapsed, setUserCollapsed] = useState<boolean | null>(() =>
+    getStoredCollapsed(),
+  );
   const homeHref = roleHomePath(user?.role);
   const navCounts = useNavCounts(Boolean(user));
 
@@ -39,7 +49,11 @@ export default function Sidebar() {
     const sync = () => {
       const mobile = !mq.matches;
       setIsMobile(mobile);
-      if (mobile) setUserCollapsed(null);
+      if (mobile) {
+        setUserCollapsed(null);
+      } else {
+        setUserCollapsed(getStoredCollapsed());
+      }
     };
     sync();
     mq.addEventListener("change", sync);
@@ -194,7 +208,11 @@ export default function Sidebar() {
       {sidebarInner}
       <button
         type="button"
-        onClick={() => setUserCollapsed(collapsed ? false : true)}
+        onClick={() => {
+          const next = !collapsed;
+          localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+          setUserCollapsed(next);
+        }}
         className="absolute right-0 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[var(--admin-border)] bg-[var(--admin-sidebar)] shadow-[var(--admin-card-shadow)] text-zinc-500 transition-colors duration-200 hover:bg-white hover:text-zinc-800 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
         aria-label={collapsed ? "Expandir menú" : "Recoger menú"}
         title={collapsed ? "Expandir menú" : "Recoger menú"}
