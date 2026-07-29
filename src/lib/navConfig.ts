@@ -17,7 +17,7 @@ export type NavItem = {
   /** If set, only these roles see the item. Omit = all frontend roles. */
   roles?: readonly UserRole[];
   /** Key in /api/nav-counts/ for the sidebar badge. */
-  countKey?: "bookings" | "ports" | "shipping_lines" | "users";
+  countKey?: "bookings" | "ports" | "shipping_lines" | "users" | "lta_agreements";
 };
 
 export type NavSection = {
@@ -64,6 +64,7 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Acuerdos LTA",
         icon: FileText,
         roles: CATALOG_ROLES,
+        countKey: "lta_agreements",
       },
     ],
   },

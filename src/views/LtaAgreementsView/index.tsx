@@ -28,6 +28,7 @@ import {
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
+import { revalidateLtaAgreements } from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
   deleteLongTermAgreement,
@@ -63,6 +64,7 @@ export default function LtaAgreementsView() {
   const [viewSuccess, setViewSuccess] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<LtaFormMode>("create");
@@ -117,6 +119,7 @@ export default function LtaAgreementsView() {
         await createLongTermAgreement(payload, options);
       }
       setModalOpen(false);
+      await revalidateLtaAgreements();
       await load();
     } finally {
       setSaving(false);
@@ -128,6 +131,7 @@ export default function LtaAgreementsView() {
     setViewSuccess(null);
     try {
       await deleteLongTermAgreement(row.id);
+      await revalidateLtaAgreements();
       await load();
     } catch (err) {
       setViewError(getApiErrorMessage(err, "No se pudo eliminar el acuerdo."));
@@ -150,6 +154,7 @@ export default function LtaAgreementsView() {
         setViewSuccess(
           `Se vincularon ${result.linked} reserva${result.linked === 1 ? "" : "s"} a «${row.code}».`,
         );
+        setBookingsRefreshKey((k) => k + 1);
       }
     } catch (err) {
       setViewError(
@@ -270,7 +275,13 @@ export default function LtaAgreementsView() {
                       onOpenChange={(open) =>
                         setExpandedId(open ? row.id : null)
                       }
-                      expandContent={<LtaRowDetail agreement={row} />}
+                      expandContent={
+                        <LtaRowDetail
+                          agreement={row}
+                          active={isExpanded}
+                          bookingsRefreshKey={bookingsRefreshKey}
+                        />
+                      }
                     >
                       <MainTableTd>
                         <button

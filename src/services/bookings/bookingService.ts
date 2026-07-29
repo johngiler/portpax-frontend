@@ -24,6 +24,7 @@ export type FetchBookingsParams = {
   port?: number;
   shipping_line?: number;
   vessel?: number;
+  long_term_agreement?: number;
   status?: BookingListStatusFilter;
   call_date_from?: string;
   call_date_to?: string;
@@ -38,6 +39,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.port) query.set("port", String(params.port));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
+  if (params.long_term_agreement) {
+    query.set("long_term_agreement", String(params.long_term_agreement));
+  }
   if (params.status) query.set("status", params.status);
   if (params.call_date_from) query.set("call_date_from", params.call_date_from);
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);

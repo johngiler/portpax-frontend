@@ -6,6 +6,7 @@ export type NavCounts = {
   reports: number;
   ports: number;
   shipping_lines: number;
+  lta_agreements: number;
   users: number | null;
   report_modules: number;
 };
