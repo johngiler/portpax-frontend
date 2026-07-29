@@ -9,7 +9,7 @@ import {
   bookingStatusLabel,
   type Booking,
 } from "@/types/booking";
-import { CORP_CHIP_CLASS, corpKeyFromShippingLineCode } from "../corpColors";
+import { CORP_CHIP_CLASS, CORP_SHORT_LABEL, corpKeyFromShippingLineCode } from "../corpColors";
 
 type CallChipProps = {
   booking: Booking;
@@ -21,6 +21,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const corp = corpKeyFromShippingLineCode(booking.shipping_line_code);
+  const corpLabel = CORP_SHORT_LABEL[corp];
   const positionLabel = booking.position_code || "Sin asignar";
 
   return (
@@ -34,10 +35,15 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         booking.status === "h" ? "ring-2 ring-amber-300 ring-offset-1" : "",
         booking.status === "c" ? "opacity-50 line-through" : "",
       ].join(" ")}
-      title={`${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}`}
+      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <span className="block truncate font-semibold">{booking.vessel_name}</span>
+      <span className="flex min-w-0 items-baseline justify-between gap-1">
+        <span className="truncate font-semibold">{booking.vessel_name}</span>
+        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide opacity-90 sm:text-[10px]">
+          {corpLabel}
+        </span>
+      </span>
       <BookingMetaRow
         className="mt-0.5"
         compact={compact}

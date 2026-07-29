@@ -48,6 +48,16 @@ export const CORP_DOT_CLASS: Record<CorpColorKey, string> = {
   other: "bg-zinc-500",
 };
 
+/** Short labels matching the calendar color legend. */
+export const CORP_SHORT_LABEL: Record<CorpColorKey, string> = {
+  rci: "RCI",
+  ncl: "NCL",
+  msc: "MSC",
+  ccl: "Carnival",
+  vv: "Virgin",
+  other: "Otras",
+};
+
 export function corpKeyFromShippingLineCode(code: string | null | undefined): CorpColorKey {
   if (!code) return "other";
   const key = code.trim().toLowerCase().replace(/\s+/g, "_");

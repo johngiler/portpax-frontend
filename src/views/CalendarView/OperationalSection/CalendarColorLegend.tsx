@@ -1,17 +1,16 @@
 "use client";
 
 import InfoTooltip from "@/components/ui/InfoTooltip";
-import { CORP_DOT_CLASS, type CorpColorKey } from "../corpColors";
+import {
+  CORP_DOT_CLASS,
+  CORP_SHORT_LABEL,
+  type CorpColorKey,
+} from "../corpColors";
 import { TRAFFIC_DOT, TRAFFIC_LABEL } from "./calendarOpsUtils";
 
-const CORP_LEGEND: { key: CorpColorKey; label: string }[] = [
-  { key: "rci", label: "RCI" },
-  { key: "ncl", label: "NCL" },
-  { key: "msc", label: "MSC" },
-  { key: "ccl", label: "Carnival" },
-  { key: "vv", label: "Virgin" },
-  { key: "other", label: "Otras" },
-];
+const CORP_LEGEND = (
+  Object.keys(CORP_SHORT_LABEL) as CorpColorKey[]
+).map((key) => ({ key, label: CORP_SHORT_LABEL[key] }));
 
 type CalendarColorLegendProps = {
   showCorp?: boolean;
