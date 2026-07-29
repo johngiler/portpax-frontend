@@ -41,7 +41,11 @@ export async function revalidateUsersLists(): Promise<void> {
 
 export async function revalidateBookingsLists(): Promise<void> {
   await mutate(
-    (key) => Array.isArray(key) && key[0] === "bookings",
+    (key) =>
+      Array.isArray(key) &&
+      (key[0] === "bookings" ||
+        key[0] === "calendar" ||
+        key[0] === "availability"),
     undefined,
     { revalidate: true },
   );
@@ -49,7 +53,18 @@ export async function revalidateBookingsLists(): Promise<void> {
 }
 
 export async function revalidateLtaAgreements(): Promise<void> {
+  await mutate(
+    (key) => Array.isArray(key) && key[0] === "lta-agreements",
+    undefined,
+    { revalidate: true },
+  );
   await revalidateNavCounts();
+}
+
+export async function revalidateLtaLinkedBookings(
+  agreementId: number,
+): Promise<void> {
+  await mutate(swrKeys.ltaLinkedBookings(agreementId));
 }
 
 export async function revalidateDashboard(): Promise<void> {

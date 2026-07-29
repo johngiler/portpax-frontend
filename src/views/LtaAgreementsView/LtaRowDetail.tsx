@@ -17,7 +17,6 @@ import LtaLinkedBookings from "./LtaLinkedBookings";
 type LtaRowDetailProps = {
   agreement: LongTermAgreement;
   active: boolean;
-  bookingsRefreshKey?: number;
 };
 
 function MetaCard({
@@ -45,11 +44,7 @@ function formatDate(value: string | null): string {
   return formatIsoDateLabel(value, "long");
 }
 
-export default function LtaRowDetail({
-  agreement,
-  active,
-  bookingsRefreshKey = 0,
-}: LtaRowDetailProps) {
+export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
   const vesselsLabel = agreement.all_vessels
     ? "Todos los barcos de la naviera"
     : agreement.vessel_names.length
@@ -134,11 +129,7 @@ export default function LtaRowDetail({
         ) : null}
       </div>
 
-      <LtaLinkedBookings
-        agreementId={agreement.id}
-        active={active}
-        refreshKey={bookingsRefreshKey}
-      />
+      <LtaLinkedBookings agreementId={agreement.id} active={active} />
     </div>
   );
 }

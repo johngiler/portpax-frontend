@@ -32,8 +32,17 @@ export const swrKeys = {
   usersPage: (page: number, search: string, pageSize: number) =>
     ["users", "page", page, search, pageSize] as const,
 
+  ltaAgreementsPage: (page: number, search: string, pageSize: number) =>
+    ["lta-agreements", "page", page, search, pageSize] as const,
+
+  ltaLinkedBookings: (agreementId: number) =>
+    ["lta-agreements", "bookings", agreementId] as const,
+
   bookingsInfinite: (paramsKey: string) =>
     ["bookings", "infinite", paramsKey] as const,
+
+  availabilityInfinite: (portId: number, dateFrom: string, dateTo: string) =>
+    ["availability", "infinite", portId, dateFrom, dateTo] as const,
 
   dashboardStats: (paramsKey: string) =>
     ["dashboard", "stats", paramsKey] as const,

@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, Link2, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -25,14 +25,17 @@ import {
   useActivePortsCatalog,
   useActiveShippingLinesCatalog,
 } from "@/hooks/swr/useCatalogs";
+import { useLtaAgreementsPage } from "@/hooks/swr/useLtaAgreementsPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
-import { revalidateLtaAgreements } from "@/lib/swr/mutateHelpers";
+import {
+  revalidateLtaAgreements,
+  revalidateLtaLinkedBookings,
+} from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
   deleteLongTermAgreement,
-  fetchLongTermAgreements,
   linkLongTermAgreementBookings,
   updateLongTermAgreement,
 } from "@/services/bookings/ltaService";
@@ -57,14 +60,10 @@ export default function LtaAgreementsView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [rows, setRows] = useState<LongTermAgreement[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [viewError, setViewError] = useState<string | null>(null);
   const [viewSuccess, setViewSuccess] = useState<string | null>(null);
   const [linkingId, setLinkingId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<LtaFormMode>("create");
@@ -74,29 +73,24 @@ export default function LtaAgreementsView() {
   const { ports } = useActivePortsCatalog(canBrowse);
   const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setViewError(null);
-    try {
-      const data = await fetchLongTermAgreements({
-        page,
-        pageSize: PAGE_SIZE,
-        search: appliedSearch,
-      });
-      setRows(data.results);
-      setTotalCount(data.count);
-    } catch (err) {
-      setViewError(getApiErrorMessage(err, "No se pudieron cargar los acuerdos LTA."));
-      setRows([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, appliedSearch]);
+  const { rows, totalCount, isLoading, error, mutate } = useLtaAgreementsPage(
+    page,
+    appliedSearch,
+    canBrowse,
+    PAGE_SIZE,
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (error) {
+      setViewError(
+        getApiErrorMessage(error, "No se pudieron cargar los acuerdos LTA."),
+      );
+    }
+  }, [error]);
+
+  useEffect(() => {
+    setExpandedId(null);
+  }, [page, appliedSearch]);
 
   function openCreate() {
     setModalMode("create");
@@ -120,7 +114,7 @@ export default function LtaAgreementsView() {
       }
       setModalOpen(false);
       await revalidateLtaAgreements();
-      await load();
+      await mutate();
     } finally {
       setSaving(false);
     }
@@ -132,7 +126,7 @@ export default function LtaAgreementsView() {
     try {
       await deleteLongTermAgreement(row.id);
       await revalidateLtaAgreements();
-      await load();
+      await mutate();
     } catch (err) {
       setViewError(getApiErrorMessage(err, "No se pudo eliminar el acuerdo."));
     }
@@ -154,7 +148,7 @@ export default function LtaAgreementsView() {
         setViewSuccess(
           `Se vincularon ${result.linked} reserva${result.linked === 1 ? "" : "s"} a «${row.code}».`,
         );
-        setBookingsRefreshKey((k) => k + 1);
+        await revalidateLtaLinkedBookings(row.id);
       }
     } catch (err) {
       setViewError(
@@ -179,7 +173,7 @@ export default function LtaAgreementsView() {
     });
   }
 
-  if (loading && rows.length === 0 && !viewError) {
+  if (isLoading) {
     return <LtaAgreementsViewSkeleton />;
   }
 
@@ -242,8 +236,16 @@ export default function LtaAgreementsView() {
       {rows.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="Sin acuerdos LTA"
-          description="Crea el primer acuerdo para vincular naviera, puerto, días y posiciones."
+          title={
+            appliedSearch.trim()
+              ? "Sin acuerdos con esta búsqueda"
+              : "Sin acuerdos LTA"
+          }
+          description={
+            appliedSearch.trim()
+              ? "Ajusta la búsqueda o crea un nuevo acuerdo."
+              : "Crea el primer acuerdo para vincular naviera, puerto, días y posiciones."
+          }
           primaryAction={
             canWrite
               ? { label: "Agregar acuerdo", onClick: openCreate, icon: Plus }
@@ -276,18 +278,16 @@ export default function LtaAgreementsView() {
                         setExpandedId(open ? row.id : null)
                       }
                       expandContent={
-                        <LtaRowDetail
-                          agreement={row}
-                          active={isExpanded}
-                          bookingsRefreshKey={bookingsRefreshKey}
-                        />
+                        <LtaRowDetail agreement={row} active={isExpanded} />
                       }
                     >
                       <MainTableTd>
                         <button
                           type="button"
                           onClick={() =>
-                            canWrite ? openEdit(row) : setExpandedId(isExpanded ? null : row.id)
+                            canWrite
+                              ? openEdit(row)
+                              : setExpandedId(isExpanded ? null : row.id)
                           }
                           className="text-left font-semibold text-[var(--admin-accent)] hover:underline"
                         >
