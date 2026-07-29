@@ -149,6 +149,7 @@ export default function LtaAgreementsView() {
             setViewError(null);
           }}
           canClear={Boolean(search.trim()) || Boolean(appliedSearch)}
+          canApply={search.trim() !== appliedSearch}
         />
       </FilterSidebarContent>
 

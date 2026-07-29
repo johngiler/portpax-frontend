@@ -192,6 +192,8 @@ export default function PositionsView() {
     portFilter > 0 ||
     Boolean(appliedSearch) ||
     appliedPortFilter > 0;
+  const canApplyFilters =
+    search.trim() !== appliedSearch.trim() || portFilter !== appliedPortFilter;
 
   if (loading && positions.length === 0 && !viewError) {
     return <PositionsViewSkeleton />;
@@ -225,6 +227,7 @@ export default function PositionsView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
+          canApply={canApplyFilters}
         />
       </FilterSidebarContent>
 

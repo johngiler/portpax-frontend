@@ -138,6 +138,14 @@ export default function ReportsView() {
     lineFilter > 0 ||
     withoutLta;
 
+  const canApplyFilters =
+    dateFrom !== appliedFilters.dateFrom ||
+    dateTo !== appliedFilters.dateTo ||
+    portFilter !== appliedFilters.portFilter ||
+    lineFilter !== appliedFilters.lineFilter ||
+    withoutLta !== appliedFilters.withoutLta ||
+    tab !== appliedFilters.tab;
+
   function clearFilters() {
     const cleanDateFrom = tab === "movements" ? weekAgoIso() : yearStart();
     const cleanDateTo = todayIso();
@@ -341,6 +349,7 @@ export default function ReportsView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
+          canApply={canApplyFilters}
         />
       </FilterSidebarContent>
 

@@ -93,6 +93,8 @@ export default function ShippingLinesView() {
   const hasActiveFilters = Boolean(appliedSearch) || appliedGroupFilter > 0;
   const canClearFilters =
     hasActiveFilters || Boolean(search.trim()) || groupFilter > 0;
+  const canApplyFilters =
+    search.trim() !== appliedSearch || groupFilter !== appliedGroupFilter;
 
   if (isLoading && lines.length === 0 && !viewError) {
     return <ShippingLinesViewSkeleton />;
@@ -123,6 +125,7 @@ export default function ShippingLinesView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
+          canApply={canApplyFilters}
         />
       </FilterSidebarContent>
 

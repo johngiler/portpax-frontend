@@ -429,6 +429,18 @@ export default function BookingsView() {
     (tab === "calendar" && calendarMode !== "monthly") ||
     (tab === "calendar" && positionFilter > 0);
 
+  const canApplyFilters =
+    statusFilter !== appliedStatusFilter ||
+    search.trim() !== appliedSearch ||
+    portFilter !== appliedPortFilter ||
+    shippingLineFilter !== appliedShippingLineFilter ||
+    vesselFilter !== appliedVesselFilter ||
+    datePreset !== appliedDatePreset ||
+    customDateFrom !== appliedCustomDateFrom ||
+    customDateTo !== appliedCustomDateTo ||
+    calendarMode !== appliedCalendarMode ||
+    positionFilter !== appliedPositionFilter;
+
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
       setViewError(null);
@@ -559,6 +571,7 @@ export default function BookingsView() {
           vesselOptions={vesselOptions}
           positionOptions={positionOptions}
           canClear={canClearFilters}
+          canApply={canApplyFilters}
           onStatusChange={setStatusFilter}
           onSearchChange={setSearch}
           onPortFilterChange={(id) => {

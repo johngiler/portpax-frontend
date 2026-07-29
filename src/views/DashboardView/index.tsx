@@ -118,6 +118,15 @@ export default function DashboardView() {
     setViewError(null);
   }
 
+  const canApplyFilters =
+    selectedPortId !== appliedSelectedPortId ||
+    dateFrom !== appliedDateFrom ||
+    dateTo !== appliedDateTo ||
+    carrierFilter.type !== appliedCarrierFilter.type ||
+    (carrierFilter.type !== "all" &&
+      appliedCarrierFilter.type !== "all" &&
+      carrierFilter.id !== appliedCarrierFilter.id);
+
   return (
     <>
       <FilterSidebarContent>
@@ -135,6 +144,7 @@ export default function DashboardView() {
           onCarrierChange={setCarrierFilter}
           defaultDateFrom={defaults.from}
           defaultDateTo={defaults.to}
+          canApply={canApplyFilters}
           onApply={applyFilters}
           onClear={clearFilters}
         />

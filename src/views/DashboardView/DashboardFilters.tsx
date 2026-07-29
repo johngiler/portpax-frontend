@@ -23,6 +23,7 @@ type DashboardFiltersProps = {
   onCarrierChange: (filter: DashboardCarrierFilter) => void;
   defaultDateFrom: string;
   defaultDateTo: string;
+  canApply: boolean;
   onApply: () => void;
   onClear: () => void;
 };
@@ -57,6 +58,7 @@ export default function DashboardFilters({
   onCarrierChange,
   defaultDateFrom,
   defaultDateTo,
+  canApply,
   onApply,
   onClear,
 }: DashboardFiltersProps) {
@@ -198,7 +200,12 @@ export default function DashboardFilters({
         value={dateTo}
         onChange={(value) => handleToChange(String(value))}
       />
-      <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
+      <FilterActions
+        onApply={onApply}
+        onClear={onClear}
+        canClear={canClear}
+        canApply={canApply}
+      />
     </>
   );
 }

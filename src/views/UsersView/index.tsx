@@ -169,6 +169,7 @@ export default function UsersView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={Boolean(search.trim()) || Boolean(appliedSearch)}
+          canApply={search.trim() !== appliedSearch}
         />
       </FilterSidebarContent>
 

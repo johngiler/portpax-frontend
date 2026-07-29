@@ -50,6 +50,7 @@ type BookingFiltersProps = {
   vesselOptions: FilterOption[];
   positionOptions: FilterOption[];
   canClear: boolean;
+  canApply: boolean;
   onStatusChange: (status: BookingListStatusFilter) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
@@ -81,6 +82,7 @@ export default function BookingFilters({
   vesselOptions,
   positionOptions,
   canClear,
+  canApply,
   onStatusChange,
   onSearchChange,
   onPortFilterChange,
@@ -282,7 +284,12 @@ export default function BookingFilters({
         />
       ) : null}
 
-      <FilterActions onApply={onApply} onClear={onClear} canClear={canClear} />
+      <FilterActions
+        onApply={onApply}
+        onClear={onClear}
+        canClear={canClear}
+        canApply={canApply}
+      />
     </>
   );
 }

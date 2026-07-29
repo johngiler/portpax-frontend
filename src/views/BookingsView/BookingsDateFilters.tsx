@@ -1,5 +1,6 @@
 "use client";
 
+import { toIsoDate } from "@/lib/bookingDates";
 import {
   TIME_FILTER_LABELS,
   getTimeRange,
@@ -10,7 +11,7 @@ import {
 export type BookingsDatePreset = "all" | TimeFilterPreset;
 
 export const BOOKINGS_DATE_PRESET_LABELS: Record<BookingsDatePreset, string> = {
-  all: "Todas las fechas",
+  all: "Desde hoy",
   ...TIME_FILTER_LABELS,
 };
 
@@ -19,7 +20,7 @@ type BookingsDateFiltersProps = {
   customDateFrom: string;
   customDateTo: string;
   timeRange: TimeRange;
-  /** Show resolved range under "Todas las fechas" (e.g. availability hoy→+3y). */
+  /** Availability: show hoy→+3y under "Desde hoy". List: show hoy → … */
   showAllRangeHint?: boolean;
   onDatePresetChange: (preset: BookingsDatePreset) => void;
   onCustomDateFromChange: (value: string) => void;
@@ -30,10 +31,26 @@ export function resolveBookingsDateRange(
   preset: BookingsDatePreset,
   customFrom: string,
   customTo: string,
+  refDate?: Date,
 ): { call_date_from?: string; call_date_to?: string } {
-  if (preset === "all") return {};
-  const range = getTimeRange(preset, customFrom, customTo);
-  return { call_date_from: range.date_from, call_date_to: range.date_to };
+  const now = refDate || new Date();
+  const today = toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Past dates only via custom range.
+  if (preset === "custom") {
+    const range = getTimeRange("custom", customFrom, customTo, now);
+    return { call_date_from: range.date_from, call_date_to: range.date_to };
+  }
+
+  if (preset === "all") {
+    return { call_date_from: today };
+  }
+
+  const range = getTimeRange(preset, customFrom, customTo, now);
+  return {
+    call_date_from: range.date_from < today ? today : range.date_from,
+    call_date_to: range.date_to,
+  };
 }
 
 export default function BookingsDateFilters({
@@ -105,12 +122,13 @@ export default function BookingsDateFilters({
           </div>
         </div>
       )}
-      {(datePreset === "all" && showAllRangeHint) ||
-      (datePreset !== "all" && datePreset !== "custom") ? (
+      {datePreset === "custom" ? null : (
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          {timeRange.date_from} → {timeRange.date_to}
+          {datePreset === "all" && !showAllRangeHint
+            ? `${timeRange.date_from} → …`
+            : `${timeRange.date_from} → ${timeRange.date_to}`}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }

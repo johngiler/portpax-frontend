@@ -77,6 +77,7 @@ export default function PortsView() {
   }
 
   const canClearFilters = Boolean(search.trim()) || Boolean(appliedSearch);
+  const canApplyFilters = search.trim() !== appliedSearch;
   const hasActiveFilters = Boolean(appliedSearch);
 
   if (isLoading && ports.length === 0 && !viewError) {
@@ -98,6 +99,7 @@ export default function PortsView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
+          canApply={canApplyFilters}
         />
       </FilterSidebarContent>
 

@@ -1,29 +1,51 @@
 "use client";
 
 import DefaultButton from "@/components/buttons/DefaultButton";
+import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 
 type FilterActionsProps = {
-  onApply: () => void;
+  onApply: () => void | Promise<void>;
   onClear: () => void;
   /** Show clear when any filter differs from defaults. */
   canClear: boolean;
+  /** Enable Aplicar only when draft filters differ from applied. */
+  canApply: boolean;
   applyLabel?: string;
   clearLabel?: string;
 };
 
 /**
- * Standard FilterSidebar actions: apply + always-visible clear when filters are active.
+ * Standard FilterSidebar actions: apply + clear when filters are active.
+ * On successful apply, collapses the filter sidebar.
  */
 export default function FilterActions({
   onApply,
   onClear,
   canClear,
+  canApply,
   applyLabel = "Aplicar",
   clearLabel = "Limpiar filtros",
 }: FilterActionsProps) {
+  const layout = useMainLayoutOptional();
+
+  async function handleApply() {
+    if (!canApply) return;
+    try {
+      await onApply();
+      layout?.setFilterOpen(false);
+    } catch {
+      // Keep sidebar open when apply fails.
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <DefaultButton type="button" onClick={onApply} className="w-full text-xs">
+      <DefaultButton
+        type="button"
+        onClick={() => void handleApply()}
+        disabled={!canApply}
+        className="w-full text-xs disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:brightness-100 disabled:hover:shadow-[0_1px_2px_rgba(15,23,42,0.18)]"
+      >
         {applyLabel}
       </DefaultButton>
       {canClear ? (
