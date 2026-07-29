@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import MainTable, {
@@ -17,9 +18,10 @@ import MainTable, {
 } from "@/components/tables/MainTable";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { suggestPositions } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { positionDisplayCode } from "@/lib/positionCode";
 import { syncCoverImage } from "@/lib/syncCoverImage";
@@ -74,6 +76,18 @@ export default function PositionsView() {
         ),
       )
       .catch(() => setPortOptions([]));
+  }, []);
+
+  const loadPortOptions = useCallback(async (input: string) => {
+    const data = await fetchPorts({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return data.results.map((p) => ({
+      value: p.id,
+      label: portDisplayName(p),
+      logoUrl: p.logo,
+    }));
   }, []);
 
   const loadPositions = useCallback(async () => {
@@ -186,13 +200,20 @@ export default function PositionsView() {
   return (
     <>
       <FilterSidebarContent>
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="position_search"
           value={search}
-          onChange={(v) => setSearch(String(v))}
+          onChange={setSearch}
+          loadSuggestions={suggestPositions}
           placeholder="Código, puerto, muelle…"
-          compact
+          onPick={(s) => {
+            setSearch(s.applyValue);
+            setAppliedSearch(s.applyValue);
+            setAppliedPortFilter(portFilter);
+            setPage(1);
+            setViewError(null);
+          }}
         />
         <FormFieldSelect<number>
           label="Puerto"
@@ -200,6 +221,7 @@ export default function PositionsView() {
           value={portFilter}
           onChange={setPortFilter}
           options={portOptions}
+          loadOptions={loadPortOptions}
           optionLabel="Todos los puertos"
           emptyValue={0}
           compact

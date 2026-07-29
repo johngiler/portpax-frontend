@@ -5,13 +5,14 @@ import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import { FormField } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortsInfinite } from "@/hooks/swr/usePortsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { suggestPorts } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { revalidatePortsLists } from "@/lib/swr/mutateHelpers";
 import { createPort } from "@/services/catalogs/portService";
@@ -85,13 +86,18 @@ export default function PortsView() {
   return (
     <>
       <FilterSidebarContent>
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="port_search"
           value={search}
-          onChange={(v) => setSearch(String(v))}
+          onChange={setSearch}
+          loadSuggestions={suggestPorts}
           placeholder="Nombre, código, país…"
-          compact
+          onPick={(s) => {
+            setSearch(s.applyValue);
+            setAppliedSearch(s.applyValue);
+            setViewError(null);
+          }}
         />
         <FilterActions
           onApply={applyFilters}

@@ -22,16 +22,19 @@ type BookingsListProps = {
 };
 
 function DateBadge({ callDate }: { callDate: string }) {
-  const { day, monthIndex } = parseIsoDate(callDate);
+  const { day, monthIndex, year } = parseIsoDate(callDate);
   const month = new Date(2000, monthIndex, 1).toLocaleDateString("es-MX", {
     month: "short",
   });
 
   return (
-    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
+    <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
       <span className="text-xl font-bold leading-none">{day}</span>
-      <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
-        {month}
+      <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none">
+        {month.replace(/\.$/, "")}
+      </span>
+      <span className="mt-0.5 text-[10px] font-semibold tabular-nums leading-none">
+        {year}
       </span>
     </div>
   );

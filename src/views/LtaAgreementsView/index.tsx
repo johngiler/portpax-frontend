@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import MainTable, {
@@ -17,13 +18,13 @@ import MainTable, {
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import EmptyState from "@/components/ui/EmptyState";
-import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useActivePortsCatalog,
   useActiveShippingLinesCatalog,
 } from "@/hooks/swr/useCatalogs";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
 import {
   createLongTermAgreement,
@@ -127,13 +128,19 @@ export default function LtaAgreementsView() {
   return (
     <>
       <FilterSidebarContent>
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="lta_search"
           value={search}
-          onChange={(v) => setSearch(String(v))}
+          onChange={setSearch}
+          loadSuggestions={suggestLtaAgreements}
           placeholder="Código, nombre, puerto, naviera…"
-          compact
+          onPick={(s) => {
+            setSearch(s.applyValue);
+            setAppliedSearch(s.applyValue);
+            setPage(1);
+            setViewError(null);
+          }}
         />
         <FilterActions
           onApply={() => {

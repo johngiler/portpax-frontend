@@ -30,6 +30,9 @@ import {
   exportBookingsReport,
   exportStructuredReport,
 } from "@/services/bookings/bookingService";
+import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
+import { portDisplayName } from "@/types/catalog";
 import CarrierPanoramaSection from "./CarrierPanoramaSection";
 import CumplimientoRealSection from "./CumplimientoRealSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
@@ -100,6 +103,30 @@ export default function ReportsView() {
     () => lines.map((l) => ({ value: l.id, label: l.name, logoUrl: l.logo })),
     [lines],
   );
+
+  const loadPortOptions = useCallback(async (input: string) => {
+    const res = await fetchPorts({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return res.results.map((p) => ({
+      value: p.id,
+      label: portDisplayName(p),
+      logoUrl: p.logo,
+    }));
+  }, []);
+
+  const loadLineOptions = useCallback(async (input: string) => {
+    const res = await fetchShippingLines({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return res.results.map((l) => ({
+      value: l.id,
+      label: l.name,
+      logoUrl: l.logo,
+    }));
+  }, []);
 
   const defaultDateFrom = tab === "movements" ? weekAgoIso() : yearStart();
   const defaultDateTo = todayIso();
@@ -258,6 +285,7 @@ export default function ReportsView() {
             value={portFilter}
             onChange={(v) => setPortFilter(Number(v))}
             options={portOptions}
+            loadOptions={loadPortOptions}
             optionLabel="Todos los puertos"
             emptyValue={0}
             compact
@@ -272,6 +300,7 @@ export default function ReportsView() {
             value={lineFilter}
             onChange={(v) => setLineFilter(Number(v))}
             options={lineOptions}
+            loadOptions={loadLineOptions}
             optionLabel={
               tab === "panorama" ? "Selecciona una naviera" : "Todas las navieras"
             }

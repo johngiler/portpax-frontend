@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Select, { type StylesConfig } from "react-select";
+import AsyncSelect from "react-select/async";
 import CatalogLogoThumb, {
   type CatalogLogoKind,
 } from "@/components/ui/CatalogLogoThumb";
@@ -260,6 +261,7 @@ export function FormFieldSelect<T extends string | number>({
   showLogo = false,
   logoKind,
   labelEnd,
+  loadOptions,
 }: {
   label: string;
   name: string;
@@ -279,6 +281,11 @@ export function FormFieldSelect<T extends string | number>({
   logoKind?: CatalogLogoKind;
   /** Optional control aligned to the right of the label (e.g. help link). */
   labelEnd?: ReactNode;
+  /**
+   * When set, typing queries the DB (AsyncSelect). `options` are used as
+   * defaultOptions and to resolve the current value label.
+   */
+  loadOptions?: (inputValue: string) => Promise<CatalogSelectOption<T>[]>;
 }) {
   const handleChange = (selected: CatalogSelectOption<T> | null) => {
     if (!selected) {
@@ -297,6 +304,32 @@ export function FormFieldSelect<T extends string | number>({
       : (options.find((opt) => opt.value === value) ?? null);
 
   const styles = buildCatalogSelectStyles<T>(Boolean(error), compact);
+
+  const sharedSelectProps = {
+    inputId: name,
+    name,
+    value: selectedOption,
+    onChange: (v: CatalogSelectOption<T> | null) => handleChange(v),
+    styles,
+    isClearable: !!optionLabel || emptyValue !== undefined,
+    placeholder: optionLabel ?? "Seleccionar...",
+    "aria-invalid": !!error,
+    isDisabled: disabled,
+    isSearchable: true,
+    formatOptionLabel: (option: CatalogSelectOption<T>) => (
+      <SelectOptionLabel
+        label={option.label}
+        logoUrl={option.logoUrl}
+        showLogo={showLogo}
+        logoKind={logoKind}
+        compact={compact}
+      />
+    ),
+    menuPortalTarget: typeof window !== "undefined" ? document.body : null,
+    menuPosition: "fixed" as const,
+    menuShouldBlockScroll: false,
+    blurInputOnSelect: true,
+  };
 
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
@@ -325,31 +358,29 @@ export function FormFieldSelect<T extends string | number>({
           {required && <span className="text-red-500"> *</span>}
         </label>
       )}
-      <Select<CatalogSelectOption<T>, false>
-        inputId={name}
-        name={name}
-        value={selectedOption}
-        options={options}
-        onChange={(v) => handleChange(v)}
-        styles={styles}
-        isClearable={!!optionLabel || emptyValue !== undefined}
-        placeholder={optionLabel ?? "Seleccionar..."}
-        aria-invalid={!!error}
-        isDisabled={disabled}
-        formatOptionLabel={(option) => (
-          <SelectOptionLabel
-            label={option.label}
-            logoUrl={option.logoUrl}
-            showLogo={showLogo}
-            logoKind={logoKind}
-            compact={compact}
-          />
-        )}
-        menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-        menuPosition="fixed"
-        menuShouldBlockScroll={false}
-        blurInputOnSelect
-      />
+      {loadOptions ? (
+        <AsyncSelect<CatalogSelectOption<T>, false>
+          {...sharedSelectProps}
+          defaultOptions={options}
+          cacheOptions
+          loadOptions={async (inputValue) => {
+            const remote = await loadOptions(inputValue);
+            if (!inputValue.trim() && options.length > 0) return options;
+            return remote;
+          }}
+          noOptionsMessage={({ inputValue }) =>
+            inputValue.trim().length < 1
+              ? "Escribe para buscar…"
+              : "Sin resultados"
+          }
+          loadingMessage={() => "Buscando…"}
+        />
+      ) : (
+        <Select<CatalogSelectOption<T>, false>
+          {...sharedSelectProps}
+          options={options}
+        />
+      )}
       {error && (
         <p id={`${name}-error`} className={errorClass} role="alert">
           {error}

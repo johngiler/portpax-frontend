@@ -5,14 +5,16 @@ import { Anchor, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useShippingLineGroupsCatalog } from "@/hooks/swr/useCatalogs";
 import { useShippingLinesInfinite } from "@/hooks/swr/useShippingLinesInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { suggestShippingLines } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { revalidateShippingLinesLists } from "@/lib/swr/mutateHelpers";
 import { createShippingLine } from "@/services/catalogs/shippingLineService";
@@ -99,13 +101,19 @@ export default function ShippingLinesView() {
   return (
     <>
       <FilterSidebarContent>
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="line_search"
           value={search}
-          onChange={(value) => setSearch(String(value))}
+          onChange={setSearch}
+          loadSuggestions={suggestShippingLines}
           placeholder="Nombre naviera, Barco"
-          compact
+          onPick={(s) => {
+            setSearch(s.applyValue);
+            setAppliedSearch(s.applyValue);
+            setAppliedGroupFilter(groupFilter);
+            setViewError(null);
+          }}
         />
         <FormFieldSelect<number>
           label="Grupo corporativo"

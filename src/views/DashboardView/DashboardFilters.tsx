@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import FilterActions from "@/components/layout/FilterActions";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
@@ -85,6 +87,50 @@ export default function DashboardFilters({
     ];
   }, [groups, lines]);
 
+  const loadPortOptions = useCallback(async (input: string) => {
+    const res = await fetchPorts({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return res.results.map((port) => ({
+      value: String(port.id),
+      label: portDisplayName(port),
+      logoUrl: port.logo,
+    }));
+  }, []);
+
+  const loadCarrierOptions = useCallback(
+    async (input: string) => {
+      const q = input.trim().toLowerCase();
+      const groupHits = groups
+        .filter((group) => group.is_active)
+        .filter(
+          (group) =>
+            !q ||
+            group.name.toLowerCase().includes(q) ||
+            group.code?.toLowerCase().includes(q),
+        )
+        .map((group) => ({
+          value: `group:${group.id}`,
+          label: `Grupo: ${group.name}`,
+          logoUrl: null as string | null,
+        }));
+
+      const res = await fetchShippingLines({
+        search: input.trim() || undefined,
+        pageSize: 30,
+      });
+      const lineHits = res.results.map((line) => ({
+        value: `line:${line.id}`,
+        label: line.name,
+        logoUrl: line.logo,
+      }));
+
+      return [...groupHits, ...lineHits];
+    },
+    [groups],
+  );
+
   const carrierValue = carrierToValue(carrierFilter);
   const canClear =
     selectedPortId != null ||
@@ -119,6 +165,7 @@ export default function DashboardFilters({
           onPortChange(!value || value === "all" ? null : Number(value))
         }
         options={portOptions}
+        loadOptions={loadPortOptions}
         optionLabel="Todos los puertos"
         emptyValue=""
       />
@@ -131,6 +178,7 @@ export default function DashboardFilters({
         value={carrierValue === "all" ? "" : carrierValue}
         onChange={(value) => onCarrierChange(valueToCarrier(value || "all"))}
         options={carrierOptions}
+        loadOptions={loadCarrierOptions}
         optionLabel="Todas las navieras"
         emptyValue=""
       />

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import MainTable, {
@@ -20,11 +21,11 @@ import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import EmptyState from "@/components/ui/EmptyState";
 import EntityThumb from "@/components/ui/EntityThumb";
-import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActivePortsCatalog } from "@/hooks/swr/useCatalogs";
 import { useUsersPage } from "@/hooks/swr/useUsersPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { suggestUsers } from "@/lib/filterSuggestions";
 import { roleHomePath } from "@/lib/navAccess";
 import { revalidateUsersLists } from "@/lib/swr/mutateHelpers";
 import {
@@ -156,13 +157,18 @@ export default function UsersView() {
   return (
     <>
       <FilterSidebarContent>
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="user_search"
           value={search}
-          onChange={(v) => setSearch(String(v))}
+          onChange={setSearch}
+          loadSuggestions={suggestUsers}
           placeholder="Usuario, correo, nombre…"
-          compact
+          onPick={(s) => {
+            setSearch(s.applyValue);
+            setAppliedSearch(s.applyValue);
+            setViewError(null);
+          }}
         />
         <FilterActions
           onApply={applyFilters}

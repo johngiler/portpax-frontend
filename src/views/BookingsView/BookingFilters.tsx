@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import FilterActions from "@/components/layout/FilterActions";
+import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { FormFieldSelect } from "@/components/ui/FormField";
+import { suggestBookings } from "@/lib/filterSuggestions";
 import type { BookingsTabQuery, CalendarViewModeQuery } from "@/lib/viewFilterQuery";
+import { fetchPorts } from "@/services/catalogs/portService";
+import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
+import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
   BOOKING_STATUS_FILTER_OPTIONS,
   type BookingListStatusFilter,
@@ -105,16 +110,58 @@ export default function BookingFilters({
   const showPosition =
     tab === "calendar" && calendarMode === "weekly" && portFilter > 0;
 
+  const loadPortOptions = useCallback(async (input: string) => {
+    const res = await fetchPorts({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return res.results.map((p) => ({
+      value: p.id,
+      label: p.name,
+      logoUrl: p.logo,
+    }));
+  }, []);
+
+  const loadLineOptions = useCallback(async (input: string) => {
+    const res = await fetchShippingLines({
+      search: input.trim() || undefined,
+      pageSize: 30,
+    });
+    return res.results.map((line) => ({
+      value: line.id,
+      label: line.name,
+      logoUrl: line.logo,
+    }));
+  }, []);
+
+  const loadVesselOptions = useCallback(
+    async (input: string) => {
+      if (shippingLineFilter <= 0) return [];
+      const res = await fetchVessels({
+        shipping_line: shippingLineFilter,
+        search: input.trim() || undefined,
+        pageSize: 30,
+      });
+      return res.results.map((v) => ({
+        value: v.id,
+        label: v.name,
+        logoUrl: v.logo,
+      }));
+    },
+    [shippingLineFilter],
+  );
+
   return (
     <>
       {showStatusSearch ? (
-        <FormField
+        <FilterSuggestField
           label="Buscar"
           name="booking_search"
           value={search}
-          onChange={(value) => onSearchChange(String(value))}
+          onChange={onSearchChange}
+          loadSuggestions={suggestBookings}
           placeholder="Código, puerto, barco…"
-          compact
+          onPick={() => onApply()}
         />
       ) : null}
 
@@ -135,6 +182,7 @@ export default function BookingFilters({
         value={portFilter}
         onChange={onPortFilterChange}
         options={portOptions}
+        loadOptions={loadPortOptions}
         compact
         showLogo
         logoKind="port"
@@ -153,6 +201,7 @@ export default function BookingFilters({
             onVesselFilterChange(0);
           }}
           options={shippingLineOptions}
+          loadOptions={loadLineOptions}
           optionLabel="Todas las navieras"
           emptyValue={0}
           compact
@@ -168,6 +217,9 @@ export default function BookingFilters({
           value={vesselFilter}
           onChange={onVesselFilterChange}
           options={vesselOptions}
+          loadOptions={
+            shippingLineFilter > 0 ? loadVesselOptions : undefined
+          }
           optionLabel={
             shippingLineFilter > 0 ? "Todos los barcos" : "Elige una naviera primero"
           }
