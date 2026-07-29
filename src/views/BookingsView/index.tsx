@@ -95,8 +95,7 @@ export default function BookingsView() {
 
   const { ports, isLoading: portsLoading } = useActivePortsCatalog();
   const { lines, isLoading: linesLoading } = useActiveShippingLinesCatalog();
-  const { vessels, isLoading: vesselsLoading } = useActiveVesselsCatalog();
-  const portsReady = !portsLoading && !linesLoading && !vesselsLoading;
+  const portsReady = !portsLoading && !linesLoading;
 
   const portOptions = useMemo(
     () =>
@@ -120,16 +119,6 @@ export default function BookingsView() {
         logoUrl: line.logo,
       })),
     [lines],
-  );
-  const allVessels = useMemo(
-    () =>
-      vessels.map((vessel) => ({
-        value: vessel.id,
-        label: vessel.name,
-        lineId: vessel.shipping_line,
-        logoUrl: vessel.logo,
-      })),
-    [vessels],
   );
 
   const [tab, setTab] = useState<BookingsTabQuery>("list");
@@ -169,6 +158,20 @@ export default function BookingsView() {
     { value: number; label: string }[]
   >([]);
   const [viewError, setViewError] = useState<string | null>(null);
+
+  const { vessels } = useActiveVesselsCatalog(
+    shippingLineFilter > 0 ? shippingLineFilter : null,
+  );
+  const vesselOptions = useMemo(
+    () =>
+      vessels.map((vessel) => ({
+        value: vessel.id,
+        label: vessel.name,
+        lineId: vessel.shipping_line,
+        logoUrl: vessel.logo,
+      })),
+    [vessels],
+  );
 
   function workspaceState(
     overrides?: Partial<BookingsWorkspaceFilters>,
@@ -264,13 +267,6 @@ export default function BookingsView() {
       cancelled = true;
     };
   }, [portFilter]);
-
-  const vesselOptions = useMemo(() => {
-    if (shippingLineFilter > 0) {
-      return allVessels.filter((vessel) => vessel.lineId === shippingLineFilter);
-    }
-    return allVessels;
-  }, [allVessels, shippingLineFilter]);
 
   const listParams = useMemo(() => {
     const dateRange = resolveBookingsDateRange(

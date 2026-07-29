@@ -55,18 +55,25 @@ export function useActiveShippingLinesCatalog(enabled = true) {
   };
 }
 
-export function useActiveVesselsCatalog(enabled = true) {
+export function useActiveVesselsCatalog(
+  shippingLineId?: number | null,
+  enabled = true,
+) {
+  const lineId = shippingLineId && shippingLineId > 0 ? shippingLineId : null;
   const { data, error, isLoading, mutate } = useSWR(
-    enabled ? swrKeys.vesselsCatalog() : null,
+    enabled && lineId ? swrKeys.vesselsCatalog(lineId) : null,
     async () => {
-      const vessels = await fetchAllVessels();
+      const vessels = await fetchAllVessels({
+        shipping_line: lineId!,
+        pageSize: 100,
+      });
       return vessels.filter((vessel) => vessel.is_active);
     },
   );
   return {
     vessels: (data ?? []) as Vessel[],
     error,
-    isLoading,
+    isLoading: Boolean(enabled && lineId && isLoading),
     mutate,
   };
 }

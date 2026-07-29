@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/layout/AuthLayout";
+import DocumentTitle from "@/components/layout/DocumentTitle";
 import SwrProvider from "@/lib/swr/SwrProvider";
 import "./globals.css";
 
@@ -11,7 +12,10 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "PortPax",
+  title: {
+    default: "PortPax",
+    template: "PortPax | %s",
+  },
   description: "Plataforma de gestión de operaciones en puertos de cruceros",
 };
 
@@ -34,6 +38,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <SwrProvider>
+            <DocumentTitle />
             <AuthLayout>{children}</AuthLayout>
           </SwrProvider>
         </AuthProvider>

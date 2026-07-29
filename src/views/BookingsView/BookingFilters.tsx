@@ -168,11 +168,14 @@ export default function BookingFilters({
           value={vesselFilter}
           onChange={onVesselFilterChange}
           options={vesselOptions}
-          optionLabel="Todos los barcos"
+          optionLabel={
+            shippingLineFilter > 0 ? "Todos los barcos" : "Elige una naviera primero"
+          }
           emptyValue={0}
           compact
           showLogo
           logoKind="vessel"
+          disabled={shippingLineFilter <= 0}
         />
       ) : null}
 
