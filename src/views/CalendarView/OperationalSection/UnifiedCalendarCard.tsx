@@ -115,7 +115,7 @@ export default function UnifiedCalendarCard({
         <div className="mb-4">
           <CalendarColorLegend
             showCorp={mode !== "annual"}
-            showTraffic={mode === "weekly" || mode === "monthly"}
+            showTraffic
           />
         </div>
         {errorMessage ? (

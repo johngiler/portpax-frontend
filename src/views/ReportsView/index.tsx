@@ -334,32 +334,6 @@ export default function ReportsView() {
         />
       ) : appliedFilters.tab === "totals" && totals ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <ViewStatCard
-              label="Calls"
-              value={totals.total_calls.toLocaleString("es-MX")}
-              description={`${totals.date_from} → ${totals.date_to}`}
-              icon={FileText}
-              accentColor="#3478b5"
-              gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
-            />
-            <ViewStatCard
-              label="PAX planificado"
-              value={totals.planned_pax.toLocaleString("es-MX")}
-              description="Suma en el período"
-              icon={BarChart3}
-              accentColor="#0d9488"
-              gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
-            />
-            <ViewStatCard
-              label="PAX real"
-              value={totals.actual_pax.toLocaleString("es-MX")}
-              description="Suma actual_pax"
-              icon={BarChart3}
-              accentColor="#7c3aed"
-              gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.12) 0%, var(--background) 55%)"
-            />
-          </div>
           <ViewSection
             icon={BarChart3}
             title="Por puerto"

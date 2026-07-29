@@ -1,16 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, CalendarDays, Gauge, MapPin, Ship, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
-import ViewStatCard from "@/components/layout/ViewStatCard";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
   activePierPositions,
   dayTrafficLight,
-  monthOccupancy,
 } from "./calendarOpsUtils";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -49,14 +47,6 @@ export default function MonthGrid({
 }: MonthGridProps) {
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
-  const monthBookings = bookings.filter((b) => {
-    const [y, m] = b.call_date.split("-").map(Number);
-    return y === year && m === monthIndex + 1 && b.status !== "c";
-  });
-  const calls = monthBookings.length;
-  const plannedPax = monthBookings.reduce((sum, b) => sum + (b.planned_pax ?? 0), 0);
-  const portCount = new Set(monthBookings.map((b) => b.port)).size;
-  const occupancy = monthOccupancy(bookings, pierCount, year, monthIndex);
   const monthOptions = getMonthOptions();
 
   function shiftMonth(delta: number) {
@@ -89,43 +79,6 @@ export default function MonthGrid({
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <ViewStatCard
-          label="Calls del mes"
-          value={String(calls)}
-          description="Excluye canceladas"
-          icon={Ship}
-          accentColor="#3478b5"
-          gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label="PAX planificado"
-          value={plannedPax.toLocaleString("es-MX")}
-          description="Suma de planned_pax"
-          icon={Users}
-          accentColor="#0d9488"
-          gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label={multiPort ? "Puertos con escala" : "Muelles pier"}
-          value={String(multiPort ? portCount : pierCount)}
-          description={
-            multiPort ? "Puertos con al menos un call" : "Posiciones activas del puerto"
-          }
-          icon={multiPort ? MapPin : CalendarDays}
-          accentColor="#7c3aed"
-          gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.12) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label="Ocupación"
-          value={`${occupancy.pct}%`}
-          description={`${occupancy.occupied.toLocaleString("es-MX")} de ${occupancy.capacity.toLocaleString("es-MX")} slot-días`}
-          icon={Gauge}
-          accentColor="#3478b5"
-          gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
-        />
       </div>
 
       <div className="overflow-x-auto">

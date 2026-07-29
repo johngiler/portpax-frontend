@@ -60,6 +60,13 @@ export default function CalendarColorLegend({
         </ul>
       ) : null}
 
+      {(showCorp || showTraffic) ? (
+        <span
+          className="hidden h-3 w-px bg-zinc-200 sm:block dark:bg-zinc-700"
+          aria-hidden
+        />
+      ) : null}
+
       <InfoTooltip
         label="Leyenda del calendario"
         content="El color del chip indica la corporación de la naviera. El punto del día resume la ocupación de muelles (verde libre, ámbar parcial, rojo lleno). Hold: anillo ámbar. Cancelada: tachado atenuado."

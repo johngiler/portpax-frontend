@@ -1,17 +1,13 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Ship, TrendingUp, Users } from "lucide-react";
-import ViewStatCard from "@/components/layout/ViewStatCard";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import {
   TRAFFIC_DOT,
-  TRAFFIC_LABEL,
   activePierPositions,
   dayTrafficLight,
-  summarizeYear,
-  yoyDeltaPct,
 } from "./calendarOpsUtils";
 
 const WEEKDAYS = ["D", "L", "M", "X", "J", "V", "S"];
@@ -36,92 +32,35 @@ export default function AnnualGrid({
   year,
   onYearChange,
   bookings,
-  previousYearBookings,
+  previousYearBookings: _previousYearBookings,
   positions,
   onSelectMonth,
 }: AnnualGridProps) {
   const pierCount = activePierPositions(positions).length;
-  const current = summarizeYear(bookings, year);
-  const previous = summarizeYear(previousYearBookings, year - 1);
-  const callsDelta = yoyDeltaPct(current.calls, previous.calls);
-  const paxDelta = yoyDeltaPct(current.plannedPax, previous.plannedPax);
   const monthOptions = getMonthOptions();
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Año anterior"
-            onClick={() => onYearChange(year - 1)}
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <p className="min-w-[5rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-            {year}
-          </p>
-          <button
-            type="button"
-            aria-label="Año siguiente"
-            onClick={() => onYearChange(year + 1)}
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <ul className="flex flex-wrap gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
-          {(["free", "limited", "full"] as const).map((key) => (
-            <li key={key} className="inline-flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[key]}`} />
-              {TRAFFIC_LABEL[key]}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <ViewStatCard
-          label="Calls del año"
-          value={current.calls.toLocaleString("es-MX")}
-          description={
-            callsDelta == null
-              ? `vs ${year - 1}: n/d`
-              : `vs ${year - 1}: ${callsDelta > 0 ? "+" : ""}${callsDelta}% (${previous.calls})`
-          }
-          icon={Ship}
-          accentColor="#3478b5"
-          gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label="PAX planificado"
-          value={current.plannedPax.toLocaleString("es-MX")}
-          description={
-            paxDelta == null
-              ? `vs ${year - 1}: n/d`
-              : `vs ${year - 1}: ${paxDelta > 0 ? "+" : ""}${paxDelta}%`
-          }
-          icon={Users}
-          accentColor="#0d9488"
-          gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label="Calls año anterior"
-          value={previous.calls.toLocaleString("es-MX")}
-          description={`${year - 1}`}
-          icon={TrendingUp}
-          accentColor="#7c3aed"
-          gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.12) 0%, var(--background) 55%)"
-        />
-        <ViewStatCard
-          label="PAX año anterior"
-          value={previous.plannedPax.toLocaleString("es-MX")}
-          description={`${year - 1}`}
-          icon={Users}
-          accentColor="#ca8a04"
-          gradient="linear-gradient(160deg, rgba(202, 138, 4, 0.12) 0%, var(--background) 55%)"
-        />
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <button
+          type="button"
+          aria-label="Año anterior"
+          onClick={() => onYearChange(year - 1)}
+          className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <p className="min-w-[5rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+          {year}
+        </p>
+        <button
+          type="button"
+          aria-label="Año siguiente"
+          onClick={() => onYearChange(year + 1)}
+          className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
