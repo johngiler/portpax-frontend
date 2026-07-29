@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, CalendarDays, MapPin, Ship, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Gauge, MapPin, Ship, Users } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
@@ -10,6 +10,7 @@ import {
   TRAFFIC_DOT,
   activePierPositions,
   dayTrafficLight,
+  monthOccupancy,
 } from "./calendarOpsUtils";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -55,6 +56,7 @@ export default function MonthGrid({
   const calls = monthBookings.length;
   const plannedPax = monthBookings.reduce((sum, b) => sum + (b.planned_pax ?? 0), 0);
   const portCount = new Set(monthBookings.map((b) => b.port)).size;
+  const occupancy = monthOccupancy(bookings, pierCount, year, monthIndex);
   const monthOptions = getMonthOptions();
 
   function shiftMonth(delta: number) {
@@ -89,7 +91,7 @@ export default function MonthGrid({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ViewStatCard
           label="Calls del mes"
           value={String(calls)}
@@ -115,6 +117,14 @@ export default function MonthGrid({
           icon={multiPort ? MapPin : CalendarDays}
           accentColor="#7c3aed"
           gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.12) 0%, var(--background) 55%)"
+        />
+        <ViewStatCard
+          label="Ocupación"
+          value={`${occupancy.pct}%`}
+          description={`${occupancy.occupied.toLocaleString("es-MX")} de ${occupancy.capacity.toLocaleString("es-MX")} slot-días`}
+          icon={Gauge}
+          accentColor="#3478b5"
+          gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
         />
       </div>
 

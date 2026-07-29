@@ -97,3 +97,29 @@ export function activePierPositions(positions: Position[]): Position[] {
     .filter((p) => p.is_active && p.position_type === "pier")
     .sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
 }
+
+/** Statuses that count toward occupancy (aligned with dashboard OCCUPANCY_STATUSES). */
+const OCCUPANCY_STATUSES = new Set(["co", "cl", "lta", "ltd", "r"]);
+
+/**
+ * Occupancy % for a calendar month: occupied slot-days / (pier positions × days).
+ * Same formula as dashboard KPIs.
+ */
+export function monthOccupancy(
+  bookings: Booking[],
+  pierCount: number,
+  year: number,
+  monthIndex: number,
+): { pct: number; occupied: number; capacity: number } {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const capacity = pierCount * daysInMonth;
+  let occupied = 0;
+  for (const b of bookings) {
+    if (!OCCUPANCY_STATUSES.has(b.status)) continue;
+    const [y, m] = b.call_date.split("-").map(Number);
+    if (y === year && m === monthIndex + 1) occupied += 1;
+  }
+  const pct =
+    capacity > 0 ? Math.round((occupied / capacity) * 1000) / 10 : 0;
+  return { pct, occupied, capacity };
+}

@@ -88,6 +88,10 @@ async function fetchCalendarPayload(
       pageSize: 100,
     });
     positions = positionsResponse.results.filter((p) => p.is_active);
+  } else {
+    // Multi-port: need pier inventory for occupancy % (dashboard formula).
+    const positionsResponse = await fetchPositions({ pageSize: 200 });
+    positions = positionsResponse.results.filter((p) => p.is_active);
   }
 
   return { bookings, previousYearBookings, positions };
