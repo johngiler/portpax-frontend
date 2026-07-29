@@ -31,11 +31,16 @@ import {
   setDataExportHandler,
   type DataExportFormat,
 } from "@/lib/dataExportStore";
+import { setDataImportHandler } from "@/lib/dataImportStore";
 import {
   exportBookingsReport,
   exportCalendarReport,
   exportStructuredReport,
 } from "@/services/bookings/bookingService";
+import {
+  previewBulkBookingImport,
+  type BulkImportPreviewRow,
+} from "@/services/bookings/bulkImportService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingListStatusFilter } from "@/types/booking";
@@ -51,6 +56,8 @@ import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
 import BookingsList from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
+import BulkBookingImportModal from "./Import/BulkBookingImportModal";
+import ImportOptionsModal from "./Import/ImportOptionsModal";
 import {
   resolveBookingsDateRange,
   type BookingsDatePreset,
@@ -158,6 +165,13 @@ export default function BookingsView() {
     { value: number; label: string }[]
   >([]);
   const [viewError, setViewError] = useState<string | null>(null);
+  const [importOptionsOpen, setImportOptionsOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [bulkImportRows, setBulkImportRows] = useState<BulkImportPreviewRow[]>(
+    [],
+  );
+  const [bulkImportFileName, setBulkImportFileName] = useState("");
+  const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
   const { vessels } = useActiveVesselsCatalog(
     shippingLineFilter > 0 ? shippingLineFilter : null,
@@ -318,6 +332,7 @@ export default function BookingsView() {
     loadingMore,
     error: bookingsError,
     loadMore,
+    refresh: refreshBookings,
   } = useBookingsInfinite(listParams, tab === "list" && portsReady);
 
   useEffect(() => {
@@ -532,6 +547,31 @@ export default function BookingsView() {
     return () => setDataExportHandler(null);
   }, [handleExport]);
 
+  useEffect(() => {
+    if (!canWrite) {
+      setDataImportHandler(null);
+      return;
+    }
+    setDataImportHandler(() => {
+      setImportOptionsOpen(true);
+    });
+    return () => setDataImportHandler(null);
+  }, [canWrite]);
+
+  async function handleBulkFileSelected(file: File) {
+    setViewError(null);
+    try {
+      const preview = await previewBulkBookingImport(file);
+      setBulkImportFileName(file.name);
+      setBulkImportRows(preview.rows);
+      setBulkImportOpen(true);
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(err, "No se pudo leer el archivo de reservas."),
+      );
+    }
+  }
+
   const allPortIds = useMemo(
     () => portOptions.map((p) => p.value),
     [portOptions],
@@ -553,6 +593,46 @@ export default function BookingsView() {
 
   return (
     <>
+      <input
+        ref={bulkFileInputRef}
+        type="file"
+        accept=".xlsx,.xlsm"
+        className="hidden"
+        aria-hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) void handleBulkFileSelected(file);
+        }}
+      />
+
+      <ImportOptionsModal
+        open={importOptionsOpen}
+        onClose={() => setImportOptionsOpen(false)}
+        onSelectBulkBookings={() => {
+          setImportOptionsOpen(false);
+          bulkFileInputRef.current?.click();
+        }}
+      />
+
+      <BulkBookingImportModal
+        open={bulkImportOpen}
+        rows={bulkImportRows}
+        fileName={bulkImportFileName}
+        onClose={() => {
+          setBulkImportOpen(false);
+          setBulkImportRows([]);
+          setBulkImportFileName("");
+        }}
+        onCreated={async () => {
+          setBulkImportOpen(false);
+          setBulkImportRows([]);
+          setBulkImportFileName("");
+          setViewError(null);
+          await refreshBookings();
+        }}
+      />
+
       <FilterSidebarContent>
         <BookingFilters
           tab={tab}

@@ -2,7 +2,8 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-export type DataImportHandler = (file: File) => void | Promise<void>;
+/** Opens the view's import flow (options modal). File pick happens inside that flow. */
+export type DataImportHandler = () => void | Promise<void>;
 
 let handler: DataImportHandler | null = null;
 const listeners = new Set<() => void>();
@@ -35,8 +36,8 @@ function getServerSnapshot(): boolean {
 export function useDataImport() {
   const canImport = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const runImport = useCallback(async (file: File) => {
-    await handler?.(file);
+  const runImport = useCallback(async () => {
+    await handler?.();
   }, []);
 
   return { canImport, runImport };

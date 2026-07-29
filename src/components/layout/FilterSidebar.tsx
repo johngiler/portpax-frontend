@@ -51,7 +51,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const setFilterOpen = layout?.setFilterOpen;
   const { canExport, runExport } = useDataExport();
   const { canImport, runImport } = useDataImport();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -70,18 +69,11 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
 
   if (!setFilterOpen) return null;
 
-  const handleImportClick = () => {
+  const handleImportClick = async () => {
     if (!canImport || importing) return;
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !canImport || importing) return;
     setImporting(true);
     try {
-      await runImport(file);
+      await runImport();
     } finally {
       setImporting(false);
     }
@@ -106,8 +98,8 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
 
   const importTitle = canImport
     ? importing
-      ? "Importando…"
-      : "Importar desde Excel o CSV"
+      ? "Abriendo…"
+      : "Opciones de importación"
     : "Importación no disponible en esta vista";
 
   const exportTitle = canExport
@@ -124,16 +116,6 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
           : "w-16 shadow-[var(--admin-card-shadow)]"
       }`}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx,.xls,.csv"
-        className="hidden"
-        aria-hidden
-        disabled={importDisabled}
-        onChange={(e) => void handleFileChange(e)}
-      />
-
       <nav
         className={`flex min-h-0 flex-1 flex-col ${open ? "p-4" : "px-2 pt-2"}`}
       >
@@ -159,7 +141,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                     title={importTitle}
                   >
                     <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    <span>{importing ? "Importando…" : "Importar"}</span>
+                    <span>{importing ? "Abriendo…" : "Importar"}</span>
                   </button>
                   <div className="relative" ref={exportMenuRef}>
                     <button
