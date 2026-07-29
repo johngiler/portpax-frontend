@@ -58,6 +58,8 @@ export type Booking = {
   cancellation_reason_display: string;
   cancellation_evidence_url: string | null;
   confirmation_pdf_url: string | null;
+  long_term_agreement: number | null;
+  long_term_agreement_code: string | null;
   audit_entries: BookingAuditEntry[];
   created_at: string;
   updated_at: string;
@@ -253,7 +255,7 @@ export function bookingStatusLabel(status: BookingStatus): string {
 export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
   switch (status) {
     case "nr":
-      return ["h", "co", "c"];
+      return ["h", "lta", "co", "c"];
     case "h":
       return ["co", "c"];
     case "co":

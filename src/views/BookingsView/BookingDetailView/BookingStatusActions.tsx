@@ -198,6 +198,17 @@ export default function BookingStatusActions({
               Poner en evaluación
             </button>
           ) : null}
+          {nextStatuses.includes("lta") ? (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void applySimpleStatus("lta")}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-800 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-300"
+            >
+              <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+              Pasar a LTA
+            </button>
+          ) : null}
           {nextStatuses.includes("cl") ? (
             <button
               type="button"

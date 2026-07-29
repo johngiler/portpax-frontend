@@ -1,6 +1,6 @@
 "use client";
 
-import { Anchor, CalendarDays, MapPin, Ship } from "lucide-react";
+import { Anchor, CalendarDays, FileText, MapPin, Ship } from "lucide-react";
 import type { ReactNode } from "react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
@@ -36,7 +36,7 @@ export default function BookingDetailSummary({ booking }: BookingDetailSummaryPr
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Detalle de escala</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <SummaryItem icon={MapPin} label="Puerto">
           <div className="flex items-center gap-2">
             <CatalogLogoThumb
@@ -79,6 +79,13 @@ export default function BookingDetailSummary({ booking }: BookingDetailSummaryPr
               Posición {booking.position_code}
             </p>
           ) : null}
+        </SummaryItem>
+        <SummaryItem icon={FileText} label="Acuerdo LTA">
+          {booking.long_term_agreement_code ? (
+            <span>{booking.long_term_agreement_code}</span>
+          ) : (
+            <span className="font-normal text-zinc-500">Sin acuerdo vinculado</span>
+          )}
         </SummaryItem>
       </div>
 

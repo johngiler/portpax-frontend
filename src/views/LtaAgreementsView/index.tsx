@@ -1,0 +1,281 @@
+"use client";
+
+import { FileText, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import DefaultButton from "@/components/buttons/DefaultButton";
+import FilterActions from "@/components/layout/FilterActions";
+import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
+import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
+import ViewPageHeader from "@/components/layout/ViewPageHeader";
+import MainTable, {
+  MainTableBody,
+  MainTableHeader,
+  MainTableRow,
+  MainTableTd,
+  MainTableTh,
+} from "@/components/tables/MainTable";
+import TableActionButtons from "@/components/tables/TableActionButtons";
+import TablePagination from "@/components/tables/TablePagination";
+import EmptyState from "@/components/ui/EmptyState";
+import { FormField } from "@/components/ui/FormField";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  useActivePortsCatalog,
+  useActiveShippingLinesCatalog,
+} from "@/hooks/swr/useCatalogs";
+import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
+import {
+  createLongTermAgreement,
+  deleteLongTermAgreement,
+  fetchLongTermAgreements,
+  updateLongTermAgreement,
+} from "@/services/bookings/ltaService";
+import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
+import LtaAgreementsViewSkeleton from "./LtaAgreementsViewSkeleton";
+import type { LongTermAgreement } from "@/types/lta";
+import { formatLtaWeekdays } from "@/types/lta";
+
+const PAGE_SIZE = 20;
+
+export default function LtaAgreementsView() {
+  const { user } = useAuth();
+  const canWrite = canWriteApp(user?.role);
+  const canBrowse = canBrowseCatalogs(user?.role);
+
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [rows, setRows] = useState<LongTermAgreement[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [viewError, setViewError] = useState<string | null>(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<LtaFormMode>("create");
+  const [editing, setEditing] = useState<LongTermAgreement | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { ports } = useActivePortsCatalog(canBrowse);
+  const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setViewError(null);
+    try {
+      const data = await fetchLongTermAgreements({
+        page,
+        pageSize: PAGE_SIZE,
+        search: appliedSearch,
+      });
+      setRows(data.results);
+      setTotalCount(data.count);
+    } catch (err) {
+      setViewError(getApiErrorMessage(err, "No se pudieron cargar los acuerdos LTA."));
+      setRows([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, appliedSearch]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function openCreate() {
+    setModalMode("create");
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(row: LongTermAgreement) {
+    setModalMode("edit");
+    setEditing(row);
+    setModalOpen(true);
+  }
+
+  async function handleSave({ payload, options }: LtaFormSubmitData) {
+    setSaving(true);
+    try {
+      if (modalMode === "edit" && editing) {
+        await updateLongTermAgreement(editing.id, payload, options);
+      } else {
+        await createLongTermAgreement(payload, options);
+      }
+      setModalOpen(false);
+      await load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(row: LongTermAgreement) {
+    setViewError(null);
+    try {
+      await deleteLongTermAgreement(row.id);
+      await load();
+    } catch (err) {
+      setViewError(getApiErrorMessage(err, "No se pudo eliminar el acuerdo."));
+    }
+  }
+
+  if (loading && rows.length === 0 && !viewError) {
+    return <LtaAgreementsViewSkeleton />;
+  }
+
+  return (
+    <>
+      <FilterSidebarContent>
+        <FormField
+          label="Buscar"
+          name="lta_search"
+          value={search}
+          onChange={(v) => setSearch(String(v))}
+          placeholder="Código, nombre, puerto, naviera…"
+          compact
+        />
+        <FilterActions
+          onApply={() => {
+            setPage(1);
+            setAppliedSearch(search);
+            setViewError(null);
+          }}
+          onClear={() => {
+            setSearch("");
+            setAppliedSearch("");
+            setPage(1);
+            setViewError(null);
+          }}
+          canClear={Boolean(search.trim()) || Boolean(appliedSearch)}
+        />
+      </FilterSidebarContent>
+
+      <ViewPageHeader
+        icon={FileText}
+        title="Acuerdos LTA"
+        description="Contratos de largo plazo: ventana de antelación y bloqueo estratégico de posiciones."
+        actions={
+          canWrite ? (
+            <DefaultButton type="button" onClick={openCreate}>
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Agregar acuerdo
+              </span>
+            </DefaultButton>
+          ) : undefined
+        }
+      />
+
+      {viewError ? (
+        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+      ) : null}
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Sin acuerdos LTA"
+          description="Crea el primer acuerdo para vincular naviera, puerto, días y posiciones."
+          primaryAction={
+            canWrite
+              ? { label: "Agregar acuerdo", onClick: openCreate, icon: Plus }
+              : undefined
+          }
+        />
+      ) : (
+        <>
+          <MainTable>
+            <table className="w-full min-w-[48rem]">
+              <MainTableHeader>
+                <MainTableTh>Código</MainTableTh>
+                <MainTableTh>Puerto</MainTableTh>
+                <MainTableTh>Naviera</MainTableTh>
+                <MainTableTh>Días</MainTableTh>
+                <MainTableTh>Ventana</MainTableTh>
+                <MainTableTh>Estado</MainTableTh>
+                {canWrite ? <MainTableTh className="w-24"> </MainTableTh> : null}
+              </MainTableHeader>
+              <MainTableBody>
+                {rows.map((row) => (
+                  <MainTableRow key={row.id}>
+                    <MainTableTd>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(row)}
+                        className="text-left font-semibold text-[var(--admin-accent)] hover:underline"
+                      >
+                        {row.code}
+                      </button>
+                      <p className="text-xs text-zinc-500">{row.name}</p>
+                    </MainTableTd>
+                    <MainTableTd>{row.port_name}</MainTableTd>
+                    <MainTableTd>{row.shipping_line_name}</MainTableTd>
+                    <MainTableTd>
+                      <span className="text-sm">{formatLtaWeekdays(row.weekdays)}</span>
+                      {row.position_codes.length ? (
+                        <p className="text-xs text-zinc-500">
+                          {row.position_codes.join(", ")}
+                        </p>
+                      ) : null}
+                      {row.contract_file_url ? (
+                        <p className="mt-0.5 text-xs">
+                          <a
+                            href={row.contract_file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-[var(--admin-accent)] hover:underline"
+                          >
+                            Contrato
+                          </a>
+                        </p>
+                      ) : null}
+                    </MainTableTd>
+                    <MainTableTd>
+                      {row.advance_months_min}–{row.advance_months_max} meses
+                    </MainTableTd>
+                    <MainTableTd>
+                      {row.is_active ? (
+                        <span className="text-emerald-700 dark:text-emerald-400">Activo</span>
+                      ) : (
+                        <span className="text-zinc-400">Inactivo</span>
+                      )}
+                    </MainTableTd>
+                    {canWrite ? (
+                      <MainTableTd>
+                        <TableActionButtons
+                          onEdit={() => openEdit(row)}
+                          onDelete={() => void handleDelete(row)}
+                          deleteLabel={`el acuerdo ${row.code}`}
+                        />
+                      </MainTableTd>
+                    ) : null}
+                  </MainTableRow>
+                ))}
+              </MainTableBody>
+            </table>
+          </MainTable>
+          <TablePagination
+            page={page}
+            totalCount={totalCount}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            label="acuerdos"
+          />
+        </>
+      )}
+
+      {canWrite ? (
+        <LtaFormModal
+          open={modalOpen}
+          mode={modalMode}
+          initial={editing}
+          ports={ports}
+          shippingLines={shippingLines}
+          saving={saving}
+          onClose={() => !saving && setModalOpen(false)}
+          onSubmit={handleSave}
+        />
+      ) : null}
+    </>
+  );
+}
