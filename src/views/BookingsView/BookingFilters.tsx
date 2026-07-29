@@ -61,6 +61,7 @@ type BookingFiltersProps = {
   onCustomDateToChange: (value: string) => void;
   onCalendarModeChange: (mode: CalendarViewModeQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
+  importedDatesCount?: number;
   onApply: () => void;
   onClear: () => void;
 };
@@ -93,6 +94,7 @@ export default function BookingFilters({
   onCustomDateToChange,
   onCalendarModeChange,
   onPositionFilterChange,
+  importedDatesCount = 0,
   onApply,
   onClear,
 }: BookingFiltersProps) {
@@ -278,6 +280,9 @@ export default function BookingFilters({
           customDateTo={customDateTo}
           timeRange={timeRange}
           showAllRangeHint={tab === "availability"}
+          importedDatesCount={
+            tab === "availability" ? importedDatesCount : 0
+          }
           onDatePresetChange={onDatePresetChange}
           onCustomDateFromChange={onCustomDateFromChange}
           onCustomDateToChange={onCustomDateToChange}

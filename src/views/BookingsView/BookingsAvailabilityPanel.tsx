@@ -11,6 +11,7 @@ type BookingsAvailabilityPanelProps = {
   portIds: number[];
   dateFrom: string;
   dateTo: string;
+  dateAllowlist?: string[] | null;
   canBook?: boolean;
   returnTo?: string | null;
   onClearFilters?: () => void;
@@ -21,6 +22,7 @@ export default function BookingsAvailabilityPanel({
   portIds,
   dateFrom,
   dateTo,
+  dateAllowlist = null,
   canBook = false,
   returnTo = null,
   onClearFilters,
@@ -41,14 +43,17 @@ export default function BookingsAvailabilityPanel({
     );
   }
 
+  const allowKey = dateAllowlist?.join(",") ?? "";
+
   return (
     <div className="space-y-6">
       {targetIds.map((id) => (
         <AvailabilityPortCard
-          key={`${id}-${dateFrom}-${dateTo}`}
+          key={`${id}-${dateFrom}-${dateTo}-${allowKey}`}
           portId={id}
           dateFrom={dateFrom}
           dateTo={dateTo}
+          dateAllowlist={dateAllowlist}
           canBook={canBook}
           returnTo={returnTo}
         />

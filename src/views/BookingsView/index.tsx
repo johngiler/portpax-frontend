@@ -10,6 +10,7 @@ import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSetFilterOpen } from "@/contexts/MainLayoutContext";
 import {
   useActivePortsCatalog,
   useActiveShippingLinesCatalog,
@@ -38,7 +39,10 @@ import {
   exportStructuredReport,
 } from "@/services/bookings/bookingService";
 import {
+  previewAvailabilityListFilter,
+  previewAvailabilityListFilterFromPaste,
   previewBulkBookingImport,
+  previewBulkBookingImportFromPaste,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
 import { fetchPositions } from "@/services/catalogs/positionService";
@@ -87,6 +91,7 @@ export default function BookingsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const setFilterOpen = useSetFilterOpen();
   const canWrite = canWriteApp(user?.role);
   const skipUrlHydrateRef = useRef(false);
 
@@ -173,7 +178,9 @@ export default function BookingsView() {
   );
   const [bulkImportFileName, setBulkImportFileName] = useState("");
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
-  const bulkFileInputRef = useRef<HTMLInputElement>(null);
+  const [availabilityDateAllowlist, setAvailabilityDateAllowlist] = useState<
+    string[] | null
+  >(null);
 
   const { vessels } = useActiveVesselsCatalog(
     shippingLineFilter > 0 ? shippingLineFilter : null,
@@ -314,6 +321,11 @@ export default function BookingsView() {
   ]);
 
   const availabilityRange = useMemo(() => {
+    // Imported dates: fetch window = min→max, grid shows only those days.
+    if (availabilityDateAllowlist?.length) {
+      const sorted = [...availabilityDateAllowlist].sort();
+      return { from: sorted[0], to: sorted[sorted.length - 1] };
+    }
     if (appliedDatePreset === "all") {
       const range = availabilityDefaultRange();
       return { from: range.date_from, to: range.date_to };
@@ -324,7 +336,12 @@ export default function BookingsView() {
       appliedCustomDateTo,
     );
     return { from: range.date_from, to: range.date_to };
-  }, [appliedDatePreset, appliedCustomDateFrom, appliedCustomDateTo]);
+  }, [
+    availabilityDateAllowlist,
+    appliedDatePreset,
+    appliedCustomDateFrom,
+    appliedCustomDateTo,
+  ]);
 
   const {
     bookings,
@@ -399,6 +416,7 @@ export default function BookingsView() {
     setAppliedCalendarMode("monthly");
     setPositionFilter(0);
     setAppliedPositionFilter(0);
+    setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
     setMonthIndex(m);
@@ -432,6 +450,7 @@ export default function BookingsView() {
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
     appliedDatePreset !== "all" ||
+    Boolean(availabilityDateAllowlist?.length) ||
     (tab === "calendar" && appliedCalendarMode !== "monthly") ||
     (tab === "calendar" && appliedPositionFilter > 0);
 
@@ -443,6 +462,7 @@ export default function BookingsView() {
     shippingLineFilter > 0 ||
     vesselFilter > 0 ||
     datePreset !== "all" ||
+    Boolean(availabilityDateAllowlist?.length) ||
     (tab === "calendar" && calendarMode !== "monthly") ||
     (tab === "calendar" && positionFilter > 0);
 
@@ -560,18 +580,104 @@ export default function BookingsView() {
     return () => setDataImportHandler(null);
   }, [canWrite]);
 
-  async function handleBulkFileSelected(file: File) {
+  async function applyAvailabilityFilterPayload(payload: {
+    dates: string[];
+    date_from: string;
+    date_to: string;
+  }) {
+    // Partial dates only — do not switch sidebar to continuous "custom" range.
+    setAvailabilityDateAllowlist(payload.dates);
+    setTab("availability");
+    syncToUrl(workspaceState({ tab: "availability" }));
+    setFilterOpen?.(false);
+  }
+
+  function handleDatePresetChange(preset: typeof datePreset) {
+    setDatePreset(preset);
+    if (!availabilityDateAllowlist?.length) return;
+    // Leaving imported partial dates → apply the chosen manual range immediately.
+    setAvailabilityDateAllowlist(null);
+    setAppliedDatePreset(preset);
+    if (preset === "custom") {
+      setAppliedCustomDateFrom(customDateFrom);
+      setAppliedCustomDateTo(customDateTo);
+    }
+    syncToUrl(
+      workspaceState({
+        datePreset: preset,
+        customFrom: customDateFrom,
+        customTo: customDateTo,
+      }),
+    );
+  }
+
+  function handleCustomDateFromChange(value: string) {
+    setCustomDateFrom(value);
+    if (availabilityDateAllowlist?.length) {
+      setAvailabilityDateAllowlist(null);
+    }
+  }
+
+  function handleCustomDateToChange(value: string) {
+    setCustomDateTo(value);
+    if (availabilityDateAllowlist?.length) {
+      setAvailabilityDateAllowlist(null);
+    }
+  }
+
+  async function handleImportFile(
+    optionId: "bulk_bookings" | "availability_filter",
+    file: File,
+  ) {
     setViewError(null);
     setBulkImportFileName(file.name);
     setBulkImportLoading(true);
     try {
+      if (optionId === "availability_filter") {
+        const payload = await previewAvailabilityListFilter(file);
+        await applyAvailabilityFilterPayload(payload);
+        setBulkImportFileName("");
+        return;
+      }
       const preview = await previewBulkBookingImport(file);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
     } catch (err) {
       setBulkImportFileName("");
       setViewError(
-        getApiErrorMessage(err, "No se pudo leer el archivo de reservas."),
+        getApiErrorMessage(
+          err,
+          optionId === "availability_filter"
+            ? "No se pudo leer el archivo de disponibilidad."
+            : "No se pudo leer el archivo de reservas.",
+        ),
+      );
+    } finally {
+      setBulkImportLoading(false);
+    }
+  }
+
+  async function handleImportPaste(
+    optionId: "bulk_bookings" | "availability_filter",
+    text: string,
+  ) {
+    setViewError(null);
+    setBulkImportFileName("Pegado desde Excel");
+    setBulkImportLoading(true);
+    try {
+      if (optionId === "availability_filter") {
+        const payload = await previewAvailabilityListFilterFromPaste(text);
+        await applyAvailabilityFilterPayload(payload);
+        setBulkImportFileName("");
+        return;
+      }
+      const preview = await previewBulkBookingImportFromPaste(text);
+      setBulkImportRows(preview.rows);
+      setBulkImportOpen(true);
+    } catch (err) {
+      setBulkImportFileName("");
+      setViewError(
+        getApiErrorMessage(err, "No se pudo interpretar el pegado desde Excel."),
       );
     } finally {
       setBulkImportLoading(false);
@@ -599,25 +705,15 @@ export default function BookingsView() {
 
   return (
     <>
-      <input
-        ref={bulkFileInputRef}
-        type="file"
-        accept=".xlsx,.xlsm"
-        className="hidden"
-        aria-hidden
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) void handleBulkFileSelected(file);
-        }}
-      />
-
       <ImportOptionsModal
         open={importOptionsOpen}
-        onClose={() => setImportOptionsOpen(false)}
-        onSelectBulkBookings={() => {
-          setImportOptionsOpen(false);
-          bulkFileInputRef.current?.click();
+        onClose={() => !bulkImportLoading && setImportOptionsOpen(false)}
+        disabled={bulkImportLoading}
+        onImportFile={(optionId, file) => {
+          void handleImportFile(optionId, file);
+        }}
+        onImportPaste={(optionId, text) => {
+          void handleImportPaste(optionId, text);
         }}
       />
 
@@ -671,11 +767,12 @@ export default function BookingsView() {
           }}
           onShippingLineFilterChange={setShippingLineFilter}
           onVesselFilterChange={setVesselFilter}
-          onDatePresetChange={setDatePreset}
-          onCustomDateFromChange={setCustomDateFrom}
-          onCustomDateToChange={setCustomDateTo}
+          onDatePresetChange={handleDatePresetChange}
+          onCustomDateFromChange={handleCustomDateFromChange}
+          onCustomDateToChange={handleCustomDateToChange}
           onCalendarModeChange={setCalendarMode}
           onPositionFilterChange={setPositionFilter}
+          importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
         />
@@ -777,6 +874,7 @@ export default function BookingsView() {
           portIds={allPortIds}
           dateFrom={availabilityRange.from}
           dateTo={availabilityRange.to}
+          dateAllowlist={availabilityDateAllowlist}
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}
           onClearFilters={handleClearFilters}

@@ -1,7 +1,7 @@
 "use client";
 
 import DefaultButton from "@/components/buttons/DefaultButton";
-import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
+import { useSetFilterOpen } from "@/contexts/MainLayoutContext";
 
 type FilterActionsProps = {
   onApply: () => void | Promise<void>;
@@ -26,13 +26,13 @@ export default function FilterActions({
   applyLabel = "Aplicar",
   clearLabel = "Limpiar filtros",
 }: FilterActionsProps) {
-  const layout = useMainLayoutOptional();
+  const setFilterOpen = useSetFilterOpen();
 
   async function handleApply() {
     if (!canApply) return;
     try {
       await onApply();
-      layout?.setFilterOpen(false);
+      setFilterOpen?.(false);
     } catch {
       // Keep sidebar open when apply fails.
     }

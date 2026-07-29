@@ -1,62 +1,132 @@
 "use client";
 
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { useState } from "react";
+import { CalendarSearch, FileSpreadsheet, type LucideIcon } from "lucide-react";
+import ImportOptionDropCard from "@/components/ui/ImportOptionDropCard";
 import Modal from "@/components/ui/Modal";
+import ImportPasteModal from "./ImportPasteModal";
+
+export type BookingImportOptionId = "bulk_bookings" | "availability_filter";
+
+type ImportOptionDef = {
+  id: BookingImportOptionId;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  allowPaste?: boolean;
+  pasteTitle?: string;
+  pasteHint?: string;
+  pasteColumns?: string[];
+};
+
+const IMPORT_OPTIONS: ImportOptionDef[] = [
+  {
+    id: "bulk_bookings",
+    title: "Reservas masivas",
+    description:
+      "Excel ITM (Ship, Port, Arrival, Departure…) — revisa y crea en lote.",
+    icon: FileSpreadsheet,
+    allowPaste: true,
+    pasteTitle: "Pegar reservas masivas",
+    pasteHint:
+      "Copia en Excel las columnas (con encabezado) y pégalas aquí. Se muestran como una hoja con columnas.",
+    pasteColumns: [
+      "Ship",
+      "Port",
+      "Arrival",
+      "Departure",
+      "Vendor Name",
+      "Call Type",
+    ],
+  },
+  {
+    id: "availability_filter",
+    title: "Consultar disponibilidad",
+    description:
+      "Lista de fechas (Excel o pegado) — filtra Disponibilidad puerto.",
+    icon: CalendarSearch,
+    allowPaste: true,
+    pasteTitle: "Pegar fechas de disponibilidad",
+    pasteHint:
+      "Copia en Excel solo la columna de fechas y pégalas aquí. Se muestran en una columna.",
+    pasteColumns: ["Fecha"],
+  },
+];
 
 type ImportOptionsModalProps = {
   open: boolean;
   onClose: () => void;
-  onSelectBulkBookings: () => void;
+  onImportFile: (optionId: BookingImportOptionId, file: File) => void;
+  onImportPaste?: (optionId: BookingImportOptionId, text: string) => void;
+  disabled?: boolean;
 };
 
 export default function ImportOptionsModal({
   open,
   onClose,
-  onSelectBulkBookings,
+  onImportFile,
+  onImportPaste,
+  disabled = false,
 }: ImportOptionsModalProps) {
+  const [pasteOption, setPasteOption] = useState<ImportOptionDef | null>(null);
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Opciones de importación"
-      panelClassName="max-w-md"
-      footer={
-        <button
-          type="button"
-          onClick={onClose}
-          className="cursor-pointer rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          Cancelar
-        </button>
-      }
-    >
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
-        Elige el tipo de importación. El archivo se solicita en el siguiente
-        paso.
-      </p>
-      <button
-        type="button"
-        onClick={onSelectBulkBookings}
-        className="flex w-full cursor-pointer items-start gap-3 rounded-xl border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-3 text-left transition-colors hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 dark:from-zinc-900 dark:to-zinc-800"
+    <>
+      <Modal
+        open={open && !pasteOption}
+        onClose={onClose}
+        title="Opciones de importación"
+        panelClassName="max-w-md"
+        footer={
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Cancelar
+          </button>
+        }
       >
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-          <FileSpreadsheet className="h-4 w-4" strokeWidth={2} />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            Reservas masivas
-          </span>
-          <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
-            Excel ITM (Ship, Port, Arrival, Departure…) — revisa y crea en
-            lote.
-          </span>
-        </span>
-        <Upload
-          className="mt-1 h-4 w-4 shrink-0 text-zinc-400"
-          strokeWidth={2}
-          aria-hidden
-        />
-      </button>
-    </Modal>
+        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
+          Elige el tipo de importación. Arrastra el Excel, haz clic para
+          seleccionarlo o usa «Pegar celdas» en una modal aparte.
+        </p>
+        <div className="flex flex-col gap-3">
+          {IMPORT_OPTIONS.map((option) => (
+            <ImportOptionDropCard
+              key={option.id}
+              title={option.title}
+              description={option.description}
+              icon={option.icon}
+              disabled={disabled}
+              onFile={(file) => {
+                onClose();
+                onImportFile(option.id, file);
+              }}
+              onPasteClick={
+                option.allowPaste && onImportPaste
+                  ? () => setPasteOption(option)
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+      </Modal>
+
+      <ImportPasteModal
+        open={Boolean(pasteOption)}
+        title={pasteOption?.pasteTitle ?? "Pegar celdas"}
+        hint={pasteOption?.pasteHint ?? ""}
+        columns={pasteOption?.pasteColumns ?? ["Columna"]}
+        disabled={disabled}
+        onClose={() => setPasteOption(null)}
+        onApply={(text) => {
+          if (!pasteOption || !onImportPaste) return;
+          const id = pasteOption.id;
+          setPasteOption(null);
+          onClose();
+          onImportPaste(id, text);
+        }}
+      />    </>
   );
 }

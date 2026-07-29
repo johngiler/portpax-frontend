@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAvailabilityInfinite } from "@/hooks/swr/useAvailabilityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
@@ -13,6 +13,8 @@ type AvailabilityPortCardProps = {
   portId: number;
   dateFrom: string;
   dateTo: string;
+  /** When set, only these ISO dates are shown in the grid. */
+  dateAllowlist?: string[] | null;
   canBook?: boolean;
   returnTo?: string | null;
 };
@@ -42,21 +44,58 @@ export default function AvailabilityPortCard({
   portId,
   dateFrom,
   dateTo,
+  dateAllowlist = null,
   canBook = false,
   returnTo = null,
 }: AvailabilityPortCardProps) {
   const todayIso = todayIsoLocal();
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const allowSet = useMemo(
+    () => (dateAllowlist?.length ? new Set(dateAllowlist) : null),
+    [dateAllowlist],
+  );
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
     useAvailabilityInfinite(portId, dateFrom, dateTo, true);
 
-  const hidden = useMemo(() => {
-    if (!data) return false;
-    return !shouldShowPort(data, todayIso, hasMore);
-  }, [data, todayIso, hasMore]);
+  // With an Excel allowlist, keep paging until the requested dates are loaded.
+  useEffect(() => {
+    if (!allowSet || !data || !hasMore || loadingMore || isLoading) return;
+    const loaded = new Set(data.rows.map((row) => row.date));
+    const missing = [...allowSet].some(
+      (iso) => iso >= dateFrom && iso <= dateTo && !loaded.has(iso),
+    );
+    if (missing) loadMore();
+  }, [
+    allowSet,
+    data,
+    hasMore,
+    loadingMore,
+    isLoading,
+    dateFrom,
+    dateTo,
+    loadMore,
+  ]);
 
-  if (isLoading) {
+  const displayData = useMemo((): AvailabilityReport | null => {
+    if (!data) return null;
+    if (!allowSet) return data;
+    const rows = data.rows.filter((row) => allowSet.has(row.date));
+    return { ...data, rows };
+  }, [data, allowSet]);
+
+  const displayTotal = allowSet ? allowSet.size : totalDays;
+  const stillLoadingAllowlist =
+    Boolean(allowSet) && hasMore && (loadingMore || isLoading);
+  const displayHasMore = allowSet ? stillLoadingAllowlist : hasMore;
+
+  const hidden = useMemo(() => {
+    if (!displayData) return false;
+    if (stillLoadingAllowlist) return false;
+    return !shouldShowPort(displayData, todayIso, false);
+  }, [displayData, todayIso, stillLoadingAllowlist]);
+
+  if (isLoading && !data) {
     return (
       <BookingsViewSkeleton variant="availability" availabilityCards={1} />
     );
@@ -70,24 +109,29 @@ export default function AvailabilityPortCard({
     );
   }
 
-  if (hidden || !data || data.columns.length === 0 || data.rows.length === 0) {
+  if (
+    hidden ||
+    !displayData ||
+    displayData.columns.length === 0 ||
+    (displayData.rows.length === 0 && !stillLoadingAllowlist)
+  ) {
     return null;
   }
 
   return (
     <AvailabilityChartSection
-      data={data}
+      data={displayData}
       titlePrefix="Disponibilidad"
       scrollRootRef={scrollRootRef}
       canBook={canBook}
       returnTo={returnTo}
       footer={
         <InfiniteScrollFooter
-          hasMore={hasMore}
-          loading={loadingMore}
+          hasMore={displayHasMore}
+          loading={loadingMore || stillLoadingAllowlist}
           onLoadMore={loadMore}
-          loadedCount={data.rows.length}
-          totalCount={totalDays}
+          loadedCount={displayData.rows.length}
+          totalCount={displayTotal}
           itemLabel="días"
           scrollRootRef={scrollRootRef}
           rootMargin="80px 0px"

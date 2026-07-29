@@ -59,6 +59,15 @@ export async function previewBulkBookingImport(
   });
 }
 
+export async function previewBulkBookingImportFromPaste(
+  text: string,
+): Promise<BulkImportPreviewResponse> {
+  return apiFetch<BulkImportPreviewResponse>(`${BASE}bulk-import/preview/`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+
 export async function createBulkBookingImport(
   rows: BulkImportCreateRow[],
 ): Promise<BulkImportCreateResponse> {
@@ -66,4 +75,43 @@ export async function createBulkBookingImport(
     method: "POST",
     body: JSON.stringify({ rows }),
   });
+}
+
+export type AvailabilityListFilterRow = {
+  row_number: number;
+  call_date: string;
+};
+
+export type AvailabilityListFilterResponse = {
+  rows: AvailabilityListFilterRow[];
+  dates: string[];
+  date_from: string;
+  date_to: string;
+  total: number;
+};
+
+export async function previewAvailabilityListFilter(
+  file: File,
+): Promise<AvailabilityListFilterResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<AvailabilityListFilterResponse>(
+    `${BASE}bulk-import/availability-filter/`,
+    {
+      method: "POST",
+      body: form,
+    },
+  );
+}
+
+export async function previewAvailabilityListFilterFromPaste(
+  text: string,
+): Promise<AvailabilityListFilterResponse> {
+  return apiFetch<AvailabilityListFilterResponse>(
+    `${BASE}bulk-import/availability-filter/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    },
+  );
 }
