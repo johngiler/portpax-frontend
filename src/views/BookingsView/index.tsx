@@ -57,6 +57,7 @@ import BookingsList from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import BulkBookingImportModal from "./Import/BulkBookingImportModal";
+import BulkImportLoadingModal from "./Import/BulkImportLoadingModal";
 import ImportOptionsModal from "./Import/ImportOptionsModal";
 import {
   resolveBookingsDateRange,
@@ -171,6 +172,7 @@ export default function BookingsView() {
     [],
   );
   const [bulkImportFileName, setBulkImportFileName] = useState("");
+  const [bulkImportLoading, setBulkImportLoading] = useState(false);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
   const { vessels } = useActiveVesselsCatalog(
@@ -560,15 +562,19 @@ export default function BookingsView() {
 
   async function handleBulkFileSelected(file: File) {
     setViewError(null);
+    setBulkImportFileName(file.name);
+    setBulkImportLoading(true);
     try {
       const preview = await previewBulkBookingImport(file);
-      setBulkImportFileName(file.name);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
     } catch (err) {
+      setBulkImportFileName("");
       setViewError(
         getApiErrorMessage(err, "No se pudo leer el archivo de reservas."),
       );
+    } finally {
+      setBulkImportLoading(false);
     }
   }
 
@@ -615,8 +621,13 @@ export default function BookingsView() {
         }}
       />
 
+      <BulkImportLoadingModal
+        open={bulkImportLoading}
+        fileName={bulkImportFileName}
+      />
+
       <BulkBookingImportModal
-        open={bulkImportOpen}
+        open={bulkImportOpen && !bulkImportLoading}
         rows={bulkImportRows}
         fileName={bulkImportFileName}
         onClose={() => {
