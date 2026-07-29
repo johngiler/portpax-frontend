@@ -6,6 +6,7 @@ import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { useNavigationLock } from "@/lib/useNavigationLock";
 import {
   createBulkBookingImport,
   type BulkImportPreviewRow,
@@ -36,6 +37,11 @@ export default function BulkBookingImportModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useNavigationLock(
+    open && saving,
+    "Se están creando las reservas. No cambies de sección, no modifiques la URL ni cierres la ventana del navegador.",
+  );
 
   const selectedCount = selectedIds.size;
   const selectableRows = useMemo(
@@ -113,6 +119,7 @@ export default function BulkBookingImportModal({
     <Modal
       open={open}
       onClose={saving ? () => undefined : onClose}
+      closeable={!saving}
       title="Carga de reservas masiva"
       panelClassName="max-w-4xl"
       footer={
@@ -137,6 +144,13 @@ export default function BulkBookingImportModal({
       }
     >
       <ModalFormError message={error} />
+
+      {saving ? (
+        <p className="mb-3 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+          Creando reservas… No cambies de sección, no modifiques la URL ni
+          cierres la ventana del navegador.
+        </p>
+      ) : null}
 
       <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">
         Archivo: <span className="font-medium text-zinc-800 dark:text-zinc-100">{fileName}</span>

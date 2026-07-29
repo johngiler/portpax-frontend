@@ -2,21 +2,28 @@
 
 import { Loader2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
+import { useNavigationLock } from "@/lib/useNavigationLock";
 
 type BulkImportLoadingModalProps = {
   open: boolean;
   fileName?: string;
 };
 
+const LOCK_MESSAGE =
+  "La importación sigue en proceso. No cambies de sección, no modifiques la URL ni cierres la ventana del navegador.";
+
 /** Blocking feedback while the server parses and validates the Excel. */
 export default function BulkImportLoadingModal({
   open,
   fileName,
 }: BulkImportLoadingModalProps) {
+  useNavigationLock(open, LOCK_MESSAGE);
+
   return (
     <Modal
       open={open}
       onClose={() => undefined}
+      closeable={false}
       title="Procesando importación"
       panelClassName="max-w-sm"
     >
@@ -34,8 +41,9 @@ export default function BulkImportLoadingModal({
             {fileName}
           </p>
         ) : null}
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-          Esto puede tardar unos segundos según el tamaño del archivo.
+        <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+          No cambies de sección, no modifiques la URL ni cierres la ventana del
+          navegador hasta que termine.
         </p>
       </div>
     </Modal>

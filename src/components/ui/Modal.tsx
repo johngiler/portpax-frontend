@@ -15,6 +15,8 @@ type ModalProps = {
   footer?: React.ReactNode;
   /** Clase para el panel (ej. max-w-md) */
   panelClassName?: string;
+  /** When false, hide close control and ignore Escape / backdrop. Default true. */
+  closeable?: boolean;
 };
 
 export default function Modal({
@@ -24,6 +26,7 @@ export default function Modal({
   children,
   footer,
   panelClassName = "max-w-2xl",
+  closeable = true,
 }: ModalProps) {
   const [isExiting, setIsExiting] = useState(false);
   const wasOpenRef = useRef(false);
@@ -65,12 +68,12 @@ export default function Modal({
   const isAnimatingOut = isExiting && !open;
 
   const requestClose = useCallback(() => {
-    if (!open || isExiting) return;
+    if (!closeable || !open || isExiting) return;
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
     onClose();
-  }, [open, isExiting, onClose]);
+  }, [closeable, open, isExiting, onClose]);
 
   useEffect(() => {
     if (!visible) return;
@@ -95,8 +98,10 @@ export default function Modal({
       aria-labelledby="modal-title"
     >
       <div
-        className={`absolute inset-0 cursor-pointer bg-slate-950/55 backdrop-blur-[2px] ${isAnimatingOut ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
-        onClick={requestClose}
+        className={`absolute inset-0 bg-slate-950/55 backdrop-blur-[2px] ${
+          closeable ? "cursor-pointer" : "cursor-default"
+        } ${isAnimatingOut ? "modal-backdrop-exit" : "modal-backdrop-enter"}`}
+        onClick={closeable ? requestClose : undefined}
         aria-hidden
       />
       <div
@@ -111,14 +116,18 @@ export default function Modal({
           >
             {title}
           </h2>
-          <button
-            type="button"
-            onClick={requestClose}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" strokeWidth={1.5} />
-          </button>
+          {closeable ? (
+            <button
+              type="button"
+              onClick={requestClose}
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          ) : (
+            <span className="h-8 w-8 shrink-0" aria-hidden />
+          )}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pt-5">
           {children}
