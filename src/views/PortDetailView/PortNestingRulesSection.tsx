@@ -128,7 +128,7 @@ export default function PortNestingRulesSection({
       description="Parqueo de doble fondo: la posición entrada debe arribar primero; el fondo no puede llegar antes."
       actions={
         canWrite ? (
-          <SectionAddButton label="+ Agregar regla" onClick={openCreate} />
+          <SectionAddButton label="Agregar regla" onClick={openCreate} />
         ) : undefined
       }
     >
