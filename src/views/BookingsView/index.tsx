@@ -301,7 +301,7 @@ export default function BookingsView() {
         if (cancelled) return;
         setPositionOptions(
           res.results
-            .filter((p) => p.is_active && p.position_type === "pier")
+            .filter((p) => p.is_active)
             .map((p) => ({
               value: p.id,
               label: p.short_code || p.code,
@@ -329,6 +329,8 @@ export default function BookingsView() {
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      position:
+        appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
       call_date_from: dateRange.call_date_from,
       call_date_to: dateRange.call_date_to,
       ordering: "call_date_proximity" as const,
@@ -340,6 +342,7 @@ export default function BookingsView() {
     appliedPortFilter,
     appliedShippingLineFilter,
     appliedVesselFilter,
+    appliedPositionFilter,
     appliedDatePreset,
     appliedCustomDateFrom,
     appliedCustomDateTo,
@@ -490,10 +493,10 @@ export default function BookingsView() {
         appliedPortFilter > 0 ||
         appliedShippingLineFilter > 0 ||
         appliedVesselFilter > 0 ||
+        appliedPositionFilter > 0 ||
         appliedDatePreset !== "all" ||
         Boolean(availabilityDateAllowlist?.length) ||
-        (tab === "calendar" && appliedCalendarMode !== "monthly") ||
-        (tab === "calendar" && appliedPositionFilter > 0);
+        (tab === "calendar" && appliedCalendarMode !== "monthly");
 
   const canClearFilters =
     tab === "history"
@@ -507,10 +510,10 @@ export default function BookingsView() {
         portFilter > 0 ||
         shippingLineFilter > 0 ||
         vesselFilter > 0 ||
+        positionFilter > 0 ||
         datePreset !== "all" ||
         Boolean(availabilityDateAllowlist?.length) ||
-        (tab === "calendar" && calendarMode !== "monthly") ||
-        (tab === "calendar" && positionFilter > 0);
+        (tab === "calendar" && calendarMode !== "monthly");
 
   const canApplyFilters =
     tab === "history"
@@ -538,6 +541,7 @@ export default function BookingsView() {
             search: listParams.search,
             status: listParams.status,
             port: listParams.port,
+            position: listParams.position,
             shipping_line: listParams.shipping_line,
             vessel: listParams.vessel,
             call_date_from: listParams.call_date_from,
@@ -560,6 +564,14 @@ export default function BookingsView() {
             date_from: availabilityRange.from,
             date_to: availabilityRange.to,
             port: appliedPortFilter,
+            shipping_line:
+              appliedShippingLineFilter > 0
+                ? appliedShippingLineFilter
+                : undefined,
+            vessel:
+              appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+            position:
+              appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
             exportFormat: format,
           });
           return;
@@ -613,6 +625,8 @@ export default function BookingsView() {
       year,
       monthIndex,
       appliedShippingLineFilter,
+      appliedVesselFilter,
+      appliedPositionFilter,
       appliedStatusFilter,
       portOptions,
     ],
@@ -983,6 +997,16 @@ export default function BookingsView() {
           dateFrom={availabilityRange.from}
           dateTo={availabilityRange.to}
           dateAllowlist={availabilityDateAllowlist}
+          filters={{
+            shipping_line:
+              appliedShippingLineFilter > 0
+                ? appliedShippingLineFilter
+                : undefined,
+            vessel:
+              appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+            position:
+              appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+          }}
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}
           onClearFilters={handleClearFilters}

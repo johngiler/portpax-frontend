@@ -125,14 +125,14 @@ export default function BookingFilters({
         : getTimeRange("hoy")
       : getTimeRange(datePreset, customDateFrom, customDateTo);
 
-  const showVessel = tab === "list" || tab === "calendar";
+  const showVessel = tab === "list" || tab === "calendar" || tab === "availability";
   const showStatusSearch = tab !== "availability" && tab !== "history";
-  const showLine = tab !== "availability" && tab !== "history";
+  const showLine = tab !== "history";
   const showDates = tab === "list" || tab === "availability";
   const showCalendarMode = tab === "calendar";
-  const showPosition =
-    tab === "calendar" && calendarMode === "weekly" && portFilter > 0;
   const showPort = tab !== "history";
+  const showPosition =
+    tab === "list" || tab === "calendar" || tab === "availability";
   const showHistoryFilters = tab === "history";
 
   const loadPortOptions = useCallback(async (input: string) => {
@@ -215,6 +215,31 @@ export default function BookingFilters({
           onChange={onSearchChange}
           loadSuggestions={suggestBookings}
           placeholder="Código, puerto, barco…"
+          onPick={(suggestion) => {
+            if (suggestion.filterEntity === "port" && suggestion.entityId) {
+              onPortFilterChange(suggestion.entityId);
+              onSearchChange("");
+              return;
+            }
+            if (
+              suggestion.filterEntity === "shipping_line" &&
+              suggestion.entityId
+            ) {
+              onShippingLineFilterChange(suggestion.entityId);
+              onVesselFilterChange(0);
+              onSearchChange("");
+              return;
+            }
+            if (
+              suggestion.filterEntity === "vessel" &&
+              suggestion.entityId &&
+              suggestion.shippingLineId
+            ) {
+              onShippingLineFilterChange(suggestion.shippingLineId);
+              onVesselFilterChange(suggestion.entityId);
+              onSearchChange("");
+            }
+          }}
         />
       ) : null}
 
@@ -245,6 +270,25 @@ export default function BookingFilters({
           emptyValue={0}
         />
       ) : null}
+
+      {showPosition ? (
+        <FormFieldSelect<number>
+          label="Posición"
+          name="booking_position_filter"
+          value={positionFilter}
+          onChange={onPositionFilterChange}
+          options={positionOptions}
+          optionLabel={
+            portFilter > 0
+              ? "Todas las posiciones"
+              : "Elige un puerto primero"
+          }
+          emptyValue={0}
+          compact
+          disabled={portFilter <= 0}
+        />
+      ) : null}
+
       {showLine ? (
         <FormFieldSelect<number>
           label="Naviera"
@@ -309,19 +353,6 @@ export default function BookingFilters({
             includeFilterExtras
           />
         </>
-      ) : null}
-
-      {showPosition ? (
-        <FormFieldSelect<number>
-          label="Muelle"
-          name="booking_position_filter"
-          value={positionFilter}
-          onChange={onPositionFilterChange}
-          options={positionOptions}
-          optionLabel="Todos los muelles"
-          emptyValue={0}
-          compact
-        />
       ) : null}
 
       {showDates ? (

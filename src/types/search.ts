@@ -4,6 +4,7 @@ export type GlobalSearchResult = {
   ships: {
     id: number;
     name: string;
+    shipping_line_id: number;
     shipping_line_name: string | null;
     shipping_line_code: string;
   }[];

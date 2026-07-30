@@ -12,6 +12,12 @@ import { addDaysIso } from "@/views/CalendarView/OperationalSection/calendarOpsU
 
 export const AVAILABILITY_DAYS_BATCH = 30;
 
+export type AvailabilityListFilters = {
+  shipping_line?: number;
+  vessel?: number;
+  position?: number;
+};
+
 function minIso(a: string, b: string): string {
   return a <= b ? a : b;
 }
@@ -36,12 +42,26 @@ function pageDateRange(
   return { from, to };
 }
 
+function filtersKey(filters: AvailabilityListFilters): string {
+  return [
+    filters.shipping_line ?? 0,
+    filters.vessel ?? 0,
+    filters.position ?? 0,
+  ].join("|");
+}
+
 export function useAvailabilityInfinite(
   portId: number,
   dateFrom: string,
   dateTo: string,
   enabled = true,
+  filters: AvailabilityListFilters = {},
 ) {
+  const keyExtra = filtersKey(filters);
+  const line = filters.shipping_line;
+  const vessel = filters.vessel;
+  const position = filters.position;
+
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
       if (!enabled || portId <= 0 || !dateFrom || !dateTo) return null;
@@ -49,13 +69,13 @@ export function useAvailabilityInfinite(
       const range = pageDateRange(dateFrom, dateTo, pageIndex);
       if (!range) return null;
       return [
-        ...swrKeys.availabilityInfinite(portId, dateFrom, dateTo),
+        ...swrKeys.availabilityInfinite(portId, dateFrom, dateTo, keyExtra),
         pageIndex,
         range.from,
         range.to,
       ] as const;
     },
-    [enabled, portId, dateFrom, dateTo],
+    [enabled, portId, dateFrom, dateTo, keyExtra],
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } =
@@ -66,6 +86,9 @@ export function useAvailabilityInfinite(
         port: portId,
         date_from: from,
         date_to: to,
+        shipping_line: line,
+        vessel,
+        position,
       });
     });
 

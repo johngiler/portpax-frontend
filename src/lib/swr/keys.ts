@@ -41,8 +41,13 @@ export const swrKeys = {
   bookingsInfinite: (paramsKey: string) =>
     ["bookings", "infinite", paramsKey] as const,
 
-  availabilityInfinite: (portId: number, dateFrom: string, dateTo: string) =>
-    ["availability", "infinite", portId, dateFrom, dateTo] as const,
+  availabilityInfinite: (
+    portId: number,
+    dateFrom: string,
+    dateTo: string,
+    filtersKey = "",
+  ) =>
+    ["availability", "infinite", portId, dateFrom, dateTo, filtersKey] as const,
 
   dashboardStats: (paramsKey: string) =>
     ["dashboard", "stats", paramsKey] as const,

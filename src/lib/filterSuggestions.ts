@@ -12,6 +12,11 @@ export type FilterSuggestion = {
   /** Text written into the search field when the user picks this row. */
   applyValue: string;
   group?: string;
+  /** When set, pick should drive structured filters instead of free-text search. */
+  filterEntity?: "port" | "shipping_line" | "vessel" | "booking";
+  entityId?: number;
+  /** Required for vessel picks so the Barco selector can load options. */
+  shippingLineId?: number;
 };
 
 const SUGGEST_LIMIT = 8;
@@ -39,8 +44,11 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       id: `ship-${s.id}`,
       label: s.name,
       hint: s.shipping_line_name ?? s.shipping_line_code,
-      applyValue: s.name,
+      applyValue: "",
       group: "Barcos",
+      filterEntity: "vessel",
+      entityId: s.id,
+      shippingLineId: s.shipping_line_id,
     });
   }
   for (const p of data.ports) {
@@ -48,8 +56,10 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       id: `port-${p.id}`,
       label: p.name,
       hint: p.code,
-      applyValue: p.name,
+      applyValue: "",
       group: "Puertos",
+      filterEntity: "port",
+      entityId: p.id,
     });
   }
   for (const sl of data.shipping_lines) {
@@ -57,8 +67,10 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       id: `line-${sl.id}`,
       label: sl.name,
       hint: sl.code,
-      applyValue: sl.name,
+      applyValue: "",
       group: "Navieras",
+      filterEntity: "shipping_line",
+      entityId: sl.id,
     });
   }
   for (const sc of data.scales) {
@@ -69,6 +81,8 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
       applyValue: sc.booking_code,
       group: "Reservas",
+      filterEntity: "booking",
+      entityId: sc.id,
     });
   }
   return items;

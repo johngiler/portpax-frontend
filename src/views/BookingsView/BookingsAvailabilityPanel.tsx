@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import { LayoutGrid } from "lucide-react";
+import type { AvailabilityListFilters } from "@/hooks/swr/useAvailabilityInfinite";
 import AvailabilityPortCard from "./AvailabilityPortCard";
 
 type BookingsAvailabilityPanelProps = {
@@ -12,6 +13,7 @@ type BookingsAvailabilityPanelProps = {
   dateFrom: string;
   dateTo: string;
   dateAllowlist?: string[] | null;
+  filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
   onClearFilters?: () => void;
@@ -23,6 +25,7 @@ export default function BookingsAvailabilityPanel({
   dateFrom,
   dateTo,
   dateAllowlist = null,
+  filters = {},
   canBook = false,
   returnTo = null,
   onClearFilters,
@@ -44,16 +47,22 @@ export default function BookingsAvailabilityPanel({
   }
 
   const allowKey = dateAllowlist?.join(",") ?? "";
+  const filtersKey = [
+    filters.shipping_line ?? 0,
+    filters.vessel ?? 0,
+    filters.position ?? 0,
+  ].join("|");
 
   return (
     <div className="space-y-6">
       {targetIds.map((id) => (
         <AvailabilityPortCard
-          key={`${id}-${dateFrom}-${dateTo}-${allowKey}`}
+          key={`${id}-${dateFrom}-${dateTo}-${allowKey}-${filtersKey}`}
           portId={id}
           dateFrom={dateFrom}
           dateTo={dateTo}
           dateAllowlist={dateAllowlist}
+          filters={filters}
           canBook={canBook}
           returnTo={returnTo}
         />

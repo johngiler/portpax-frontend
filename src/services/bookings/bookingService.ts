@@ -22,6 +22,7 @@ export type FetchBookingsParams = {
   page?: number;
   search?: string;
   port?: number;
+  position?: number;
   shipping_line?: number;
   vessel?: number;
   long_term_agreement?: number;
@@ -37,6 +38,7 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
   if (params.port) query.set("port", String(params.port));
+  if (params.position) query.set("position", String(params.position));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.long_term_agreement) {
@@ -267,11 +269,19 @@ export async function fetchAvailabilityReport(params: {
   date_from: string;
   date_to: string;
   port: number;
+  shipping_line?: number;
+  vessel?: number;
+  position?: number;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
   query.set("port", String(params.port));
+  if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
+  if (params.vessel) query.set("vessel", String(params.vessel));
+  if (params.position) query.set("position", String(params.position));
   return apiFetch<AvailabilityReport>(
     `${BASE}report-availability/?${query.toString()}`,
   );
@@ -311,6 +321,8 @@ export async function exportStructuredReport(params: {
   date_to: string;
   port?: number;
   shipping_line?: number;
+  vessel?: number;
+  position?: number;
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
@@ -321,6 +333,8 @@ export async function exportStructuredReport(params: {
   query.set("export_format", format);
   if (params.port) query.set("port", String(params.port));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.vessel) query.set("vessel", String(params.vessel));
+  if (params.position) query.set("position", String(params.position));
   const { blob, filename } = await apiDownload(
     `${BASE}report-export/?${query.toString()}`,
   );

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAvailabilityInfinite } from "@/hooks/swr/useAvailabilityInfinite";
+import type { AvailabilityListFilters } from "@/hooks/swr/useAvailabilityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
@@ -15,6 +16,7 @@ type AvailabilityPortCardProps = {
   dateTo: string;
   /** When set, only these ISO dates are shown in the grid. */
   dateAllowlist?: string[] | null;
+  filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
 };
@@ -45,6 +47,7 @@ export default function AvailabilityPortCard({
   dateFrom,
   dateTo,
   dateAllowlist = null,
+  filters = {},
   canBook = false,
   returnTo = null,
 }: AvailabilityPortCardProps) {
@@ -56,7 +59,7 @@ export default function AvailabilityPortCard({
   );
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
-    useAvailabilityInfinite(portId, dateFrom, dateTo, true);
+    useAvailabilityInfinite(portId, dateFrom, dateTo, true, filters);
 
   // With an Excel allowlist, keep paging until the requested dates are loaded.
   useEffect(() => {

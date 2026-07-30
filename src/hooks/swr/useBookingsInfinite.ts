@@ -17,6 +17,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
     params.search ?? "",
     params.status ?? "",
     params.port ?? 0,
+    params.position ?? 0,
     params.shipping_line ?? 0,
     params.vessel ?? 0,
     params.call_date_from ?? "",
