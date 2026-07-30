@@ -105,6 +105,11 @@ export default function BookingWizard() {
   const [viewError, setViewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [createdBookings, setCreatedBookings] = useState<Booking[] | null>(null);
+  const [reviewBlocked, setReviewBlocked] = useState(true);
+
+  const handleReviewBlockingChange = useCallback((blocked: boolean) => {
+    setReviewBlocked(blocked);
+  }, []);
 
   const selectedPort = ports.find((p) => p.id === form.portId) ?? null;
   const selectedLine = lines.find((l) => l.id === form.shippingLineId) ?? null;
@@ -231,7 +236,8 @@ export default function BookingWizard() {
       !form.portId ||
       !form.shippingLineId ||
       !form.vesselId ||
-      form.callDates.length === 0
+      form.callDates.length === 0 ||
+      reviewBlocked
     ) {
       return;
     }
@@ -369,6 +375,7 @@ export default function BookingWizard() {
                 plannedPax={form.plannedPax}
                 preferredPositionId={form.preferredPositionId}
                 preferredPositionLabel={form.preferredPositionLabel}
+                onBlockingChange={handleReviewBlockingChange}
               />
             )}
           </motion.div>
@@ -403,7 +410,11 @@ export default function BookingWizard() {
               </span>
             </DefaultButton>
           ) : (
-            <DefaultButton type="button" onClick={handleSubmit} disabled={submitting}>
+            <DefaultButton
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || reviewBlocked}
+            >
               <span className="inline-flex items-center gap-2">
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

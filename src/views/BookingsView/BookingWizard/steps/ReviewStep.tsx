@@ -32,6 +32,8 @@ type ReviewStepProps = {
   plannedPax: string;
   preferredPositionId?: number | null;
   preferredPositionLabel?: string;
+  /** Reports blocking validation (errors) so Create can be disabled. */
+  onBlockingChange?: (blocked: boolean) => void;
 };
 
 type SummaryItemProps = {
@@ -70,6 +72,7 @@ export default function ReviewStep({
   plannedPax,
   preferredPositionId = null,
   preferredPositionLabel = "",
+  onBlockingChange,
 }: ReviewStepProps) {
   const [validation, setValidation] = useState<BookingValidationResult | null>(null);
   const [positionsByDate, setPositionsByDate] = useState<
@@ -80,8 +83,11 @@ export default function ReviewStep({
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
       setValidation(null);
+      onBlockingChange?.(true);
       return;
     }
+    onBlockingChange?.(true);
+    let cancelled = false;
     validateBookings({
       port: port.id,
       vessel: vessel.id,
@@ -90,9 +96,20 @@ export default function ReviewStep({
       eta: eta || null,
       etd: etd || null,
     })
-      .then(setValidation)
-      .catch(() => setValidation(null));
-  }, [port, vessel, callDates, eta, etd, preferredPositionId]);
+      .then((result) => {
+        if (cancelled) return;
+        setValidation(result);
+        onBlockingChange?.(!result.valid);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setValidation(null);
+        onBlockingChange?.(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [port, vessel, callDates, eta, etd, preferredPositionId, onBlockingChange]);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
