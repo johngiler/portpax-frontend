@@ -110,9 +110,13 @@ export default function BookingsHistoryPanel({
 
   useEffect(() => {
     if (initialBatchId == null) return;
-    void openBatch(initialBatchId);
+    const batchId = initialBatchId;
     onInitialBatchConsumed?.();
-  }, [initialBatchId, openBatch, onInitialBatchConsumed]);
+    void (async () => {
+      await loadPage(1, true);
+      await openBatch(batchId);
+    })();
+  }, [initialBatchId, loadPage, openBatch, onInitialBatchConsumed]);
 
   const hasMore = items.length < total;
 
