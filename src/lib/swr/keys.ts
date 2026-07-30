@@ -57,6 +57,9 @@ export const swrKeys = {
 
   calendarBookings: (paramsKey: string) =>
     ["calendar", "bookings", paramsKey] as const,
+
+  bookingActivityInfinite: (paramsKey: string) =>
+    ["bookings", "activity", "infinite", paramsKey] as const,
 };
 
 export type SwrKey = readonly unknown[];

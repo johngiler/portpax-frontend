@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
+import { useBookingActivityInfinite } from "@/hooks/swr/useBookingActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
-  fetchBookingActivity,
   fetchImportBatchDetail,
-  type BookingActivityItem,
   type BookingActivityKind,
   type ImportBatchDetail,
   type ImportBatchRetryRow,
@@ -44,52 +43,26 @@ export default function BookingsHistoryPanel({
   onInitialBatchConsumed,
   onReprocessRows,
 }: BookingsHistoryPanelProps) {
-  const [items, setItems] = useState<BookingActivityItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    items,
+    totalCount,
+    hasMore,
+    isLoading,
+    loadingMore,
+    error,
+    loadMore,
+    refresh,
+  } = useBookingActivityInfinite({
+    kind,
+    dateFrom,
+    dateTo,
+    pageSize: PAGE_SIZE,
+  });
 
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchDetail, setBatchDetail] = useState<ImportBatchDetail | null>(null);
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchError, setBatchError] = useState<string | null>(null);
-
-  const loadPage = useCallback(
-    async (pageNum: number, replace: boolean) => {
-      if (replace) setLoading(true);
-      else setLoadingMore(true);
-      setError(null);
-      try {
-        const data = await fetchBookingActivity({
-          page: pageNum,
-          page_size: PAGE_SIZE,
-          kind,
-          date_from: dateFrom || undefined,
-          date_to: dateTo || undefined,
-        });
-        setTotal(data.count);
-        setPage(data.page);
-        setItems((prev) =>
-          replace ? data.results : [...prev, ...data.results],
-        );
-      } catch (err) {
-        setError(
-          getApiErrorMessage(err, "No se pudo cargar el historial."),
-        );
-        if (replace) setItems([]);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [kind, dateFrom, dateTo],
-  );
-
-  useEffect(() => {
-    void loadPage(1, true);
-  }, [loadPage]);
 
   const openBatch = useCallback(async (batchId: number) => {
     setBatchOpen(true);
@@ -113,12 +86,10 @@ export default function BookingsHistoryPanel({
     const batchId = initialBatchId;
     onInitialBatchConsumed?.();
     void (async () => {
-      await loadPage(1, true);
+      await refresh();
       await openBatch(batchId);
     })();
-  }, [initialBatchId, loadPage, openBatch, onInitialBatchConsumed]);
-
-  const hasMore = items.length < total;
+  }, [initialBatchId, refresh, openBatch, onInitialBatchConsumed]);
 
   const handleReprocess = useCallback(
     (rows: ImportBatchRetryRow[]) => {
@@ -132,6 +103,10 @@ export default function BookingsHistoryPanel({
     },
     [batchDetail, onReprocessRows],
   );
+
+  const errorMessage = error
+    ? getApiErrorMessage(error, "No se pudo cargar el historial.")
+    : null;
 
   const batchModal = (
     <ImportBatchDetailModal
@@ -148,7 +123,7 @@ export default function BookingsHistoryPanel({
     />
   );
 
-  if (loading && items.length === 0) {
+  if (isLoading) {
     return (
       <>
         <BookingsHistorySkeleton />
@@ -160,7 +135,9 @@ export default function BookingsHistoryPanel({
   return (
     <>
       <div className="space-y-1">
-        {error ? <FormErrorAlert message={error} className="mb-4" /> : null}
+        {errorMessage ? (
+          <FormErrorAlert message={errorMessage} className="mb-4" />
+        ) : null}
 
         <HistoryFeed
           items={items}
@@ -173,9 +150,9 @@ export default function BookingsHistoryPanel({
           <InfiniteScrollFooter
             hasMore={hasMore}
             loading={loadingMore}
-            onLoadMore={() => loadPage(page + 1, false)}
+            onLoadMore={loadMore}
             loadedCount={items.length}
-            totalCount={total}
+            totalCount={totalCount}
             itemLabel="movimientos"
           />
         ) : null}
