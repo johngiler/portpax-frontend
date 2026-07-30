@@ -140,8 +140,8 @@ export default function AvailabilityChartSection({
                     {row.date}
                   </span>
                 </td>
-                {row.cells.map((calls, idx) => {
-                  const column = data.columns[idx];
+                {data.columns.map((column, idx) => {
+                  const calls = row.cells[idx] ?? [];
                   const isRealPosition = column.id > 0;
                   return (
                     <td
