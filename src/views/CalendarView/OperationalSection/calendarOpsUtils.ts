@@ -66,16 +66,43 @@ export function dayTrafficLight(
   bookings: Booking[],
   pierPositionCount: number,
 ): DayTraffic {
-  if (pierPositionCount <= 0) return "free";
   const active = bookings.filter((b) => b.status !== "c");
+  if (active.length === 0) return "free";
+
+  if (pierPositionCount <= 0) {
+    if (active.length >= 3) return "full";
+    return "limited";
+  }
+
   const occupiedIds = new Set(
     active.map((b) => b.position).filter((id): id is number => id != null),
   );
-  const occupied = occupiedIds.size;
+  // Unassigned calls still consume capacity for occupancy display.
+  const unassigned = active.filter((b) => b.position == null).length;
+  const occupied = Math.min(
+    pierPositionCount,
+    occupiedIds.size + unassigned,
+  );
   if (occupied <= 0) return "free";
   if (occupied >= pierPositionCount) return "full";
   if (occupied / pierPositionCount >= 0.5) return "limited";
   return "free";
+}
+
+/** Annual mini-calendar heat: empty days vs traffic when there are calls. */
+export function dayAnnualHeat(
+  bookings: Booking[],
+  pierPositionCount: number,
+  multiPort: boolean,
+): "empty" | DayTraffic {
+  const active = bookings.filter((b) => b.status !== "c");
+  if (active.length === 0) return "empty";
+  if (multiPort) {
+    return active.length <= 2 ? "limited" : "full";
+  }
+  const light = dayTrafficLight(active, pierPositionCount);
+  // Keep days-with-calls visually distinct from vacant days (pale free ≈ empty).
+  return light === "free" ? "limited" : light;
 }
 
 export const TRAFFIC_DOT: Record<DayTraffic, string> = {

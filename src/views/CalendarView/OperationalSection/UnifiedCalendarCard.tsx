@@ -122,7 +122,7 @@ export default function UnifiedCalendarCard({
           <FormErrorAlert message={errorMessage} className="mb-4" />
         ) : null}
         {isLoading ? (
-          <BookingsViewSkeleton variant="calendar" />
+          <BookingsViewSkeleton variant="calendar" calendarMode={mode} />
         ) : !errorMessage && bookings.length === 0 && hasFilters ? (
           <EmptyState
             icon={CalendarRange}
@@ -157,6 +157,7 @@ export default function UnifiedCalendarCard({
             bookings={bookings}
             previousYearBookings={previousYearBookings}
             positions={positions}
+            multiPort={multiPort}
             onSelectMonth={(m) => {
               onMonthChange(m);
               onModeChange("monthly");

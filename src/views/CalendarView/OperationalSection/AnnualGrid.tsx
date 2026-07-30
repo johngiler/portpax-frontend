@@ -1,21 +1,22 @@
 "use client";
 
+import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import {
-  TRAFFIC_DOT,
   activePierPositions,
-  dayTrafficLight,
+  dayAnnualHeat,
 } from "./calendarOpsUtils";
 
 const WEEKDAYS = ["D", "L", "M", "X", "J", "V", "S"];
 
 const TRAFFIC_CELL: Record<string, string> = {
-  free: "bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200",
-  limited: "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
-  full: "bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-200",
+  free: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200",
+  limited:
+    "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-200",
+  full: "bg-red-100 text-red-950 dark:bg-red-950/50 dark:text-red-200",
   empty: "bg-white text-zinc-400 dark:bg-zinc-900 dark:text-zinc-600",
 };
 
@@ -25,6 +26,7 @@ type AnnualGridProps = {
   bookings: Booking[];
   previousYearBookings: Booking[];
   positions: Position[];
+  multiPort?: boolean;
   onSelectMonth?: (monthIndex: number) => void;
 };
 
@@ -34,10 +36,22 @@ export default function AnnualGrid({
   bookings,
   previousYearBookings: _previousYearBookings,
   positions,
+  multiPort = false,
   onSelectMonth,
 }: AnnualGridProps) {
   const pierCount = activePierPositions(positions).length;
   const monthOptions = getMonthOptions();
+
+  const bookingsByDate = useMemo(() => {
+    const map = new Map<string, Booking[]>();
+    for (const booking of bookings) {
+      if (booking.status === "c") continue;
+      const list = map.get(booking.call_date) ?? [];
+      list.push(booking);
+      map.set(booking.call_date, list);
+    }
+    return map;
+  }, [bookings]);
 
   return (
     <div className="space-y-4">
@@ -66,10 +80,13 @@ export default function AnnualGrid({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {monthOptions.map((month) => {
           const matrix = getMonthMatrix(year, month.value);
-          const monthBookings = bookings.filter((b) => {
-            const [y, m] = b.call_date.split("-").map(Number);
-            return y === year && m === month.value + 1 && b.status !== "c";
-          });
+          let monthCallCount = 0;
+          for (const [iso, dayBookings] of bookingsByDate) {
+            const [y, m] = iso.split("-").map(Number);
+            if (y === year && m === month.value + 1) {
+              monthCallCount += dayBookings.length;
+            }
+          }
           return (
             <div
               key={month.value}
@@ -82,7 +99,7 @@ export default function AnnualGrid({
               >
                 {month.label}{" "}
                 <span className="font-normal text-zinc-500">
-                  · {monthBookings.length} calls
+                  · {monthCallCount} call{monthCallCount === 1 ? "" : "s"}
                 </span>
               </button>
               <div className="grid grid-cols-7 gap-0.5">
@@ -97,23 +114,33 @@ export default function AnnualGrid({
                 {matrix.flatMap((week, wi) =>
                   week.map((day, di) => {
                     if (day == null) {
-                      return <div key={`e-${month.value}-${wi}-${di}`} className="h-6" />;
+                      return (
+                        <div
+                          key={`e-${month.value}-${wi}-${di}`}
+                          className="h-6"
+                        />
+                      );
                     }
                     const iso = toIsoDate(year, month.value, day);
-                    const dayBookings = bookings.filter(
-                      (b) => b.call_date === iso && b.status !== "c",
+                    const dayBookings = bookingsByDate.get(iso) ?? [];
+                    const traffic = dayAnnualHeat(
+                      dayBookings,
+                      pierCount,
+                      multiPort,
                     );
-                    const traffic =
-                      dayBookings.length === 0
-                        ? "empty"
-                        : dayTrafficLight(dayBookings, pierCount);
                     const count = dayBookings.length;
                     return (
                       <div
                         key={iso}
+                        title={
+                          count > 0
+                            ? `${iso}: ${count} escala${count === 1 ? "" : "s"}`
+                            : iso
+                        }
                         className={[
                           "flex h-6 items-center justify-center rounded text-[9px] font-medium",
                           TRAFFIC_CELL[traffic],
+                          count > 0 ? "font-bold" : "",
                         ].join(" ")}
                       >
                         {count > 0 ? count : day}

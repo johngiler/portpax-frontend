@@ -102,13 +102,15 @@ export function useCalendarBookings(params: CalendarBookingsParams) {
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     swrKeys.calendarBookings(key),
     () => fetchCalendarPayload(params),
+    // Period changes must not keep prior range data (empty-looking month/week).
+    { keepPreviousData: false },
   );
 
   return {
     bookings: data?.bookings ?? [],
     previousYearBookings: data?.previousYearBookings ?? [],
     positions: data?.positions ?? [],
-    isLoading: isLoading && !data,
+    isLoading: Boolean(isLoading || (isValidating && !data)),
     isValidating,
     error,
     mutate,
