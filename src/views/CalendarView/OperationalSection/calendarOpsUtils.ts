@@ -89,19 +89,19 @@ export function dayTrafficLight(
   return "free";
 }
 
-/** Annual mini-calendar heat: empty days vs traffic when there are calls. */
+/** Annual mini-calendar heat: vacant days = free (green); busy = limited/full. */
 export function dayAnnualHeat(
   bookings: Booking[],
   pierPositionCount: number,
   multiPort: boolean,
-): "empty" | DayTraffic {
+): DayTraffic {
   const active = bookings.filter((b) => b.status !== "c");
-  if (active.length === 0) return "empty";
+  if (active.length === 0) return "free";
   if (multiPort) {
     return active.length <= 2 ? "limited" : "full";
   }
   const light = dayTrafficLight(active, pierPositionCount);
-  // Keep days-with-calls visually distinct from vacant days (pale free ≈ empty).
+  // Keep days-with-calls visually distinct from vacant (available) days.
   return light === "free" ? "limited" : light;
 }
 
