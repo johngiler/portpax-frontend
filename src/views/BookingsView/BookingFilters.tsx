@@ -5,9 +5,10 @@ import FilterActions from "@/components/layout/FilterActions";
 import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
-import { FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { suggestBookings } from "@/lib/filterSuggestions";
 import type { BookingsTabQuery, CalendarViewModeQuery } from "@/lib/viewFilterQuery";
+import type { BookingActivityKind } from "@/services/bookings/bookingActivityService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
@@ -31,6 +32,12 @@ const MODE_OPTIONS: { value: CalendarViewModeQuery; label: string }[] = [
   { value: "annual", label: "Anual" },
 ];
 
+const HISTORY_KIND_OPTIONS: { value: BookingActivityKind; label: string }[] = [
+  { value: "all", label: "Todas" },
+  { value: "single", label: "Única" },
+  { value: "bulk", label: "Masiva" },
+];
+
 type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 type BookingFiltersProps = {
@@ -45,6 +52,9 @@ type BookingFiltersProps = {
   customDateTo: string;
   calendarMode: CalendarViewModeQuery;
   positionFilter: number;
+  historyKind: BookingActivityKind;
+  historyDateFrom: string;
+  historyDateTo: string;
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
@@ -61,6 +71,9 @@ type BookingFiltersProps = {
   onCustomDateToChange: (value: string) => void;
   onCalendarModeChange: (mode: CalendarViewModeQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
+  onHistoryKindChange: (kind: BookingActivityKind) => void;
+  onHistoryDateFromChange: (value: string) => void;
+  onHistoryDateToChange: (value: string) => void;
   importedDatesCount?: number;
   onApply: () => void;
   onClear: () => void;
@@ -78,6 +91,9 @@ export default function BookingFilters({
   customDateTo,
   calendarMode,
   positionFilter,
+  historyKind,
+  historyDateFrom,
+  historyDateTo,
   portOptions,
   shippingLineOptions,
   vesselOptions,
@@ -94,6 +110,9 @@ export default function BookingFilters({
   onCustomDateToChange,
   onCalendarModeChange,
   onPositionFilterChange,
+  onHistoryKindChange,
+  onHistoryDateFromChange,
+  onHistoryDateToChange,
   importedDatesCount = 0,
   onApply,
   onClear,
@@ -107,12 +126,14 @@ export default function BookingFilters({
       : getTimeRange(datePreset, customDateFrom, customDateTo);
 
   const showVessel = tab === "list" || tab === "calendar";
-  const showStatusSearch = tab !== "availability";
-  const showLine = tab !== "availability";
+  const showStatusSearch = tab !== "availability" && tab !== "history";
+  const showLine = tab !== "availability" && tab !== "history";
   const showDates = tab === "list" || tab === "availability";
   const showCalendarMode = tab === "calendar";
   const showPosition =
     tab === "calendar" && calendarMode === "weekly" && portFilter > 0;
+  const showPort = tab !== "history";
+  const showHistoryFilters = tab === "history";
 
   const loadPortOptions = useCallback(async (input: string) => {
     const res = await fetchPorts({
@@ -157,6 +178,35 @@ export default function BookingFilters({
 
   return (
     <>
+      {showHistoryFilters ? (
+        <>
+          <FormFieldSelect<BookingActivityKind>
+            label="Tipo"
+            name="history_kind"
+            value={historyKind}
+            onChange={onHistoryKindChange}
+            options={HISTORY_KIND_OPTIONS}
+            compact
+          />
+          <FormField
+            label="Desde"
+            name="history_date_from"
+            type="date"
+            value={historyDateFrom}
+            onChange={(v) => onHistoryDateFromChange(String(v))}
+            compact
+          />
+          <FormField
+            label="Hasta"
+            name="history_date_to"
+            type="date"
+            value={historyDateTo}
+            onChange={(v) => onHistoryDateToChange(String(v))}
+            compact
+          />
+        </>
+      ) : null}
+
       {showStatusSearch ? (
         <FilterSuggestField
           label="Buscar"
@@ -179,21 +229,22 @@ export default function BookingFilters({
         />
       ) : null}
 
-      <FormFieldSelect<number>
-        label="Puerto"
-        name="booking_port_filter"
-        value={portFilter}
-        onChange={onPortFilterChange}
-        options={portOptions}
-        loadOptions={loadPortOptions}
-        compact
-        showLogo
-        logoKind="port"
-        required={false}
-        optionLabel="Todos los puertos"
-        emptyValue={0}
-      />
-
+      {showPort ? (
+        <FormFieldSelect<number>
+          label="Puerto"
+          name="booking_port_filter"
+          value={portFilter}
+          onChange={onPortFilterChange}
+          options={portOptions}
+          loadOptions={loadPortOptions}
+          compact
+          showLogo
+          logoKind="port"
+          required={false}
+          optionLabel="Todos los puertos"
+          emptyValue={0}
+        />
+      ) : null}
       {showLine ? (
         <FormFieldSelect<number>
           label="Naviera"

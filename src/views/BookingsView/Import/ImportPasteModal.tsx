@@ -11,6 +11,9 @@ type ImportPasteModalProps = {
   hint: string;
   /** Expected column headers shown before paste (Excel-like). */
   columns: string[];
+  /** Prefill grid (e.g. reprocess pending import rows). */
+  initialHeaders?: string[];
+  initialRows?: string[][];
   disabled?: boolean;
   onClose: () => void;
   onApply: (text: string) => void;
@@ -21,6 +24,8 @@ export default function ImportPasteModal({
   title,
   hint,
   columns,
+  initialHeaders,
+  initialRows,
   disabled = false,
   onClose,
   onApply,
@@ -34,9 +39,18 @@ export default function ImportPasteModal({
       setRows([]);
       return;
     }
+    if (initialRows && initialRows.length > 0) {
+      setHeaders(
+        initialHeaders && initialHeaders.length > 0
+          ? initialHeaders
+          : columns,
+      );
+      setRows(initialRows.map((row) => [...row]));
+      return;
+    }
     setHeaders(columns);
     setRows([]);
-  }, [open, columns]);
+  }, [open, columns, initialHeaders, initialRows]);
 
   function submit() {
     if (!rows.length || disabled) return;

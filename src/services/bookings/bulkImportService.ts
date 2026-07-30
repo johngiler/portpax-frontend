@@ -1,4 +1,4 @@
-import { apiFetch } from "@/services/apiClient";
+import { apiDownload, apiFetch, triggerBrowserDownload } from "@/services/apiClient";
 
 export type BulkImportPreviewRow = {
   id: string;
@@ -40,10 +40,12 @@ export type BulkImportCreateRow = {
 };
 
 export type BulkImportCreateResponse = {
+  batch_id: number;
   created_count: number;
   failed_count: number;
+  retry_count?: number;
   created: { id: string; booking_id: number; booking_code: string }[];
-  failures: { id: string; detail: string }[];
+  failures: { id?: string; row_id?: string | number; detail: string }[];
 };
 
 const BASE = "api/bookings/";
@@ -69,12 +71,45 @@ export async function previewBulkBookingImportFromPaste(
 }
 
 export async function createBulkBookingImport(
-  rows: BulkImportCreateRow[],
+  rows: BulkImportPreviewRow[],
+  options?: {
+    source?: "file" | "paste";
+    label?: string;
+    deferredRows?: BulkImportPreviewRow[];
+  },
 ): Promise<BulkImportCreateResponse> {
   return apiFetch<BulkImportCreateResponse>(`${BASE}bulk-import/create/`, {
     method: "POST",
-    body: JSON.stringify({ rows }),
+    body: JSON.stringify({
+      rows,
+      deferred_rows: options?.deferredRows ?? [],
+      source: options?.source ?? "file",
+      label: options?.label ?? "",
+    }),
   });
+}
+
+export async function exportBulkImportRowsXlsx(
+  rows: BulkImportPreviewRow[] | Record<string, unknown>[],
+  filename = "import-pendientes.xlsx",
+): Promise<void> {
+  const { blob, filename: serverName } = await apiDownload(
+    `${BASE}bulk-import/export-rows/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ rows }),
+    },
+  );
+  triggerBrowserDownload(blob, serverName || filename);
+}
+
+export async function exportImportBatchPendingXlsx(
+  batchId: number,
+): Promise<void> {
+  const { blob, filename } = await apiDownload(
+    `${BASE}import-batches/${batchId}/export/`,
+  );
+  triggerBrowserDownload(blob, filename || `import-pendientes-${batchId}.xlsx`);
 }
 
 export type AvailabilityListFilterRow = {

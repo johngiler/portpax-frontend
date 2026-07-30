@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CalendarRange, LayoutGrid } from "lucide-react";
+import { CalendarDays, CalendarRange, History, LayoutGrid } from "lucide-react";
 import type { BookingsTabQuery } from "@/lib/viewFilterQuery";
 
 const TABS: {
@@ -11,6 +11,7 @@ const TABS: {
   { id: "list", label: "Lista", icon: CalendarDays },
   { id: "calendar", label: "Calendario", icon: CalendarRange },
   { id: "availability", label: "Disponibilidad puerto", icon: LayoutGrid },
+  { id: "history", label: "Historial", icon: History },
 ];
 
 type BookingsTabsProps = {

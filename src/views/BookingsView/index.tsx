@@ -45,6 +45,10 @@ import {
   previewBulkBookingImportFromPaste,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
+import type {
+  BookingActivityKind,
+  ImportBatchRetryRow,
+} from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingListStatusFilter } from "@/types/booking";
@@ -57,12 +61,17 @@ import OperationalSection from "@/views/CalendarView/OperationalSection";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
+import BookingsHistoryPanel from "./BookingsHistoryPanel";
 import BookingsList from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import BulkBookingImportModal from "./Import/BulkBookingImportModal";
 import BulkImportLoadingModal from "./Import/BulkImportLoadingModal";
 import ImportOptionsModal from "./Import/ImportOptionsModal";
+import ImportPasteModal from "./Import/ImportPasteModal";
+import {
+  retryRowsToPasteMatrix,
+} from "./Import/retryRows";
 import {
   resolveBookingsDateRange,
   type BookingsDatePreset,
@@ -178,6 +187,22 @@ export default function BookingsView() {
   );
   const [bulkImportFileName, setBulkImportFileName] = useState("");
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
+  const [bulkImportSource, setBulkImportSource] = useState<"file" | "paste">(
+    "file",
+  );
+  const [historyBatchId, setHistoryBatchId] = useState<number | null>(null);
+  const [reprocessPasteOpen, setReprocessPasteOpen] = useState(false);
+  const [reprocessPasteHeaders, setReprocessPasteHeaders] = useState<string[]>(
+    [],
+  );
+  const [reprocessPasteRows, setReprocessPasteRows] = useState<string[][]>([]);
+  const [historyKind, setHistoryKind] = useState<BookingActivityKind>("all");
+  const [appliedHistoryKind, setAppliedHistoryKind] =
+    useState<BookingActivityKind>("all");
+  const [historyDateFrom, setHistoryDateFrom] = useState("");
+  const [appliedHistoryDateFrom, setAppliedHistoryDateFrom] = useState("");
+  const [historyDateTo, setHistoryDateTo] = useState("");
+  const [appliedHistoryDateTo, setAppliedHistoryDateTo] = useState("");
   const [availabilityDateAllowlist, setAvailabilityDateAllowlist] = useState<
     string[] | null
   >(null);
@@ -373,6 +398,9 @@ export default function BookingsView() {
     setAppliedCustomDateTo(customDateTo);
     setAppliedCalendarMode(calendarMode);
     setAppliedPositionFilter(positionFilter);
+    setAppliedHistoryKind(historyKind);
+    setAppliedHistoryDateFrom(historyDateFrom);
+    setAppliedHistoryDateTo(historyDateTo);
     syncToUrl(
       workspaceState({
         status: statusFilter,
@@ -416,6 +444,12 @@ export default function BookingsView() {
     setAppliedCalendarMode("monthly");
     setPositionFilter(0);
     setAppliedPositionFilter(0);
+    setHistoryKind("all");
+    setAppliedHistoryKind("all");
+    setHistoryDateFrom("");
+    setAppliedHistoryDateFrom("");
+    setHistoryDateTo("");
+    setAppliedHistoryDateTo("");
     setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
@@ -443,40 +477,56 @@ export default function BookingsView() {
     syncToUrl(workspaceState({ tab: next }));
   }
 
+  const hasHistoryFilters =
+    appliedHistoryKind !== "all" ||
+    Boolean(appliedHistoryDateFrom) ||
+    Boolean(appliedHistoryDateTo);
+
   const hasActiveFilters =
-    appliedStatusFilter !== "" ||
-    appliedSearch !== "" ||
-    appliedPortFilter > 0 ||
-    appliedShippingLineFilter > 0 ||
-    appliedVesselFilter > 0 ||
-    appliedDatePreset !== "all" ||
-    Boolean(availabilityDateAllowlist?.length) ||
-    (tab === "calendar" && appliedCalendarMode !== "monthly") ||
-    (tab === "calendar" && appliedPositionFilter > 0);
+    tab === "history"
+      ? hasHistoryFilters
+      : appliedStatusFilter !== "" ||
+        appliedSearch !== "" ||
+        appliedPortFilter > 0 ||
+        appliedShippingLineFilter > 0 ||
+        appliedVesselFilter > 0 ||
+        appliedDatePreset !== "all" ||
+        Boolean(availabilityDateAllowlist?.length) ||
+        (tab === "calendar" && appliedCalendarMode !== "monthly") ||
+        (tab === "calendar" && appliedPositionFilter > 0);
 
   const canClearFilters =
-    hasActiveFilters ||
-    statusFilter !== "" ||
-    search.trim() !== "" ||
-    portFilter > 0 ||
-    shippingLineFilter > 0 ||
-    vesselFilter > 0 ||
-    datePreset !== "all" ||
-    Boolean(availabilityDateAllowlist?.length) ||
-    (tab === "calendar" && calendarMode !== "monthly") ||
-    (tab === "calendar" && positionFilter > 0);
+    tab === "history"
+      ? hasHistoryFilters ||
+        historyKind !== "all" ||
+        Boolean(historyDateFrom) ||
+        Boolean(historyDateTo)
+      : hasActiveFilters ||
+        statusFilter !== "" ||
+        search.trim() !== "" ||
+        portFilter > 0 ||
+        shippingLineFilter > 0 ||
+        vesselFilter > 0 ||
+        datePreset !== "all" ||
+        Boolean(availabilityDateAllowlist?.length) ||
+        (tab === "calendar" && calendarMode !== "monthly") ||
+        (tab === "calendar" && positionFilter > 0);
 
   const canApplyFilters =
-    statusFilter !== appliedStatusFilter ||
-    search.trim() !== appliedSearch ||
-    portFilter !== appliedPortFilter ||
-    shippingLineFilter !== appliedShippingLineFilter ||
-    vesselFilter !== appliedVesselFilter ||
-    datePreset !== appliedDatePreset ||
-    customDateFrom !== appliedCustomDateFrom ||
-    customDateTo !== appliedCustomDateTo ||
-    calendarMode !== appliedCalendarMode ||
-    positionFilter !== appliedPositionFilter;
+    tab === "history"
+      ? historyKind !== appliedHistoryKind ||
+        historyDateFrom !== appliedHistoryDateFrom ||
+        historyDateTo !== appliedHistoryDateTo
+      : statusFilter !== appliedStatusFilter ||
+        search.trim() !== appliedSearch ||
+        portFilter !== appliedPortFilter ||
+        shippingLineFilter !== appliedShippingLineFilter ||
+        vesselFilter !== appliedVesselFilter ||
+        datePreset !== appliedDatePreset ||
+        customDateFrom !== appliedCustomDateFrom ||
+        customDateTo !== appliedCustomDateTo ||
+        calendarMode !== appliedCalendarMode ||
+        positionFilter !== appliedPositionFilter;
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
@@ -494,6 +544,10 @@ export default function BookingsView() {
             call_date_to: listParams.call_date_to,
             ordering: listParams.ordering,
           });
+          return;
+        }
+        if (tab === "history") {
+          setViewError("La exportación no está disponible en Historial.");
           return;
         }
         if (tab === "availability") {
@@ -639,6 +693,7 @@ export default function BookingsView() {
         setBulkImportFileName("");
         return;
       }
+      setBulkImportSource("file");
       const preview = await previewBulkBookingImport(file);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
@@ -671,6 +726,7 @@ export default function BookingsView() {
         setBulkImportFileName("");
         return;
       }
+      setBulkImportSource("paste");
       const preview = await previewBulkBookingImportFromPaste(text);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
@@ -682,6 +738,18 @@ export default function BookingsView() {
     } finally {
       setBulkImportLoading(false);
     }
+  }
+
+  function handleReprocessImportRows(payload: {
+    rows: ImportBatchRetryRow[];
+    label: string;
+    source: "file" | "paste";
+  }) {
+    setViewError(null);
+    const matrix = retryRowsToPasteMatrix(payload.rows);
+    setReprocessPasteHeaders(matrix.headers);
+    setReprocessPasteRows(matrix.rows);
+    setReprocessPasteOpen(true);
   }
 
   const allPortIds = useMemo(
@@ -696,7 +764,9 @@ export default function BookingsView() {
       ? "Solicitudes de escala por puerto, naviera y barco."
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
-        : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
+        : tab === "history"
+          ? "Movimientos de reservas: creaciones y cambios únicos, e importaciones masivas."
+          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
 
   const calendarPortLabel =
     appliedPortFilter > 0
@@ -722,21 +792,53 @@ export default function BookingsView() {
         fileName={bulkImportFileName}
       />
 
+      <ImportPasteModal
+        open={reprocessPasteOpen && !bulkImportLoading}
+        title="Pegar reservas masivas"
+        hint="Edita las filas pendientes (como en Excel) y pulsa «Aplicar pegado» para volver a validarlas antes de crear."
+        columns={[
+          "Ship",
+          "Port",
+          "Arrival",
+          "Departure",
+          "Vendor Name",
+          "Call Type",
+        ]}
+        initialHeaders={reprocessPasteHeaders}
+        initialRows={reprocessPasteRows}
+        disabled={bulkImportLoading}
+        onClose={() => {
+          setReprocessPasteOpen(false);
+          setReprocessPasteHeaders([]);
+          setReprocessPasteRows([]);
+        }}
+        onApply={(text) => {
+          setReprocessPasteOpen(false);
+          setReprocessPasteHeaders([]);
+          setReprocessPasteRows([]);
+          void handleImportPaste("bulk_bookings", text);
+        }}
+      />
+
       <BulkBookingImportModal
         open={bulkImportOpen && !bulkImportLoading}
         rows={bulkImportRows}
         fileName={bulkImportFileName}
+        importSource={bulkImportSource}
         onClose={() => {
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
         }}
-        onCreated={async () => {
+        onCreated={async ({ batchId }) => {
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
           setViewError(null);
           await refreshBookings();
+          setHistoryBatchId(batchId);
+          setTab("history");
+          syncToUrl(workspaceState({ tab: "history" }));
         }}
       />
 
@@ -753,6 +855,9 @@ export default function BookingsView() {
           customDateTo={customDateTo}
           calendarMode={calendarMode}
           positionFilter={positionFilter}
+          historyKind={historyKind}
+          historyDateFrom={historyDateFrom}
+          historyDateTo={historyDateTo}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
@@ -772,6 +877,9 @@ export default function BookingsView() {
           onCustomDateToChange={handleCustomDateToChange}
           onCalendarModeChange={setCalendarMode}
           onPositionFilterChange={setPositionFilter}
+          onHistoryKindChange={setHistoryKind}
+          onHistoryDateFromChange={setHistoryDateFrom}
+          onHistoryDateToChange={setHistoryDateTo}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
@@ -878,6 +986,21 @@ export default function BookingsView() {
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}
           onClearFilters={handleClearFilters}
+        />
+      ) : null}
+
+      {tab === "history" ? (
+        <BookingsHistoryPanel
+          kind={appliedHistoryKind}
+          dateFrom={appliedHistoryDateFrom}
+          dateTo={appliedHistoryDateTo}
+          hasActiveFilters={hasHistoryFilters}
+          onClearFilters={handleClearFilters}
+          initialBatchId={historyBatchId}
+          onInitialBatchConsumed={() => setHistoryBatchId(null)}
+          onReprocessRows={(payload) => {
+            void handleReprocessImportRows(payload);
+          }}
         />
       ) : null}
     </>

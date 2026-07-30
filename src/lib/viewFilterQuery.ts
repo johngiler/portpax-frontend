@@ -13,7 +13,7 @@ export type BookingsDatePresetQuery =
 
 export type CalendarViewModeQuery = "weekly" | "monthly" | "annual";
 
-export type BookingsTabQuery = "list" | "calendar" | "availability";
+export type BookingsTabQuery = "list" | "calendar" | "availability" | "history";
 
 const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
   "all",
@@ -25,7 +25,12 @@ const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
 ]);
 
 const MODES = new Set<CalendarViewModeQuery>(["weekly", "monthly", "annual"]);
-const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability"]);
+const TABS = new Set<BookingsTabQuery>([
+  "list",
+  "calendar",
+  "availability",
+  "history",
+]);
 
 function parseIntId(raw: string | null): number {
   if (!raw) return 0;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
@@ -16,8 +16,13 @@ type BulkBookingImportModalProps = {
   open: boolean;
   rows: BulkImportPreviewRow[];
   fileName: string;
+  importSource?: "file" | "paste";
   onClose: () => void;
-  onCreated: (createdCount: number) => void;
+  onCreated: (result: {
+    batchId: number;
+    createdCount: number;
+    failedCount: number;
+  }) => void;
 };
 
 function formatTime(value: string | null): string {
@@ -29,14 +34,23 @@ export default function BulkBookingImportModal({
   open,
   rows,
   fileName,
+  importSource = "file",
   onClose,
   onCreated,
 }: BulkBookingImportModalProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
-    return new Set(rows.filter((r) => r.selected_default).map((r) => r.id));
-  });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedIds(
+      new Set(
+        rows.filter((r) => r.selected_default && r.selectable).map((r) => r.id),
+      ),
+    );
+    setError(null);
+  }, [open, rows]);
 
   useNavigationLock(
     open && saving,
@@ -69,39 +83,30 @@ export default function BulkBookingImportModal({
 
   async function handleCreate() {
     setError(null);
-    const payload = rows
-      .filter((r) => selectedIds.has(r.id) && r.selectable)
-      .map((r) => ({
-        id: r.id,
-        port_id: r.port_id!,
-        shipping_line_id: r.shipping_line_id!,
-        vessel_id: r.vessel_id!,
-        call_date: r.call_date!,
-        eta: r.eta!,
-        etd: r.etd!,
-      }));
+    const selectedRows = rows.filter(
+      (r) => selectedIds.has(r.id) && r.selectable,
+    );
+    const deferredRows = rows.filter(
+      (r) => !selectedIds.has(r.id) || !r.selectable,
+    );
 
-    if (payload.length === 0) {
+    if (selectedRows.length === 0) {
       setError("Selecciona al menos una reserva válida para crear.");
       return;
     }
 
     setSaving(true);
     try {
-      const result = await createBulkBookingImport(payload);
-      if (result.created_count === 0) {
-        const detail =
-          result.failures[0]?.detail ||
-          "No se pudo crear ninguna reserva.";
-        setError(detail);
-        return;
-      }
-      if (result.failed_count > 0) {
-        setError(
-          `Se crearon ${result.created_count}, pero fallaron ${result.failed_count}. Revisa el catálogo o deselecciona filas con error.`,
-        );
-      }
-      onCreated(result.created_count);
+      const result = await createBulkBookingImport(selectedRows, {
+        source: importSource,
+        label: fileName,
+        deferredRows,
+      });
+      onCreated({
+        batchId: result.batch_id,
+        createdCount: result.created_count,
+        failedCount: result.failed_count,
+      });
     } catch (err) {
       setError(
         getApiErrorMessage(err, "No se pudieron crear las reservas masivas."),
@@ -153,7 +158,10 @@ export default function BulkBookingImportModal({
       ) : null}
 
       <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">
-        Archivo: <span className="font-medium text-zinc-800 dark:text-zinc-100">{fileName}</span>
+        Archivo:{" "}
+        <span className="font-medium text-zinc-800 dark:text-zinc-100">
+          {fileName}
+        </span>
         {" · "}
         {rows.length} filas · {selectableRows.length} listas para crear ·{" "}
         {selectedCount} seleccionadas
