@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
+import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import {
   activePierPositions,
   dayAnnualHeat,
@@ -27,6 +28,7 @@ type AnnualGridProps = {
   previousYearBookings: Booking[];
   positions: Position[];
   multiPort?: boolean;
+  loading?: boolean;
   onSelectMonth?: (monthIndex: number) => void;
 };
 
@@ -37,6 +39,7 @@ export default function AnnualGrid({
   previousYearBookings: _previousYearBookings,
   positions,
   multiPort = false,
+  loading = false,
   onSelectMonth,
 }: AnnualGridProps) {
   const pierCount = activePierPositions(positions).length;
@@ -77,6 +80,9 @@ export default function AnnualGrid({
         </button>
       </div>
 
+      {loading ? (
+        <BookingsViewSkeleton variant="calendar" calendarMode="annual" />
+      ) : (
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {monthOptions.map((month) => {
           const matrix = getMonthMatrix(year, month.value);
@@ -153,6 +159,7 @@ export default function AnnualGrid({
           );
         })}
       </div>
+      )}
     </div>
   );
 }

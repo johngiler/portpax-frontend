@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
+import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
@@ -21,6 +22,7 @@ type MonthGridProps = {
   bookings: Booking[];
   positions: Position[];
   multiPort?: boolean;
+  loading?: boolean;
 };
 
 function groupByPort(bookings: Booking[]): { port: string; items: Booking[] }[] {
@@ -44,6 +46,7 @@ export default function MonthGrid({
   bookings,
   positions,
   multiPort = false,
+  loading = false,
 }: MonthGridProps) {
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
@@ -81,6 +84,9 @@ export default function MonthGrid({
         </div>
       </div>
 
+      {loading ? (
+        <BookingsViewSkeleton variant="calendar" calendarMode="monthly" />
+      ) : (
       <div className="overflow-x-auto">
         <div className="min-w-[52rem] grid grid-cols-7 gap-px rounded-xl border border-zinc-200 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-700">
           {WEEKDAYS.map((label) => (
@@ -159,6 +165,7 @@ export default function MonthGrid({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -9,7 +9,6 @@ import { useCalendarBookings } from "@/hooks/swr/useCalendarBookings";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import type { BookingListStatusFilter } from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
-import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import AnnualGrid from "./AnnualGrid";
 import CalendarColorLegend from "./CalendarColorLegend";
 import MonthGrid from "./MonthGrid";
@@ -121,9 +120,7 @@ export default function UnifiedCalendarCard({
         {errorMessage ? (
           <FormErrorAlert message={errorMessage} className="mb-4" />
         ) : null}
-        {isLoading ? (
-          <BookingsViewSkeleton variant="calendar" calendarMode={mode} />
-        ) : !errorMessage && bookings.length === 0 && hasFilters ? (
+        {!isLoading && !errorMessage && bookings.length === 0 && hasFilters ? (
           <EmptyState
             icon={CalendarRange}
             filtered
@@ -139,6 +136,7 @@ export default function UnifiedCalendarCard({
             positions={positions}
             positionFilterId={effectivePositionId}
             multiPort={multiPort}
+            loading={isLoading}
           />
         ) : mode === "monthly" ? (
           <MonthGrid
@@ -149,6 +147,7 @@ export default function UnifiedCalendarCard({
             bookings={bookings}
             positions={positions}
             multiPort={multiPort}
+            loading={isLoading}
           />
         ) : (
           <AnnualGrid
@@ -158,6 +157,7 @@ export default function UnifiedCalendarCard({
             previousYearBookings={previousYearBookings}
             positions={positions}
             multiPort={multiPort}
+            loading={isLoading}
             onSelectMonth={(m) => {
               onMonthChange(m);
               onModeChange("monthly");

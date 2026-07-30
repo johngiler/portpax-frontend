@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
+import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
@@ -20,6 +21,7 @@ type WeekGridProps = {
   positions: Position[];
   positionFilterId: number;
   multiPort?: boolean;
+  loading?: boolean;
 };
 
 function bookingsForCell(
@@ -41,6 +43,7 @@ export default function WeekGrid({
   positions,
   positionFilterId,
   multiPort = false,
+  loading = false,
 }: WeekGridProps) {
   const days = weekDatesFrom(weekAnchor);
   const pierAll = activePierPositions(positions);
@@ -94,7 +97,9 @@ export default function WeekGrid({
         </div>
       </div>
 
-      {multiPort ? (
+      {loading ? (
+        <BookingsViewSkeleton variant="calendar" calendarMode="weekly" />
+      ) : multiPort ? (
         <div className="overflow-x-auto">
           <table className="min-w-[52rem] w-full border-collapse text-left">
             <thead>
