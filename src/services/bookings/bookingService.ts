@@ -256,6 +256,8 @@ export type AvailabilityReport = {
         shipping_line_logo: string | null;
         vessel_name: string;
         loa_m: string | null;
+        eta: string | null;
+        etd: string | null;
       }>
     >;
   }>;

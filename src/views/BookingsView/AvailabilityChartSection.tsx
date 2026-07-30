@@ -5,9 +5,10 @@ import type { ReactNode, RefObject } from "react";
 import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
-import { CalendarRange, CheckCircle2, Ruler, Ship } from "lucide-react";
+import { formatTimeShort } from "@/lib/bookingDisplay";
+import { CalendarRange, CheckCircle2, Clock3, Ruler, Ship } from "lucide-react";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
-import { newBookingHref } from "@/types/booking";
+import { bookingDetailHref, newBookingHref } from "@/types/booking";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
 
 type Props = {
@@ -78,8 +79,8 @@ export default function AvailabilityChartSection({
       title={`${titlePrefix} — ${data.port_name}`}
       description={
         canBook
-          ? "Clic en Disponible para reservar esa fecha y posición."
-          : "Matriz día × posición: libre, pasado u ocupada."
+          ? "Clic en Disponible para reservar, o en una reserva para editarla."
+          : "Matriz día × posición: libre, pasado u ocupada. Clic en una reserva para verla o editarla."
       }
     >
       <AvailabilityColorLegend />
@@ -169,9 +170,15 @@ export default function AvailabilityChartSection({
                       ) : (
                         <div className="space-y-2">
                           {calls.map((call) => (
-                            <article
+                            <Link
                               key={call.booking_code}
-                              className="rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                              href={bookingDetailHref(
+                                { booking_code: call.booking_code },
+                                { returnTo },
+                              )}
+                              className="block rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[var(--admin-accent)]/50"
+                              title={`Editar ${call.booking_code}`}
+                              aria-label={`Abrir reserva ${call.booking_code}`}
                             >
                               <div className="flex min-w-0 items-center gap-2">
                                 <CatalogLogoThumb
@@ -186,19 +193,25 @@ export default function AvailabilityChartSection({
                                   </p>
                                 </div>
                               </div>
-                              <div className="mt-2 flex items-center justify-between gap-3 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                                <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
-                                  <Ship className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                  <span className="truncate">{call.vessel_name}</span>
-                                </span>
-                                {call.loa_m ? (
-                                  <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                                    <Ruler className="h-3.5 w-3.5" aria-hidden />
-                                    {Number(call.loa_m).toLocaleString("es-MX")} m
+                              <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+                                    <Ship className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                    <span className="truncate">{call.vessel_name}</span>
                                   </span>
-                                ) : null}
+                                  {call.loa_m ? (
+                                    <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                      <Ruler className="h-3.5 w-3.5" aria-hidden />
+                                      {Number(call.loa_m).toLocaleString("es-MX")} m
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                  <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                  {formatTimeShort(call.eta)}–{formatTimeShort(call.etd)}
+                                </p>
                               </div>
-                            </article>
+                            </Link>
                           ))}
                         </div>
                       )}
