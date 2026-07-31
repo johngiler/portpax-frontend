@@ -1,10 +1,42 @@
 "use client";
 
 import Image from "next/image";
+import { ClipboardCopy } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { roleHomePath } from "@/lib/navAccess";
+import { API_BASE } from "@/services/apiBase";
+
+/** Full diagnostic dump for login failures (e.g. Safari "Load failed"). */
+function formatLoginError(err: unknown): string {
+  const lines: string[] = [];
+  if (err instanceof Error) {
+    lines.push(`${err.name}: ${err.message}`);
+    if (err.cause != null) {
+      const cause =
+        err.cause instanceof Error
+          ? `${err.cause.name}: ${err.cause.message}`
+          : String(err.cause);
+      lines.push(`cause: ${cause}`);
+    }
+    if (err.stack) lines.push(err.stack);
+  } else if (typeof err === "object" && err !== null) {
+    try {
+      lines.push(JSON.stringify(err, null, 2));
+    } catch {
+      lines.push(String(err));
+    }
+  } else {
+    lines.push(String(err));
+  }
+  lines.push(`API_BASE: ${API_BASE}`);
+  if (typeof window !== "undefined") {
+    lines.push(`page: ${window.location.href}`);
+    lines.push(`ua: ${navigator.userAgent}`);
+  }
+  return lines.join("\n");
+}
 
 const inputClass =
   "w-full rounded-lg border border-[var(--admin-border)] bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 transition-all focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder-zinc-500";
@@ -52,8 +84,23 @@ export default function LoginView() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [errorCopied, setErrorCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    setErrorCopied(false);
+  }, [error]);
+
+  const handleCopyError = useCallback(async () => {
+    if (!error) return;
+    try {
+      await navigator.clipboard.writeText(error);
+      setErrorCopied(true);
+    } catch {
+      setErrorCopied(false);
+    }
+  }, [error]);
 
   useEffect(() => {
     if (searchParams.get("session") === "expired") {
@@ -76,6 +123,7 @@ export default function LoginView() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
+      setErrorCopied(false);
       if (!username.trim() || !password) {
         setError("Usuario y contraseña son obligatorios.");
         return;
@@ -86,9 +134,7 @@ export default function LoginView() {
         router.replace(roleHomePath(me.role));
         router.refresh();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Error al iniciar sesión.",
-        );
+        setError(formatLoginError(err));
       } finally {
         setSubmitting(false);
       }
@@ -203,10 +249,26 @@ export default function LoginView() {
 
             {error && (
               <div
-                className="rounded-lg border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+                className="rounded-lg border border-red-200 bg-red-50/90 dark:border-red-800 dark:bg-red-950/40"
                 role="alert"
               >
-                {error}
+                <div className="flex items-center justify-between gap-2 border-b border-red-200/80 px-3 py-2 dark:border-red-800/80">
+                  <span className="text-xs font-medium text-red-700 dark:text-red-300">
+                    Detalle del error
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyError()}
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-red-200 bg-white/80 px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-white dark:border-red-700 dark:bg-red-950/60 dark:text-red-200 dark:hover:bg-red-900/50"
+                    aria-label="Copiar error al portapapeles"
+                  >
+                    <ClipboardCopy className="h-3.5 w-3.5" aria-hidden />
+                    {errorCopied ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-auto px-3 py-2.5 text-left font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-red-700 dark:text-red-300">
+                  {error}
+                </div>
               </div>
             )}
 

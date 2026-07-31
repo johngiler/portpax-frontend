@@ -79,13 +79,23 @@ function accessTokenNeedsRefresh(access: string): boolean {
 import { translateApiMessage } from "@/lib/apiFormErrors";
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
-  const res = await fetch(apiPath("api/auth/jwt/create/"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
+  const url = apiPath("api/auth/jwt/create/");
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+  } catch (err) {
+    const detail =
+      err instanceof Error
+        ? `${err.name}: ${err.message}${err.stack ? `\n${err.stack}` : ""}`
+        : String(err);
+    throw new Error(`Fallo de red al conectar con ${url}\n${detail}`);
+  }
   if (!res.ok) {
-    const data = await res.json().catch(() => ({})) as {
+    const data = (await res.json().catch(() => ({}))) as {
       detail?: string;
       non_field_errors?: string | string[];
     };
@@ -96,7 +106,9 @@ export async function login(username: string, password: string): Promise<LoginRe
         : data.non_field_errors) ??
       "Credenciales incorrectas";
     const msg = typeof raw === "string" ? raw : "Credenciales incorrectas";
-    throw new Error(translateApiMessage(msg));
+    throw new Error(
+      `${translateApiMessage(msg)}\nHTTP ${res.status} ${res.statusText}\n${url}`,
+    );
   }
   return res.json();
 }
