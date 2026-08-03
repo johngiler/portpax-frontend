@@ -15,6 +15,8 @@ export type BookingActivityItem = {
   failed_count: number | null;
   not_created_count?: number | null;
   label?: string;
+  changes?: Record<string, unknown> | null;
+  entity?: Record<string, unknown> | null;
 };
 
 export type BookingActivityResponse = {

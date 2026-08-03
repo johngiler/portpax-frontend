@@ -1,0 +1,102 @@
+"use client";
+
+import { useCallback, useMemo } from "react";
+import useSWRInfinite from "swr/infinite";
+import { swrKeys } from "@/lib/swr/keys";
+import {
+  fetchUserActivity,
+  type UserActivityKind,
+  type UserActivityResponse,
+} from "@/services/accounts/userActivityService";
+import type { UserRole } from "@/types/accounts";
+
+export type UserActivityFilterParams = {
+  kind?: UserActivityKind;
+  role?: UserRole | "";
+  isActive?: "" | "true" | "false";
+  dateFrom?: string;
+  dateTo?: string;
+  pageSize?: number;
+};
+
+function activityParamsKey(params: UserActivityFilterParams): string {
+  return [
+    params.kind ?? "all",
+    params.role ?? "",
+    params.isActive ?? "",
+    params.dateFrom ?? "",
+    params.dateTo ?? "",
+    params.pageSize ?? 20,
+  ].join("|");
+}
+
+export function useUserActivityInfinite(
+  params: UserActivityFilterParams,
+  enabled = true,
+) {
+  const paramsKey = activityParamsKey(params);
+  const pageSize = params.pageSize ?? 20;
+  const kind = params.kind ?? "all";
+  const role = params.role || undefined;
+  const isActive = params.isActive || undefined;
+  const dateFrom = params.dateFrom?.trim() || undefined;
+  const dateTo = params.dateTo?.trim() || undefined;
+
+  const getKey = useCallback(
+    (pageIndex: number, previousPageData: UserActivityResponse | null) => {
+      if (!enabled) return null;
+      if (previousPageData) {
+        const loaded = previousPageData.page * previousPageData.page_size;
+        if (loaded >= previousPageData.count) return null;
+        if (previousPageData.results.length === 0) return null;
+      }
+      return [...swrKeys.userActivityInfinite(paramsKey), pageIndex + 1] as const;
+    },
+    [enabled, paramsKey],
+  );
+
+  const { data, error, isLoading, isValidating, size, setSize, mutate } =
+    useSWRInfinite(getKey, (key) => {
+      const page = key[key.length - 1] as number;
+      return fetchUserActivity({
+        page,
+        page_size: pageSize,
+        kind,
+        role,
+        is_active: isActive,
+        date_from: dateFrom,
+        date_to: dateTo,
+      });
+    });
+
+  const items = useMemo(
+    () => (data ? data.flatMap((page) => page.results) : []),
+    [data],
+  );
+  const totalCount = data?.[0]?.count ?? 0;
+  const hasMore = items.length < totalCount;
+  const loadingMore = isValidating && size > 1 && hasMore;
+
+  const loadMore = useCallback(() => {
+    if (!enabled || loadingMore || !hasMore || isLoading) return;
+    void setSize(size + 1);
+  }, [enabled, loadingMore, hasMore, isLoading, setSize, size]);
+
+  const refresh = useCallback(async () => {
+    await setSize(1);
+    await mutate();
+  }, [mutate, setSize]);
+
+  return {
+    items,
+    totalCount,
+    hasMore,
+    isLoading: enabled && isLoading && items.length === 0,
+    isValidating,
+    loadingMore,
+    error,
+    loadMore,
+    refresh,
+    mutate,
+  };
+}

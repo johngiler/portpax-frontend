@@ -33,6 +33,7 @@ import {
   type DataExportFormat,
 } from "@/lib/dataExportStore";
 import { setDataImportHandler } from "@/lib/dataImportStore";
+import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import {
   exportBookingsReport,
   exportCalendarReport,
@@ -45,10 +46,7 @@ import {
   previewBulkBookingImportFromPaste,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
-import type {
-  BookingActivityKind,
-  ImportBatchRetryRow,
-} from "@/services/bookings/bookingActivityService";
+import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { portDisplayName } from "@/types/catalog";
 import type { BookingListStatusFilter } from "@/types/booking";
@@ -61,7 +59,7 @@ import OperationalSection from "@/views/CalendarView/OperationalSection";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
-import BookingsHistoryPanel from "./BookingsHistoryPanel";
+import BookingsHistoryModal from "./BookingsHistoryModal";
 import BookingsList from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
@@ -191,18 +189,12 @@ export default function BookingsView() {
     "file",
   );
   const [historyBatchId, setHistoryBatchId] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [reprocessPasteOpen, setReprocessPasteOpen] = useState(false);
   const [reprocessPasteHeaders, setReprocessPasteHeaders] = useState<string[]>(
     [],
   );
   const [reprocessPasteRows, setReprocessPasteRows] = useState<string[][]>([]);
-  const [historyKind, setHistoryKind] = useState<BookingActivityKind>("all");
-  const [appliedHistoryKind, setAppliedHistoryKind] =
-    useState<BookingActivityKind>("all");
-  const [historyDateFrom, setHistoryDateFrom] = useState("");
-  const [appliedHistoryDateFrom, setAppliedHistoryDateFrom] = useState("");
-  const [historyDateTo, setHistoryDateTo] = useState("");
-  const [appliedHistoryDateTo, setAppliedHistoryDateTo] = useState("");
   const [availabilityDateAllowlist, setAvailabilityDateAllowlist] = useState<
     string[] | null
   >(null);
@@ -401,9 +393,6 @@ export default function BookingsView() {
     setAppliedCustomDateTo(customDateTo);
     setAppliedCalendarMode(calendarMode);
     setAppliedPositionFilter(positionFilter);
-    setAppliedHistoryKind(historyKind);
-    setAppliedHistoryDateFrom(historyDateFrom);
-    setAppliedHistoryDateTo(historyDateTo);
     syncToUrl(
       workspaceState({
         status: statusFilter,
@@ -447,12 +436,6 @@ export default function BookingsView() {
     setAppliedCalendarMode("monthly");
     setPositionFilter(0);
     setAppliedPositionFilter(0);
-    setHistoryKind("all");
-    setAppliedHistoryKind("all");
-    setHistoryDateFrom("");
-    setAppliedHistoryDateFrom("");
-    setHistoryDateTo("");
-    setAppliedHistoryDateTo("");
     setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
@@ -480,56 +463,40 @@ export default function BookingsView() {
     syncToUrl(workspaceState({ tab: next }));
   }
 
-  const hasHistoryFilters =
-    appliedHistoryKind !== "all" ||
-    Boolean(appliedHistoryDateFrom) ||
-    Boolean(appliedHistoryDateTo);
-
   const hasActiveFilters =
-    tab === "history"
-      ? hasHistoryFilters
-      : appliedStatusFilter !== "" ||
-        appliedSearch !== "" ||
-        appliedPortFilter > 0 ||
-        appliedShippingLineFilter > 0 ||
-        appliedVesselFilter > 0 ||
-        appliedPositionFilter > 0 ||
-        appliedDatePreset !== "all" ||
-        Boolean(availabilityDateAllowlist?.length) ||
-        (tab === "calendar" && appliedCalendarMode !== "monthly");
+    appliedStatusFilter !== "" ||
+    appliedSearch !== "" ||
+    appliedPortFilter > 0 ||
+    appliedShippingLineFilter > 0 ||
+    appliedVesselFilter > 0 ||
+    appliedPositionFilter > 0 ||
+    appliedDatePreset !== "all" ||
+    Boolean(availabilityDateAllowlist?.length) ||
+    (tab === "calendar" && appliedCalendarMode !== "monthly");
 
   const canClearFilters =
-    tab === "history"
-      ? hasHistoryFilters ||
-        historyKind !== "all" ||
-        Boolean(historyDateFrom) ||
-        Boolean(historyDateTo)
-      : hasActiveFilters ||
-        statusFilter !== "" ||
-        search.trim() !== "" ||
-        portFilter > 0 ||
-        shippingLineFilter > 0 ||
-        vesselFilter > 0 ||
-        positionFilter > 0 ||
-        datePreset !== "all" ||
-        Boolean(availabilityDateAllowlist?.length) ||
-        (tab === "calendar" && calendarMode !== "monthly");
+    hasActiveFilters ||
+    statusFilter !== "" ||
+    search.trim() !== "" ||
+    portFilter > 0 ||
+    shippingLineFilter > 0 ||
+    vesselFilter > 0 ||
+    positionFilter > 0 ||
+    datePreset !== "all" ||
+    Boolean(availabilityDateAllowlist?.length) ||
+    (tab === "calendar" && calendarMode !== "monthly");
 
   const canApplyFilters =
-    tab === "history"
-      ? historyKind !== appliedHistoryKind ||
-        historyDateFrom !== appliedHistoryDateFrom ||
-        historyDateTo !== appliedHistoryDateTo
-      : statusFilter !== appliedStatusFilter ||
-        search.trim() !== appliedSearch ||
-        portFilter !== appliedPortFilter ||
-        shippingLineFilter !== appliedShippingLineFilter ||
-        vesselFilter !== appliedVesselFilter ||
-        datePreset !== appliedDatePreset ||
-        customDateFrom !== appliedCustomDateFrom ||
-        customDateTo !== appliedCustomDateTo ||
-        calendarMode !== appliedCalendarMode ||
-        positionFilter !== appliedPositionFilter;
+    statusFilter !== appliedStatusFilter ||
+    search.trim() !== appliedSearch ||
+    portFilter !== appliedPortFilter ||
+    shippingLineFilter !== appliedShippingLineFilter ||
+    vesselFilter !== appliedVesselFilter ||
+    datePreset !== appliedDatePreset ||
+    customDateFrom !== appliedCustomDateFrom ||
+    customDateTo !== appliedCustomDateTo ||
+    calendarMode !== appliedCalendarMode ||
+    positionFilter !== appliedPositionFilter;
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
@@ -548,10 +515,6 @@ export default function BookingsView() {
             call_date_to: listParams.call_date_to,
             ordering: listParams.ordering,
           });
-          return;
-        }
-        if (tab === "history") {
-          setViewError("La exportación no está disponible en Historial.");
           return;
         }
         if (tab === "availability") {
@@ -636,6 +599,13 @@ export default function BookingsView() {
     setDataExportHandler(handleExport);
     return () => setDataExportHandler(null);
   }, [handleExport]);
+
+  useEffect(() => {
+    setDataActivityHandler(() => {
+      setHistoryOpen(true);
+    });
+    return () => setDataActivityHandler(null);
+  }, []);
 
   useEffect(() => {
     if (!canWrite) {
@@ -778,9 +748,7 @@ export default function BookingsView() {
       ? "Solicitudes de escala por puerto, naviera y barco."
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
-        : tab === "history"
-          ? "Movimientos de reservas: creaciones y cambios únicos, e importaciones masivas."
-          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
+        : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
 
   const calendarPortLabel =
     appliedPortFilter > 0
@@ -851,8 +819,17 @@ export default function BookingsView() {
           setViewError(null);
           await refreshBookings();
           setHistoryBatchId(batchId);
-          setTab("history");
-          syncToUrl(workspaceState({ tab: "history" }));
+          setHistoryOpen(true);
+        }}
+      />
+
+      <BookingsHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        initialBatchId={historyBatchId}
+        onInitialBatchConsumed={() => setHistoryBatchId(null)}
+        onReprocessRows={(payload) => {
+          void handleReprocessImportRows(payload);
         }}
       />
 
@@ -869,9 +846,6 @@ export default function BookingsView() {
           customDateTo={customDateTo}
           calendarMode={calendarMode}
           positionFilter={positionFilter}
-          historyKind={historyKind}
-          historyDateFrom={historyDateFrom}
-          historyDateTo={historyDateTo}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
@@ -891,9 +865,6 @@ export default function BookingsView() {
           onCustomDateToChange={handleCustomDateToChange}
           onCalendarModeChange={setCalendarMode}
           onPositionFilterChange={setPositionFilter}
-          onHistoryKindChange={setHistoryKind}
-          onHistoryDateFromChange={setHistoryDateFrom}
-          onHistoryDateToChange={setHistoryDateTo}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
@@ -1010,21 +981,6 @@ export default function BookingsView() {
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}
           onClearFilters={handleClearFilters}
-        />
-      ) : null}
-
-      {tab === "history" ? (
-        <BookingsHistoryPanel
-          kind={appliedHistoryKind}
-          dateFrom={appliedHistoryDateFrom}
-          dateTo={appliedHistoryDateTo}
-          hasActiveFilters={hasHistoryFilters}
-          onClearFilters={handleClearFilters}
-          initialBatchId={historyBatchId}
-          onInitialBatchConsumed={() => setHistoryBatchId(null)}
-          onReprocessRows={(payload) => {
-            void handleReprocessImportRows(payload);
-          }}
         />
       ) : null}
     </>

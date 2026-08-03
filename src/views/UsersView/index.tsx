@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActivePortsCatalog } from "@/hooks/swr/useCatalogs";
 import { useUsersPage } from "@/hooks/swr/useUsersPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestUsers } from "@/lib/filterSuggestions";
 import { roleHomePath } from "@/lib/navAccess";
 import { revalidateUsersLists } from "@/lib/swr/mutateHelpers";
@@ -38,6 +39,7 @@ import { portDisplayName } from "@/types/catalog";
 import RoleLabelWithInfo from "./RoleLabelWithInfo";
 import UserFormModal, { type UserFormMode } from "./UserFormModal";
 import UserRowDetail from "./UserRowDetail";
+import UsersHistoryModal from "./UsersHistoryModal";
 import UsersViewSkeleton from "./UsersViewSkeleton";
 
 const PAGE_SIZE = 20;
@@ -51,6 +53,7 @@ export default function UsersView() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [viewError, setViewError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<UserFormMode>("create");
@@ -91,6 +94,17 @@ export default function UsersView() {
   useEffect(() => {
     setExpandedUserId(null);
   }, [page, appliedSearch]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setDataActivityHandler(null);
+      return;
+    }
+    setDataActivityHandler(() => {
+      setHistoryOpen(true);
+    });
+    return () => setDataActivityHandler(null);
+  }, [isAdmin]);
 
   function openCreate() {
     setModalMode("create");
@@ -310,6 +324,11 @@ export default function UsersView() {
         saving={saving}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSave}
+      />
+
+      <UsersHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
       />
     </>
   );

@@ -60,6 +60,12 @@ export const swrKeys = {
 
   bookingActivityInfinite: (paramsKey: string) =>
     ["bookings", "activity", "infinite", paramsKey] as const,
+
+  userActivityInfinite: (paramsKey: string) =>
+    ["users", "activity", "infinite", paramsKey] as const,
+
+  ltaActivityInfinite: (paramsKey: string) =>
+    ["lta-agreements", "activity", "infinite", paramsKey] as const,
 };
 
 export type SwrKey = readonly unknown[];

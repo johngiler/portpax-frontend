@@ -5,6 +5,7 @@ import {
   useMainLayout,
   useMainLayoutOptional,
 } from "@/contexts/MainLayoutContext";
+import { useDataActivity } from "@/lib/dataActivityStore";
 import { useDataExport } from "@/lib/dataExportStore";
 import { useDataImport } from "@/lib/dataImportStore";
 import ExportOptionsModal from "@/components/ui/ExportOptionsModal";
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   Download,
   Filter,
+  History,
   Upload,
 } from "lucide-react";
 
@@ -39,7 +41,7 @@ export function FilterSidebarContent({
 
 /**
  * Sidebar de filtros espejo del sidebar principal (lado derecho).
- * Incluye sección Importar/Exportar para vistas con datos (Excel/CSV).
+ * Incluye sección Datos: Importar / Exportar / Historial.
  */
 export default function FilterSidebar({ children }: FilterSidebarProps) {
   const layout = useMainLayoutOptional();
@@ -47,9 +49,11 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const setFilterOpen = layout?.setFilterOpen;
   const { canExport, runExport } = useDataExport();
   const { canImport, runImport } = useDataImport();
+  const { canOpenActivity, runActivity } = useDataActivity();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [openingActivity, setOpeningActivity] = useState(false);
 
   if (!setFilterOpen) return null;
 
@@ -79,8 +83,19 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     }
   };
 
+  const handleActivityClick = async () => {
+    if (!canOpenActivity || openingActivity) return;
+    setOpeningActivity(true);
+    try {
+      await runActivity();
+    } finally {
+      setOpeningActivity(false);
+    }
+  };
+
   const exportDisabled = !canExport || exporting;
   const importDisabled = !canImport || importing;
+  const activityDisabled = !canOpenActivity || openingActivity;
 
   const iconButtonClass =
     "flex w-full cursor-pointer flex-col items-center gap-2 rounded-md py-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200";
@@ -96,6 +111,15 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
       ? "Exportando…"
       : "Opciones de exportación"
     : "Exportación no disponible en esta vista";
+
+  const activityTitle = canOpenActivity
+    ? openingActivity
+      ? "Abriendo…"
+      : "Historial de movimientos de esta vista"
+    : "Historial no disponible en esta vista";
+
+  const dataActionClass =
+    "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200";
 
   return (
     <>
@@ -126,7 +150,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                       type="button"
                       disabled={importDisabled}
                       onClick={handleImportClick}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                      className={dataActionClass}
                       aria-label="Importar desde Excel/CSV"
                       title={importTitle}
                     >
@@ -137,12 +161,25 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                       type="button"
                       disabled={exportDisabled}
                       onClick={handleExportClick}
-                      className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200"
+                      className={dataActionClass}
                       aria-label="Exportar"
                       title={exportTitle}
                     >
                       <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
                       <span>{exporting ? "Exportando…" : "Exportar"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={activityDisabled}
+                      onClick={() => void handleActivityClick()}
+                      className={dataActionClass}
+                      aria-label="Historial de movimientos"
+                      title={activityTitle}
+                    >
+                      <History className="h-4 w-4 shrink-0" strokeWidth={2} />
+                      <span>
+                        {openingActivity ? "Abriendo…" : "Historial"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -189,6 +226,22 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
                 />
                 <span className="text-[11px] font-medium tracking-wide">
                   {exporting ? "…" : "Exportar"}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={activityDisabled}
+                onClick={() => void handleActivityClick()}
+                className={`${iconButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
+                aria-label="Historial"
+                title={activityTitle}
+              >
+                <History
+                  className="h-[18px] w-[18px] shrink-0"
+                  strokeWidth={2}
+                />
+                <span className="text-[11px] font-medium tracking-wide">
+                  {openingActivity ? "…" : "Historial"}
                 </span>
               </button>
             </div>

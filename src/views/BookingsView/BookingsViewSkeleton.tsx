@@ -159,16 +159,6 @@ function BodySkeleton({
   if (tab === "availability") {
     return <AvailabilitySkeleton cards={availabilityCards} />;
   }
-  if (tab === "history") {
-    return (
-      <div className="animate-pulse space-y-4">
-        <Skeleton className="h-24 w-full rounded-2xl" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-        ))}
-      </div>
-    );
-  }
   return <ListSkeleton />;
 }
 

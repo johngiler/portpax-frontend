@@ -87,12 +87,10 @@ export async function login(username: string, password: string): Promise<LoginRe
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-  } catch (err) {
-    const detail =
-      err instanceof Error
-        ? `${err.name}: ${err.message}${err.stack ? `\n${err.stack}` : ""}`
-        : String(err);
-    throw new Error(`Fallo de red al conectar con ${url}\n${detail}`);
+  } catch {
+    throw new Error(
+      "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+    );
   }
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as {
@@ -106,9 +104,7 @@ export async function login(username: string, password: string): Promise<LoginRe
         : data.non_field_errors) ??
       "Credenciales incorrectas";
     const msg = typeof raw === "string" ? raw : "Credenciales incorrectas";
-    throw new Error(
-      `${translateApiMessage(msg)}\nHTTP ${res.status} ${res.statusText}\n${url}`,
-    );
+    throw new Error(translateApiMessage(msg));
   }
   return res.json();
 }

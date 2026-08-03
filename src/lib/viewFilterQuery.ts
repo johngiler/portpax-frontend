@@ -13,7 +13,7 @@ export type BookingsDatePresetQuery =
 
 export type CalendarViewModeQuery = "weekly" | "monthly" | "annual";
 
-export type BookingsTabQuery = "list" | "calendar" | "availability" | "history";
+export type BookingsTabQuery = "list" | "calendar" | "availability";
 
 const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
   "all",
@@ -25,12 +25,7 @@ const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
 ]);
 
 const MODES = new Set<CalendarViewModeQuery>(["weekly", "monthly", "annual"]);
-const TABS = new Set<BookingsTabQuery>([
-  "list",
-  "calendar",
-  "availability",
-  "history",
-]);
+const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability"]);
 
 function parseIntId(raw: string | null): number {
   if (!raw) return 0;
@@ -82,9 +77,11 @@ export function parseBookingsWorkspaceFilters(
 
   return {
     tab:
-      tabRaw && TABS.has(tabRaw as BookingsTabQuery)
-        ? (tabRaw as BookingsTabQuery)
-        : "list",
+      tabRaw === "history"
+        ? "list"
+        : tabRaw && TABS.has(tabRaw as BookingsTabQuery)
+          ? (tabRaw as BookingsTabQuery)
+          : "list",
     status: isBookingListStatusFilter(statusRaw) ? statusRaw : "",
     search: sp.get("q")?.trim() ?? "",
     port: parseIntId(sp.get("port")) || portFromCsv || 0,

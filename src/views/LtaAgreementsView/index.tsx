@@ -27,6 +27,7 @@ import {
 } from "@/hooks/swr/useCatalogs";
 import { useLtaAgreementsPage } from "@/hooks/swr/useLtaAgreementsPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
 import {
@@ -41,6 +42,7 @@ import {
 } from "@/services/bookings/ltaService";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
 import LtaAgreementsViewSkeleton from "./LtaAgreementsViewSkeleton";
+import LtaHistoryModal from "./LtaHistoryModal";
 import LtaRowDetail from "./LtaRowDetail";
 import type { LongTermAgreement } from "@/types/lta";
 import { formatLtaWeekdays } from "@/types/lta";
@@ -69,6 +71,7 @@ export default function LtaAgreementsView() {
   const [modalMode, setModalMode] = useState<LtaFormMode>("create");
   const [editing, setEditing] = useState<LongTermAgreement | null>(null);
   const [saving, setSaving] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { ports } = useActivePortsCatalog(canBrowse);
   const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
@@ -91,6 +94,13 @@ export default function LtaAgreementsView() {
   useEffect(() => {
     setExpandedId(null);
   }, [page, appliedSearch]);
+
+  useEffect(() => {
+    setDataActivityHandler(() => {
+      setHistoryOpen(true);
+    });
+    return () => setDataActivityHandler(null);
+  }, []);
 
   function openCreate() {
     setModalMode("create");
@@ -372,6 +382,11 @@ export default function LtaAgreementsView() {
           onSubmit={handleSave}
         />
       ) : null}
+
+      <LtaHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </>
   );
 }

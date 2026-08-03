@@ -21,6 +21,8 @@ type BookingsHistoryPanelProps = {
   kind: BookingActivityKind;
   dateFrom: string;
   dateTo: string;
+  /** When false, SWR does not fetch (e.g. history modal closed). */
+  enabled?: boolean;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
   /** Open this batch detail when set (e.g. after mass import). */
@@ -37,6 +39,7 @@ export default function BookingsHistoryPanel({
   kind,
   dateFrom,
   dateTo,
+  enabled = true,
   hasActiveFilters = false,
   onClearFilters,
   initialBatchId = null,
@@ -52,12 +55,15 @@ export default function BookingsHistoryPanel({
     error,
     loadMore,
     refresh,
-  } = useBookingActivityInfinite({
-    kind,
-    dateFrom,
-    dateTo,
-    pageSize: PAGE_SIZE,
-  });
+  } = useBookingActivityInfinite(
+    {
+      kind,
+      dateFrom,
+      dateTo,
+      pageSize: PAGE_SIZE,
+    },
+    enabled,
+  );
 
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchDetail, setBatchDetail] = useState<ImportBatchDetail | null>(null);
