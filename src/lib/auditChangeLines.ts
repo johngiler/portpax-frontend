@@ -118,10 +118,13 @@ export function auditContextLines(
   if (!ctx || typeof ctx !== "object") return [];
   const rec = ctx as Record<string, unknown>;
   const lines: AuditChangeLine[] = [];
-  if (rec.ip) lines.push({ label: "IP", text: String(rec.ip) });
-  if (rec.path) lines.push({ label: "Ruta", text: String(rec.path) });
+  if (rec.ip) lines.push({ field: "ip", label: "IP", text: String(rec.ip) });
+  if (rec.path) {
+    lines.push({ field: "path", label: "Ruta", text: String(rec.path) });
+  }
   if (rec.user_agent) {
     lines.push({
+      field: "user_agent",
       label: "Cliente",
       text: String(rec.user_agent).slice(0, 120),
     });
