@@ -12,6 +12,7 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortsInfinite } from "@/hooks/swr/usePortsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestPorts } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { revalidatePortsLists } from "@/lib/swr/mutateHelpers";
@@ -19,6 +20,7 @@ import { createPort } from "@/services/catalogs/portService";
 import PortCard from "./PortCard";
 import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
 import PortsEmptyState from "./PortsEmptyState";
+import PortsHistoryModal from "./PortsHistoryModal";
 import PortsViewSkeleton from "./PortsViewSkeleton";
 
 const BATCH_SIZE = 12;
@@ -31,6 +33,7 @@ export default function PortsView() {
   const [viewError, setViewError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const {
     ports,
@@ -50,6 +53,13 @@ export default function PortsView() {
       );
     }
   }, [error]);
+
+  useEffect(() => {
+    setDataActivityHandler(() => {
+      setHistoryOpen(true);
+    });
+    return () => setDataActivityHandler(null);
+  }, []);
 
   async function handleSave({ payload, logoFile, removeLogo }: PortFormSubmitPayload) {
     setSaving(true);
@@ -155,6 +165,11 @@ export default function PortsView() {
         saving={saving}
         onClose={() => !saving && setModalOpen(false)}
         onSubmit={handleSave}
+      />
+
+      <PortsHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
       />
     </>
   );

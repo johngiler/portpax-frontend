@@ -2,6 +2,12 @@
 
 import { formatLtaWeekdays } from "@/types/lta";
 
+const PORT_STATUS_LABELS: Record<string, string> = {
+  operational: "Operativo",
+  in_development: "En desarrollo",
+  planned_extension: "Ampliación proyectada",
+};
+
 const FIELD_LABELS: Record<string, string> = {
   username: "Usuario",
   email: "Correo",
@@ -42,6 +48,17 @@ const FIELD_LABELS: Record<string, string> = {
   has_contract: "Contrato",
   linked: "Vinculadas",
   skipped: "Omitidas",
+  commercial_name: "Nombre comercial",
+  country: "País",
+  region: "Región",
+  latitude: "Latitud",
+  longitude: "Longitud",
+  min_berth_draft_m: "Calado mín.",
+  anchorage_slot_count: "Fondos",
+  fender_count: "Defensas",
+  has_logo: "Logo",
+  group_id: "Grupo",
+  group_name: "Grupo",
 };
 
 const META_KEYS = new Set([
@@ -71,6 +88,19 @@ function formatValue(value: unknown, key?: string): string {
       }
     }
     return formatWeekdaysValue(value);
+  }
+  if (key === "status") {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        const from = rec.from ?? rec.old;
+        const to = rec.to ?? rec.new;
+        return `${formatValue(from, "status")} → ${formatValue(to, "status")}`;
+      }
+    }
+    if (typeof value === "string" && PORT_STATUS_LABELS[value]) {
+      return PORT_STATUS_LABELS[value];
+    }
   }
   if (value == null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Sí" : "No";

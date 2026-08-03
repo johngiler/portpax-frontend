@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useShippingLineGroupsCatalog } from "@/hooks/swr/useCatalogs";
 import { useShippingLinesInfinite } from "@/hooks/swr/useShippingLinesInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestShippingLines } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { revalidateShippingLinesLists } from "@/lib/swr/mutateHelpers";
@@ -22,6 +23,7 @@ import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
 import ShippingLineCard from "./ShippingLineCard";
 import ShippingLineFormModal from "./ShippingLineFormModal";
 import ShippingLinesEmptyState from "./ShippingLinesEmptyState";
+import ShippingLinesHistoryModal from "./ShippingLinesHistoryModal";
 import ShippingLinesViewSkeleton from "./ShippingLinesViewSkeleton";
 
 const BATCH_SIZE = 12;
@@ -36,6 +38,7 @@ export default function ShippingLinesView() {
   const [viewError, setViewError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { groups } = useShippingLineGroupsCatalog();
   const groupOptions = useMemo(
@@ -61,6 +64,13 @@ export default function ShippingLinesView() {
       );
     }
   }, [error]);
+
+  useEffect(() => {
+    setDataActivityHandler(() => {
+      setHistoryOpen(true);
+    });
+    return () => setDataActivityHandler(null);
+  }, []);
 
   async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
     setSaving(true);
@@ -181,6 +191,11 @@ export default function ShippingLinesView() {
         saving={saving}
         onClose={() => !saving && setModalOpen(false)}
         onSubmit={handleSave}
+      />
+
+      <ShippingLinesHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
       />
     </>
   );
