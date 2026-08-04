@@ -18,7 +18,7 @@ import {
 } from "@/hooks/swr/useCatalogs";
 import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { toIsoDate } from "@/lib/bookingDates";
+import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { canWriteApp } from "@/lib/navAccess";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import type {
@@ -57,6 +57,7 @@ import {
   type BookingListStatusFilter,
 } from "@/types/booking";
 import {
+  addDaysIso,
   monthBounds,
   weekDatesFrom,
   yearBounds,
@@ -97,6 +98,15 @@ function defaultCustomTo(): string {
 function todayIso(): string {
   const d = new Date();
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function daysInclusive(from: string, to: string): number {
+  if (from > to) return 0;
+  const a = parseIsoDate(from);
+  const b = parseIsoDate(to);
+  const t0 = Date.UTC(a.year, a.monthIndex, a.day);
+  const t1 = Date.UTC(b.year, b.monthIndex, b.day);
+  return Math.floor((t1 - t0) / 86_400_000) + 1;
 }
 
 export default function BookingsView() {
@@ -379,6 +389,41 @@ export default function BookingsView() {
     appliedCustomDateFrom,
     appliedCustomDateTo,
   ]);
+
+  const availabilityRangeRef = useRef(availabilityRange);
+  availabilityRangeRef.current = availabilityRange;
+  const availabilityAllowlistRef = useRef(availabilityDateAllowlist);
+  availabilityAllowlistRef.current = availabilityDateAllowlist;
+  const syncWorkspaceRef = useRef<
+    (overrides?: Partial<BookingsWorkspaceFilters>) => void
+  >(() => {});
+  // Always sync with the latest workspace filters (tab, port, etc.).
+  syncWorkspaceRef.current = (overrides) => {
+    syncToUrl(workspaceState(overrides));
+  };
+
+  const handleAvailabilityStartChange = useCallback((newFrom: string) => {
+    const { from, to } = availabilityRangeRef.current;
+    const allowlist = availabilityAllowlistRef.current;
+    const span = allowlist?.length
+      ? allowlist.length
+      : Math.max(1, daysInclusive(from, to));
+    const newTo = addDaysIso(newFrom, span - 1);
+
+    // Exit imported allowlist → chained custom range (sidebar Desde/Hasta).
+    setAvailabilityDateAllowlist(null);
+    setDatePreset("custom");
+    setAppliedDatePreset("custom");
+    setCustomDateFrom(newFrom);
+    setCustomDateTo(newTo);
+    setAppliedCustomDateFrom(newFrom);
+    setAppliedCustomDateTo(newTo);
+    syncWorkspaceRef.current({
+      datePreset: "custom",
+      customFrom: newFrom,
+      customTo: newTo,
+    });
+  }, []);
 
   const {
     bookings,
@@ -1040,6 +1085,7 @@ export default function BookingsView() {
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}
           onClearFilters={handleClearFilters}
+          onStartDateChange={handleAvailabilityStartChange}
         />
       ) : null}
     </>

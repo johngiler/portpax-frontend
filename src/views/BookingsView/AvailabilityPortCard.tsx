@@ -19,6 +19,8 @@ type AvailabilityPortCardProps = {
   filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
+  /** Shift grid start; parent recalculates consecutive range. */
+  onStartDateChange?: (isoDate: string) => void;
 };
 
 function todayIsoLocal(): string {
@@ -50,6 +52,7 @@ export default function AvailabilityPortCard({
   filters = {},
   canBook = false,
   returnTo = null,
+  onStartDateChange,
 }: AvailabilityPortCardProps) {
   const todayIso = todayIsoLocal();
   const scrollRootRef = useRef<HTMLDivElement>(null);
@@ -128,6 +131,7 @@ export default function AvailabilityPortCard({
       scrollRootRef={scrollRootRef}
       canBook={canBook}
       returnTo={returnTo}
+      onStartDateChange={onStartDateChange}
       footer={
         <InfiniteScrollFooter
           hasMore={displayHasMore}

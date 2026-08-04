@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode, RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
@@ -22,11 +22,91 @@ type Props = {
   /** When true, empty future pier cells open the booking wizard. */
   canBook?: boolean;
   returnTo?: string | null;
+  /**
+   * When set, the first date row is editable; changing it shifts the grid
+   * start (Fernanda: consecutive days from the new first date).
+   */
+  onStartDateChange?: (isoDate: string) => void;
 };
 
 function todayIsoLocal(): string {
   const d = new Date();
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function AvailabilityStartDateCell({
+  date,
+  onChange,
+}: {
+  date: string;
+  onChange: (isoDate: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Local draft so year/month navigation does not commit (and remount) early.
+  const [draft, setDraft] = useState(date);
+  const dateRef = useRef(date);
+  dateRef.current = date;
+
+  useEffect(() => {
+    setDraft(date);
+  }, [date]);
+
+  function openDayPicker() {
+    const input = inputRef.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === "function") {
+        void input.showPicker();
+      }
+    } catch {
+      // Native click still opens the day calendar when the input has size.
+    }
+  }
+
+  function commitIfChanged(next: string) {
+    if (!next || next === dateRef.current) return;
+    onChange(next);
+  }
+
+  function handleDraftChange(next: string) {
+    if (!next) return;
+    setDraft(next);
+    // Day click: commit now (blur often does not fire after native picker).
+    if (next.slice(8, 10) !== dateRef.current.slice(8, 10)) {
+      commitIfChanged(next);
+      return;
+    }
+    // Same day number (year/month spin): commit only after picker closes.
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        if (document.activeElement !== inputRef.current) {
+          commitIfChanged(next);
+        }
+      });
+    });
+  }
+
+  return (
+    <div className="relative rounded-lg border border-dashed border-zinc-300 px-1 py-0.5 transition hover:border-[var(--admin-accent)] hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800/60">
+      <span className="pointer-events-none block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+        {formatIsoDateLabel(draft, "short")}
+      </span>
+      <span className="pointer-events-none mt-0.5 block font-mono text-[10px] text-zinc-400">
+        {draft}
+      </span>
+      <input
+        ref={inputRef}
+        type="date"
+        value={draft}
+        onClick={openDayPicker}
+        onChange={(e) => handleDraftChange(e.target.value)}
+        onBlur={(e) => commitIfChanged(e.currentTarget.value)}
+        className="absolute inset-0 z-10 cursor-pointer opacity-0"
+        title="Cambiar fecha de inicio"
+        aria-label="Cambiar fecha de inicio del rango"
+      />
+    </div>
+  );
 }
 
 const availableSlotClass =
@@ -70,6 +150,7 @@ export default function AvailabilityChartSection({
   scrollRootRef,
   canBook = false,
   returnTo = null,
+  onStartDateChange,
 }: Props) {
   const todayIso = todayIsoLocal();
 
@@ -131,15 +212,27 @@ export default function AvailabilityChartSection({
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((row) => (
+            {data.rows.map((row, rowIndex) => {
+              const isFirstEditable =
+                rowIndex === 0 && Boolean(onStartDateChange);
+              return (
               <tr key={row.date} className="group">
-                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-4 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
-                  <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    {formatIsoDateLabel(row.date, "short")}
-                  </span>
-                  <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
-                    {row.date}
-                  </span>
+                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-3 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
+                  {isFirstEditable ? (
+                    <AvailabilityStartDateCell
+                      date={row.date}
+                      onChange={(next) => onStartDateChange?.(next)}
+                    />
+                  ) : (
+                    <>
+                      <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                        {formatIsoDateLabel(row.date, "short")}
+                      </span>
+                      <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
+                        {row.date}
+                      </span>
+                    </>
+                  )}
                 </td>
                 {data.columns.map((column, idx) => {
                   const calls = row.cells[idx] ?? [];
@@ -219,7 +312,8 @@ export default function AvailabilityChartSection({
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {footer ? (

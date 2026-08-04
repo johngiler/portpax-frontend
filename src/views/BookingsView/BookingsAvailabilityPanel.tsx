@@ -17,6 +17,7 @@ type BookingsAvailabilityPanelProps = {
   canBook?: boolean;
   returnTo?: string | null;
   onClearFilters?: () => void;
+  onStartDateChange?: (isoDate: string) => void;
 };
 
 export default function BookingsAvailabilityPanel({
@@ -29,6 +30,7 @@ export default function BookingsAvailabilityPanel({
   canBook = false,
   returnTo = null,
   onClearFilters,
+  onStartDateChange,
 }: BookingsAvailabilityPanelProps) {
   const targetIds = useMemo(() => {
     if (portId > 0) return [portId];
@@ -65,6 +67,7 @@ export default function BookingsAvailabilityPanel({
           filters={filters}
           canBook={canBook}
           returnTo={returnTo}
+          onStartDateChange={onStartDateChange}
         />
       ))}
     </div>
