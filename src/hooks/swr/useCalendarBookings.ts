@@ -7,7 +7,10 @@ import { fetchPositions } from "@/services/catalogs/positionService";
 import type { Booking, BookingListStatusFilter } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
-import { yearBounds } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
+import {
+  seasonBounds,
+  type CalendarSeason,
+} from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 
 export type CalendarBookingsParams = {
   mode: CalendarViewModeQuery;
@@ -19,6 +22,7 @@ export type CalendarBookingsParams = {
   from: string;
   to: string;
   year: number;
+  season?: CalendarSeason;
 };
 
 function calendarParamsKey(p: CalendarBookingsParams): string {
@@ -32,6 +36,7 @@ function calendarParamsKey(p: CalendarBookingsParams): string {
     p.from,
     p.to,
     p.year,
+    p.season ?? "natural",
   ].join("|");
 }
 
@@ -58,7 +63,8 @@ async function fetchCalendarPayload(
   let previousYearBookings: Booking[] = [];
 
   if (params.mode === "annual") {
-    const prev = yearBounds(params.year - 1);
+    const season = params.season ?? "natural";
+    const prev = seasonBounds(params.year - 1, season);
     const [currentRows, prevRows] = await Promise.all([
       fetchAllBookings({
         ...common,
@@ -89,7 +95,6 @@ async function fetchCalendarPayload(
     });
     positions = positionsResponse.results.filter((p) => p.is_active);
   } else {
-    // Multi-port: need pier inventory for occupancy % (dashboard formula).
     const positionsResponse = await fetchPositions({ pageSize: 200 });
     positions = positionsResponse.results.filter((p) => p.is_active);
   }
@@ -102,7 +107,6 @@ export function useCalendarBookings(params: CalendarBookingsParams) {
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     swrKeys.calendarBookings(key),
     () => fetchCalendarPayload(params),
-    // Period changes must not keep prior range data (empty-looking month/week).
     { keepPreviousData: false },
   );
 

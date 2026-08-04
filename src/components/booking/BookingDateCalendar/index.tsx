@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import {
   getCalendarGrid,
   parseIsoDate,
@@ -20,6 +21,8 @@ type BookingDateCalendarProps = {
   blockedDates?: string[];
   minDate?: string;
   loadingOccupied?: boolean;
+  canReassignOccupancy?: boolean;
+  onOccupancyReassigned?: () => void;
 };
 
 function todayIso(): string {
@@ -34,6 +37,8 @@ export default function BookingDateCalendar({
   blockedDates = [],
   minDate,
   loadingOccupied = false,
+  canReassignOccupancy = false,
+  onOccupancyReassigned,
 }: BookingDateCalendarProps) {
   const today = todayIso();
   const min = minDate ?? today;
@@ -65,6 +70,7 @@ export default function BookingDateCalendar({
   }
 
   function handleDayClick(cell: CalendarCell) {
+    if (loadingOccupied) return;
     if (cell.iso < min) return;
 
     const dayBookings = occupancyByDate[cell.iso] ?? [];
@@ -119,15 +125,17 @@ export default function BookingDateCalendar({
         </div>
         <div className="flex items-center gap-2">
           {loadingOccupied ? (
-            <span className="rounded-full bg-zinc-200/80 px-3 py-1 text-xs font-medium text-zinc-500 dark:bg-zinc-800">
-              Cargando…
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--admin-accent)]/10 px-3 py-1 text-xs font-semibold text-[var(--admin-accent)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              Cargando ocupaciones…
             </span>
           ) : null}
           {selectedDates.length > 0 ? (
             <button
               type="button"
               onClick={jumpToFirstSelected}
-              className="cursor-pointer rounded-full border border-zinc-200/80 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-[var(--admin-accent)]/30 hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:text-zinc-300"
+              disabled={loadingOccupied}
+              className="cursor-pointer rounded-full border border-zinc-200/80 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-[var(--admin-accent)]/30 hover:text-[var(--admin-accent)] disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
             >
               Ver selección
             </button>
@@ -138,35 +146,64 @@ export default function BookingDateCalendar({
         </div>
       </div>
 
-      <CalendarNav
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        minIso={min}
-        onViewChange={setView}
-        onGoToToday={goToToday}
-      />
+      <div className="relative">
+        <CalendarNav
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          minIso={min}
+          onViewChange={setView}
+          onGoToToday={goToToday}
+        />
 
-      <CalendarGrid
-        weeks={weeks}
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        direction={direction}
-        todayIso={today}
-        minIso={min}
-        selectedSet={selectedSet}
-        blockedSet={blockedSet}
-        occupancyByDate={occupancyByDate}
-        expandedDate={expandedDate}
-        onDayClick={handleDayClick}
-      />
+        <CalendarGrid
+          weeks={weeks}
+          viewYear={viewYear}
+          viewMonth={viewMonth}
+          direction={direction}
+          todayIso={today}
+          minIso={min}
+          selectedSet={selectedSet}
+          blockedSet={blockedSet}
+          occupancyByDate={loadingOccupied ? {} : occupancyByDate}
+          expandedDate={loadingOccupied ? null : expandedDate}
+          onDayClick={handleDayClick}
+        />
 
-      <CalendarDayAccordion
-        dateIso={showAccordion ? expandedDate : null}
-        bookings={expandedBookings}
-        onClose={() => setExpandedDate(null)}
-      />
+        {loadingOccupied ? (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-[2px] dark:bg-zinc-950/60"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <Loader2
+              className="h-8 w-8 animate-spin text-[var(--admin-accent)]"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+              Cargando ocupaciones del puerto…
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Espera a que termine para seleccionar fechas
+            </p>
+          </div>
+        ) : null}
+      </div>
 
-      <SelectedDatesList selectedDates={selectedDates} onChange={onChange} />
+      {!loadingOccupied ? (
+        <CalendarDayAccordion
+          dateIso={showAccordion ? expandedDate : null}
+          bookings={expandedBookings}
+          onClose={() => setExpandedDate(null)}
+          canReassign={canReassignOccupancy}
+          onBookingReassigned={onOccupancyReassigned}
+        />
+      ) : null}
+
+      <SelectedDatesList
+        selectedDates={selectedDates}
+        onChange={loadingOccupied ? () => undefined : onChange}
+      />
     </div>
   );
 }

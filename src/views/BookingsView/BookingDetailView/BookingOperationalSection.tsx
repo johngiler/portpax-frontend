@@ -172,17 +172,6 @@ export default function BookingOperationalSection({
         />
       ) : null}
 
-      {booking.confirmation_pdf_url ? (
-        <a
-          href={booking.confirmation_pdf_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
-        >
-          Descargar confirmación PDF
-        </a>
-      ) : null}
-
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <FormFieldSelect<number>
           label="Reasignar posición"
@@ -230,9 +219,6 @@ export default function BookingOperationalSection({
           onChange={(value) => setActualPax(String(value))}
           disabled={readOnly}
         />
-        <p className="-mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:col-span-2">
-          PAX real = total absoluto de pasajeros desembarcados (no el delta del Excel).
-        </p>
         <FormField
           label="Tripulación real (post-arribo)"
           name="booking_actual_crew"

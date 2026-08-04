@@ -12,13 +12,19 @@ import {
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
-import { previewAssignedPositions, validateBookings } from "@/services/bookings/bookingService";
+import {
+  previewAssignedPositions,
+  suggestBookingPositions,
+  validateBookings,
+} from "@/services/bookings/bookingService";
 import type { BookingValidationResult, PositionSuggestion } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
+import ReviewDayPeersPanel from "./ReviewDayPeersPanel";
 
 type ReviewStepProps = {
   port: Port | null;
@@ -32,6 +38,7 @@ type ReviewStepProps = {
   plannedPax: string;
   preferredPositionId?: number | null;
   preferredPositionLabel?: string;
+  onPreferredPositionChange?: (id: number | null, label: string) => void;
   /** Reports blocking validation (errors) so Create can be disabled. */
   onBlockingChange?: (blocked: boolean) => void;
 };
@@ -72,6 +79,7 @@ export default function ReviewStep({
   plannedPax,
   preferredPositionId = null,
   preferredPositionLabel = "",
+  onPreferredPositionChange,
   onBlockingChange,
 }: ReviewStepProps) {
   const [validation, setValidation] = useState<BookingValidationResult | null>(null);
@@ -79,6 +87,8 @@ export default function ReviewStep({
     Record<string, PositionSuggestion | null>
   >({});
   const [loadingPositions, setLoadingPositions] = useState(false);
+  const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -126,6 +136,73 @@ export default function ReviewStep({
       .catch(() => setPositionsByDate({}))
       .finally(() => setLoadingPositions(false));
   }, [port, vessel, callDates]);
+
+  useEffect(() => {
+    if (!port || !vessel || callDates.length === 0) {
+      setSuggestions([]);
+      return;
+    }
+    const callDate = callDates[0];
+    let cancelled = false;
+    setLoadingSuggestions(true);
+    suggestBookingPositions({
+      port: port.id,
+      vessel: vessel.id,
+      call_date: callDate,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        setSuggestions(data.positions);
+        // Seed preferred from auto recommendation when user hasn't chosen one.
+        if (
+          onPreferredPositionChange &&
+          preferredPositionId == null
+        ) {
+          const recommended =
+            data.positions.find((p) => p.recommended) ?? data.positions[0];
+          if (recommended) {
+            onPreferredPositionChange(recommended.id, recommended.code);
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggestions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Only re-seed when port/vessel/dates change, not when preferred updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional seed-once per dates
+  }, [port, vessel, callDates]);
+
+  const positionOptions = suggestions.map((position) => {
+    const tags: string[] = [];
+    if (position.recommended) tags.push("sugerida");
+    if (position.occupied) tags.push("ocupada");
+    const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
+    return {
+      value: position.id,
+      label: `${position.code}${suffix}`,
+    };
+  });
+
+  function handlePreferredChange(nextId: number) {
+    if (!onPreferredPositionChange) return;
+    if (nextId <= 0) {
+      onPreferredPositionChange(null, "");
+      return;
+    }
+    const match = suggestions.find((p) => p.id === nextId);
+    onPreferredPositionChange(nextId, match?.code ?? String(nextId));
+  }
+
+  const displayLabel =
+    preferredPositionLabel ||
+    suggestions.find((p) => p.id === preferredPositionId)?.code ||
+    null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -218,6 +295,32 @@ export default function ReviewStep({
 
       <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
         <div className="mb-3 flex items-center gap-2">
+          <LayoutGrid className="h-4 w-4 text-[var(--admin-accent)]" strokeWidth={2} />
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Posición sugerida
+          </h3>
+        </div>
+        <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+          El sistema propone una posición (LOA, calado y disponibilidad). Puedes
+          cambiarla antes de crear; es solo una sugerencia.
+        </p>
+        <FormFieldSelect<number>
+          label="Posición para el lote"
+          name="review_preferred_position"
+          value={preferredPositionId ?? 0}
+          onChange={handlePreferredChange}
+          options={positionOptions}
+          optionLabel={
+            loadingSuggestions ? "Cargando sugerencias…" : "Auto (sin preferencia)"
+          }
+          emptyValue={0}
+          compact
+          disabled={!onPreferredPositionChange || loadingSuggestions}
+        />
+      </div>
+
+      <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
+        <div className="mb-3 flex items-center gap-2">
           <Hash className="h-4 w-4 text-[var(--admin-accent)]" strokeWidth={2} />
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             Códigos de reserva
@@ -235,6 +338,10 @@ export default function ReviewStep({
           <ul className="divide-y divide-zinc-200/80 dark:divide-zinc-800">
             {callDates.map((iso, index) => {
               const assigned = positionsByDate[iso];
+              const rowLabel =
+                displayLabel ||
+                (loadingPositions ? null : assigned?.code) ||
+                null;
               return (
               <li
                 key={iso}
@@ -247,18 +354,13 @@ export default function ReviewStep({
                   <p className="mt-0.5 text-[11px] text-zinc-400">Escala {index + 1}</p>
                 </div>
                 <div className="min-w-[4.5rem] text-center">
-                  {preferredPositionId && preferredPositionLabel ? (
+                  {rowLabel ? (
                     <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                       <LayoutGrid className="h-3 w-3" strokeWidth={2} />
-                      {preferredPositionLabel}
+                      {rowLabel}
                     </span>
                   ) : loadingPositions ? (
                     <span className="text-xs text-zinc-400">…</span>
-                  ) : assigned ? (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      <LayoutGrid className="h-3 w-3" strokeWidth={2} />
-                      {assigned.code}
-                    </span>
                   ) : (
                     <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                       Sin posición
@@ -277,12 +379,15 @@ export default function ReviewStep({
             })}
           </ul>
         </div>
-        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          {preferredPositionId
-            ? "Se intentará asignar la posición elegida en disponibilidad; si no es viable, se usará la mejor alternativa."
-            : "La posición se calcula automáticamente (LOA, calado y disponibilidad) al crear la reserva."}
-        </p>
       </div>
+
+      {port && vessel ? (
+        <ReviewDayPeersPanel
+          portId={port.id}
+          vesselId={vessel.id}
+          callDates={callDates}
+        />
+      ) : null}
 
       <div className="border-t border-zinc-200/80 bg-zinc-50/40 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30">
         <label className="block">

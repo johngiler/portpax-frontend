@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { formatIsoDateLabel } from "@/lib/bookingDates";
+import { formatIsoDateLabel, formatIsoWeekdayShort } from "@/lib/bookingDates";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
@@ -122,11 +122,16 @@ export default function WeekGrid({
                       key={iso}
                       className="min-w-[8.5rem] px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
                     >
-                      <span className="inline-flex items-center justify-center gap-1.5">
-                        <span
-                          className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
-                        />
-                        {formatIsoDateLabel(iso, "short")}
+                      <span className="inline-flex flex-col items-center justify-center gap-0.5">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
+                          />
+                          <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                            {formatIsoWeekdayShort(iso)}
+                          </span>
+                        </span>
+                        <span>{formatIsoDateLabel(iso, "short")}</span>
                       </span>
                     </th>
                   );
@@ -192,11 +197,16 @@ export default function WeekGrid({
                       key={iso}
                       className="min-w-[8.5rem] cursor-default px-1.5 py-2 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300"
                     >
-                      <span className="inline-flex items-center justify-center gap-1.5">
-                        <span
-                          className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
-                        />
-                        {formatIsoDateLabel(iso, "short")}
+                      <span className="inline-flex flex-col items-center justify-center gap-0.5">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className={`h-2 w-2 rounded-full ${TRAFFIC_DOT[traffic]}`}
+                          />
+                          <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                            {formatIsoWeekdayShort(iso)}
+                          </span>
+                        </span>
+                        <span>{formatIsoDateLabel(iso, "short")}</span>
                       </span>
                     </th>
                   );

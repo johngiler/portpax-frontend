@@ -80,7 +80,7 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       label: sc.booking_code,
       hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
       applyValue: sc.booking_code,
-      group: "Reservas",
+      group: "Códigos de reserva",
       filterEntity: "booking",
       entityId: sc.id,
     });

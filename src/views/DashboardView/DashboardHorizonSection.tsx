@@ -1,18 +1,28 @@
 "use client";
 
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, CalendarDays } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
 import type { DashboardNext30Days } from "@/types/dashboard";
 
-type DashboardNext30SectionProps = {
+type DashboardHorizonSectionProps = {
   data: DashboardNext30Days;
+  variant: "current_week" | "next_30";
 };
 
-export default function DashboardNext30Section({ data }: DashboardNext30SectionProps) {
+export default function DashboardHorizonSection({
+  data,
+  variant,
+}: DashboardHorizonSectionProps) {
+  const isWeek = variant === "current_week";
+  const title = isWeek ? "Arribos de la semana" : "Próximos 30 días";
+  const emptyCopy = isWeek
+    ? "No hay calls confirmados en la semana en curso con los filtros actuales."
+    : "No hay calls confirmados en los próximos 30 días con los filtros actuales.";
+
   return (
     <ViewSection
-      icon={CalendarClock}
-      title="Próximos 30 días"
+      icon={isWeek ? CalendarDays : CalendarClock}
+      title={title}
       description={`Calls confirmados (CO / CL / LTA / LTD) del ${data.date_from} al ${data.date_to}.`}
     >
       <div className="px-5 py-4 sm:px-6">
@@ -32,9 +42,7 @@ export default function DashboardNext30Section({ data }: DashboardNext30SectionP
         </div>
 
         {data.by_port.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No hay calls confirmados en los próximos 30 días con los filtros actuales.
-          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">{emptyCopy}</p>
         ) : (
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {data.by_port.map((row) => (

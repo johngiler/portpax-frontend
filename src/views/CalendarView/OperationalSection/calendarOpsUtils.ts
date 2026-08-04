@@ -40,6 +40,79 @@ export function yearBounds(year: number): { from: string; to: string } {
   };
 }
 
+/** Calendar season for annual view (Fernanda / Excel ops). */
+export type CalendarSeason = "natural" | "summer" | "winter";
+
+/**
+ * Summer: 1 May – 31 Oct of `year`.
+ * Winter: 1 Nov `year` – 30 Apr `year+1`.
+ * Natural: full calendar year.
+ */
+export function seasonBounds(
+  year: number,
+  season: CalendarSeason,
+): { from: string; to: string } {
+  if (season === "summer") {
+    return {
+      from: toIsoDate(year, 4, 1),
+      to: toIsoDate(year, 9, 31),
+    };
+  }
+  if (season === "winter") {
+    return {
+      from: toIsoDate(year, 10, 1),
+      to: toIsoDate(year + 1, 3, 30),
+    };
+  }
+  return yearBounds(year);
+}
+
+export function seasonLabel(season: CalendarSeason): string {
+  if (season === "summer") return "Summer";
+  if (season === "winter") return "Winter";
+  return "Año natural";
+}
+
+/** Month indices (year, monthIndex 0–11) covered by a season range, inclusive. */
+export function monthsInSeason(
+  year: number,
+  season: CalendarSeason,
+): { year: number; monthIndex: number }[] {
+  const { from, to } = seasonBounds(year, season);
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  const out: { year: number; monthIndex: number }[] = [];
+  let y = start.year;
+  let m = start.monthIndex;
+  while (y < end.year || (y === end.year && m <= end.monthIndex)) {
+    out.push({ year: y, monthIndex: m });
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+export function summarizeMonth(
+  bookings: Booking[],
+  year: number,
+  monthIndex: number,
+): { ships: number; plannedPax: number } {
+  let ships = 0;
+  let plannedPax = 0;
+  for (const b of bookings) {
+    if (b.status === "c") continue;
+    const [y, m] = b.call_date.split("-").map(Number);
+    if (y === year && m === monthIndex + 1) {
+      ships += 1;
+      plannedPax += b.planned_pax ?? 0;
+    }
+  }
+  return { ships, plannedPax };
+}
+
 export function summarizeYear(bookings: Booking[], year: number): {
   calls: number;
   plannedPax: number;
@@ -53,6 +126,23 @@ export function summarizeYear(bookings: Booking[], year: number): {
     plannedPax += b.planned_pax ?? 0;
   }
   return { calls, plannedPax };
+}
+
+/** Aggregate ships + PAX for an arbitrary inclusive ISO range. */
+export function summarizeRange(
+  bookings: Booking[],
+  from: string,
+  to: string,
+): { ships: number; plannedPax: number } {
+  let ships = 0;
+  let plannedPax = 0;
+  for (const b of bookings) {
+    if (b.status === "c") continue;
+    if (b.call_date < from || b.call_date > to) continue;
+    ships += 1;
+    plannedPax += b.planned_pax ?? 0;
+  }
+  return { ships, plannedPax };
 }
 
 export function yoyDeltaPct(current: number, previous: number): number | null {

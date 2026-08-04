@@ -22,6 +22,16 @@ export function formatIsoDateLabel(value: string, style: "short" | "long" = "lon
   });
 }
 
+/** Short weekday for calendar headers (e.g. Lun, Mar). */
+export function formatIsoWeekdayShort(value: string): string {
+  const { year, monthIndex, day } = parseIsoDate(value);
+  const date = new Date(year, monthIndex, day);
+  const raw = date.toLocaleDateString("es-MX", { weekday: "short" });
+  const cleaned = raw.replace(/\.$/, "").trim();
+  if (!cleaned) return "";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 export function getMonthMatrix(year: number, monthIndex: number): (number | null)[][] {
   const firstWeekday = new Date(year, monthIndex, 1).getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();

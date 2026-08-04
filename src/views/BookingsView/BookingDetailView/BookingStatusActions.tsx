@@ -345,7 +345,11 @@ export default function BookingStatusActions({
       >
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
           ¿Confirmar la escala de {booking.vessel_name} en {booking.port_name}? Se
-          generará el PDF. La posición puede quedar por asignar.
+          generará el PDF de confirmación (referencia: código de reserva{" "}
+          <code className="font-semibold text-[var(--admin-accent)]">
+            {booking.booking_code}
+          </code>
+          ). La posición puede quedar por asignar.
         </p>
         {needsCombinedRedAck ? (
           <div className="mt-4 space-y-2">

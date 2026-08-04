@@ -10,7 +10,7 @@ export default function DashboardViewSkeleton() {
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="KPIs operativos del período, cola de acción, próximos 30 días y ocupación por puerto."
+        description="KPIs operativos del período, arribos de la semana, cola de acción y ocupación por puerto."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (

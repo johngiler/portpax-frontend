@@ -13,6 +13,8 @@ export type BookingsDatePresetQuery =
 
 export type CalendarViewModeQuery = "weekly" | "monthly" | "annual";
 
+export type CalendarSeasonQuery = "natural" | "summer" | "winter";
+
 export type BookingsTabQuery = "list" | "calendar" | "availability";
 
 const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
@@ -25,6 +27,7 @@ const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
 ]);
 
 const MODES = new Set<CalendarViewModeQuery>(["weekly", "monthly", "annual"]);
+const SEASONS = new Set<CalendarSeasonQuery>(["natural", "summer", "winter"]);
 const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability"]);
 
 function parseIntId(raw: string | null): number {
@@ -49,6 +52,8 @@ export type BookingsWorkspaceFilters = {
   customFrom: string;
   customTo: string;
   mode: CalendarViewModeQuery;
+  /** Annual range: natural year / Summer / Winter. */
+  season: CalendarSeasonQuery;
   position: number;
   week: string;
   year: number;
@@ -63,6 +68,7 @@ export function parseBookingsWorkspaceFilters(
   const statusRaw = sp.get("status");
   const dateRaw = sp.get("date");
   const modeRaw = sp.get("mode");
+  const seasonRaw = sp.get("season");
   const yearRaw = sp.get("year");
   const monthRaw = sp.get("month");
   const year = yearRaw ? Number(yearRaw) : defaults.year;
@@ -94,6 +100,10 @@ export function parseBookingsWorkspaceFilters(
       modeRaw && MODES.has(modeRaw as CalendarViewModeQuery)
         ? (modeRaw as CalendarViewModeQuery)
         : "monthly",
+    season:
+      seasonRaw && SEASONS.has(seasonRaw as CalendarSeasonQuery)
+        ? (seasonRaw as CalendarSeasonQuery)
+        : "natural",
     position: parseIntId(sp.get("position")),
     week: sp.get("week") || defaults.week,
     year: Number.isFinite(year) && year >= 2000 ? Math.trunc(year) : defaults.year,
@@ -130,6 +140,9 @@ export function buildBookingsWorkspaceQuery(
     }
     if (state.mode === "monthly") {
       sp.set("month", String(state.month + 1));
+    }
+    if (state.mode === "annual" && state.season !== "natural") {
+      sp.set("season", state.season);
     }
   }
   return sp.toString();

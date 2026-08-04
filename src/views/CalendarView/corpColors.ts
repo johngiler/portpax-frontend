@@ -1,4 +1,4 @@
-/** Corporation color tokens aligned with SPEC (RCI/NCL/MSC/CCL/VV/otros). */
+/** Corporation color tokens — muted/neutral chips for calendar readability. */
 
 export type CorpColorKey = "rci" | "ncl" | "msc" | "ccl" | "vv" | "other";
 
@@ -30,22 +30,23 @@ const CODE_TO_CORP: Record<string, CorpColorKey> = {
   vv: "vv",
 };
 
+/** Soft zinc/slate chips with a thin corp accent (not saturated fills). */
 export const CORP_CHIP_CLASS: Record<CorpColorKey, string> = {
-  rci: "bg-blue-600 text-white",
-  ncl: "bg-emerald-600 text-white",
-  msc: "bg-orange-500 text-white",
-  ccl: "bg-red-600 text-white",
-  vv: "bg-violet-600 text-white",
-  other: "bg-zinc-500 text-white",
+  rci: "bg-zinc-100 text-zinc-800 ring-1 ring-inset ring-zinc-200/90 border-l-[3px] border-l-slate-400 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-700 dark:border-l-slate-400",
+  ncl: "bg-zinc-100 text-zinc-800 ring-1 ring-inset ring-zinc-200/90 border-l-[3px] border-l-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-700 dark:border-l-zinc-400",
+  msc: "bg-stone-100 text-stone-800 ring-1 ring-inset ring-stone-200/90 border-l-[3px] border-l-stone-400 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-700 dark:border-l-stone-400",
+  ccl: "bg-neutral-100 text-neutral-800 ring-1 ring-inset ring-neutral-200/90 border-l-[3px] border-l-neutral-500 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-700 dark:border-l-neutral-400",
+  vv: "bg-zinc-100 text-zinc-800 ring-1 ring-inset ring-zinc-200/90 border-l-[3px] border-l-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-700 dark:border-l-zinc-300",
+  other: "bg-zinc-100 text-zinc-700 ring-1 ring-inset ring-zinc-200/90 border-l-[3px] border-l-zinc-300 dark:bg-zinc-800/80 dark:text-zinc-200 dark:ring-zinc-700 dark:border-l-zinc-500",
 };
 
 export const CORP_DOT_CLASS: Record<CorpColorKey, string> = {
-  rci: "bg-blue-600",
-  ncl: "bg-emerald-600",
-  msc: "bg-orange-500",
-  ccl: "bg-red-600",
-  vv: "bg-violet-600",
-  other: "bg-zinc-500",
+  rci: "bg-slate-400",
+  ncl: "bg-zinc-500",
+  msc: "bg-stone-400",
+  ccl: "bg-neutral-500",
+  vv: "bg-zinc-400",
+  other: "bg-zinc-300",
 };
 
 /** Short labels matching the calendar color legend. */

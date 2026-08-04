@@ -7,7 +7,12 @@ import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModa
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { suggestBookings } from "@/lib/filterSuggestions";
-import type { BookingsTabQuery, CalendarViewModeQuery } from "@/lib/viewFilterQuery";
+import { getMonthOptions, getBookingYearRange } from "@/lib/bookingDates";
+import type {
+  BookingsTabQuery,
+  CalendarSeasonQuery,
+  CalendarViewModeQuery,
+} from "@/lib/viewFilterQuery";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
@@ -31,6 +36,22 @@ const MODE_OPTIONS: { value: CalendarViewModeQuery; label: string }[] = [
   { value: "annual", label: "Anual" },
 ];
 
+const SEASON_OPTIONS: { value: CalendarSeasonQuery; label: string }[] = [
+  { value: "natural", label: "Año natural" },
+  { value: "summer", label: "Summer (may–oct)" },
+  { value: "winter", label: "Winter (nov–abr)" },
+];
+
+const MONTH_OPTIONS = getMonthOptions().map((o) => ({
+  value: o.value,
+  label: o.label.charAt(0).toUpperCase() + o.label.slice(1),
+}));
+
+const YEAR_OPTIONS = getBookingYearRange("2024-01-01", 6).map((y) => ({
+  value: y,
+  label: String(y),
+}));
+
 type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 type BookingFiltersProps = {
@@ -44,6 +65,9 @@ type BookingFiltersProps = {
   customDateFrom: string;
   customDateTo: string;
   calendarMode: CalendarViewModeQuery;
+  calendarYear: number;
+  calendarMonthIndex: number;
+  calendarSeason: CalendarSeasonQuery;
   positionFilter: number;
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
@@ -60,10 +84,15 @@ type BookingFiltersProps = {
   onCustomDateFromChange: (value: string) => void;
   onCustomDateToChange: (value: string) => void;
   onCalendarModeChange: (mode: CalendarViewModeQuery) => void;
+  onCalendarYearChange: (year: number) => void;
+  onCalendarMonthChange: (monthIndex: number) => void;
+  onCalendarSeasonChange: (season: CalendarSeasonQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
   importedDatesCount?: number;
   onApply: () => void;
   onClear: () => void;
+  /** When user picks a booking code suggestion, open that reservation. */
+  onBookingCodePick?: (bookingCode: string) => void;
 };
 
 export default function BookingFilters({
@@ -77,6 +106,9 @@ export default function BookingFilters({
   customDateFrom,
   customDateTo,
   calendarMode,
+  calendarYear,
+  calendarMonthIndex,
+  calendarSeason,
   positionFilter,
   portOptions,
   shippingLineOptions,
@@ -93,10 +125,14 @@ export default function BookingFilters({
   onCustomDateFromChange,
   onCustomDateToChange,
   onCalendarModeChange,
+  onCalendarYearChange,
+  onCalendarMonthChange,
+  onCalendarSeasonChange,
   onPositionFilterChange,
   importedDatesCount = 0,
   onApply,
   onClear,
+  onBookingCodePick,
 }: BookingFiltersProps) {
   const [statusGuideOpen, setStatusGuideOpen] = useState(false);
   const timeRange =
@@ -165,8 +201,13 @@ export default function BookingFilters({
           value={search}
           onChange={onSearchChange}
           loadSuggestions={suggestBookings}
-          placeholder="Código, puerto, barco…"
+          placeholder="Código de reserva, puerto, barco…"
           onPick={(suggestion) => {
+            if (suggestion.filterEntity === "booking" && suggestion.applyValue) {
+              onBookingCodePick?.(suggestion.applyValue);
+              onSearchChange("");
+              return;
+            }
             if (suggestion.filterEntity === "port" && suggestion.entityId) {
               onPortFilterChange(suggestion.entityId);
               onSearchChange("");
@@ -195,14 +236,43 @@ export default function BookingFilters({
       ) : null}
 
       {showCalendarMode ? (
-        <FormFieldSelect<CalendarViewModeQuery>
-          label="Vista calendario"
-          name="booking_calendar_mode"
-          value={calendarMode}
-          onChange={onCalendarModeChange}
-          options={MODE_OPTIONS}
-          compact
-        />
+        <>
+          <FormFieldSelect<CalendarViewModeQuery>
+            label="Vista calendario"
+            name="booking_calendar_mode"
+            value={calendarMode}
+            onChange={onCalendarModeChange}
+            options={MODE_OPTIONS}
+            compact
+          />
+          <FormFieldSelect<number>
+            label="Año"
+            name="booking_calendar_year"
+            value={calendarYear}
+            onChange={onCalendarYearChange}
+            options={YEAR_OPTIONS}
+            compact
+          />
+          {calendarMode !== "annual" ? (
+            <FormFieldSelect<number>
+              label="Mes"
+              name="booking_calendar_month"
+              value={calendarMonthIndex}
+              onChange={onCalendarMonthChange}
+              options={MONTH_OPTIONS}
+              compact
+            />
+          ) : (
+            <FormFieldSelect<CalendarSeasonQuery>
+              label="Temporada"
+              name="booking_calendar_season"
+              value={calendarSeason}
+              onChange={onCalendarSeasonChange}
+              options={SEASON_OPTIONS}
+              compact
+            />
+          )}
+        </>
       ) : null}
 
       {showPort ? (

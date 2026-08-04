@@ -25,11 +25,19 @@ export function buildCalendarOccupancy(
 
   for (const booking of active) {
     const entry: CalendarDayBooking = {
+      id: booking.id,
       booking_code: booking.booking_code,
       port_name: booking.port_name,
       shipping_line_name: booking.shipping_line_name,
       vessel_name: booking.vessel_name,
+      vessel_id: booking.vessel,
+      port_id: booking.port,
+      call_date: booking.call_date,
+      position_id: booking.position,
       position_code: booking.position_code,
+      eta: booking.eta,
+      etd: booking.etd,
+      status: booking.status,
       status_display: booking.status_display,
       blocksSelection: booking.port === portId && booking.vessel === vesselId,
       isCurrentPort: booking.port === portId,

@@ -18,7 +18,7 @@ import type { DashboardCarrierFilter } from "@/types/dashboard";
 import DashboardActionQueueSection from "./DashboardActionQueueSection";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
-import DashboardNext30Section from "./DashboardNext30Section";
+import DashboardHorizonSection from "./DashboardHorizonSection";
 import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
 import DashboardYoyBadge from "./DashboardYoyBadge";
@@ -153,7 +153,7 @@ export default function DashboardView() {
       <ViewPageHeader
         icon={LayoutDashboard}
         title="Dashboard"
-        description="KPIs operativos del período, cola de acción, próximos 30 días y ocupación por puerto."
+        description="KPIs operativos del período, arribos de la semana, cola de acción y ocupación por puerto."
       />
 
       {viewError && (
@@ -222,8 +222,25 @@ export default function DashboardView() {
       {stats ? (
         <>
           <div className="mb-6 grid gap-6 lg:grid-cols-2">
-            <DashboardNext30Section data={stats.next_30_days} />
+            <DashboardHorizonSection
+              variant="current_week"
+              data={
+                stats.current_week ?? {
+                  date_from: "",
+                  date_to: "",
+                  total_confirmed: 0,
+                  planned_pax: 0,
+                  by_port: [],
+                }
+              }
+            />
             <DashboardActionQueueSection data={stats.action_queue} />
+          </div>
+          <div className="mb-6">
+            <DashboardHorizonSection
+              variant="next_30"
+              data={stats.next_30_days}
+            />
           </div>
           <DashboardOccupancyByPort rows={stats.occupancy_by_port} />
           <DashboardCharts stats={stats} />

@@ -109,6 +109,9 @@ export type DashboardNext30Days = {
   by_port: DashboardNext30PortRow[];
 };
 
+/** Same shape as next_30_days — Monday–Sunday of the current week. */
+export type DashboardCurrentWeek = DashboardNext30Days;
+
 export type DashboardOccupancyPortRow = {
   port_id: number;
   name: string;
@@ -128,6 +131,7 @@ export type DashboardStats = {
   kpis: DashboardKpis;
   action_queue: DashboardActionQueue;
   next_30_days: DashboardNext30Days;
+  current_week?: DashboardCurrentWeek;
   yoy: DashboardYoy;
   occupancy_by_port: DashboardOccupancyPortRow[];
   by_shipping_line: DashboardNamedCount[];

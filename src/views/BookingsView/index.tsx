@@ -21,12 +21,15 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
 import { canWriteApp } from "@/lib/navAccess";
 import { currentReturnTo } from "@/lib/safeReturnTo";
+import type {
+  BookingsTabQuery,
+  BookingsWorkspaceFilters,
+  CalendarSeasonQuery,
+  CalendarViewModeQuery,
+} from "@/lib/viewFilterQuery";
 import {
   buildBookingsWorkspaceQuery,
   parseBookingsWorkspaceFilters,
-  type BookingsTabQuery,
-  type BookingsWorkspaceFilters,
-  type CalendarViewModeQuery,
 } from "@/lib/viewFilterQuery";
 import {
   setDataExportHandler,
@@ -49,7 +52,10 @@ import {
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { portDisplayName } from "@/types/catalog";
-import type { BookingListStatusFilter } from "@/types/booking";
+import {
+  bookingDetailHref,
+  type BookingListStatusFilter,
+} from "@/types/booking";
 import {
   monthBounds,
   weekDatesFrom,
@@ -173,6 +179,12 @@ export default function BookingsView() {
   const [weekAnchor, setWeekAnchor] = useState(navDefaults.week);
   const [year, setYear] = useState(navDefaults.year);
   const [monthIndex, setMonthIndex] = useState(navDefaults.month);
+  const [appliedYear, setAppliedYear] = useState(navDefaults.year);
+  const [appliedMonthIndex, setAppliedMonthIndex] = useState(navDefaults.month);
+  const [calendarSeason, setCalendarSeason] =
+    useState<CalendarSeasonQuery>("natural");
+  const [appliedCalendarSeason, setAppliedCalendarSeason] =
+    useState<CalendarSeasonQuery>("natural");
 
   const [positionOptions, setPositionOptions] = useState<
     { value: number; label: string }[]
@@ -227,10 +239,11 @@ export default function BookingsView() {
       customFrom: appliedCustomDateFrom,
       customTo: appliedCustomDateTo,
       mode: appliedCalendarMode,
+      season: appliedCalendarSeason,
       position: appliedPositionFilter,
       week: weekAnchor,
-      year,
-      month: monthIndex,
+      year: appliedYear,
+      month: appliedMonthIndex,
       ...overrides,
     };
   }
@@ -274,11 +287,15 @@ export default function BookingsView() {
     setAppliedCustomDateTo(parsed.customTo);
     setCalendarMode(parsed.mode);
     setAppliedCalendarMode(parsed.mode);
+    setCalendarSeason(parsed.season);
+    setAppliedCalendarSeason(parsed.season);
     setPositionFilter(parsed.position);
     setAppliedPositionFilter(parsed.position);
     setWeekAnchor(parsed.week);
     setYear(parsed.year);
     setMonthIndex(parsed.month);
+    setAppliedYear(parsed.year);
+    setAppliedMonthIndex(parsed.month);
   }, [portsReady, searchParams, portOptions, navDefaults]);
 
   useEffect(() => {
@@ -393,6 +410,14 @@ export default function BookingsView() {
     setAppliedCustomDateTo(customDateTo);
     setAppliedCalendarMode(calendarMode);
     setAppliedPositionFilter(positionFilter);
+    setAppliedYear(year);
+    setAppliedMonthIndex(monthIndex);
+    setAppliedCalendarSeason(calendarSeason);
+    let nextWeek = weekAnchor;
+    if (calendarMode === "weekly") {
+      nextWeek = toIsoDate(year, monthIndex, 1);
+      setWeekAnchor(nextWeek);
+    }
     syncToUrl(
       workspaceState({
         status: statusFilter,
@@ -404,7 +429,11 @@ export default function BookingsView() {
         customFrom: customDateFrom,
         customTo: customDateTo,
         mode: calendarMode,
+        season: calendarSeason,
         position: positionFilter,
+        year,
+        month: monthIndex,
+        week: nextWeek,
       }),
     );
   }
@@ -434,12 +463,16 @@ export default function BookingsView() {
     setAppliedCustomDateTo(to);
     setCalendarMode("monthly");
     setAppliedCalendarMode("monthly");
+    setCalendarSeason("natural");
+    setAppliedCalendarSeason("natural");
     setPositionFilter(0);
     setAppliedPositionFilter(0);
     setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
     setMonthIndex(m);
+    setAppliedYear(y);
+    setAppliedMonthIndex(m);
     syncToUrl({
       tab,
       status: "",
@@ -451,6 +484,7 @@ export default function BookingsView() {
       customFrom: from,
       customTo: to,
       mode: "monthly",
+      season: "natural",
       position: 0,
       week,
       year: y,
@@ -496,6 +530,9 @@ export default function BookingsView() {
     customDateFrom !== appliedCustomDateFrom ||
     customDateTo !== appliedCustomDateTo ||
     calendarMode !== appliedCalendarMode ||
+    year !== appliedYear ||
+    monthIndex !== appliedMonthIndex ||
+    calendarSeason !== appliedCalendarSeason ||
     positionFilter !== appliedPositionFilter;
 
   const handleExport = useCallback(
@@ -547,11 +584,11 @@ export default function BookingsView() {
           from = days[0];
           to = days[6];
         } else if (appliedCalendarMode === "annual") {
-          const b = yearBounds(year);
+          const b = yearBounds(appliedYear);
           from = b.from;
           to = b.to;
         } else {
-          const b = monthBounds(year, monthIndex);
+          const b = monthBounds(appliedYear, appliedMonthIndex);
           from = b.from;
           to = b.to;
         }
@@ -585,8 +622,8 @@ export default function BookingsView() {
       availabilityRange,
       appliedCalendarMode,
       weekAnchor,
-      year,
-      monthIndex,
+      appliedYear,
+      appliedMonthIndex,
       appliedShippingLineFilter,
       appliedVesselFilter,
       appliedPositionFilter,
@@ -745,7 +782,7 @@ export default function BookingsView() {
 
   const description =
     tab === "list"
-      ? "Solicitudes de escala por puerto, naviera y barco."
+      ? "Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
         : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
@@ -845,6 +882,9 @@ export default function BookingsView() {
           customDateFrom={customDateFrom}
           customDateTo={customDateTo}
           calendarMode={calendarMode}
+          calendarYear={year}
+          calendarMonthIndex={monthIndex}
+          calendarSeason={calendarSeason}
           positionFilter={positionFilter}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
@@ -864,10 +904,21 @@ export default function BookingsView() {
           onCustomDateFromChange={handleCustomDateFromChange}
           onCustomDateToChange={handleCustomDateToChange}
           onCalendarModeChange={setCalendarMode}
+          onCalendarYearChange={setYear}
+          onCalendarMonthChange={setMonthIndex}
+          onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
+          onBookingCodePick={(bookingCode) => {
+            router.push(
+              bookingDetailHref(
+                { booking_code: bookingCode },
+                { returnTo: currentReturnTo(pathname, searchParams) },
+              ),
+            );
+          }}
         />
       </FilterSidebarContent>
 
@@ -947,15 +998,23 @@ export default function BookingsView() {
             setWeekAnchor(iso);
             syncToUrl(workspaceState({ week: iso }));
           }}
-          year={year}
+          year={appliedYear}
           onYearChange={(y) => {
             setYear(y);
+            setAppliedYear(y);
             syncToUrl(workspaceState({ year: y }));
           }}
-          monthIndex={monthIndex}
+          monthIndex={appliedMonthIndex}
           onMonthChange={(m) => {
             setMonthIndex(m);
+            setAppliedMonthIndex(m);
             syncToUrl(workspaceState({ month: m }));
+          }}
+          season={appliedCalendarSeason}
+          onSeasonChange={(next) => {
+            setCalendarSeason(next);
+            setAppliedCalendarSeason(next);
+            syncToUrl(workspaceState({ season: next }));
           }}
           onClearFilters={handleClearFilters}
         />

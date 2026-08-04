@@ -12,12 +12,16 @@ type CalendarDayAccordionProps = {
   dateIso: string | null;
   bookings: CalendarDayBooking[];
   onClose: () => void;
+  canReassign?: boolean;
+  onBookingReassigned?: () => void;
 };
 
 export default function CalendarDayAccordion({
   dateIso,
   bookings,
   onClose,
+  canReassign = false,
+  onBookingReassigned,
 }: CalendarDayAccordionProps) {
   const transition = useMotionTransition(0.22);
 
@@ -65,7 +69,12 @@ export default function CalendarDayAccordion({
             {bookings.length > 0 ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {bookings.map((booking) => (
-                  <CalendarOccupancyCard key={booking.booking_code} booking={booking} />
+                  <CalendarOccupancyCard
+                    key={booking.id}
+                    booking={booking}
+                    canReassign={canReassign}
+                    onReassigned={onBookingReassigned}
+                  />
                 ))}
               </div>
             ) : null}

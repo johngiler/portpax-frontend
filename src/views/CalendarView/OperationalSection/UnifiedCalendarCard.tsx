@@ -13,7 +13,12 @@ import AnnualGrid from "./AnnualGrid";
 import CalendarColorLegend from "./CalendarColorLegend";
 import MonthGrid from "./MonthGrid";
 import WeekGrid from "./WeekGrid";
-import { monthBounds, weekDatesFrom, yearBounds } from "./calendarOpsUtils";
+import {
+  monthBounds,
+  seasonBounds,
+  weekDatesFrom,
+  type CalendarSeason,
+} from "./calendarOpsUtils";
 
 type UnifiedCalendarCardProps = {
   mode: CalendarViewModeQuery;
@@ -34,6 +39,8 @@ type UnifiedCalendarCardProps = {
   onYearChange: (year: number) => void;
   monthIndex: number;
   onMonthChange: (monthIndex: number) => void;
+  season: CalendarSeason;
+  onSeasonChange: (season: CalendarSeason) => void;
 };
 
 export default function UnifiedCalendarCard({
@@ -54,6 +61,8 @@ export default function UnifiedCalendarCard({
   onYearChange,
   monthIndex,
   onMonthChange,
+  season,
+  onSeasonChange,
 }: UnifiedCalendarCardProps) {
   const multiPort = portId <= 0;
 
@@ -62,9 +71,9 @@ export default function UnifiedCalendarCard({
       const days = weekDatesFrom(weekAnchor);
       return { from: days[0], to: days[6] };
     }
-    if (mode === "annual") return yearBounds(year);
+    if (mode === "annual") return seasonBounds(year, season);
     return monthBounds(year, monthIndex);
-  }, [mode, weekAnchor, year, monthIndex]);
+  }, [mode, weekAnchor, year, monthIndex, season]);
 
   const { bookings, previousYearBookings, positions, isLoading, error } =
     useCalendarBookings({
@@ -77,6 +86,7 @@ export default function UnifiedCalendarCard({
       from: range.from,
       to: range.to,
       year,
+      season,
     });
 
   const modeLabel =
@@ -96,8 +106,8 @@ export default function UnifiedCalendarCard({
           ? "Mes completo: todos los puertos en un mismo calendario, organizados por día y puerto."
           : "Mes completo con calls por día y totales."
         : multiPort
-          ? "Año completo con todos los puertos y comparativa YoY."
-          : "12 meses, totales anuales y comparativa YoY.";
+          ? "Año / temporada por puerto (filas). Selecciona un puerto para ver posiciones."
+          : "Barcos por posición · totales ships y PAX · Summer / Winter.";
 
   const effectivePositionId = multiPort ? 0 : positionId;
   const errorMessage = error
@@ -113,8 +123,8 @@ export default function UnifiedCalendarCard({
       <div className="px-4 py-4 sm:px-6 sm:py-5">
         <div className="mb-4">
           <CalendarColorLegend
-            showCorp={mode !== "annual"}
-            showTraffic
+            showCorp
+            showTraffic={mode !== "annual"}
           />
         </div>
         {errorMessage ? (
@@ -153,9 +163,12 @@ export default function UnifiedCalendarCard({
           <AnnualGrid
             year={year}
             onYearChange={onYearChange}
+            season={season}
+            onSeasonChange={onSeasonChange}
             bookings={bookings}
             previousYearBookings={previousYearBookings}
             positions={positions}
+            positionFilterId={effectivePositionId}
             multiPort={multiPort}
             loading={isLoading}
             onSelectMonth={(m) => {

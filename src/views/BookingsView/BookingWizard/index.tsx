@@ -101,6 +101,7 @@ export default function BookingWizard() {
   const [loadingPorts, setLoadingPorts] = useState(true);
   const [loadingLines, setLoadingLines] = useState(true);
   const [loadingVessels, setLoadingVessels] = useState(false);
+  const [loadingDates, setLoadingDates] = useState(false);
 
   const [viewError, setViewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +111,16 @@ export default function BookingWizard() {
   const handleReviewBlockingChange = useCallback((blocked: boolean) => {
     setReviewBlocked(blocked);
   }, []);
+
+  const handleDatesLoadingChange = useCallback((loading: boolean) => {
+    setLoadingDates(loading);
+  }, []);
+
+  const stepDataLoading =
+    (step === "port" && loadingPorts) ||
+    (step === "line" && loadingLines) ||
+    (step === "vessel" && loadingVessels) ||
+    (step === "dates" && loadingDates);
 
   const selectedPort = ports.find((p) => p.id === form.portId) ?? null;
   const selectedLine = lines.find((l) => l.id === form.shippingLineId) ?? null;
@@ -184,13 +195,15 @@ export default function BookingWizard() {
   function goToStep(target: BookingWizardStepId) {
     const targetIndex = stepIndex(target);
     if (targetIndex > reachable) return;
+    // Do not skip ahead while the current step is still loading its data.
+    if (targetIndex > stepIndex(step) && stepDataLoading) return;
     setDirection(targetIndex > stepIndex(step) ? 1 : -1);
     setStep(target);
     setViewError(null);
   }
 
   function goNext() {
-    if (!canAdvance(step, form)) return;
+    if (stepDataLoading || !canAdvance(step, form)) return;
     const nextIndex = stepIndex(step) + 1;
     if (nextIndex >= BOOKING_WIZARD_STEPS.length) return;
     setDirection(1);
@@ -360,6 +373,7 @@ export default function BookingWizard() {
                 onPlannedPaxChange={(plannedPax) =>
                   setForm((p) => ({ ...p, plannedPax }))
                 }
+                onLoadingChange={handleDatesLoadingChange}
               />
             )}
             {step === "review" && (
@@ -375,6 +389,13 @@ export default function BookingWizard() {
                 plannedPax={form.plannedPax}
                 preferredPositionId={form.preferredPositionId}
                 preferredPositionLabel={form.preferredPositionLabel}
+                onPreferredPositionChange={(id, label) =>
+                  setForm((p) => ({
+                    ...p,
+                    preferredPositionId: id,
+                    preferredPositionLabel: label,
+                  }))
+                }
                 onBlockingChange={handleReviewBlockingChange}
               />
             )}
@@ -403,10 +424,17 @@ export default function BookingWizard() {
           </div>
 
           {step !== "review" ? (
-            <DefaultButton type="button" onClick={goNext} disabled={!canAdvance(step, form)}>
+            <DefaultButton
+              type="button"
+              onClick={goNext}
+              disabled={stepDataLoading || !canAdvance(step, form)}
+            >
               <span className="inline-flex items-center gap-2">
-                Continuar
-                <ArrowRight className="h-4 w-4" />
+                {stepDataLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                {stepDataLoading ? "Cargando…" : "Continuar"}
+                {!stepDataLoading ? <ArrowRight className="h-4 w-4" /> : null}
               </span>
             </DefaultButton>
           ) : (

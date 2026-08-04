@@ -21,6 +21,8 @@ type DatesStepProps = {
   onEtaChange: (value: string) => void;
   onEtdChange: (value: string) => void;
   onPlannedPaxChange: (value: string) => void;
+  /** Parent disables Continuar while occupancy is loading. */
+  onLoadingChange?: (loading: boolean) => void;
 };
 
 export default function DatesStep({
@@ -34,17 +36,29 @@ export default function DatesStep({
   onEtaChange,
   onEtdChange,
   onPlannedPaxChange,
+  onLoadingChange,
 }: DatesStepProps) {
   const [occupancyByDate, setOccupancyByDate] = useState<Record<string, CalendarDayBooking[]>>(
     {},
   );
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
-  const [loadingOccupied, setLoadingOccupied] = useState(false);
+  const [loadingOccupied, setLoadingOccupied] = useState(
+    () => Boolean(portId && vesselId),
+  );
+  const [occupancyTick, setOccupancyTick] = useState(0);
+
+  useEffect(() => {
+    onLoadingChange?.(loadingOccupied);
+    return () => {
+      onLoadingChange?.(false);
+    };
+  }, [loadingOccupied, onLoadingChange]);
 
   useEffect(() => {
     if (!portId || !vesselId) {
       setOccupancyByDate({});
       setBlockedDates([]);
+      setLoadingOccupied(false);
       return;
     }
 
@@ -75,7 +89,7 @@ export default function DatesStep({
     return () => {
       cancelled = true;
     };
-  }, [portId, vesselId]);
+  }, [portId, vesselId, occupancyTick]);
 
   return (
     <div className="space-y-6">
@@ -85,6 +99,8 @@ export default function DatesStep({
         occupancyByDate={occupancyByDate}
         blockedDates={blockedDates}
         loadingOccupied={loadingOccupied}
+        canReassignOccupancy
+        onOccupancyReassigned={() => setOccupancyTick((n) => n + 1)}
       />
 
       <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">

@@ -47,7 +47,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
       <BookingMetaRow
         className="mt-0.5"
         compact={compact}
-        tone="onColor"
+        tone="muted"
         loaM={booking.vessel_loa_m}
         eta={booking.eta}
         etd={booking.etd}

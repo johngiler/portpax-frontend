@@ -2,6 +2,7 @@
 
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import type { BookingListStatusFilter } from "@/types/booking";
+import type { CalendarSeason } from "./calendarOpsUtils";
 import UnifiedCalendarCard from "./UnifiedCalendarCard";
 
 type OperationalSectionProps = {
@@ -21,6 +22,8 @@ type OperationalSectionProps = {
   onYearChange: (year: number) => void;
   monthIndex: number;
   onMonthChange: (monthIndex: number) => void;
+  season: CalendarSeason;
+  onSeasonChange: (season: CalendarSeason) => void;
   onClearFilters?: () => void;
 };
 
@@ -40,6 +43,8 @@ export default function OperationalSection({
   onYearChange,
   monthIndex,
   onMonthChange,
+  season,
+  onSeasonChange,
   onClearFilters,
 }: OperationalSectionProps) {
   const hasFilters =
@@ -69,6 +74,8 @@ export default function OperationalSection({
       onYearChange={onYearChange}
       monthIndex={monthIndex}
       onMonthChange={onMonthChange}
+      season={season}
+      onSeasonChange={onSeasonChange}
     />
   );
 }
