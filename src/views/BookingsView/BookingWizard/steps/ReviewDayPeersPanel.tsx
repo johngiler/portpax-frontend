@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchAllBookings,
   suggestBookingPositions,
@@ -125,50 +127,45 @@ export default function ReviewDayPeersPanel({
   vesselId,
   callDates,
 }: ReviewDayPeersPanelProps) {
-  const [peers, setPeers] = useState<Booking[]>([]);
-  const [tick, setTick] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const range = useMemo(() => {
+    if (callDates.length === 0) return null;
+    const sorted = [...callDates].sort();
+    return { from: sorted[0], to: sorted[sorted.length - 1] };
+  }, [callDates]);
 
-  const reload = useCallback(() => {
-    setTick((n) => n + 1);
-  }, []);
+  const dateSet = useMemo(() => new Set(callDates), [callDates]);
 
-  useEffect(() => {
-    if (!portId || callDates.length === 0) {
-      setPeers([]);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    const dateSet = new Set(callDates);
-    fetchAllBookings({ port: portId })
-      .then((rows) => {
-        if (cancelled) return;
-        const filtered = rows.filter(
-          (b) =>
-            b.status !== "c" &&
-            dateSet.has(b.call_date) &&
-            b.vessel !== vesselId,
-        );
-        filtered.sort(
-          (a, b) =>
-            a.call_date.localeCompare(b.call_date) ||
-            a.vessel_name.localeCompare(b.vessel_name),
-        );
-        setPeers(filtered);
-      })
-      .catch(() => {
-        if (!cancelled) setPeers([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [portId, vesselId, callDates, tick]);
+  const { data, isLoading, mutate } = useSWR(
+    portId > 0 && range
+      ? swrKeys.wizardDayPeers(portId, range.from, range.to)
+      : null,
+    async () =>
+      fetchAllBookings({
+        port: portId,
+        call_date_from: range!.from,
+        call_date_to: range!.to,
+        ordering: "call_date",
+        pageSize: 500,
+      }),
+  );
 
-  if (loading && peers.length === 0) {
+  const peers = useMemo(() => {
+    if (!data) return [];
+    const filtered = data.filter(
+      (b) =>
+        b.status !== "c" &&
+        dateSet.has(b.call_date) &&
+        b.vessel !== vesselId,
+    );
+    filtered.sort(
+      (a, b) =>
+        a.call_date.localeCompare(b.call_date) ||
+        a.vessel_name.localeCompare(b.vessel_name),
+    );
+    return filtered;
+  }, [data, dateSet, vesselId]);
+
+  if (isLoading && peers.length === 0) {
     return (
       <p className="text-xs text-zinc-500">Cargando otras escalas del día…</p>
     );
@@ -187,7 +184,13 @@ export default function ReviewDayPeersPanel({
       </p>
       <ul className="mt-3 space-y-2">
         {peers.map((booking) => (
-          <PeerRow key={booking.id} booking={booking} onChanged={reload} />
+          <PeerRow
+            key={booking.id}
+            booking={booking}
+            onChanged={() => {
+              void mutate();
+            }}
+          />
         ))}
       </ul>
     </div>

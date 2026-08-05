@@ -58,6 +58,16 @@ export const swrKeys = {
   calendarBookings: (paramsKey: string) =>
     ["calendar", "bookings", paramsKey] as const,
 
+  wizardOccupancy: (
+    portId: number,
+    vesselId: number,
+    from: string,
+    to: string,
+  ) => ["wizard", "occupancy", portId, vesselId, from, to] as const,
+
+  wizardDayPeers: (portId: number, from: string, to: string) =>
+    ["wizard", "day-peers", portId, from, to] as const,
+
   bookingActivityInfinite: (paramsKey: string) =>
     ["bookings", "activity", "infinite", paramsKey] as const,
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   getCalendarGrid,
@@ -14,6 +14,11 @@ import CalendarNav from "./CalendarNav";
 import SelectedDatesList from "./SelectedDatesList";
 import type { CalendarDayBooking } from "./types";
 
+export type BookingDateCalendarVisibleRange = {
+  from: string;
+  to: string;
+};
+
 type BookingDateCalendarProps = {
   selectedDates: string[];
   onChange: (dates: string[]) => void;
@@ -23,11 +28,27 @@ type BookingDateCalendarProps = {
   loadingOccupied?: boolean;
   canReassignOccupancy?: boolean;
   onOccupancyReassigned?: () => void;
+  /** Fires when the visible month grid range changes (incl. leading/trailing days). */
+  onVisibleRangeChange?: (range: BookingDateCalendarVisibleRange) => void;
 };
 
 function todayIso(): string {
   const now = new Date();
   return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function gridRange(
+  year: number,
+  monthIndex: number,
+): BookingDateCalendarVisibleRange {
+  const weeks = getCalendarGrid(year, monthIndex);
+  const first = weeks[0]?.[0];
+  const lastWeek = weeks[weeks.length - 1];
+  const last = lastWeek?.[lastWeek.length - 1];
+  return {
+    from: first?.iso ?? toIsoDate(year, monthIndex, 1),
+    to: last?.iso ?? toIsoDate(year, monthIndex + 1, 0),
+  };
 }
 
 export default function BookingDateCalendar({
@@ -39,6 +60,7 @@ export default function BookingDateCalendar({
   loadingOccupied = false,
   canReassignOccupancy = false,
   onOccupancyReassigned,
+  onVisibleRangeChange,
 }: BookingDateCalendarProps) {
   const today = todayIso();
   const min = minDate ?? today;
@@ -51,6 +73,15 @@ export default function BookingDateCalendar({
     () => getCalendarGrid(viewYear, viewMonth),
     [viewYear, viewMonth],
   );
+
+  const visibleRange = useMemo(
+    () => gridRange(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
+
+  useEffect(() => {
+    onVisibleRangeChange?.(visibleRange);
+  }, [visibleRange, onVisibleRangeChange]);
 
   const selectedSet = useMemo(() => new Set(selectedDates), [selectedDates]);
   const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);

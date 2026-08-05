@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FormField } from "@/components/ui/FormField";
-import { fetchAllBookings } from "@/services/bookings/bookingService";
-import BookingDateCalendar from "@/components/booking/BookingDateCalendar";
+import BookingDateCalendar, {
+  type BookingDateCalendarVisibleRange,
+} from "@/components/booking/BookingDateCalendar";
 import {
-  buildCalendarOccupancy,
-  mergeBookingsById,
-} from "@/components/booking/BookingDateCalendar/buildCalendarOccupancy";
-import type { CalendarDayBooking } from "@/components/booking/BookingDateCalendar/types";
+  useWizardOccupancy,
+  type WizardVisibleRange,
+} from "@/hooks/swr/useWizardOccupancy";
 
 type DatesStepProps = {
   portId: number | null;
@@ -38,14 +38,25 @@ export default function DatesStep({
   onPlannedPaxChange,
   onLoadingChange,
 }: DatesStepProps) {
-  const [occupancyByDate, setOccupancyByDate] = useState<Record<string, CalendarDayBooking[]>>(
-    {},
+  const [visibleRange, setVisibleRange] = useState<WizardVisibleRange | null>(
+    null,
   );
-  const [blockedDates, setBlockedDates] = useState<string[]>([]);
-  const [loadingOccupied, setLoadingOccupied] = useState(
-    () => Boolean(portId && vesselId),
+
+  const handleVisibleRangeChange = useCallback(
+    (range: BookingDateCalendarVisibleRange) => {
+      setVisibleRange((prev) =>
+        prev?.from === range.from && prev?.to === range.to ? prev : range,
+      );
+    },
+    [],
   );
-  const [occupancyTick, setOccupancyTick] = useState(0);
+
+  const {
+    occupancyByDate,
+    blockedDates,
+    isLoading: loadingOccupied,
+    mutate,
+  } = useWizardOccupancy(portId, vesselId, visibleRange);
 
   useEffect(() => {
     onLoadingChange?.(loadingOccupied);
@@ -53,43 +64,6 @@ export default function DatesStep({
       onLoadingChange?.(false);
     };
   }, [loadingOccupied, onLoadingChange]);
-
-  useEffect(() => {
-    if (!portId || !vesselId) {
-      setOccupancyByDate({});
-      setBlockedDates([]);
-      setLoadingOccupied(false);
-      return;
-    }
-
-    let cancelled = false;
-    setLoadingOccupied(true);
-
-    Promise.all([fetchAllBookings({ port: portId }), fetchAllBookings({ vessel: vesselId })])
-      .then(([portBookings, vesselBookings]) => {
-        if (cancelled) return;
-        const { byDate, blockedDates: blocked } = buildCalendarOccupancy(
-          mergeBookingsById(portBookings, vesselBookings),
-          portId,
-          vesselId,
-        );
-        setOccupancyByDate(byDate);
-        setBlockedDates(blocked);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOccupancyByDate({});
-          setBlockedDates([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingOccupied(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [portId, vesselId, occupancyTick]);
 
   return (
     <div className="space-y-6">
@@ -100,7 +74,10 @@ export default function DatesStep({
         blockedDates={blockedDates}
         loadingOccupied={loadingOccupied}
         canReassignOccupancy
-        onOccupancyReassigned={() => setOccupancyTick((n) => n + 1)}
+        onOccupancyReassigned={() => {
+          void mutate();
+        }}
+        onVisibleRangeChange={handleVisibleRangeChange}
       />
 
       <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
