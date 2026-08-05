@@ -120,13 +120,6 @@ export default function ShippingLinesView() {
           onChange={setSearch}
           loadSuggestions={suggestShippingLines}
           placeholder="Naviera o barco…"
-          onPick={(suggestion) => {
-            const next = suggestion.applyValue;
-            setSearch(next);
-            setAppliedSearch(next);
-            setAppliedGroupFilter(groupFilter);
-            setViewError(null);
-          }}
         />
         <FormFieldSelect<number>
           label="Grupo corporativo"
