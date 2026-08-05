@@ -43,6 +43,8 @@ const FIELD_LABELS: Record<string, string> = {
   min_packs: "Packs mín.",
   advance_months_min: "Anticipación mín.",
   advance_months_max: "Anticipación máx.",
+  interval_days: "Cadencia (días)",
+  cadence_anchor: "Fecha ancla cadencia",
   valid_from: "Vigencia desde",
   valid_until: "Vigencia hasta",
   notes: "Notas",

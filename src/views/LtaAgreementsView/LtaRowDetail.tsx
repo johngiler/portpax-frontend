@@ -99,7 +99,12 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
         <MetaCard icon={CalendarRange} label="Días de la semana">
           {formatLtaWeekdays(agreement.weekdays)}
         </MetaCard>
-        <MetaCard icon={CalendarRange} label="Ventana de antelación">
+        <MetaCard icon={CalendarRange} label="Cadencia">
+          {agreement.interval_days != null && agreement.cadence_anchor
+            ? `Cada ${agreement.interval_days} días desde ${formatDate(agreement.cadence_anchor)}`
+            : "Sin ritmo fijo"}
+        </MetaCard>
+        <MetaCard icon={CalendarRange} label="Ventana (ref. meses)">
           {agreement.advance_months_min}–{agreement.advance_months_max} meses
         </MetaCard>
         <MetaCard icon={CalendarRange} label="Vigencia">

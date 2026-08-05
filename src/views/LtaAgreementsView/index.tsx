@@ -316,7 +316,9 @@ export default function LtaAgreementsView() {
                         ) : null}
                       </MainTableTd>
                       <MainTableTd>
-                        {row.advance_months_min}–{row.advance_months_max} meses
+                        {row.interval_days != null && row.cadence_anchor
+                          ? `Cada ${row.interval_days} d`
+                          : `${row.advance_months_min}–${row.advance_months_max} m`}
                       </MainTableTd>
                       <MainTableTd>
                         {row.is_active ? (

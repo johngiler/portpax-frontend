@@ -54,6 +54,8 @@ function emptyForm(): FormState {
     vessel_ids: [],
     position_ids: [],
     weekdays: [],
+    interval_days: null,
+    cadence_anchor: null,
     min_packs: null,
     advance_months_min: 18,
     advance_months_max: 32,
@@ -74,6 +76,8 @@ function toForm(row: LongTermAgreement): FormState {
     vessel_ids: row.vessel_ids,
     position_ids: row.position_ids,
     weekdays: row.weekdays,
+    interval_days: row.interval_days,
+    cadence_anchor: row.cadence_anchor,
     min_packs: row.min_packs,
     advance_months_min: row.advance_months_min,
     advance_months_max: row.advance_months_max,
@@ -95,6 +99,12 @@ function validate(form: FormState): FieldErrors {
   }
   if (form.advance_months_min > form.advance_months_max) {
     errors.advance_months_min = "Debe ser ≤ máximo";
+  }
+  const hasInterval = form.interval_days != null && form.interval_days > 0;
+  const hasAnchor = Boolean(form.cadence_anchor);
+  if (hasInterval !== hasAnchor) {
+    errors.interval_days = "Cadencia y fecha ancla van juntas";
+    errors.cadence_anchor = "Cadencia y fecha ancla van juntas";
   }
   return errors;
 }
@@ -341,7 +351,34 @@ export default function LtaFormModal({
         />
         <div className="grid gap-x-4 sm:grid-cols-2">
           <FormField
-            label="Antelación mín. (meses)"
+            label="Cadencia (días)"
+            name="lta_interval_days"
+            type="number"
+            min={1}
+            value={form.interval_days != null ? String(form.interval_days) : ""}
+            onChange={(v) => {
+              const raw = String(v).trim();
+              patch("interval_days", raw === "" ? null : Number(raw) || null);
+            }}
+            placeholder="Ej. 15"
+            error={errors.interval_days}
+          />
+          <FormField
+            label="Fecha ancla de cadencia"
+            name="lta_cadence_anchor"
+            type="date"
+            value={form.cadence_anchor ?? ""}
+            onChange={(v) => patch("cadence_anchor", String(v) || null)}
+            error={errors.cadence_anchor}
+          />
+        </div>
+        <p className="mb-4 -mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          Cadencia MSC: cada N días desde la fecha ancla (ej. 15 días desde el
+          primer arribo). Vacío = sin filtro de ritmo.
+        </p>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <FormField
+            label="Antelación mín. (meses, ref.)"
             name="lta_adv_min"
             type="number"
             value={String(form.advance_months_min)}
@@ -349,13 +386,17 @@ export default function LtaFormModal({
             error={errors.advance_months_min}
           />
           <FormField
-            label="Antelación máx. (meses)"
+            label="Antelación máx. (meses, ref.)"
             name="lta_adv_max"
             type="number"
             value={String(form.advance_months_max)}
             onChange={(v) => patch("advance_months_max", Number(v) || 0)}
           />
         </div>
+        <p className="mb-4 -mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          La validación de reserva usa ventanas Winter/Summer (actual / general /
+          LTA cubierta). Estos meses quedan como referencia en el acuerdo.
+        </p>
         <div className="grid gap-x-4 sm:grid-cols-2">
           <FormField
             label="Vigente desde"

@@ -48,6 +48,16 @@ function buildLtaFormData(
   if (data.advance_months_max != null) {
     appendScalar(form, "advance_months_max", data.advance_months_max);
   }
+  if ("interval_days" in data) {
+    if (data.interval_days != null) {
+      appendScalar(form, "interval_days", data.interval_days);
+    } else {
+      form.append("interval_days", "");
+    }
+  }
+  if ("cadence_anchor" in data) {
+    appendScalar(form, "cadence_anchor", data.cadence_anchor);
+  }
   if ("valid_from" in data) appendScalar(form, "valid_from", data.valid_from);
   if ("valid_until" in data) appendScalar(form, "valid_until", data.valid_until);
   if (data.is_active != null) appendScalar(form, "is_active", data.is_active);

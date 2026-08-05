@@ -14,6 +14,8 @@ export type LongTermAgreement = {
   position_ids: number[];
   position_codes: string[];
   weekdays: number[];
+  interval_days: number | null;
+  cadence_anchor: string | null;
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
@@ -36,6 +38,8 @@ export type LongTermAgreementPayload = {
   vessel_ids: number[];
   position_ids: number[];
   weekdays: number[];
+  interval_days: number | null;
+  cadence_anchor: string | null;
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
