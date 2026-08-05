@@ -15,7 +15,6 @@ type ImportOptionDef = {
   icon: LucideIcon;
   allowPaste?: boolean;
   pasteTitle?: string;
-  pasteHint?: string;
   pasteColumns?: string[];
 };
 
@@ -28,8 +27,6 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     icon: FileSpreadsheet,
     allowPaste: true,
     pasteTitle: "Pegar reservas masivas",
-    pasteHint:
-      "Copia en Excel las columnas (con encabezado) y pégalas aquí. Se muestran como una hoja con columnas.",
     pasteColumns: [
       "Ship",
       "Port",
@@ -47,8 +44,6 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     icon: CalendarSearch,
     allowPaste: true,
     pasteTitle: "Pegar fechas de disponibilidad",
-    pasteHint:
-      "Copia en Excel solo la columna de fechas y pégalas aquí. Se muestran en una columna.",
     pasteColumns: ["Fecha"],
   },
 ];
@@ -89,7 +84,8 @@ export default function ImportOptionsModal({
       >
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
           Elige el tipo de importación. Arrastra el Excel, haz clic para
-          seleccionarlo o usa «Pegar celdas» en una modal aparte.
+          seleccionarlo o escribe / pega celdas en una modal con guía de
+          formatos.
         </p>
         <div className="flex flex-col gap-3">
           {IMPORT_OPTIONS.map((option) => (
@@ -116,8 +112,8 @@ export default function ImportOptionsModal({
       <ImportPasteModal
         open={Boolean(pasteOption)}
         title={pasteOption?.pasteTitle ?? "Pegar celdas"}
-        hint={pasteOption?.pasteHint ?? ""}
         columns={pasteOption?.pasteColumns ?? ["Columna"]}
+        formatGuideId={pasteOption?.id ?? null}
         disabled={disabled}
         onClose={() => setPasteOption(null)}
         onApply={(text) => {

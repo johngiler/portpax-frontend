@@ -13,6 +13,7 @@ import CalendarGrid from "./CalendarGrid";
 import CalendarNav from "./CalendarNav";
 import SelectedDatesList from "./SelectedDatesList";
 import type { CalendarDayBooking } from "./types";
+import type { Booking } from "@/types/booking";
 
 export type BookingDateCalendarVisibleRange = {
   from: string;
@@ -27,7 +28,8 @@ type BookingDateCalendarProps = {
   minDate?: string;
   loadingOccupied?: boolean;
   canReassignOccupancy?: boolean;
-  onOccupancyReassigned?: () => void;
+  onOccupancyReassigned?: (updated: Booking) => void;
+  onReassignSavingChange?: (bookingId: number, saving: boolean) => void;
   /** Fires when the visible month grid range changes (incl. leading/trailing days). */
   onVisibleRangeChange?: (range: BookingDateCalendarVisibleRange) => void;
 };
@@ -60,6 +62,7 @@ export default function BookingDateCalendar({
   loadingOccupied = false,
   canReassignOccupancy = false,
   onOccupancyReassigned,
+  onReassignSavingChange,
   onVisibleRangeChange,
 }: BookingDateCalendarProps) {
   const today = todayIso();
@@ -68,6 +71,7 @@ export default function BookingDateCalendar({
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [direction, setDirection] = useState(0);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [carouselDirection, setCarouselDirection] = useState(1);
 
   const weeks = useMemo(
     () => getCalendarGrid(viewYear, viewMonth),
@@ -107,8 +111,15 @@ export default function BookingDateCalendar({
     const dayBookings = occupancyByDate[cell.iso] ?? [];
     const hasOccupancy = dayBookings.length > 0;
 
+    // Open occupancy panel for busy days; do not toggle it with selection.
+    // (Toggle made "back to dates" feel inverted: deselect opened, select closed.)
     if (hasOccupancy) {
-      setExpandedDate((current) => (current === cell.iso ? null : cell.iso));
+      if (expandedDate && expandedDate !== cell.iso) {
+        setCarouselDirection(cell.iso > expandedDate ? 1 : -1);
+      } else {
+        setCarouselDirection(1);
+      }
+      setExpandedDate(cell.iso);
     } else {
       setExpandedDate(null);
     }
@@ -130,14 +141,49 @@ export default function BookingDateCalendar({
     }
   }
 
-  function jumpToFirstSelected() {
-    if (selectedDates.length === 0) return;
-    const first = selectedDates[0];
-    const { year, monthIndex } = parseIsoDate(first);
+  function focusSelectedDate(iso: string, slideDirection?: number) {
+    const dayBookings = occupancyByDate[iso] ?? [];
+    if (dayBookings.length === 0) return;
+
+    if (slideDirection !== undefined) {
+      setCarouselDirection(slideDirection);
+    } else if (expandedDate && expandedDate !== iso) {
+      setCarouselDirection(iso > expandedDate ? 1 : -1);
+    } else {
+      setCarouselDirection(1);
+    }
+
+    const { year, monthIndex } = parseIsoDate(iso);
     const delta = (year - viewYear) * 12 + (monthIndex - viewMonth);
-    setView(year, monthIndex, delta >= 0 ? 1 : -1);
-    const firstBookings = occupancyByDate[first] ?? [];
-    setExpandedDate(firstBookings.length > 0 ? first : null);
+    if (delta !== 0) {
+      setView(year, monthIndex, delta >= 0 ? 1 : -1);
+    }
+    setExpandedDate(iso);
+  }
+
+  const datesWithOccupancy = useMemo(() => {
+    const set = new Set<string>();
+    for (const [iso, rows] of Object.entries(occupancyByDate)) {
+      if (rows.length > 0) set.add(iso);
+    }
+    return set;
+  }, [occupancyByDate]);
+
+  const carouselDates = useMemo(
+    () => selectedDates.filter((iso) => datesWithOccupancy.has(iso)),
+    [selectedDates, datesWithOccupancy],
+  );
+
+  const carouselIndex = expandedDate ? carouselDates.indexOf(expandedDate) : -1;
+  const canGoPrev = carouselIndex > 0;
+  const canGoNext =
+    carouselIndex >= 0 && carouselIndex < carouselDates.length - 1;
+
+  function goCarousel(delta: number) {
+    if (carouselIndex < 0) return;
+    const nextIso = carouselDates[carouselIndex + delta];
+    if (!nextIso) return;
+    focusSelectedDate(nextIso, delta);
   }
 
   const expandedBookings = expandedDate ? (occupancyByDate[expandedDate] ?? []) : [];
@@ -160,16 +206,6 @@ export default function BookingDateCalendar({
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
               Cargando ocupaciones…
             </span>
-          ) : null}
-          {selectedDates.length > 0 ? (
-            <button
-              type="button"
-              onClick={jumpToFirstSelected}
-              disabled={loadingOccupied}
-              className="cursor-pointer rounded-full border border-zinc-200/80 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-[var(--admin-accent)]/30 hover:text-[var(--admin-accent)] disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Ver selección
-            </button>
           ) : null}
           <span className="rounded-full bg-[var(--admin-accent)]/10 px-3 py-1 text-xs font-semibold text-[var(--admin-accent)]">
             {selectedDates.length} fecha{selectedDates.length === 1 ? "" : "s"}
@@ -225,15 +261,41 @@ export default function BookingDateCalendar({
         <CalendarDayAccordion
           dateIso={showAccordion ? expandedDate : null}
           bookings={expandedBookings}
+          carouselDirection={carouselDirection}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={
+            carouselIndex >= 0 && carouselDates.length > 1
+              ? () => goCarousel(-1)
+              : undefined
+          }
+          onNext={
+            carouselIndex >= 0 && carouselDates.length > 1
+              ? () => goCarousel(1)
+              : undefined
+          }
           onClose={() => setExpandedDate(null)}
           canReassign={canReassignOccupancy}
           onBookingReassigned={onOccupancyReassigned}
+          onReassignSavingChange={onReassignSavingChange}
         />
       ) : null}
 
       <SelectedDatesList
         selectedDates={selectedDates}
-        onChange={loadingOccupied ? () => undefined : onChange}
+        datesWithOccupancy={loadingOccupied ? undefined : datesWithOccupancy}
+        activeDate={expandedDate}
+        onSelectDate={focusSelectedDate}
+        onPrev={canGoPrev ? () => goCarousel(-1) : undefined}
+        onNext={canGoNext ? () => goCarousel(1) : undefined}
+        onClear={
+          loadingOccupied
+            ? () => undefined
+            : () => {
+                onChange([]);
+                setExpandedDate(null);
+              }
+        }
       />
     </div>
   );

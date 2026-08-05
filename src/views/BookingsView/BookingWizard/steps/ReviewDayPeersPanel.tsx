@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
@@ -22,7 +22,7 @@ type ReviewDayPeersPanelProps = {
 
 type PeerRowProps = {
   booking: Booking;
-  onChanged: () => void;
+  onChanged: (updated: Booking) => void;
 };
 
 function PeerRow({ booking, onChanged }: PeerRowProps) {
@@ -36,53 +36,68 @@ function PeerRow({ booking, onChanged }: PeerRowProps) {
     setPositionId(booking.position ?? 0);
   }, [booking.position, booking.id]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadSuggestions = useCallback(async () => {
     setLoading(true);
-    suggestBookingPositions({
-      port: booking.port,
-      vessel: booking.vessel,
-      call_date: booking.call_date,
-    })
-      .then((data) => {
-        if (!cancelled) setSuggestions(data.positions);
-      })
-      .catch(() => {
-        if (!cancelled) setSuggestions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    try {
+      const data = await suggestBookingPositions({
+        port: booking.port,
+        vessel: booking.vessel,
+        call_date: booking.call_date,
       });
-    return () => {
-      cancelled = true;
-    };
+      setSuggestions(data.positions);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
   }, [booking.port, booking.vessel, booking.call_date]);
 
+  useEffect(() => {
+    void loadSuggestions();
+  }, [loadSuggestions]);
+
   async function handleChange(nextId: number) {
+    const previousId = booking.position ?? 0;
     setPositionId(nextId);
-    if (nextId === (booking.position ?? 0)) return;
+    if (nextId === previousId) return;
     setSaving(true);
     setError(null);
     try {
-      await updateBooking(booking.id, {
+      const updated = await updateBooking(booking.id, {
         position: nextId > 0 ? nextId : null,
       });
-      onChanged();
+      setPositionId(updated.position ?? 0);
+      onChanged(updated);
+      void loadSuggestions();
     } catch (err) {
-      setPositionId(booking.position ?? 0);
+      setPositionId(previousId);
       setError(getApiErrorMessage(err, "No se pudo reasignar."));
     } finally {
       setSaving(false);
     }
   }
 
-  const options = suggestions.map((position) => {
-    const tags: string[] = [];
-    if (position.recommended) tags.push("recomendada");
-    if (position.occupied) tags.push("ocupada");
-    const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
-    return { value: position.id, label: `${position.code}${suffix}` };
-  });
+  const options = useMemo(() => {
+    const opts = suggestions.map((position) => {
+      const tags: string[] = [];
+      if (position.recommended) tags.push("recomendada");
+      if (position.occupied) tags.push("ocupada");
+      const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
+      return { value: position.id, label: `${position.code}${suffix}` };
+    });
+    const currentId = booking.position;
+    if (
+      currentId &&
+      currentId > 0 &&
+      !opts.some((opt) => opt.value === currentId)
+    ) {
+      opts.unshift({
+        value: currentId,
+        label: booking.position_code ?? `Posición ${currentId}`,
+      });
+    }
+    return opts;
+  }, [suggestions, booking.position, booking.position_code]);
 
   return (
     <li className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
@@ -107,16 +122,12 @@ function PeerRow({ booking, onChanged }: PeerRowProps) {
           value={positionId}
           onChange={(v) => void handleChange(v)}
           options={options}
-          optionLabel={loading || saving ? "Cargando…" : "Sin asignar"}
+          optionLabel={loading || saving ? "Guardando…" : "Sin asignar"}
           emptyValue={0}
           compact
           disabled={saving || loading || booking.status === "c"}
+          error={error ?? undefined}
         />
-        {error ? (
-          <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-            {error}
-          </p>
-        ) : null}
       </div>
     </li>
   );
@@ -165,6 +176,21 @@ export default function ReviewDayPeersPanel({
     return filtered;
   }, [data, dateSet, vesselId]);
 
+  const handlePeerChanged = useCallback(
+    (updated: Booking) => {
+      void mutate(
+        (current) => {
+          if (!current) return current;
+          return current.map((row) =>
+            row.id === updated.id ? updated : row,
+          );
+        },
+        { revalidate: true },
+      );
+    },
+    [mutate],
+  );
+
   if (isLoading && peers.length === 0) {
     return (
       <p className="text-xs text-zinc-500">Cargando otras escalas del día…</p>
@@ -187,9 +213,7 @@ export default function ReviewDayPeersPanel({
           <PeerRow
             key={booking.id}
             booking={booking}
-            onChanged={() => {
-              void mutate();
-            }}
+            onChanged={handlePeerChanged}
           />
         ))}
       </ul>

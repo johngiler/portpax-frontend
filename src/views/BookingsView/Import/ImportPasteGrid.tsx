@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardPaste, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 const EMPTY_PREVIEW_ROWS = 6;
@@ -19,11 +19,7 @@ export function parseClipboardMatrix(text: string): string[][] {
 }
 
 export function matrixToTsv(headers: string[], rows: string[][]): string {
-  const width = Math.max(
-    headers.length,
-    0,
-    ...rows.map((r) => r.length),
-  );
+  const width = Math.max(headers.length, 0, ...rows.map((r) => r.length));
   const pad = (cells: string[]) =>
     Array.from({ length: width }, (_, i) => cells[i] ?? "");
   return [pad(headers), ...rows.map(pad)]
@@ -66,6 +62,16 @@ export function normalizePasteMatrix(
   return { headers, rows: matrix };
 }
 
+function emptyRows(columnCount: number, count = EMPTY_PREVIEW_ROWS): string[][] {
+  return Array.from({ length: count }, () =>
+    Array.from({ length: columnCount }, () => ""),
+  );
+}
+
+function rowHasContent(row: string[]): boolean {
+  return row.some((cell) => cell.trim() !== "");
+}
+
 type ImportPasteGridProps = {
   columns: string[];
   headers: string[];
@@ -83,12 +89,9 @@ export default function ImportPasteGrid({
 }: ImportPasteGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const displayHeaders = headers.length ? headers : columns;
-  const hasData = rows.length > 0;
-  const previewRows = hasData
-    ? rows
-    : Array.from({ length: EMPTY_PREVIEW_ROWS }, () =>
-        displayHeaders.map(() => ""),
-      );
+  const hasData = rows.some(rowHasContent);
+  const workingRows =
+    rows.length > 0 ? rows : emptyRows(displayHeaders.length);
 
   useEffect(() => {
     if (!disabled) containerRef.current?.focus();
@@ -111,22 +114,53 @@ export default function ImportPasteGrid({
     }
   }
 
-  function updateCell(rowIndex: number, colIndex: number, value: string) {
-    if (!hasData || disabled) return;
-    const next = rows.map((row, ri) =>
-      ri === rowIndex
-        ? displayHeaders.map((_, ci) =>
-            ci === colIndex ? value : (row[ci] ?? ""),
-          )
-        : [...row],
+  function commitRows(nextRows: string[][]) {
+    const meaningful = nextRows.filter(rowHasContent);
+    onMatrixChange(
+      displayHeaders,
+      meaningful.length > 0 ? nextRows : [],
     );
-    onMatrixChange(displayHeaders, next);
+  }
+
+  function updateCell(rowIndex: number, colIndex: number, value: string) {
+    if (disabled) return;
+    const base =
+      rows.length > 0
+        ? rows.map((row) =>
+            displayHeaders.map((_, ci) => row[ci] ?? ""),
+          )
+        : emptyRows(displayHeaders.length);
+    while (base.length <= rowIndex) {
+      base.push(displayHeaders.map(() => ""));
+    }
+    base[rowIndex] = displayHeaders.map((_, ci) =>
+      ci === colIndex ? value : (base[rowIndex][ci] ?? ""),
+    );
+    commitRows(base);
   }
 
   function removeRow(rowIndex: number) {
-    if (!hasData || disabled) return;
-    const next = rows.filter((_, i) => i !== rowIndex);
-    onMatrixChange(next.length ? displayHeaders : columns, next);
+    if (disabled) return;
+    const base =
+      rows.length > 0
+        ? rows.map((row) => displayHeaders.map((_, ci) => row[ci] ?? ""))
+        : emptyRows(displayHeaders.length);
+    if (base.length <= 1) {
+      onMatrixChange(columns, []);
+      return;
+    }
+    const next = base.filter((_, i) => i !== rowIndex);
+    onMatrixChange(displayHeaders, next);
+  }
+
+  function addRow() {
+    if (disabled) return;
+    const base =
+      rows.length > 0
+        ? rows.map((row) => displayHeaders.map((_, ci) => row[ci] ?? ""))
+        : emptyRows(displayHeaders.length);
+    base.push(displayHeaders.map(() => ""));
+    onMatrixChange(displayHeaders, base);
   }
 
   return (
@@ -135,42 +169,38 @@ export default function ImportPasteGrid({
       tabIndex={0}
       onPasteCapture={handlePaste}
       className="outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-accent)]/40 focus-visible:ring-offset-1 rounded-lg"
-      aria-label="Cuadrícula de pegado. Pega con Ctrl+V o Cmd+V."
+      aria-label="Tabla de importación"
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           {hasData
-            ? `${rows.length} fila${rows.length === 1 ? "" : "s"} · puedes editar o quitar filas`
-            : "Haz clic aquí y pega (⌘/Ctrl + V) desde Excel"}
+            ? `${rows.filter(rowHasContent).length} fila${rows.filter(rowHasContent).length === 1 ? "" : "s"} con datos`
+            : "Tabla vacía"}
         </p>
-        {hasData ? (
+        <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={disabled}
-            onClick={() => onMatrixChange(columns, [])}
-            className="cursor-pointer text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline dark:hover:text-zinc-200"
+            onClick={addRow}
+            className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-medium text-[var(--admin-accent)] underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50"
           >
-            Limpiar
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            Agregar fila
           </button>
-        ) : null}
+          {hasData ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onMatrixChange(columns, [])}
+              className="cursor-pointer text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline dark:hover:text-zinc-200"
+            >
+              Limpiar
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="relative max-h-[min(50vh,420px)] overflow-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
-        {!hasData ? (
-          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70 px-4 text-center dark:bg-zinc-950/70">
-            <ClipboardPaste
-              className="h-8 w-8 text-[var(--admin-accent)]"
-              strokeWidth={1.75}
-            />
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              Pega las celdas de Excel
-            </p>
-            <p className="max-w-xs text-xs text-zinc-500">
-              Se mostrarán en columnas como una hoja de cálculo.
-            </p>
-          </div>
-        ) : null}
-
+      <div className="relative max-h-[min(70vh,640px)] overflow-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
         <table className="min-w-full border-collapse text-left text-xs">
           <thead className="sticky top-0 z-[1]">
             <tr className="bg-zinc-100 dark:bg-zinc-800">
@@ -191,7 +221,7 @@ export default function ImportPasteGrid({
             </tr>
           </thead>
           <tbody>
-            {previewRows.map((row, rowIndex) => (
+            {workingRows.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
                 className="group odd:bg-white even:bg-zinc-50/80 dark:odd:bg-zinc-950 dark:even:bg-zinc-900/80"
@@ -204,44 +234,28 @@ export default function ImportPasteGrid({
                     key={colIndex}
                     className="min-w-[7rem] border-b border-r border-zinc-200/60 p-0 dark:border-zinc-800"
                   >
-                    {hasData ? (
-                      <input
-                        type="text"
-                        value={row[colIndex] ?? ""}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          updateCell(rowIndex, colIndex, e.target.value)
-                        }
-                        className="w-full bg-transparent px-2 py-1.5 text-xs text-zinc-800 outline-none focus:bg-[var(--admin-accent)]/5 dark:text-zinc-100"
-                      />
-                    ) : (
-                      <span className="block min-h-[1.75rem] px-2 py-1.5 text-transparent">
-                        .
-                      </span>
-                    )}
+                    <input
+                      type="text"
+                      value={row[colIndex] ?? ""}
+                      disabled={disabled}
+                      onChange={(e) =>
+                        updateCell(rowIndex, colIndex, e.target.value)
+                      }
+                      className="w-full bg-transparent px-2 py-1.5 text-xs text-zinc-800 outline-none focus:bg-[var(--admin-accent)]/5 dark:text-zinc-100"
+                    />
                   </td>
                 ))}
-                <td
-                  className={`sticky right-0 border-b border-zinc-200/60 px-1 py-0.5 text-center dark:border-zinc-800 ${
-                    hasData
-                      ? "bg-inherit group-odd:bg-white group-even:bg-zinc-50/80 dark:group-odd:bg-zinc-950 dark:group-even:bg-zinc-900/80"
-                      : ""
-                  }`}
-                >
-                  {hasData ? (
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => removeRow(rowIndex)}
-                      aria-label={`Quitar fila ${rowIndex + 1}`}
-                      title="Quitar fila"
-                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    </button>
-                  ) : (
-                    <span className="inline-block h-7 w-7" aria-hidden />
-                  )}
+                <td className="sticky right-0 border-b border-zinc-200/60 bg-inherit px-1 py-0.5 text-center group-odd:bg-white group-even:bg-zinc-50/80 dark:border-zinc-800 dark:group-odd:bg-zinc-950 dark:group-even:bg-zinc-900/80">
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => removeRow(rowIndex)}
+                    aria-label={`Quitar fila ${rowIndex + 1}`}
+                    title="Quitar fila"
+                    className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </button>
                 </td>
               </tr>
             ))}

@@ -148,14 +148,19 @@ body {
   );
 }
 
+/* End at transform:none so sticky children are not trapped by a containing block */
 @keyframes page-enter {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(16px);
   }
-  to {
+  99% {
     opacity: 1;
     transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }
 .page-transition-enter {

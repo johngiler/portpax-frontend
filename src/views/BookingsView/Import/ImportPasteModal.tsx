@@ -2,18 +2,29 @@
 
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import ImportFormatGuideTable, {
+  ImportFormatGuideToggle,
+} from "@/components/import/ImportFormatGuideTable";
 import Modal from "@/components/ui/Modal";
+import {
+  getImportFormatGuide,
+  type ImportFormatGuide,
+} from "@/lib/importFormatGuides";
 import ImportPasteGrid, { matrixToTsv } from "./ImportPasteGrid";
 
 type ImportPasteModalProps = {
   open: boolean;
   title: string;
-  hint: string;
+  /** Optional intro above the grid; omit when headers already explain columns. */
+  hint?: string;
   /** Expected column headers shown before paste (Excel-like). */
   columns: string[];
   /** Prefill grid (e.g. reprocess pending import rows). */
   initialHeaders?: string[];
   initialRows?: string[][];
+  /** Guide id from `importFormatGuides` or a full guide object. */
+  formatGuideId?: string | null;
+  formatGuide?: ImportFormatGuide | null;
   disabled?: boolean;
   onClose: () => void;
   onApply: (text: string) => void;
@@ -26,17 +37,24 @@ export default function ImportPasteModal({
   columns,
   initialHeaders,
   initialRows,
+  formatGuideId = null,
+  formatGuide = null,
   disabled = false,
   onClose,
   onApply,
 }: ImportPasteModalProps) {
   const [headers, setHeaders] = useState<string[]>(columns);
   const [rows, setRows] = useState<string[][]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  const guide =
+    formatGuide ?? getImportFormatGuide(formatGuideId);
 
   useEffect(() => {
     if (!open) {
       setHeaders(columns);
       setRows([]);
+      setGuideOpen(false);
       return;
     }
     if (initialRows && initialRows.length > 0) {
@@ -52,9 +70,12 @@ export default function ImportPasteModal({
     setRows([]);
   }, [open, columns, initialHeaders, initialRows]);
 
+  const hasContent = rows.some((row) => row.some((cell) => cell.trim() !== ""));
+
   function submit() {
-    if (!rows.length || disabled) return;
-    onApply(matrixToTsv(headers.length ? headers : columns, rows));
+    if (!hasContent || disabled) return;
+    const dataRows = rows.filter((row) => row.some((cell) => cell.trim() !== ""));
+    onApply(matrixToTsv(headers.length ? headers : columns, dataRows));
   }
 
   return (
@@ -62,7 +83,7 @@ export default function ImportPasteModal({
       open={open}
       onClose={onClose}
       title={title}
-      panelClassName="max-w-3xl"
+      panelClassName="max-w-6xl w-[min(96vw,72rem)]"
       footer={
         <div className="flex justify-end gap-3">
           <button
@@ -75,15 +96,18 @@ export default function ImportPasteModal({
           </button>
           <DefaultButton
             type="button"
-            disabled={disabled || rows.length === 0}
+            disabled={disabled || !hasContent}
             onClick={submit}
           >
-            Aplicar pegado
+            Aplicar datos
           </DefaultButton>
         </div>
       }
     >
-      <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">{hint}</p>
+      {hint ? (
+        <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">{hint}</p>
+      ) : null}
+
       <ImportPasteGrid
         columns={columns}
         headers={headers}
@@ -94,9 +118,20 @@ export default function ImportPasteModal({
           setRows(nextRows);
         }}
       />
-      <p className="mt-2 text-[11px] text-zinc-400">
-        Tip: pega con ⌘/Ctrl + V; luego «Aplicar pegado».
-      </p>
+
+      {guide ? (
+        <div className="mt-3">
+          <ImportFormatGuideToggle
+            open={guideOpen}
+            onToggle={() => setGuideOpen((v) => !v)}
+          />
+          {guideOpen ? (
+            <div className="mt-2">
+              <ImportFormatGuideTable guide={guide} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </Modal>
   );
 }

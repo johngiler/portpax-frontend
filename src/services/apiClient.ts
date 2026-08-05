@@ -32,7 +32,15 @@ function normalizeErrorMessages(value: unknown): string[] {
   if (value == null) return [];
   if (Array.isArray(value)) return value.flatMap(normalizeErrorMessages);
   if (typeof value === "object") {
-    return Object.values(value as Record<string, unknown>).flatMap(normalizeErrorMessages);
+    const rec = value as Record<string, unknown>;
+    // Booking ValidationIssue: { level, code, message }
+    if (typeof rec.message === "string" && rec.message.trim()) {
+      return [rec.message.trim()];
+    }
+    if (typeof rec.code === "string" && rec.code.trim()) {
+      return [rec.code.trim()];
+    }
+    return Object.values(rec).flatMap(normalizeErrorMessages);
   }
   const text = String(value).trim();
   return text ? [text] : [];

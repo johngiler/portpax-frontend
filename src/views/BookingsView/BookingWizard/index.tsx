@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import DefaultButton from "@/components/buttons/DefaultButton";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import { useMotionTransition } from "@/lib/motionPresets";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
@@ -17,9 +14,9 @@ import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
 import type { Booking } from "@/types/booking";
+import BookingWizardChrome from "./BookingWizardChrome";
 import BookingWizardSuccess from "./BookingWizardSuccess";
-import WizardSelectionSummary from "./WizardSelectionSummary";
-import WizardStepIndicator from "./WizardStepIndicator";
+import WizardCardActions from "./WizardCardActions";
 import DatesStep from "./steps/DatesStep";
 import PortStep from "./steps/PortStep";
 import ReviewStep from "./steps/ReviewStep";
@@ -82,11 +79,30 @@ function parsePrefill(searchParams: URLSearchParams): {
   };
 }
 
+function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+  if (!node) return null;
+  let parent = node.parentElement;
+  while (parent) {
+    const { overflowY, overflow } = getComputedStyle(parent);
+    if (
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflow === "auto" ||
+      overflow === "scroll"
+    ) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
 export default function BookingWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const transition = useMotionTransition(0.22);
   const prefillDoneRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
   const cancelHref = returnTo ?? "/bookings";
 
@@ -192,6 +208,15 @@ export default function BookingWizard() {
 
   const reachable = useMemo(() => maxReachableIndex(form), [form]);
 
+  function scrollToTop() {
+    const scrollRoot = getScrollParent(rootRef.current);
+    if (scrollRoot) {
+      scrollRoot.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   function goToStep(target: BookingWizardStepId) {
     const targetIndex = stepIndex(target);
     if (targetIndex > reachable) return;
@@ -209,6 +234,7 @@ export default function BookingWizard() {
     setDirection(1);
     setStep(BOOKING_WIZARD_STEPS[nextIndex].id);
     setViewError(null);
+    scrollToTop();
   }
 
   function goBack() {
@@ -217,6 +243,7 @@ export default function BookingWizard() {
     setDirection(-1);
     setStep(BOOKING_WIZARD_STEPS[prevIndex].id);
     setViewError(null);
+    scrollToTop();
   }
 
   function selectPort(portId: number) {
@@ -297,27 +324,41 @@ export default function BookingWizard() {
   const stepMeta = BOOKING_WIZARD_STEPS.find((s) => s.id === step)!;
 
   return (
-    <div className="space-y-6">
-      {viewError && <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />}
-
-      <WizardStepIndicator
-        currentStep={step}
+    <div ref={rootRef}>
+      <BookingWizardChrome
+        step={step}
         maxReachableIndex={reachable}
         onStepClick={goToStep}
-      />
-
-      <WizardSelectionSummary
         port={selectedPort}
         line={selectedLine}
         vessel={selectedVessel}
         dateCount={form.callDates.length}
         positionLabel={form.preferredPositionLabel || null}
+        errorBanner={
+          viewError ? (
+            <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
+          ) : null
+        }
       />
 
       <div className="rounded-2xl border border-zinc-200/80 bg-white/90 p-6 shadow-[var(--admin-card-shadow)] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 sm:p-8">
-        <div className="mb-6">
+        <WizardCardActions
+          placement="top"
+          step={step}
+          cancelHref={cancelHref}
+          onBack={goBack}
+          onNext={goNext}
+          onSubmit={handleSubmit}
+          canContinue={canAdvance(step, form)}
+          stepDataLoading={stepDataLoading}
+          submitting={submitting}
+          reviewBlocked={reviewBlocked}
+          callDateCount={form.callDates.length}
+        />
+
+        <div className="mb-3">
           <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{stepMeta.label}</h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
             {step === "port" && "Selecciona el puerto de escala."}
             {step === "line" && "Elige la naviera operadora."}
             {step === "vessel" && "Selecciona el crucero que hará la escala."}
@@ -402,56 +443,19 @@ export default function BookingWizard() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/80 pt-6 dark:border-zinc-800">
-          <div className="flex gap-2">
-            <Link
-              href={cancelHref}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              <X className="h-4 w-4" />
-              Cancelar
-            </Link>
-            {step !== "port" && (
-              <button
-                type="button"
-                onClick={goBack}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Atrás
-              </button>
-            )}
-          </div>
-
-          {step !== "review" ? (
-            <DefaultButton
-              type="button"
-              onClick={goNext}
-              disabled={stepDataLoading || !canAdvance(step, form)}
-            >
-              <span className="inline-flex items-center gap-2">
-                {stepDataLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                {stepDataLoading ? "Cargando…" : "Continuar"}
-                {!stepDataLoading ? <ArrowRight className="h-4 w-4" /> : null}
-              </span>
-            </DefaultButton>
-          ) : (
-            <DefaultButton
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting || reviewBlocked}
-            >
-              <span className="inline-flex items-center gap-2">
-                {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
-                Crear {form.callDates.length} reserva{form.callDates.length === 1 ? "" : "s"}
-              </span>
-            </DefaultButton>
-          )}
-        </div>
+        <WizardCardActions
+          placement="bottom"
+          step={step}
+          cancelHref={cancelHref}
+          onBack={goBack}
+          onNext={goNext}
+          onSubmit={handleSubmit}
+          canContinue={canAdvance(step, form)}
+          stepDataLoading={stepDataLoading}
+          submitting={submitting}
+          reviewBlocked={reviewBlocked}
+          callDateCount={form.callDates.length}
+        />
       </div>
     </div>
   );

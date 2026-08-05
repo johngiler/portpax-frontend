@@ -13,7 +13,7 @@ export default function CalendarOccupancyLegend() {
         <span className="text-xs font-semibold text-amber-700/80 line-through dark:text-amber-400/80">
           23
         </span>
-        Mismo barco ya reservado aquí
+        Este barco ya reservado aquí
       </span>
     </div>
   );

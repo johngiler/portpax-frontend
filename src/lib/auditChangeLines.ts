@@ -1,6 +1,7 @@
 /** Format audit `changes` JSON for ops + audit history feeds. */
 
 import { formatLtaWeekdays } from "@/types/lta";
+import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
 
 const PORT_STATUS_LABELS: Record<string, string> = {
   operational: "Operativo",
@@ -77,6 +78,21 @@ function formatWeekdaysValue(value: unknown): string {
   return formatLtaWeekdays(nums);
 }
 
+function formatBookingStatus(value: unknown): string {
+  if (typeof value !== "string") return formatValue(value);
+  const label = BOOKING_STATUS_LABELS[value as BookingStatus];
+  return label ?? value;
+}
+
+function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): string {
+  const codeKey = side === "from" ? "from_code" : "to_code";
+  const code = rec[codeKey];
+  if (typeof code === "string" && code.trim()) return code;
+  const raw = rec[side] ?? rec[side === "from" ? "old" : "new"];
+  if (raw == null || raw === "") return "—";
+  return String(raw);
+}
+
 function formatValue(value: unknown, key?: string): string {
   if (key === "weekdays") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
@@ -89,17 +105,26 @@ function formatValue(value: unknown, key?: string): string {
     }
     return formatWeekdaysValue(value);
   }
+  if (key === "position_id") {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return `${formatPositionSide(rec, "from")} → ${formatPositionSide(rec, "to")}`;
+      }
+    }
+  }
   if (key === "status") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
       if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
         const from = rec.from ?? rec.old;
         const to = rec.to ?? rec.new;
-        return `${formatValue(from, "status")} → ${formatValue(to, "status")}`;
+        return `${formatBookingStatus(from)} → ${formatBookingStatus(to)}`;
       }
     }
-    if (typeof value === "string" && PORT_STATUS_LABELS[value]) {
-      return PORT_STATUS_LABELS[value];
+    if (typeof value === "string") {
+      if (PORT_STATUS_LABELS[value]) return PORT_STATUS_LABELS[value];
+      return formatBookingStatus(value);
     }
   }
   if (value == null || value === "") return "—";

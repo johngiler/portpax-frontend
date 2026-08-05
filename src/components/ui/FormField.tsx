@@ -158,7 +158,7 @@ export function buildCatalogSelectStyles<T extends string | number>(
 type FormFieldProps = {
   label: string;
   name: string;
-  type?: "text" | "number" | "email" | "date" | "password";
+  type?: "text" | "number" | "email" | "date" | "password" | "time";
   value: string | number | "";
   onChange: (value: any) => void;
   placeholder?: string;
@@ -167,6 +167,7 @@ type FormFieldProps = {
   min?: number;
   step?: string;
   disabled?: boolean;
+  onBlur?: () => void;
   /** Smaller type scale for FilterSidebar and dense panels. */
   compact?: boolean;
 };
@@ -183,6 +184,7 @@ export function FormField({
   min,
   step,
   disabled,
+  onBlur,
   compact = false,
 }: FormFieldProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -210,6 +212,7 @@ export function FormField({
                 : e.target.value;
             onChange(v);
           }}
+          onBlur={onBlur}
           placeholder={placeholder}
           className={`${compact ? inputCompactClass : inputClass} ${isPassword ? "pr-11" : ""} ${error ? inputErrorClass : ""}`}
           required={required}
@@ -304,6 +307,7 @@ export function FormFieldSelect<T extends string | number>({
       : (options.find((opt) => opt.value === value) ?? null);
 
   const styles = buildCatalogSelectStyles<T>(Boolean(error), compact);
+  const showLabel = Boolean(label.trim());
 
   const sharedSelectProps = {
     inputId: name,
@@ -314,6 +318,7 @@ export function FormFieldSelect<T extends string | number>({
     isClearable: !!optionLabel || emptyValue !== undefined,
     placeholder: optionLabel ?? "Seleccionar...",
     "aria-invalid": !!error,
+    "aria-label": showLabel ? undefined : optionLabel || label || "Seleccionar",
     isDisabled: disabled,
     isSearchable: true,
     formatOptionLabel: (option: CatalogSelectOption<T>) => (
@@ -333,7 +338,7 @@ export function FormFieldSelect<T extends string | number>({
 
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
-      {labelEnd ? (
+      {showLabel && labelEnd ? (
         <div
           className={`flex items-center justify-between gap-2 ${
             compact ? "mb-1" : "mb-1.5"
@@ -352,12 +357,13 @@ export function FormFieldSelect<T extends string | number>({
           </label>
           {labelEnd}
         </div>
-      ) : (
+      ) : null}
+      {showLabel && !labelEnd ? (
         <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
           {label}
           {required && <span className="text-red-500"> *</span>}
         </label>
-      )}
+      ) : null}
       {loadOptions ? (
         <AsyncSelect<CatalogSelectOption<T>, false>
           {...sharedSelectProps}

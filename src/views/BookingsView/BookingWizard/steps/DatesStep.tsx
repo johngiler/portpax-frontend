@@ -9,6 +9,7 @@ import {
   useWizardOccupancy,
   type WizardVisibleRange,
 } from "@/hooks/swr/useWizardOccupancy";
+import type { Booking } from "@/types/booking";
 
 type DatesStepProps = {
   portId: number | null;
@@ -21,7 +22,7 @@ type DatesStepProps = {
   onEtaChange: (value: string) => void;
   onEtdChange: (value: string) => void;
   onPlannedPaxChange: (value: string) => void;
-  /** Parent disables Continuar while occupancy is loading. */
+  /** Parent disables Continuar while occupancy is loading or a reassign is saving. */
   onLoadingChange?: (loading: boolean) => void;
 };
 
@@ -41,6 +42,7 @@ export default function DatesStep({
   const [visibleRange, setVisibleRange] = useState<WizardVisibleRange | null>(
     null,
   );
+  const [savingIds, setSavingIds] = useState<Set<number>>(() => new Set());
 
   const handleVisibleRangeChange = useCallback(
     (range: BookingDateCalendarVisibleRange) => {
@@ -51,19 +53,43 @@ export default function DatesStep({
     [],
   );
 
+  const handleReassignSavingChange = useCallback(
+    (bookingId: number, saving: boolean) => {
+      setSavingIds((prev) => {
+        const has = prev.has(bookingId);
+        if (saving && has) return prev;
+        if (!saving && !has) return prev;
+        const next = new Set(prev);
+        if (saving) next.add(bookingId);
+        else next.delete(bookingId);
+        return next;
+      });
+    },
+    [],
+  );
+
   const {
     occupancyByDate,
     blockedDates,
     isLoading: loadingOccupied,
-    mutate,
+    applyReassignedBooking,
   } = useWizardOccupancy(portId, vesselId, visibleRange);
 
+  const busy = loadingOccupied || savingIds.size > 0;
+
   useEffect(() => {
-    onLoadingChange?.(loadingOccupied);
+    onLoadingChange?.(busy);
     return () => {
       onLoadingChange?.(false);
     };
-  }, [loadingOccupied, onLoadingChange]);
+  }, [busy, onLoadingChange]);
+
+  const handleOccupancyReassigned = useCallback(
+    async (updated: Booking) => {
+      await applyReassignedBooking(updated);
+    },
+    [applyReassignedBooking],
+  );
 
   return (
     <div className="space-y-6">
@@ -74,9 +100,8 @@ export default function DatesStep({
         blockedDates={blockedDates}
         loadingOccupied={loadingOccupied}
         canReassignOccupancy
-        onOccupancyReassigned={() => {
-          void mutate();
-        }}
+        onOccupancyReassigned={handleOccupancyReassigned}
+        onReassignSavingChange={handleReassignSavingChange}
         onVisibleRangeChange={handleVisibleRangeChange}
       />
 

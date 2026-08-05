@@ -2,10 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import ImportFormatGuideTable, {
+  ImportFormatGuideToggle,
+} from "@/components/import/ImportFormatGuideTable";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { BULK_BOOKINGS_IMPORT_GUIDE } from "@/lib/importFormatGuides";
 import { useNavigationLock } from "@/lib/useNavigationLock";
 import {
   createBulkBookingImport,
@@ -41,6 +45,7 @@ export default function BulkBookingImportModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -50,6 +55,7 @@ export default function BulkBookingImportModal({
       ),
     );
     setError(null);
+    setGuideOpen(false);
   }, [open, rows]);
 
   useNavigationLock(
@@ -157,15 +163,27 @@ export default function BulkBookingImportModal({
         </p>
       ) : null}
 
-      <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">
-        Archivo:{" "}
-        <span className="font-medium text-zinc-800 dark:text-zinc-100">
-          {fileName}
-        </span>
-        {" · "}
-        {rows.length} filas · {selectableRows.length} listas para crear ·{" "}
-        {selectedCount} seleccionadas
-      </p>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <p className="min-w-0 flex-1 text-sm text-zinc-600 dark:text-zinc-300">
+          Archivo:{" "}
+          <span className="font-medium text-zinc-800 dark:text-zinc-100">
+            {fileName}
+          </span>
+          {" · "}
+          {rows.length} filas · {selectableRows.length} listas para crear ·{" "}
+          {selectedCount} seleccionadas
+        </p>
+        <ImportFormatGuideToggle
+          open={guideOpen}
+          onToggle={() => setGuideOpen((v) => !v)}
+        />
+      </div>
+
+      {guideOpen ? (
+        <div className="mb-4">
+          <ImportFormatGuideTable guide={BULK_BOOKINGS_IMPORT_GUIDE} />
+        </div>
+      ) : null}
 
       <div className="mb-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
         <label className="inline-flex cursor-pointer items-center gap-2">

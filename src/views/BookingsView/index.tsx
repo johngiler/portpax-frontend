@@ -859,7 +859,7 @@ export default function BookingsView() {
       <ImportPasteModal
         open={reprocessPasteOpen && !bulkImportLoading}
         title="Pegar reservas masivas"
-        hint="Edita las filas pendientes (como en Excel) y pulsa «Aplicar pegado» para volver a validarlas antes de crear."
+        hint="Revisa o corrige las filas pendientes y pulsa «Aplicar datos» para validarlas de nuevo."
         columns={[
           "Ship",
           "Port",
@@ -868,6 +868,7 @@ export default function BookingsView() {
           "Vendor Name",
           "Call Type",
         ]}
+        formatGuideId="bulk_bookings"
         initialHeaders={reprocessPasteHeaders}
         initialRows={reprocessPasteRows}
         disabled={bulkImportLoading}

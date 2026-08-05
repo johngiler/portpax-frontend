@@ -38,7 +38,7 @@ export default function ImportOptionDropCard({
   accept = DEFAULT_ACCEPT,
   dropHint = "Arrastra el Excel aquí o haz clic",
   onPasteClick,
-  pasteLabel = "O pegar las celdas directamente…",
+  pasteLabel = "O escribir / pegar celdas…",
 }: ImportOptionDropCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);

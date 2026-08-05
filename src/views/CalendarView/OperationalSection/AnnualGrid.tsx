@@ -67,9 +67,12 @@ export default function AnnualGrid({
       : pierAll;
 
   const portNames = multiPort
-    ? [...new Set(bookings.map((b) => b.port_name || "Puerto"))].sort((a, b) =>
-        a.localeCompare(b, "es"),
-      )
+    ? [
+        ...new Set([
+          ...bookings.map((b) => b.port_name || "Puerto"),
+          ...pierAll.map((p) => p.port_name || "Puerto"),
+        ]),
+      ].sort((a, b) => a.localeCompare(b, "es"))
     : [];
 
   const seasonNavLabel =
@@ -150,7 +153,7 @@ export default function AnnualGrid({
                 : "border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800",
             ].join(" ")}
           >
-            Availability Check
+            Ver disponibilidad
           </button>
         </div>
       </div>

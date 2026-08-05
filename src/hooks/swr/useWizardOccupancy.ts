@@ -1,13 +1,16 @@
 "use client";
 
+import { useCallback } from "react";
 import useSWR from "swr";
 import {
+  applyBookingPositionToOccupancy,
   buildCalendarOccupancy,
   mergeBookingsById,
 } from "@/components/booking/BookingDateCalendar/buildCalendarOccupancy";
 import type { CalendarDayBooking } from "@/components/booking/BookingDateCalendar/types";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchAllBookings } from "@/services/bookings/bookingService";
+import type { Booking } from "@/types/booking";
 
 export type WizardVisibleRange = {
   from: string;
@@ -64,12 +67,37 @@ export function useWizardOccupancy(
     { keepPreviousData: false },
   );
 
+  const applyReassignedBooking = useCallback(
+    async (updated: Booking) => {
+      await mutate(
+        (current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            byDate: applyBookingPositionToOccupancy(
+              current.byDate,
+              updated.id,
+              updated.position,
+              updated.position_code,
+              updated.eta,
+              updated.etd,
+            ),
+          };
+        },
+        { revalidate: true },
+      );
+    },
+    [mutate],
+  );
+
   return {
     occupancyByDate: data?.byDate ?? {},
     blockedDates: data?.blockedDates ?? [],
-    isLoading: Boolean(enabled && (isLoading || (isValidating && !data))),
+    // Only block UI on first load for this range — not on revalidate after reassign.
+    isLoading: Boolean(enabled && isLoading && !data),
     isValidating,
     error,
     mutate,
+    applyReassignedBooking,
   };
 }

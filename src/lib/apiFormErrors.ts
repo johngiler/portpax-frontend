@@ -25,6 +25,20 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
     "Usuario o contraseña incorrectos.",
   "No active account found with the given credentials.":
     "Usuario o contraseña incorrectos.",
+  // Booking validation codes (when API sends code without message)
+  filo_eta_violation:
+    "First-in / last-out: la posición interior no puede arribar antes que la exterior.",
+  filo_etd_violation:
+    "First-in / last-out: la posición interior no puede zarpar después que la exterior.",
+  position_occupied: "La posición ya está ocupada en esa fecha/horario.",
+  lta_priority_conflict:
+    "La posición está ocupada por un call CL (LTA inamovible).",
+  lta_slot_reserved: "La posición está reservada por un acuerdo LTA.",
+  lta_beyond_horizon: "La fecha supera el horizonte máximo del LTA.",
+  loa_exceeds_position: "La eslora del barco excede el máximo de la posición.",
+  beam_exceeds_position: "La manga del barco excede el máximo de la posición.",
+  draft_too_deep: "El calado del barco supera la profundidad disponible.",
+  combined_loa_red: "La eslora combinada alcanza o supera el límite rojo.",
 };
 
 const MESSAGE_PATTERNS: Array<{
@@ -80,7 +94,14 @@ function normalizeMessages(value: unknown): string[] {
   if (value == null) return [];
   if (Array.isArray(value)) return value.flatMap(normalizeMessages);
   if (typeof value === "object") {
-    return Object.values(value as Record<string, unknown>).flatMap(normalizeMessages);
+    const rec = value as Record<string, unknown>;
+    if (typeof rec.message === "string" && rec.message.trim()) {
+      return [rec.message.trim()];
+    }
+    if (typeof rec.code === "string" && rec.code.trim()) {
+      return [rec.code.trim()];
+    }
+    return Object.values(rec).flatMap(normalizeMessages);
   }
   const text = String(value).trim();
   return text ? [text] : [];
@@ -128,7 +149,14 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   const nonField = fieldErrors.non_field_errors?.[0];
   if (nonField) return translateApiMessage(nonField);
 
-  for (const key of ["code", "port", "status", "name", "component_position_ids"]) {
+  for (const key of [
+    "code",
+    "port",
+    "status",
+    "name",
+    "position",
+    "component_position_ids",
+  ]) {
     const message = fieldErrors[key]?.[0];
     if (message) return translateApiMessage(message);
   }

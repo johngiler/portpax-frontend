@@ -7,6 +7,8 @@ type BookingCodeRefProps = {
   code: string;
   /** Show "Código de reserva" label above the chip. */
   showLabel?: boolean;
+  /** Optional detail link (opens in a new tab). */
+  href?: string | null;
   /** Optional confirmation PDF download inside the same bar. */
   pdfHref?: string | null;
   className?: string;
@@ -15,6 +17,7 @@ type BookingCodeRefProps = {
 export default function BookingCodeRef({
   code,
   showLabel = true,
+  href = null,
   pdfHref = null,
   className = "",
 }: BookingCodeRefProps) {
@@ -30,6 +33,9 @@ export default function BookingCodeRef({
     }
   }
 
+  const codeClassName =
+    "min-w-0 flex-1 truncate text-[11px] font-semibold text-[var(--admin-accent)] sm:text-xs";
+
   return (
     <div className={className}>
       {showLabel ? (
@@ -43,9 +49,19 @@ export default function BookingCodeRef({
           strokeWidth={2}
           aria-hidden
         />
-        <code className="min-w-0 flex-1 break-all text-sm font-semibold text-[var(--admin-accent)]">
-          {code}
-        </code>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${codeClassName} cursor-pointer underline-offset-2 hover:underline`}
+            title="Abrir detalle de la reserva"
+          >
+            {code}
+          </a>
+        ) : (
+          <code className={codeClassName}>{code}</code>
+        )}
         <button
           type="button"
           onClick={() => void handleCopy()}

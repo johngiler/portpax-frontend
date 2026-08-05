@@ -11,6 +11,32 @@ export function mergeBookingsById(...lists: Booking[][]): Booking[] {
   return [...map.values()];
 }
 
+/** Patch occupancy map entry after a hot update (position / schedule). */
+export function applyBookingPositionToOccupancy(
+  byDate: Record<string, CalendarDayBooking[]>,
+  bookingId: number,
+  positionId: number | null,
+  positionCode: string | null,
+  eta?: string | null,
+  etd?: string | null,
+): Record<string, CalendarDayBooking[]> {
+  const next: Record<string, CalendarDayBooking[]> = {};
+  for (const [date, rows] of Object.entries(byDate)) {
+    next[date] = rows.map((row) =>
+      row.id === bookingId
+        ? {
+            ...row,
+            position_id: positionId,
+            position_code: positionCode,
+            ...(eta !== undefined ? { eta } : {}),
+            ...(etd !== undefined ? { etd } : {}),
+          }
+        : row,
+    );
+  }
+  return next;
+}
+
 export function buildCalendarOccupancy(
   bookings: Booking[],
   portId: number,
