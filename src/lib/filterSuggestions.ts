@@ -99,13 +99,46 @@ export async function suggestPorts(query: string): Promise<FilterSuggestion[]> {
 }
 
 export async function suggestShippingLines(query: string): Promise<FilterSuggestion[]> {
-  const data = await fetchShippingLines({ search: query, pageSize: SUGGEST_LIMIT });
-  return data.results.map((line) => ({
-    id: `line-${line.id}`,
-    label: line.name,
-    hint: line.code,
-    applyValue: line.name,
-  }));
+  const data = await globalSearch(query);
+  const items: FilterSuggestion[] = [];
+  const seenLineIds = new Set<number>();
+
+  for (const ship of data.ships) {
+    items.push({
+      id: `ship-${ship.id}`,
+      label: ship.name,
+      hint: ship.shipping_line_name ?? ship.shipping_line_code,
+      // Filter list by vessel name so API `vessels__name` search finds the line.
+      applyValue: ship.name,
+      group: "Barcos",
+    });
+    if (ship.shipping_line_id) seenLineIds.add(ship.shipping_line_id);
+  }
+
+  for (const line of data.shipping_lines) {
+    if (seenLineIds.has(line.id)) continue;
+    items.push({
+      id: `line-${line.id}`,
+      label: line.name,
+      hint: line.code,
+      applyValue: line.name,
+      group: "Navieras",
+    });
+  }
+
+  // Fallback: list search also matches vessels__name when global search is empty.
+  if (items.length === 0) {
+    const listed = await fetchShippingLines({ search: query, pageSize: SUGGEST_LIMIT });
+    return listed.results.map((line) => ({
+      id: `line-${line.id}`,
+      label: line.name,
+      hint: line.code,
+      applyValue: line.name,
+      group: "Navieras",
+    }));
+  }
+
+  return items.slice(0, SUGGEST_LIMIT);
 }
 
 export async function suggestUsers(query: string): Promise<FilterSuggestion[]> {

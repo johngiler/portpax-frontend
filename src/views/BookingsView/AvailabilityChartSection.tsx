@@ -6,7 +6,7 @@ import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
-import { CalendarRange, CheckCircle2, Clock3, Ruler, Ship } from "lucide-react";
+import { CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import { bookingDetailHref, newBookingHref } from "@/types/booking";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
@@ -273,36 +273,37 @@ export default function AvailabilityChartSection({
                               title={`Editar ${call.booking_code}`}
                               aria-label={`Abrir reserva ${call.booking_code}`}
                             >
-                              <div className="flex min-w-0 items-center gap-2">
+                              <div className="flex min-w-0 items-start gap-2">
                                 <CatalogLogoThumb
-                                  src={call.shipping_line_logo}
+                                  src={call.vessel_logo}
                                   alt=""
                                   size="sm"
-                                  kind="shipping_line"
+                                  kind="vessel"
                                 />
                                 <div className="min-w-0">
                                   <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                                    {call.vessel_name}
+                                  </p>
+                                  <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                                     {call.shipping_line_name}
                                   </p>
                                 </div>
                               </div>
                               <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
                                 <div className="flex items-center justify-between gap-3">
-                                  <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
-                                    <Ship className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                    <span className="truncate">{call.vessel_name}</span>
-                                  </span>
                                   {call.loa_m ? (
-                                    <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                                      <Ruler className="h-3.5 w-3.5" aria-hidden />
+                                    <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                      <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden />
                                       {Number(call.loa_m).toLocaleString("es-MX")} m
                                     </span>
-                                  ) : null}
+                                  ) : (
+                                    <span />
+                                  )}
+                                  <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                    <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                    {formatTimeShort(call.eta)}–{formatTimeShort(call.etd)}
+                                  </p>
                                 </div>
-                                <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                                  <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                  {formatTimeShort(call.eta)}–{formatTimeShort(call.etd)}
-                                </p>
                               </div>
                             </Link>
                           ))}
