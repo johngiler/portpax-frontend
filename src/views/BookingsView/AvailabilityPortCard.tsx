@@ -6,6 +6,7 @@ import { useAvailabilityInfinite } from "@/hooks/swr/useAvailabilityInfinite";
 import type { AvailabilityListFilters } from "@/hooks/swr/useAvailabilityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
+import type { AvailabilityHeatModeQuery } from "@/lib/viewFilterQuery";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import AvailabilityChartSection from "./AvailabilityChartSection";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
@@ -16,6 +17,8 @@ type AvailabilityPortCardProps = {
   dateTo: string;
   /** When set, only these ISO dates are shown in the grid. */
   dateAllowlist?: string[] | null;
+  /** Disponibilidad = gaps; ocupación = only occupied days. */
+  heatMode?: AvailabilityHeatModeQuery;
   filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
@@ -28,20 +31,21 @@ function todayIsoLocal(): string {
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+function rowHasOccupancy(row: AvailabilityReport["rows"][number]): boolean {
+  return row.cells.some((calls) => calls.length > 0);
+}
+
 /** Hide ports with no pier/anchorage columns or no free future slots in the loaded window. */
-function shouldShowPort(
+function shouldShowAvailabilityPort(
   report: AvailabilityReport,
   todayIso: string,
-  hasMoreDays: boolean,
 ): boolean {
   if (report.columns.length === 0) return false;
-  const hasOpen = report.rows.some(
+  return report.rows.some(
     (row) =>
       row.date >= todayIso &&
       row.cells.some((calls) => calls.length === 0),
   );
-  if (hasOpen) return true;
-  return hasMoreDays;
 }
 
 export default function AvailabilityPortCard({
@@ -49,6 +53,7 @@ export default function AvailabilityPortCard({
   dateFrom,
   dateTo,
   dateAllowlist = null,
+  heatMode = "availability",
   filters = {},
   canBook = false,
   returnTo = null,
@@ -60,6 +65,7 @@ export default function AvailabilityPortCard({
     () => (dateAllowlist?.length ? new Set(dateAllowlist) : null),
     [dateAllowlist],
   );
+  const isOccupancy = heatMode === "occupancy";
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
     useAvailabilityInfinite(portId, dateFrom, dateTo, true, filters);
@@ -83,25 +89,63 @@ export default function AvailabilityPortCard({
     loadMore,
   ]);
 
+  // Occupancy: skip empty prefixes until the first occupied day (or end of range).
+  useEffect(() => {
+    if (!isOccupancy || allowSet || !data || !hasMore || loadingMore || isLoading)
+      return;
+    if (data.rows.some(rowHasOccupancy)) return;
+    loadMore();
+  }, [
+    isOccupancy,
+    allowSet,
+    data,
+    hasMore,
+    loadingMore,
+    isLoading,
+    loadMore,
+  ]);
+
   const displayData = useMemo((): AvailabilityReport | null => {
     if (!data) return null;
-    if (!allowSet) return data;
-    const rows = data.rows.filter((row) => allowSet.has(row.date));
+    let rows = data.rows;
+    if (allowSet) {
+      rows = rows.filter((row) => allowSet.has(row.date));
+    }
+    if (isOccupancy) {
+      rows = rows.filter(rowHasOccupancy);
+    }
     return { ...data, rows };
-  }, [data, allowSet]);
+  }, [data, allowSet, isOccupancy]);
 
-  const displayTotal = allowSet ? allowSet.size : totalDays;
   const stillLoadingAllowlist =
     Boolean(allowSet) && hasMore && (loadingMore || isLoading);
-  const displayHasMore = allowSet ? stillLoadingAllowlist : hasMore;
+  const stillLoadingOccupancyPrefix =
+    isOccupancy &&
+    !allowSet &&
+    hasMore &&
+    (loadingMore || isLoading) &&
+    !(data?.rows.some(rowHasOccupancy));
+  const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
+
+  const displayTotal = allowSet ? allowSet.size : totalDays;
+  const displayHasMore = allowSet ? stillLoadingFocus : hasMore;
+  const footerLoadedCount = isOccupancy
+    ? (data?.rows.length ?? 0)
+    : displayData?.rows.length ?? 0;
 
   const hidden = useMemo(() => {
     if (!displayData) return false;
-    if (stillLoadingAllowlist) return false;
-    return !shouldShowPort(displayData, todayIso, false);
-  }, [displayData, todayIso, stillLoadingAllowlist]);
+    if (stillLoadingFocus) return false;
+    if (isOccupancy) {
+      return (
+        displayData.columns.length === 0 ||
+        (displayData.rows.length === 0 && !hasMore)
+      );
+    }
+    return !shouldShowAvailabilityPort(displayData, todayIso);
+  }, [displayData, todayIso, stillLoadingFocus, isOccupancy, hasMore]);
 
-  if (isLoading && !data) {
+  if ((isLoading && !data) || (stillLoadingFocus && (!displayData || displayData.rows.length === 0))) {
     return (
       <BookingsViewSkeleton variant="availability" availabilityCards={1} />
     );
@@ -119,7 +163,7 @@ export default function AvailabilityPortCard({
     hidden ||
     !displayData ||
     displayData.columns.length === 0 ||
-    (displayData.rows.length === 0 && !stillLoadingAllowlist)
+    (displayData.rows.length === 0 && !stillLoadingFocus)
   ) {
     return null;
   }
@@ -127,19 +171,19 @@ export default function AvailabilityPortCard({
   return (
     <AvailabilityChartSection
       data={displayData}
-      titlePrefix="Disponibilidad"
+      titlePrefix={isOccupancy ? "Ocupación" : "Disponibilidad"}
       scrollRootRef={scrollRootRef}
-      canBook={canBook}
+      canBook={canBook && !isOccupancy}
       returnTo={returnTo}
-      onStartDateChange={onStartDateChange}
+      onStartDateChange={isOccupancy ? undefined : onStartDateChange}
       footer={
         <InfiniteScrollFooter
           hasMore={displayHasMore}
-          loading={loadingMore || stillLoadingAllowlist}
+          loading={loadingMore || stillLoadingFocus}
           onLoadMore={loadMore}
-          loadedCount={displayData.rows.length}
+          loadedCount={footerLoadedCount}
           totalCount={displayTotal}
-          itemLabel="días"
+          itemLabel={isOccupancy ? "días del rango" : "días"}
           scrollRootRef={scrollRootRef}
           rootMargin="80px 0px"
           className="mt-0 sm:mt-0"

@@ -9,6 +9,7 @@ import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { suggestBookings } from "@/lib/filterSuggestions";
 import { getMonthOptions, getBookingYearRange } from "@/lib/bookingDates";
 import type {
+  AvailabilityHeatModeQuery,
   BookingsTabQuery,
   CalendarSeasonQuery,
   CalendarViewModeQuery,
@@ -42,6 +43,12 @@ const SEASON_OPTIONS: { value: CalendarSeasonQuery; label: string }[] = [
   { value: "winter", label: "Winter (nov–abr)" },
 ];
 
+const HEAT_MODE_OPTIONS: { value: AvailabilityHeatModeQuery; label: string }[] =
+  [
+    { value: "availability", label: "Disponibilidad" },
+    { value: "occupancy", label: "Ocupación" },
+  ];
+
 const MONTH_OPTIONS = getMonthOptions().map((o) => ({
   value: o.value,
   label: o.label.charAt(0).toUpperCase() + o.label.slice(1),
@@ -69,6 +76,7 @@ type BookingFiltersProps = {
   calendarMonthIndex: number;
   calendarSeason: CalendarSeasonQuery;
   positionFilter: number;
+  heatMode: AvailabilityHeatModeQuery;
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
@@ -88,6 +96,7 @@ type BookingFiltersProps = {
   onCalendarMonthChange: (monthIndex: number) => void;
   onCalendarSeasonChange: (season: CalendarSeasonQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
+  onHeatModeChange: (mode: AvailabilityHeatModeQuery) => void;
   importedDatesCount?: number;
   onApply: () => void;
   onClear: () => void;
@@ -110,6 +119,7 @@ export default function BookingFilters({
   calendarMonthIndex,
   calendarSeason,
   positionFilter,
+  heatMode,
   portOptions,
   shippingLineOptions,
   vesselOptions,
@@ -129,6 +139,7 @@ export default function BookingFilters({
   onCalendarMonthChange,
   onCalendarSeasonChange,
   onPositionFilterChange,
+  onHeatModeChange,
   importedDatesCount = 0,
   onApply,
   onClear,
@@ -146,6 +157,7 @@ export default function BookingFilters({
   const showStatusSearch = tab !== "availability";
   const showDates = tab === "list" || tab === "availability";
   const showCalendarMode = tab === "calendar";
+  const showHeatMode = tab === "availability";
   const showPosition =
     tab === "list" || tab === "calendar" || tab === "availability";
   const showPort = true;
@@ -194,6 +206,17 @@ export default function BookingFilters({
 
   return (
     <>
+      {showHeatMode ? (
+        <FormFieldSelect<AvailabilityHeatModeQuery>
+          label="Criterio"
+          name="booking_availability_heat"
+          value={heatMode}
+          onChange={onHeatModeChange}
+          options={HEAT_MODE_OPTIONS}
+          compact
+        />
+      ) : null}
+
       {showStatusSearch ? (
         <FilterSuggestField
           label="Buscar"

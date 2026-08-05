@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import { LayoutGrid } from "lucide-react";
 import type { AvailabilityListFilters } from "@/hooks/swr/useAvailabilityInfinite";
+import type { AvailabilityHeatModeQuery } from "@/lib/viewFilterQuery";
 import AvailabilityPortCard from "./AvailabilityPortCard";
 
 type BookingsAvailabilityPanelProps = {
@@ -13,6 +14,7 @@ type BookingsAvailabilityPanelProps = {
   dateFrom: string;
   dateTo: string;
   dateAllowlist?: string[] | null;
+  heatMode?: AvailabilityHeatModeQuery;
   filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
@@ -26,6 +28,7 @@ export default function BookingsAvailabilityPanel({
   dateFrom,
   dateTo,
   dateAllowlist = null,
+  heatMode = "availability",
   filters = {},
   canBook = false,
   returnTo = null,
@@ -53,6 +56,7 @@ export default function BookingsAvailabilityPanel({
     filters.shipping_line ?? 0,
     filters.vessel ?? 0,
     filters.position ?? 0,
+    heatMode,
   ].join("|");
 
   return (
@@ -64,6 +68,7 @@ export default function BookingsAvailabilityPanel({
           dateFrom={dateFrom}
           dateTo={dateTo}
           dateAllowlist={dateAllowlist}
+          heatMode={heatMode}
           filters={filters}
           canBook={canBook}
           returnTo={returnTo}

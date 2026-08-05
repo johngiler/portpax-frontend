@@ -17,6 +17,9 @@ export type CalendarSeasonQuery = "natural" | "summer" | "winter";
 
 export type BookingsTabQuery = "list" | "calendar" | "availability";
 
+/** Heatmap focus on Disponibilidad de puerto tab. */
+export type AvailabilityHeatModeQuery = "availability" | "occupancy";
+
 const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
   "all",
   "hoy",
@@ -29,6 +32,10 @@ const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
 const MODES = new Set<CalendarViewModeQuery>(["weekly", "monthly", "annual"]);
 const SEASONS = new Set<CalendarSeasonQuery>(["natural", "summer", "winter"]);
 const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability"]);
+const HEAT_MODES = new Set<AvailabilityHeatModeQuery>([
+  "availability",
+  "occupancy",
+]);
 
 function parseIntId(raw: string | null): number {
   if (!raw) return 0;
@@ -58,6 +65,8 @@ export type BookingsWorkspaceFilters = {
   week: string;
   year: number;
   month: number; // 0-11
+  /** Disponibilidad vs ocupación (availability tab only). */
+  heat: AvailabilityHeatModeQuery;
 };
 
 export function parseBookingsWorkspaceFilters(
@@ -69,6 +78,7 @@ export function parseBookingsWorkspaceFilters(
   const dateRaw = sp.get("date");
   const modeRaw = sp.get("mode");
   const seasonRaw = sp.get("season");
+  const heatRaw = sp.get("heat");
   const yearRaw = sp.get("year");
   const monthRaw = sp.get("month");
   const year = yearRaw ? Number(yearRaw) : defaults.year;
@@ -111,6 +121,10 @@ export function parseBookingsWorkspaceFilters(
       Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12
         ? Math.trunc(monthNum) - 1
         : defaults.month,
+    heat:
+      heatRaw && HEAT_MODES.has(heatRaw as AvailabilityHeatModeQuery)
+        ? (heatRaw as AvailabilityHeatModeQuery)
+        : "availability",
   };
 }
 
@@ -144,6 +158,9 @@ export function buildBookingsWorkspaceQuery(
     if (state.mode === "annual" && state.season !== "natural") {
       sp.set("season", state.season);
     }
+  }
+  if (state.tab === "availability" && state.heat === "occupancy") {
+    sp.set("heat", "occupancy");
   }
   return sp.toString();
 }

@@ -171,12 +171,36 @@ export default function AnnualMonthBlock({
                 : key === "unassigned"
                   ? "Sin asignar"
                   : (position?.code ?? key);
+              const rowHasBooking = days.some((day) => {
+                const iso = toIsoDate(year, monthIndex, day);
+                const cellBookings = multiPort
+                  ? bookingsForPortDay(bookings, iso, key)
+                  : bookingsForCell(
+                      bookings,
+                      iso,
+                      key === "unassigned" ? null : Number(key.slice(4)),
+                    );
+                return cellBookings.length > 0;
+              });
+              const rowTint = rowHasBooking
+                ? "bg-[var(--admin-accent)]/[0.06] dark:bg-[var(--admin-accent)]/10"
+                : "bg-white dark:bg-zinc-900";
               return (
                 <tr
                   key={key}
-                  className="border-t border-zinc-100 dark:border-zinc-800"
+                  className={[
+                    "border-t border-zinc-100 dark:border-zinc-800",
+                    rowHasBooking
+                      ? "bg-[var(--admin-accent)]/[0.06] dark:bg-[var(--admin-accent)]/10"
+                      : "",
+                  ].join(" ")}
                 >
-                  <th className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1 text-left text-[10px] font-semibold text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+                  <th
+                    className={[
+                      "sticky left-0 z-10 whitespace-nowrap px-2 py-1 text-left text-[10px] font-semibold text-zinc-600 dark:text-zinc-300",
+                      rowTint,
+                    ].join(" ")}
+                  >
                     {label}
                     {availabilityCheck && position?.max_loa_m ? (
                       <span className="mt-0.5 block font-normal text-zinc-400">

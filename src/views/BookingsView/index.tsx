@@ -22,6 +22,7 @@ import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { canWriteApp } from "@/lib/navAccess";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import type {
+  AvailabilityHeatModeQuery,
   BookingsTabQuery,
   BookingsWorkspaceFilters,
   CalendarSeasonQuery,
@@ -195,6 +196,10 @@ export default function BookingsView() {
     useState<CalendarSeasonQuery>("natural");
   const [appliedCalendarSeason, setAppliedCalendarSeason] =
     useState<CalendarSeasonQuery>("natural");
+  const [heatMode, setHeatMode] =
+    useState<AvailabilityHeatModeQuery>("availability");
+  const [appliedHeatMode, setAppliedHeatMode] =
+    useState<AvailabilityHeatModeQuery>("availability");
 
   const [positionOptions, setPositionOptions] = useState<
     { value: number; label: string }[]
@@ -254,6 +259,7 @@ export default function BookingsView() {
       week: weekAnchor,
       year: appliedYear,
       month: appliedMonthIndex,
+      heat: appliedHeatMode,
       ...overrides,
     };
   }
@@ -301,6 +307,8 @@ export default function BookingsView() {
     setAppliedCalendarSeason(parsed.season);
     setPositionFilter(parsed.position);
     setAppliedPositionFilter(parsed.position);
+    setHeatMode(parsed.heat);
+    setAppliedHeatMode(parsed.heat);
     setWeekAnchor(parsed.week);
     setYear(parsed.year);
     setMonthIndex(parsed.month);
@@ -458,6 +466,7 @@ export default function BookingsView() {
     setAppliedYear(year);
     setAppliedMonthIndex(monthIndex);
     setAppliedCalendarSeason(calendarSeason);
+    setAppliedHeatMode(heatMode);
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
       nextWeek = toIsoDate(year, monthIndex, 1);
@@ -479,6 +488,7 @@ export default function BookingsView() {
         year,
         month: monthIndex,
         week: nextWeek,
+        heat: heatMode,
       }),
     );
   }
@@ -512,6 +522,8 @@ export default function BookingsView() {
     setAppliedCalendarSeason("natural");
     setPositionFilter(0);
     setAppliedPositionFilter(0);
+    setHeatMode("availability");
+    setAppliedHeatMode("availability");
     setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
@@ -534,6 +546,7 @@ export default function BookingsView() {
       week,
       year: y,
       month: m,
+      heat: "availability",
     });
   }
 
@@ -551,6 +564,7 @@ export default function BookingsView() {
     appliedPositionFilter > 0 ||
     appliedDatePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
+    (tab === "availability" && appliedHeatMode !== "availability") ||
     (tab === "calendar" && appliedCalendarMode !== "monthly");
 
   const canClearFilters =
@@ -563,6 +577,7 @@ export default function BookingsView() {
     positionFilter > 0 ||
     datePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
+    (tab === "availability" && heatMode !== "availability") ||
     (tab === "calendar" && calendarMode !== "monthly");
 
   const canApplyFilters =
@@ -578,7 +593,8 @@ export default function BookingsView() {
     year !== appliedYear ||
     monthIndex !== appliedMonthIndex ||
     calendarSeason !== appliedCalendarSeason ||
-    positionFilter !== appliedPositionFilter;
+    positionFilter !== appliedPositionFilter ||
+    heatMode !== appliedHeatMode;
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
@@ -932,6 +948,7 @@ export default function BookingsView() {
           calendarMonthIndex={monthIndex}
           calendarSeason={calendarSeason}
           positionFilter={positionFilter}
+          heatMode={heatMode}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
@@ -954,6 +971,7 @@ export default function BookingsView() {
           onCalendarMonthChange={setMonthIndex}
           onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
+          onHeatModeChange={setHeatMode}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
@@ -1073,6 +1091,7 @@ export default function BookingsView() {
           dateFrom={availabilityRange.from}
           dateTo={availabilityRange.to}
           dateAllowlist={availabilityDateAllowlist}
+          heatMode={appliedHeatMode}
           filters={{
             shipping_line:
               appliedShippingLineFilter > 0

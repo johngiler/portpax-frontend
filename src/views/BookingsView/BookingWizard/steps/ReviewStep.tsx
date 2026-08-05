@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import {
   Anchor,
   CalendarDays,
+  Clock3,
   Hash,
   LayoutGrid,
   MapPin,
@@ -12,19 +13,17 @@ import {
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
-import { FormFieldSelect } from "@/components/ui/FormField";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
+import { formatTimeShort } from "@/lib/bookingDisplay";
 import {
   previewAssignedPositions,
-  suggestBookingPositions,
   validateBookings,
 } from "@/services/bookings/bookingService";
 import type { BookingValidationResult, PositionSuggestion } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
-import ReviewDayPeersPanel from "./ReviewDayPeersPanel";
 
 type ReviewStepProps = {
   port: Port | null;
@@ -38,7 +37,6 @@ type ReviewStepProps = {
   plannedPax: string;
   preferredPositionId?: number | null;
   preferredPositionLabel?: string;
-  onPreferredPositionChange?: (id: number | null, label: string) => void;
   /** Reports blocking validation (errors) so Create can be disabled. */
   onBlockingChange?: (blocked: boolean) => void;
 };
@@ -79,16 +77,15 @@ export default function ReviewStep({
   plannedPax,
   preferredPositionId = null,
   preferredPositionLabel = "",
-  onPreferredPositionChange,
   onBlockingChange,
 }: ReviewStepProps) {
-  const [validation, setValidation] = useState<BookingValidationResult | null>(null);
+  const [validation, setValidation] = useState<BookingValidationResult | null>(
+    null,
+  );
   const [positionsByDate, setPositionsByDate] = useState<
     Record<string, PositionSuggestion | null>
   >({});
   const [loadingPositions, setLoadingPositions] = useState(false);
-  const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -137,72 +134,18 @@ export default function ReviewStep({
       .finally(() => setLoadingPositions(false));
   }, [port, vessel, callDates]);
 
-  useEffect(() => {
-    if (!port || !vessel || callDates.length === 0) {
-      setSuggestions([]);
-      return;
-    }
-    const callDate = callDates[0];
-    let cancelled = false;
-    setLoadingSuggestions(true);
-    suggestBookingPositions({
-      port: port.id,
-      vessel: vessel.id,
-      call_date: callDate,
-    })
-      .then((data) => {
-        if (cancelled) return;
-        setSuggestions(data.positions);
-        // Seed preferred from auto recommendation when user hasn't chosen one.
-        if (
-          onPreferredPositionChange &&
-          preferredPositionId == null
-        ) {
-          const recommended =
-            data.positions.find((p) => p.recommended) ?? data.positions[0];
-          if (recommended) {
-            onPreferredPositionChange(recommended.id, recommended.code);
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setSuggestions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingSuggestions(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // Only re-seed when port/vessel/dates change, not when preferred updates.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional seed-once per dates
-  }, [port, vessel, callDates]);
-
-  const positionOptions = suggestions.map((position) => {
-    const tags: string[] = [];
-    if (position.recommended) tags.push("sugerida");
-    if (position.occupied) tags.push("ocupada");
-    const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
-    return {
-      value: position.id,
-      label: `${position.code}${suffix}`,
-    };
-  });
-
-  function handlePreferredChange(nextId: number) {
-    if (!onPreferredPositionChange) return;
-    if (nextId <= 0) {
-      onPreferredPositionChange(null, "");
-      return;
-    }
-    const match = suggestions.find((p) => p.id === nextId);
-    onPreferredPositionChange(nextId, match?.code ?? String(nextId));
-  }
-
   const displayLabel =
     preferredPositionLabel ||
-    suggestions.find((p) => p.id === preferredPositionId)?.code ||
+    (preferredPositionId != null
+      ? Object.values(positionsByDate).find((p) => p?.id === preferredPositionId)
+          ?.code
+      : null) ||
     null;
+
+  const etaEtdLabel =
+    eta || etd
+      ? `${formatTimeShort(eta || null)}–${formatTimeShort(etd || null)}`
+      : null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -213,7 +156,8 @@ export default function ReviewStep({
               Paquete de reservas
             </p>
             <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              {vessel?.name ?? "Crucero"} en {port ? portDisplayName(port) : "puerto"}
+              {vessel?.name ?? "Crucero"} en{" "}
+              {port ? portDisplayName(port) : "puerto"}
             </p>
           </div>
           <span className="rounded-full bg-[var(--admin-accent)] px-3 py-1 text-sm font-semibold text-white shadow-sm shadow-[var(--admin-accent)]/25">
@@ -225,13 +169,10 @@ export default function ReviewStep({
       <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryItem icon={MapPin} label="Puerto">
           <div className="flex items-center gap-2">
-            <CatalogLogoThumb
-              src={port?.logo}
-              alt=""
-              size="xs"
-              kind="port"
-            />
-            <span className="truncate">{port ? portDisplayName(port) : "—"}</span>
+            <CatalogLogoThumb src={port?.logo} alt="" size="xs" kind="port" />
+            <span className="truncate">
+              {port ? portDisplayName(port) : "—"}
+            </span>
           </div>
           {port ? (
             <CountryLabel
@@ -251,7 +192,9 @@ export default function ReviewStep({
             <span className="truncate">{line?.name ?? "—"}</span>
           </div>
           {line ? (
-            <p className="mt-0.5 truncate text-xs font-normal text-zinc-500">{line.code}</p>
+            <p className="mt-0.5 truncate text-xs font-normal text-zinc-500">
+              {line.code}
+            </p>
           ) : null}
         </SummaryItem>
         <SummaryItem icon={Ship} label="Barco">
@@ -265,26 +208,26 @@ export default function ReviewStep({
             <span className="truncate">{vessel?.name ?? "—"}</span>
           </div>
           {vessel?.loa_m ? (
-            <p className="mt-0.5 text-xs font-normal text-zinc-500">LOA {vessel.loa_m} m</p>
+            <p className="mt-0.5 text-xs font-normal text-zinc-500">
+              LOA {vessel.loa_m} m
+            </p>
           ) : null}
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fechas">
-          <span>{callDates.length} día{callDates.length === 1 ? "" : "s"} seleccionado{callDates.length === 1 ? "" : "s"}</span>
-          {(eta || etd || plannedPax) && (
+          <span>
+            {callDates.length} día{callDates.length === 1 ? "" : "s"}{" "}
+            seleccionado{callDates.length === 1 ? "" : "s"}
+          </span>
+          {plannedPax ? (
             <p className="mt-1 text-xs font-normal text-zinc-500">
-              {[
-                eta ? `ETA ${eta}` : null,
-                etd ? `ETD ${etd}` : null,
-                plannedPax ? `PAX ${plannedPax}` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              PAX {plannedPax}
             </p>
-          )}
+          ) : null}
         </SummaryItem>
       </div>
 
-      {validation && (validation.warnings.length > 0 || validation.errors.length > 0) ? (
+      {validation &&
+      (validation.warnings.length > 0 || validation.errors.length > 0) ? (
         <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
           <ValidationIssuesAlert
             errors={validation.errors}
@@ -295,99 +238,89 @@ export default function ReviewStep({
 
       <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
         <div className="mb-3 flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4 text-[var(--admin-accent)]" strokeWidth={2} />
+          <Hash
+            className="h-4 w-4 text-[var(--admin-accent)]"
+            strokeWidth={2}
+          />
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            Posición sugerida
-          </h3>
-        </div>
-        <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-          El sistema propone una posición (LOA, calado y disponibilidad). Puedes
-          cambiarla antes de crear; es solo una sugerencia.
-        </p>
-        <FormFieldSelect<number>
-          label="Posición para el lote"
-          name="review_preferred_position"
-          value={preferredPositionId ?? 0}
-          onChange={handlePreferredChange}
-          options={positionOptions}
-          optionLabel={
-            loadingSuggestions ? "Cargando sugerencias…" : "Auto (sin preferencia)"
-          }
-          emptyValue={0}
-          compact
-          disabled={!onPreferredPositionChange || loadingSuggestions}
-        />
-      </div>
-
-      <div className="border-t border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
-        <div className="mb-3 flex items-center gap-2">
-          <Hash className="h-4 w-4 text-[var(--admin-accent)]" strokeWidth={2} />
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            Códigos de reserva
+            Resumen de escalas
           </h3>
         </div>
         <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-          Un código único por escala: puerto · naviera · barco · fecha
+          Fecha, horario, posición y código por escala (puerto · naviera · barco
+          · fecha)
         </p>
-        <div className="overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-700">
-          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-b border-zinc-200/80 bg-zinc-50/80 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950/50">
-            <span>Fecha de escala</span>
-            <span>Posición</span>
-            <span>Código</span>
+        <div className="overflow-x-auto overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-700">
+          <div className="min-w-[36rem]">
+            <div className="grid grid-cols-[minmax(0,1.4fr)_auto_auto_minmax(0,1.2fr)] gap-x-4 border-b border-zinc-200/80 bg-zinc-50/80 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950/50">
+              <span>Fecha de escala</span>
+              <span>ETA–ETD</span>
+              <span>Posición</span>
+              <span>Código</span>
+            </div>
+            <ul className="divide-y divide-zinc-200/80 dark:divide-zinc-800">
+              {callDates.map((iso, index) => {
+                const assigned = positionsByDate[iso];
+                const rowLabel =
+                  displayLabel ||
+                  (loadingPositions ? null : assigned?.code) ||
+                  null;
+                return (
+                  <li
+                    key={iso}
+                    className="grid grid-cols-[minmax(0,1.4fr)_auto_auto_minmax(0,1.2fr)] items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--admin-accent)]/[0.04]"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        {formatIsoDateLabel(iso)}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-zinc-400">
+                        Escala {index + 1}
+                      </p>
+                    </div>
+                    <div className="min-w-[5.5rem] text-center">
+                      {etaEtdLabel ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-semibold tabular-nums text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                          <Clock3 className="h-3 w-3 shrink-0 opacity-70" />
+                          {etaEtdLabel}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-zinc-400">
+                          —
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-[4.5rem] text-center">
+                      {rowLabel ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                          <LayoutGrid className="h-3 w-3" strokeWidth={2} />
+                          {rowLabel}
+                        </span>
+                      ) : loadingPositions ? (
+                        <span className="text-xs text-zinc-400">…</span>
+                      ) : (
+                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                          Sin posición
+                        </span>
+                      )}
+                    </div>
+                    <code className="truncate rounded-lg bg-[var(--admin-accent)]/8 px-2.5 py-1 text-[11px] font-semibold tracking-tight text-[var(--admin-accent)] sm:text-xs">
+                      {port && line && vessel
+                        ? previewBookingCode(
+                            port.code,
+                            line.code,
+                            vessel.name,
+                            iso,
+                          )
+                        : iso}
+                    </code>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <ul className="divide-y divide-zinc-200/80 dark:divide-zinc-800">
-            {callDates.map((iso, index) => {
-              const assigned = positionsByDate[iso];
-              const rowLabel =
-                displayLabel ||
-                (loadingPositions ? null : assigned?.code) ||
-                null;
-              return (
-              <li
-                key={iso}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--admin-accent)]/[0.04]"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                    {formatIsoDateLabel(iso)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-zinc-400">Escala {index + 1}</p>
-                </div>
-                <div className="min-w-[4.5rem] text-center">
-                  {rowLabel ? (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      <LayoutGrid className="h-3 w-3" strokeWidth={2} />
-                      {rowLabel}
-                    </span>
-                  ) : loadingPositions ? (
-                    <span className="text-xs text-zinc-400">…</span>
-                  ) : (
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                      Sin posición
-                    </span>
-                  )}
-                </div>
-                <code
-                  className="rounded-lg bg-[var(--admin-accent)]/8 px-2.5 py-1 text-[11px] font-semibold tracking-tight text-[var(--admin-accent)] sm:text-xs"
-                >
-                  {port && line && vessel
-                    ? previewBookingCode(port.code, line.code, vessel.name, iso)
-                    : iso}
-                </code>
-              </li>
-              );
-            })}
-          </ul>
         </div>
       </div>
-
-      {port && vessel ? (
-        <ReviewDayPeersPanel
-          portId={port.id}
-          vesselId={vessel.id}
-          callDates={callDates}
-        />
-      ) : null}
 
       <div className="border-t border-zinc-200/80 bg-zinc-50/40 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30">
         <label className="block">

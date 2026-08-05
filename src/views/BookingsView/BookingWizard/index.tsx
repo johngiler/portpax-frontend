@@ -414,6 +414,15 @@ export default function BookingWizard() {
                 onPlannedPaxChange={(plannedPax) =>
                   setForm((p) => ({ ...p, plannedPax }))
                 }
+                preferredPositionId={form.preferredPositionId}
+                preferredPositionLabel={form.preferredPositionLabel}
+                onPreferredPositionChange={(id, label) =>
+                  setForm((p) => ({
+                    ...p,
+                    preferredPositionId: id,
+                    preferredPositionLabel: label,
+                  }))
+                }
                 onLoadingChange={handleDatesLoadingChange}
               />
             )}
@@ -430,13 +439,6 @@ export default function BookingWizard() {
                 plannedPax={form.plannedPax}
                 preferredPositionId={form.preferredPositionId}
                 preferredPositionLabel={form.preferredPositionLabel}
-                onPreferredPositionChange={(id, label) =>
-                  setForm((p) => ({
-                    ...p,
-                    preferredPositionId: id,
-                    preferredPositionLabel: label,
-                  }))
-                }
                 onBlockingChange={handleReviewBlockingChange}
               />
             )}
