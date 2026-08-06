@@ -1,6 +1,7 @@
 /** Format audit `changes` JSON for ops + audit history feeds. */
 
 import { formatLtaWeekdays } from "@/types/lta";
+import { formatTimeShort } from "@/lib/bookingDisplay";
 import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
 
 const PORT_STATUS_LABELS: Record<string, string> = {
@@ -95,6 +96,8 @@ function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): 
   return String(raw);
 }
 
+const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real"]);
+
 function formatValue(value: unknown, key?: string): string {
   if (key === "weekdays") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
@@ -129,6 +132,17 @@ function formatValue(value: unknown, key?: string): string {
       return formatBookingStatus(value);
     }
   }
+  if (key && TIME_FIELD_KEYS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        const from = rec.from ?? rec.old;
+        const to = rec.to ?? rec.new;
+        return `${formatValue(from, key)} → ${formatValue(to, key)}`;
+      }
+    }
+    if (typeof value === "string") return formatTimeShort(value);
+  }
   if (value == null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Sí" : "No";
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
@@ -137,7 +151,7 @@ function formatValue(value: unknown, key?: string): string {
     if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
       const from = rec.from ?? rec.old;
       const to = rec.to ?? rec.new;
-      return `${formatValue(from)} → ${formatValue(to)}`;
+      return `${formatValue(from, key)} → ${formatValue(to, key)}`;
     }
     if (rec.changed === true) return "actualizada";
     try {

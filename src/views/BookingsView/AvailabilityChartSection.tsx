@@ -8,13 +8,37 @@ import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
-import { bookingDetailHref, newBookingHref } from "@/types/booking";
+import {
+  bookingDetailHref,
+  newBookingHref,
+  type BookingBadgeStatus,
+} from "@/types/booking";
+import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
+import { filterAvailabilityCalls } from "./availabilityCallFilter";
+
+const BOOKING_BADGE_STATUSES = new Set<string>([
+  "nr",
+  "h",
+  "co",
+  "cl",
+  "lta",
+  "ltd",
+  "r",
+  "c",
+]);
+
+function asBadgeStatus(value: string | undefined): BookingBadgeStatus | null {
+  if (!value || !BOOKING_BADGE_STATUSES.has(value)) return null;
+  return value as BookingBadgeStatus;
+}
 
 type Props = {
   data: AvailabilityReport;
   /** Defaults to "Availability Chart". Use "Disponibilidad" in Reservas tab. */
   titlePrefix?: string;
+  /** Status sidebar filter: narrows booking cards; occupancy stays conflict-based. */
+  statusFilter?: string;
   /** Inside the card scroll panel (e.g. load-more sentinel). */
   footer?: ReactNode;
   /** Ref for the card's overflow container (infinite scroll root). */
@@ -112,6 +136,9 @@ function AvailabilityStartDateCell({
 const availableSlotClass =
   "flex min-h-16 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-200 bg-emerald-50/60 text-xs font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300";
 
+const occupiedSlotClass =
+  "flex min-h-16 items-center justify-center rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400";
+
 function AvailableSlot({
   bookable,
   href,
@@ -146,6 +173,7 @@ function AvailableSlot({
 export default function AvailabilityChartSection({
   data,
   titlePrefix = "Availability Chart",
+  statusFilter,
   footer,
   scrollRootRef,
   canBook = false,
@@ -216,103 +244,142 @@ export default function AvailabilityChartSection({
               const isFirstEditable =
                 rowIndex === 0 && Boolean(onStartDateChange);
               return (
-              <tr key={row.date} className="group">
-                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-3 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
-                  {isFirstEditable ? (
-                    <AvailabilityStartDateCell
-                      date={row.date}
-                      onChange={(next) => onStartDateChange?.(next)}
-                    />
-                  ) : (
-                    <>
-                      <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                        {formatIsoDateLabel(row.date, "short")}
-                      </span>
-                      <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
-                        {row.date}
-                      </span>
-                    </>
-                  )}
-                </td>
-                {data.columns.map((column, idx) => {
-                  const calls = row.cells[idx] ?? [];
-                  const isRealPosition = column.id > 0;
-                  return (
-                    <td
-                      key={`${row.date}-${column.id}`}
-                      className="border-b border-r border-zinc-200 bg-zinc-50/40 p-2 align-top last:border-r-0 group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-950/30"
-                    >
-                      {calls.length === 0 ? (
-                        row.date < todayIso ? (
-                          <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-100/80 text-xs font-medium text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-500">
-                            Pasado
-                          </div>
-                        ) : (
-                          <AvailableSlot
-                            bookable={canBook && isRealPosition}
-                            href={newBookingHref({
-                              portId: data.port_id,
-                              callDate: row.date,
-                              positionId: column.id,
-                              positionLabel: column.label,
-                              returnTo,
-                            })}
-                            label={`${column.label} · ${row.date}`}
-                          />
-                        )
-                      ) : (
-                        <div className="space-y-2">
-                          {calls.map((call) => (
-                            <Link
-                              key={call.booking_code}
-                              href={bookingDetailHref(
-                                { booking_code: call.booking_code },
-                                { returnTo },
-                              )}
-                              className="block rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[var(--admin-accent)]/50"
-                              title={`Editar ${call.booking_code}`}
-                              aria-label={`Abrir reserva ${call.booking_code}`}
+                <tr key={row.date} className="group">
+                  <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-3 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
+                    {isFirstEditable ? (
+                      <AvailabilityStartDateCell
+                        date={row.date}
+                        onChange={(next) => onStartDateChange?.(next)}
+                      />
+                    ) : (
+                      <>
+                        <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                          {formatIsoDateLabel(row.date, "short")}
+                        </span>
+                        <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
+                          {row.date}
+                        </span>
+                      </>
+                    )}
+                  </td>
+                  {data.columns.map((column, idx) => {
+                    const calls = row.cells[idx] ?? [];
+                    const visibleCalls = filterAvailabilityCalls(
+                      calls,
+                      row.date,
+                      statusFilter,
+                      todayIso,
+                    );
+                    const occupiedOtherStatus =
+                      Boolean(statusFilter) &&
+                      statusFilter !== "c" &&
+                      calls.length > 0 &&
+                      visibleCalls.length === 0;
+                    const isRealPosition = column.id > 0;
+                    return (
+                      <td
+                        key={`${row.date}-${column.id}`}
+                        className="border-b border-r border-zinc-200 bg-zinc-50/40 p-2 align-top last:border-r-0 group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-950/30"
+                      >
+                        {visibleCalls.length === 0 ? (
+                          occupiedOtherStatus ? (
+                            <div
+                              className={occupiedSlotClass}
+                              title="Hay reserva(s) en otro estado"
                             >
-                              <div className="flex min-w-0 items-start gap-2">
-                                <CatalogLogoThumb
-                                  src={call.vessel_logo}
-                                  alt=""
-                                  size="sm"
-                                  kind="vessel"
-                                />
-                                <div className="min-w-0">
-                                  <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-50">
-                                    {call.vessel_name}
-                                  </p>
-                                  <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                                    {call.shipping_line_name}
-                                  </p>
+                              Ocupada
+                            </div>
+                          ) : row.date < todayIso ? (
+                            <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-100/80 text-xs font-medium text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-500">
+                              Pasado
+                            </div>
+                          ) : (
+                            <AvailableSlot
+                              bookable={canBook && isRealPosition}
+                              href={newBookingHref({
+                                portId: data.port_id,
+                                callDate: row.date,
+                                positionId: column.id,
+                                positionLabel: column.label,
+                                returnTo,
+                              })}
+                              label={`${column.label} · ${row.date}`}
+                            />
+                          )
+                        ) : (
+                          <div className="space-y-2">
+                            {visibleCalls.map((call) => {
+                              const badgeStatus = asBadgeStatus(call.status);
+                              return (
+                              <Link
+                                key={call.booking_code}
+                                href={bookingDetailHref(
+                                  { booking_code: call.booking_code },
+                                  { returnTo },
+                                )}
+                                className="block rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[var(--admin-accent)]/50"
+                                title={`Editar ${call.booking_code}`}
+                                aria-label={`Abrir reserva ${call.booking_code}`}
+                              >
+                                <div className="flex min-w-0 items-start gap-2">
+                                  <CatalogLogoThumb
+                                    src={call.vessel_logo}
+                                    alt=""
+                                    size="sm"
+                                    kind="vessel"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                      <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+                                        {call.vessel_name}
+                                      </p>
+                                      {badgeStatus ? (
+                                        <BookingStatusBadge
+                                          status={badgeStatus}
+                                          size="sm"
+                                        />
+                                      ) : null}
+                                    </div>
+                                    <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                                      {call.shipping_line_name}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                                <div className="flex items-center justify-between gap-3">
-                                  {call.loa_m ? (
-                                    <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                                      <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                      {Number(call.loa_m).toLocaleString("es-MX")} m
-                                    </span>
-                                  ) : (
-                                    <span />
-                                  )}
-                                  <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                                    <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                                    {formatTimeShort(call.eta)}–{formatTimeShort(call.etd)}
-                                  </p>
+                                <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                                  <div className="flex items-center justify-between gap-3">
+                                    {call.loa_m ? (
+                                      <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                        <Ruler
+                                          className="h-3.5 w-3.5 shrink-0"
+                                          aria-hidden
+                                        />
+                                        {Number(call.loa_m).toLocaleString(
+                                          "es-MX",
+                                        )}{" "}
+                                        m
+                                      </span>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                      <Clock3
+                                        className="h-3.5 w-3.5 shrink-0"
+                                        aria-hidden
+                                      />
+                                      {formatTimeShort(call.eta)}–
+                                      {formatTimeShort(call.etd)}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
+                              </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
           </tbody>

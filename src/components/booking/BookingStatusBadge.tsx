@@ -6,6 +6,8 @@ import { bookingBadgeStatusLabel } from "@/types/booking";
 type BookingStatusBadgeProps = {
   status: BookingBadgeStatus;
   className?: string;
+  /** Smaller chip for calendar / dense cards. */
+  size?: "default" | "sm";
 };
 
 const STATUS_STYLES: Record<BookingBadgeStatus, string> = {
@@ -19,11 +21,21 @@ const STATUS_STYLES: Record<BookingBadgeStatus, string> = {
   c: "bg-red-100 text-red-700 ring-red-600/15 dark:bg-red-950/50 dark:text-red-400 dark:ring-red-500/20",
 };
 
-export default function BookingStatusBadge({ status, className = "" }: BookingStatusBadgeProps) {
+const SIZE_STYLES = {
+  default: "px-2.5 py-0.5 text-xs",
+  sm: "px-1.5 py-0 text-[9px] leading-tight sm:text-[10px]",
+} as const;
+
+export default function BookingStatusBadge({
+  status,
+  className = "",
+  size = "default",
+}: BookingStatusBadgeProps) {
   return (
     <span
       className={[
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
+        "inline-flex items-center rounded-full font-semibold ring-1 ring-inset",
+        SIZE_STYLES[size],
         STATUS_STYLES[status],
         className,
       ].join(" ")}

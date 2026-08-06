@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { formatTimeShort } from "@/lib/bookingDisplay";
+import {
+  formatTimeShort,
+  toTimeInputValue,
+} from "@/lib/bookingDisplay";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   suggestBookingPositions,
@@ -48,10 +51,6 @@ function statusBadgeClass(booking: CalendarDayBooking): string {
   return "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]";
 }
 
-function toTimeInput(value: string | null | undefined): string {
-  return value?.slice(0, 5) ?? "";
-}
-
 export default function CalendarOccupancyCard({
   booking,
   canReassign = false,
@@ -65,8 +64,8 @@ export default function CalendarOccupancyCard({
     booking.status !== "c";
 
   const [positionId, setPositionId] = useState(booking.position_id ?? 0);
-  const [eta, setEta] = useState(toTimeInput(booking.eta));
-  const [etd, setEtd] = useState(toTimeInput(booking.etd));
+  const [eta, setEta] = useState(toTimeInputValue(booking.eta));
+  const [etd, setEtd] = useState(toTimeInputValue(booking.etd));
   const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,8 +73,8 @@ export default function CalendarOccupancyCard({
 
   useEffect(() => {
     setPositionId(booking.position_id ?? 0);
-    setEta(toTimeInput(booking.eta));
-    setEtd(toTimeInput(booking.etd));
+    setEta(toTimeInputValue(booking.eta));
+    setEtd(toTimeInputValue(booking.etd));
   }, [booking.position_id, booking.eta, booking.etd, booking.id]);
 
   useEffect(() => {
@@ -130,10 +129,10 @@ export default function CalendarOccupancyCard({
   }
 
   async function commitTimes() {
-    const nextEta = eta || null;
-    const nextEtd = etd || null;
-    const prevEta = toTimeInput(booking.eta) || null;
-    const prevEtd = toTimeInput(booking.etd) || null;
+    const nextEta = toTimeInputValue(eta) || null;
+    const nextEtd = toTimeInputValue(etd) || null;
+    const prevEta = toTimeInputValue(booking.eta) || null;
+    const prevEtd = toTimeInputValue(booking.etd) || null;
     if (nextEta === prevEta && nextEtd === prevEtd) return;
 
     setSaving(true);
@@ -143,12 +142,12 @@ export default function CalendarOccupancyCard({
         eta: nextEta,
         etd: nextEtd,
       });
-      setEta(toTimeInput(updated.eta));
-      setEtd(toTimeInput(updated.etd));
+      setEta(toTimeInputValue(updated.eta));
+      setEtd(toTimeInputValue(updated.etd));
       await onReassigned?.(updated);
     } catch (err) {
-      setEta(toTimeInput(booking.eta));
-      setEtd(toTimeInput(booking.etd));
+      setEta(toTimeInputValue(booking.eta));
+      setEtd(toTimeInputValue(booking.etd));
       setSaveError(
         getApiErrorMessage(err, "No se pudieron guardar ETA / ETD."),
       );

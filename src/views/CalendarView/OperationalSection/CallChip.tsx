@@ -3,13 +3,18 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
+import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
   bookingDetailHref,
   bookingStatusLabel,
   type Booking,
 } from "@/types/booking";
-import { CORP_CHIP_CLASS, CORP_SHORT_LABEL, corpKeyFromShippingLineCode } from "../corpColors";
+import {
+  CORP_CHIP_CLASS,
+  CORP_SHORT_LABEL,
+  corpKeyFromShippingLineCode,
+} from "../corpColors";
 
 type CallChipProps = {
   booking: Booking;
@@ -43,6 +48,9 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide opacity-90 sm:text-[10px]">
           {corpLabel}
         </span>
+      </span>
+      <span className="mt-0.5 inline-flex min-w-0">
+        <BookingStatusBadge status={booking.status} size="sm" />
       </span>
       <BookingMetaRow
         className="mt-0.5"

@@ -254,6 +254,7 @@ export type AvailabilityReport = {
     cells: Array<
       Array<{
         booking_code: string;
+        status?: string;
         shipping_line_name: string;
         shipping_line_logo: string | null;
         vessel_name: string;

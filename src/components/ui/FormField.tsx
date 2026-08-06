@@ -189,7 +189,9 @@ export function FormField({
 }: FormFieldProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
-  const inputType = isPassword && passwordVisible ? "text" : type;
+  // Native type="time" follows OS locale (often 12h a.m./p.m.). Use text + HH:mm.
+  const isTime = type === "time";
+  const inputType = isPassword && passwordVisible ? "text" : isTime ? "text" : type;
 
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
@@ -213,15 +215,16 @@ export function FormField({
             onChange(v);
           }}
           onBlur={onBlur}
-          placeholder={placeholder}
-          className={`${compact ? inputCompactClass : inputClass} ${isPassword ? "pr-11" : ""} ${error ? inputErrorClass : ""}`}
+          placeholder={placeholder ?? (isTime ? "08:00" : undefined)}
+          inputMode={isTime ? "numeric" : undefined}
+          autoComplete={isPassword ? "new-password" : isTime ? "off" : undefined}
+          className={`${compact ? inputCompactClass : inputClass} ${isPassword ? "pr-11" : ""} ${isTime ? "tabular-nums" : ""} ${error ? inputErrorClass : ""}`}
           required={required}
           min={min}
           step={step}
           disabled={disabled}
           aria-invalid={!!error}
           aria-describedby={error ? `${name}-error` : undefined}
-          autoComplete={isPassword ? "new-password" : undefined}
         />
         {isPassword && (
           <button

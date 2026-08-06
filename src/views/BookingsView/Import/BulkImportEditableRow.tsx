@@ -11,6 +11,9 @@ import {
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
 import { BOOKING_STATUS_LABELS } from "@/types/booking";
+import {
+  fromTimeInputValue,
+} from "@/lib/bookingDisplay";
 
 type BulkImportStatus = NonNullable<BulkImportPreviewRow["suggested_status"]>;
 
@@ -21,17 +24,6 @@ const STATUS_OPTIONS: { value: BulkImportStatus; label: string }[] = [
   { value: "lta", label: BOOKING_STATUS_LABELS.lta },
   { value: "ltd", label: BOOKING_STATUS_LABELS.ltd },
 ];
-
-function toTimeInput(value: string | null): string {
-  if (!value) return "";
-  return value.slice(0, 5);
-}
-
-function fromTimeInput(value: string): string | null {
-  const t = value.trim();
-  if (!t) return null;
-  return t.length === 5 ? `${t}:00` : t;
-}
 
 function normalizeStatus(
   value: BulkImportPreviewRow["suggested_status"],
@@ -217,11 +209,19 @@ export default function BulkImportEditableRow({
       <td className="px-2 py-1.5 align-top">
         <div className="flex items-center gap-1">
           <input
-            type="time"
-            value={toTimeInput(row.eta)}
+            type="text"
+            inputMode="numeric"
+            placeholder="08:00"
+            value={(row.eta ?? "").slice(0, 5)}
             disabled={busy}
             onChange={(e) => {
-              const draft = { ...row, eta: fromTimeInput(e.target.value) };
+              onRowChange({ ...row, eta: e.target.value || null });
+            }}
+            onBlur={() => {
+              const draft = {
+                ...row,
+                eta: fromTimeInputValue(row.eta ?? ""),
+              };
               onRowChange(draft);
               void revalidate(draft);
             }}
@@ -230,11 +230,19 @@ export default function BulkImportEditableRow({
           />
           <span className="text-zinc-400">–</span>
           <input
-            type="time"
-            value={toTimeInput(row.etd)}
+            type="text"
+            inputMode="numeric"
+            placeholder="17:00"
+            value={(row.etd ?? "").slice(0, 5)}
             disabled={busy}
             onChange={(e) => {
-              const draft = { ...row, etd: fromTimeInput(e.target.value) };
+              onRowChange({ ...row, etd: e.target.value || null });
+            }}
+            onBlur={() => {
+              const draft = {
+                ...row,
+                etd: fromTimeInputValue(row.etd ?? ""),
+              };
               onRowChange(draft);
               void revalidate(draft);
             }}
