@@ -85,7 +85,6 @@ export default function BulkImportEditableRow({
     return res.results.map((p) => ({
       value: p.id,
       label: p.name,
-      hint: p.code,
     }));
   }, []);
 
@@ -94,7 +93,6 @@ export default function BulkImportEditableRow({
     return res.results.map((line) => ({
       value: line.id,
       label: line.name,
-      hint: line.code,
     }));
   }, []);
 
@@ -108,7 +106,6 @@ export default function BulkImportEditableRow({
       return res.results.map((v) => ({
         value: v.id,
         label: v.name,
-        hint: v.shipping_line_name,
       }));
     },
     [row.shipping_line_id],
@@ -151,7 +148,6 @@ export default function BulkImportEditableRow({
                   {
                     value: row.vessel_id,
                     label: row.vessel_name || row.ship || "Barco",
-                    hint: row.shipping_line_name ?? undefined,
                   },
                 ]
               : []
@@ -186,7 +182,6 @@ export default function BulkImportEditableRow({
                   {
                     value: row.port_id,
                     label: row.port_name || row.port_raw || "Puerto",
-                    hint: row.port_code ?? undefined,
                   },
                 ]
               : []

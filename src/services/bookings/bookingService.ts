@@ -273,6 +273,7 @@ export async function fetchAvailabilityReport(params: {
   shipping_line?: number;
   vessel?: number;
   position?: number;
+  status?: string;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -283,6 +284,7 @@ export async function fetchAvailabilityReport(params: {
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
+  if (params.status) query.set("status", params.status);
   return apiFetch<AvailabilityReport>(
     `${BASE}report-availability/?${query.toString()}`,
   );
@@ -324,6 +326,7 @@ export async function exportStructuredReport(params: {
   shipping_line?: number;
   vessel?: number;
   position?: number;
+  status?: string;
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
@@ -336,6 +339,7 @@ export async function exportStructuredReport(params: {
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
+  if (params.status) query.set("status", params.status);
   const { blob, filename } = await apiDownload(
     `${BASE}report-export/?${query.toString()}`,
   );

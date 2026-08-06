@@ -667,6 +667,7 @@ export default function BookingsView() {
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
             position:
               appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+            status: appliedStatusFilter || undefined,
             exportFormat: format,
           });
           return;
@@ -1138,6 +1139,7 @@ export default function BookingsView() {
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
             position:
               appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+            status: appliedStatusFilter || undefined,
           }}
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}

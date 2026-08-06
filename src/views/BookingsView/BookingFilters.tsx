@@ -154,7 +154,7 @@ export default function BookingFilters({
       : getTimeRange(datePreset, customDateFrom, customDateTo);
 
   const showVessel = tab === "list" || tab === "calendar" || tab === "availability";
-  const showStatusSearch = tab !== "availability";
+  const showSearch = tab !== "availability";
   const showDates = tab === "list" || tab === "availability";
   const showCalendarMode = tab === "calendar";
   const showHeatMode = tab === "availability";
@@ -217,7 +217,7 @@ export default function BookingFilters({
         />
       ) : null}
 
-      {showStatusSearch ? (
+      {showSearch ? (
         <FilterSuggestField
           label="Buscar"
           name="booking_search"
@@ -373,31 +373,29 @@ export default function BookingFilters({
         />
       ) : null}
 
-      {showStatusSearch ? (
-        <>
-          <FormFieldSelect<string>
-            label="Estado"
-            name="booking_status_filter"
-            value={status}
-            onChange={(value) => onStatusChange(value as BookingListStatusFilter)}
-            options={STATUS_OPTIONS}
-            optionLabel="Todos los estados"
-            emptyValue=""
-            compact
-            labelEnd={
-              <BookingStatusGuideToggle
-                accordion={false}
-                onToggle={() => setStatusGuideOpen(true)}
-              />
-            }
-          />
-          <BookingStatusGuideModal
-            open={statusGuideOpen}
-            onClose={() => setStatusGuideOpen(false)}
-            includeFilterExtras
-          />
-        </>
-      ) : null}
+      <>
+        <FormFieldSelect<string>
+          label="Estado"
+          name="booking_status_filter"
+          value={status}
+          onChange={(value) => onStatusChange(value as BookingListStatusFilter)}
+          options={STATUS_OPTIONS}
+          optionLabel="Todos los estados"
+          emptyValue=""
+          compact
+          labelEnd={
+            <BookingStatusGuideToggle
+              accordion={false}
+              onToggle={() => setStatusGuideOpen(true)}
+            />
+          }
+        />
+        <BookingStatusGuideModal
+          open={statusGuideOpen}
+          onClose={() => setStatusGuideOpen(false)}
+          includeFilterExtras
+        />
+      </>
 
       {showDates ? (
         <BookingsDateFilters
