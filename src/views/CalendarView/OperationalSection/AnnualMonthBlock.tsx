@@ -2,6 +2,7 @@
 
 import { formatIsoWeekdayShort, toIsoDate } from "@/lib/bookingDates";
 import { formatLoa } from "@/lib/bookingDisplay";
+import { positionDisplayCode } from "@/lib/positionCode";
 import type { Booking } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
@@ -170,7 +171,9 @@ export default function AnnualMonthBlock({
                 ? key
                 : key === "unassigned"
                   ? "Sin asignar"
-                  : (position?.code ?? key);
+                  : position
+                    ? positionDisplayCode(position)
+                    : key;
               const rowHasBooking = days.some((day) => {
                 const iso = toIsoDate(year, monthIndex, day);
                 const cellBookings = multiPort

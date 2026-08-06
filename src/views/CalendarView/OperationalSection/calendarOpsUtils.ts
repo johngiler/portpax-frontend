@@ -209,9 +209,10 @@ export const TRAFFIC_LABEL: Record<DayTraffic, string> = {
 
 export { formatLoa, formatTimeShort } from "@/lib/bookingDisplay";
 
+/** Active pier + anchorage rows for week/annual calendars (excludes inactive). */
 export function activePierPositions(positions: Position[]): Position[] {
   return positions
-    .filter((p) => p.is_active && p.position_type === "pier")
+    .filter((p) => p.is_active)
     .sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
 }
 

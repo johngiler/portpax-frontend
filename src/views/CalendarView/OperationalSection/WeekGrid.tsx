@@ -185,7 +185,7 @@ export default function WeekGrid({
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 w-28 bg-white px-2 py-2 text-xs font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                  Muelle
+                  Posición
                 </th>
                 {days.map((iso) => {
                   const dayBookings = bookings.filter(

@@ -100,7 +100,7 @@ export default function UnifiedCalendarCard({
     mode === "weekly"
       ? multiPort
         ? "Semana con todos los puertos en una sola vista, agrupados por día."
-        : "7 días × muelles. Colores por corporación; semáforo por día."
+        : "7 días × posiciones. Colores por corporación; semáforo por día."
       : mode === "monthly"
         ? multiPort
           ? "Mes completo: todos los puertos en un mismo calendario, organizados por día y puerto."

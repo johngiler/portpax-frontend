@@ -162,7 +162,7 @@ export default function AnnualGrid({
         <BookingsViewSkeleton variant="calendar" calendarMode="annual" />
       ) : !multiPort && pierRows.length === 0 ? (
         <p className="px-1 text-sm text-zinc-500">
-          Selecciona un puerto con posiciones de muelle para ver el anual tipo
+          Selecciona un puerto con posiciones activas para ver el anual tipo
           Excel.
         </p>
       ) : (
