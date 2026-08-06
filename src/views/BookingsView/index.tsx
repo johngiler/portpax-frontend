@@ -39,9 +39,11 @@ import {
 import { setDataImportHandler } from "@/lib/dataImportStore";
 import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import {
+  deleteBooking,
   exportBookingsReport,
   exportCalendarReport,
   exportStructuredReport,
+  updateBooking,
 } from "@/services/bookings/bookingService";
 import {
   previewAvailabilityListFilter,
@@ -68,7 +70,9 @@ import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
 import BookingsHistoryModal from "./BookingsHistoryModal";
-import BookingsList from "./BookingsList";
+import BookingsList, {
+  type BulkStatusPayload,
+} from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import BulkBookingImportModal from "./Import/BulkBookingImportModal";
@@ -491,6 +495,36 @@ export default function BookingsView() {
         heat: heatMode,
       }),
     );
+  }
+
+  async function handleBulkDeleteCancelled(ids: number[]) {
+    setViewError(null);
+    const results = await Promise.allSettled(ids.map((id) => deleteBooking(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    await refreshBookings();
+    if (failed > 0) {
+      setViewError(
+        failed === ids.length
+          ? "No se pudieron eliminar las reservas seleccionadas."
+          : `Se eliminaron ${ids.length - failed} de ${ids.length}; ${failed} fallaron (solo canceladas).`,
+      );
+    }
+  }
+
+  async function handleBulkStatusChange(ids: number[], payload: BulkStatusPayload) {
+    setViewError(null);
+    const results = await Promise.allSettled(
+      ids.map((id) => updateBooking(id, payload)),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    await refreshBookings();
+    if (failed > 0) {
+      setViewError(
+        failed === ids.length
+          ? "No se pudo cambiar el estado de las reservas seleccionadas (revisa transiciones y validaciones)."
+          : `Se actualizaron ${ids.length - failed} de ${ids.length}; ${failed} fallaron (transición o validación).`,
+      );
+    }
   }
 
   function handleClearFilters() {
@@ -1027,6 +1061,9 @@ export default function BookingsView() {
               bookings={bookings}
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
+              canWrite={canWrite}
+              onBulkDelete={canWrite ? handleBulkDeleteCancelled : undefined}
+              onBulkStatus={canWrite ? handleBulkStatusChange : undefined}
             />
             {bookings.length > 0 ? (
               <InfiniteScrollFooter

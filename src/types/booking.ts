@@ -269,6 +269,39 @@ export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
   }
 }
 
+/** Real needs per-booking actual_pax — not offered in list bulk actions. */
+const BULK_EXCLUDED_NEXT = new Set<BookingStatus>(["r"]);
+
+const BULK_STATUS_ORDER: BookingStatus[] = ["h", "lta", "cl", "co", "c"];
+
+/**
+ * Intersection of allowed next statuses for every selected booking,
+ * excluding transitions that need per-row payloads (e.g. Real / PAX).
+ */
+export function commonBulkNextStatuses(
+  bookings: Array<Pick<Booking, "status">>,
+): BookingStatus[] {
+  if (bookings.length === 0) return [];
+  let common: Set<BookingStatus> | null = null;
+  for (const booking of bookings) {
+    const next = new Set(
+      bookingNextStatuses(booking.status).filter((s) => !BULK_EXCLUDED_NEXT.has(s)),
+    );
+    common =
+      common === null
+        ? next
+        : new Set([...common].filter((s) => next.has(s)));
+  }
+  if (!common || common.size === 0) return [];
+  return BULK_STATUS_ORDER.filter((s) => common!.has(s));
+}
+
+export function canBulkDeleteBookings(
+  bookings: Array<Pick<Booking, "status">>,
+): boolean {
+  return bookings.length > 0 && bookings.every((b) => b.status === "c");
+}
+
 export function bookingDetailHref(
   booking: Pick<Booking, "booking_code">,
   options?: { returnTo?: string | null },
