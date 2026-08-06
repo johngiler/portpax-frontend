@@ -1,7 +1,7 @@
 "use client";
 
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
-import type { BookingListStatusFilter } from "@/types/booking";
+import type { BookingStatusFilterValue } from "@/types/booking";
 import type { CalendarSeason } from "./calendarOpsUtils";
 import UnifiedCalendarCard from "./UnifiedCalendarCard";
 
@@ -13,7 +13,7 @@ type OperationalSectionProps = {
   portLabel: string;
   shippingLineId: number;
   vesselId: number;
-  status: BookingListStatusFilter;
+  statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
   weekAnchor: string;
@@ -34,7 +34,7 @@ export default function OperationalSection({
   portLabel,
   shippingLineId,
   vesselId,
-  status,
+  statuses,
   positionId,
   search,
   weekAnchor,
@@ -51,7 +51,7 @@ export default function OperationalSection({
     shippingLineId > 0 ||
     vesselId > 0 ||
     positionId > 0 ||
-    Boolean(status) ||
+    statuses.length > 0 ||
     Boolean(search.trim()) ||
     portId > 0;
 
@@ -63,7 +63,7 @@ export default function OperationalSection({
       portLabel={portLabel}
       shippingLineId={shippingLineId}
       vesselId={vesselId}
-      status={status}
+      statuses={statuses}
       positionId={positionId}
       search={search}
       hasFilters={hasFilters}

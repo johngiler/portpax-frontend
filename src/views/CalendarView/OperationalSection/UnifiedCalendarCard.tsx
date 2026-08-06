@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { useCalendarBookings } from "@/hooks/swr/useCalendarBookings";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import type { BookingListStatusFilter } from "@/types/booking";
+import type { BookingStatusFilterValue } from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import AnnualGrid from "./AnnualGrid";
 import CalendarColorLegend from "./CalendarColorLegend";
@@ -28,7 +28,7 @@ type UnifiedCalendarCardProps = {
   portLabel: string;
   shippingLineId: number;
   vesselId: number;
-  status: BookingListStatusFilter;
+  statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
   hasFilters?: boolean;
@@ -50,7 +50,7 @@ export default function UnifiedCalendarCard({
   portLabel,
   shippingLineId,
   vesselId,
-  status,
+  statuses,
   positionId,
   search,
   hasFilters = false,
@@ -81,7 +81,7 @@ export default function UnifiedCalendarCard({
       portId,
       shippingLineId,
       vesselId,
-      status,
+      statuses,
       search,
       from: range.from,
       to: range.to,

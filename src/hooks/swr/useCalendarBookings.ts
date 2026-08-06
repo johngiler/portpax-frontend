@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchAllBookings } from "@/services/bookings/bookingService";
 import { fetchPositions } from "@/services/catalogs/positionService";
-import type { Booking, BookingListStatusFilter } from "@/types/booking";
+import type { Booking, BookingStatusFilterValue } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import {
@@ -17,7 +17,7 @@ export type CalendarBookingsParams = {
   portId: number;
   shippingLineId: number;
   vesselId: number;
-  status: BookingListStatusFilter;
+  statuses: BookingStatusFilterValue[];
   search: string;
   from: string;
   to: string;
@@ -31,7 +31,7 @@ function calendarParamsKey(p: CalendarBookingsParams): string {
     p.portId,
     p.shippingLineId,
     p.vesselId,
-    p.status,
+    p.statuses.join(","),
     p.search.trim(),
     p.from,
     p.to,
@@ -53,7 +53,7 @@ async function fetchCalendarPayload(
     port: params.portId > 0 ? params.portId : undefined,
     shipping_line: params.shippingLineId > 0 ? params.shippingLineId : undefined,
     vessel: params.vesselId > 0 ? params.vesselId : undefined,
-    status: params.status || undefined,
+    statuses: params.statuses.length > 0 ? params.statuses : undefined,
     search: params.search.trim() || undefined,
     ordering: "call_date" as const,
     pageSize: 500,

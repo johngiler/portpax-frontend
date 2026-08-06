@@ -15,6 +15,9 @@ export type BookingListStatusFilter =
   | "completed"
   | "action";
 
+/** Multi-select status filter values (empty array = all statuses). */
+export type BookingStatusFilterValue = Exclude<BookingListStatusFilter, "">;
+
 export type BookingBadgeStatus = BookingStatus;
 
 export type BookingAuditEntry = {
@@ -216,11 +219,57 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{
   { value: "c", label: "Canceladas" },
 ];
 
+export const BOOKING_STATUS_MULTI_OPTIONS: Array<{
+  value: BookingStatusFilterValue;
+  label: string;
+}> = BOOKING_STATUS_FILTER_OPTIONS.filter(
+  (option): option is { value: BookingStatusFilterValue; label: string } =>
+    option.value !== "",
+);
+
 export function isBookingListStatusFilter(
   value: string | null | undefined,
 ): value is BookingListStatusFilter {
   if (value == null) return false;
   return BOOKING_STATUS_FILTER_OPTIONS.some((option) => option.value === value);
+}
+
+export function isBookingStatusFilterValue(
+  value: string | null | undefined,
+): value is BookingStatusFilterValue {
+  return Boolean(value) && isBookingListStatusFilter(value) && value !== "";
+}
+
+/** Parse CSV / single status from URL (?status=h,co or ?status=action). */
+export function parseBookingStatusFilters(
+  raw: string | null | undefined,
+): BookingStatusFilterValue[] {
+  if (!raw?.trim()) return [];
+  const seen = new Set<BookingStatusFilterValue>();
+  const out: BookingStatusFilterValue[] = [];
+  for (const part of raw.split(",")) {
+    const code = part.trim();
+    if (!isBookingStatusFilterValue(code) || seen.has(code)) continue;
+    seen.add(code);
+    out.push(code);
+  }
+  return out;
+}
+
+export function serializeBookingStatusFilters(
+  statuses: BookingStatusFilterValue[],
+): string {
+  return statuses.join(",");
+}
+
+export function bookingStatusFiltersEqual(
+  a: BookingStatusFilterValue[],
+  b: BookingStatusFilterValue[],
+): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort().join(",");
+  const sb = [...b].sort().join(",");
+  return sa === sb;
 }
 
 export function bookingTodayIso(): string {

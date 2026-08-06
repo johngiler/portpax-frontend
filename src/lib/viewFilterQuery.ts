@@ -1,6 +1,7 @@
 import {
-  isBookingListStatusFilter,
-  type BookingListStatusFilter,
+  parseBookingStatusFilters,
+  serializeBookingStatusFilters,
+  type BookingStatusFilterValue,
 } from "@/types/booking";
 
 export type BookingsDatePresetQuery =
@@ -49,7 +50,8 @@ function isDatePreset(value: string | null): value is BookingsDatePresetQuery {
 
 export type BookingsWorkspaceFilters = {
   tab: BookingsTabQuery;
-  status: BookingListStatusFilter;
+  /** Empty = all statuses. */
+  status: BookingStatusFilterValue[];
   search: string;
   /** Single shared port (0 = all ports for list/calendar). */
   port: number;
@@ -74,7 +76,7 @@ export function parseBookingsWorkspaceFilters(
   defaults: { customFrom: string; customTo: string; week: string; year: number; month: number },
 ): BookingsWorkspaceFilters {
   const tabRaw = sp.get("tab");
-  const statusRaw = sp.get("status");
+  const statusRaw = sp.getAll("status").join(",") || sp.get("status");
   const dateRaw = sp.get("date");
   const modeRaw = sp.get("mode");
   const seasonRaw = sp.get("season");
@@ -98,7 +100,7 @@ export function parseBookingsWorkspaceFilters(
         : tabRaw && TABS.has(tabRaw as BookingsTabQuery)
           ? (tabRaw as BookingsTabQuery)
           : "list",
-    status: isBookingListStatusFilter(statusRaw) ? statusRaw : "",
+    status: parseBookingStatusFilters(statusRaw),
     search: sp.get("q")?.trim() ?? "",
     port: parseIntId(sp.get("port")) || portFromCsv || 0,
     line: parseIntId(sp.get("line")),
@@ -133,7 +135,8 @@ export function buildBookingsWorkspaceQuery(
 ): string {
   const sp = new URLSearchParams();
   if (state.tab !== "list") sp.set("tab", state.tab);
-  if (state.status) sp.set("status", state.status);
+  const statusCsv = serializeBookingStatusFilters(state.status);
+  if (statusCsv) sp.set("status", statusCsv);
   if (state.search) sp.set("q", state.search);
   if (state.port > 0) sp.set("port", String(state.port));
   if (state.line > 0) sp.set("line", String(state.line));

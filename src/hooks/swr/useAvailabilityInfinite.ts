@@ -16,7 +16,7 @@ export type AvailabilityListFilters = {
   shipping_line?: number;
   vessel?: number;
   position?: number;
-  status?: string;
+  statuses?: string[];
 };
 
 function minIso(a: string, b: string): string {
@@ -48,7 +48,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
     filters.shipping_line ?? 0,
     filters.vessel ?? 0,
     filters.position ?? 0,
-    filters.status ?? "",
+    (filters.statuses ?? []).join(","),
   ].join("|");
 }
 
@@ -63,7 +63,7 @@ export function useAvailabilityInfinite(
   const line = filters.shipping_line;
   const vessel = filters.vessel;
   const position = filters.position;
-  const status = filters.status;
+  const statuses = filters.statuses;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
@@ -92,7 +92,7 @@ export function useAvailabilityInfinite(
         shipping_line: line,
         vessel,
         position,
-        status,
+        statuses,
       });
     });
 

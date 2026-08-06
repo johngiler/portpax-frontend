@@ -15,7 +15,7 @@ import {
 } from "@/types/booking";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
-import { filterAvailabilityCalls } from "./availabilityCallFilter";
+import { availabilityCallMatchesStatus } from "./availabilityCallFilter";
 
 const BOOKING_BADGE_STATUSES = new Set<string>([
   "nr",
@@ -37,8 +37,8 @@ type Props = {
   data: AvailabilityReport;
   /** Defaults to "Availability Chart". Use "Disponibilidad" in Reservas tab. */
   titlePrefix?: string;
-  /** Status sidebar filter: narrows booking cards; occupancy stays conflict-based. */
-  statusFilter?: string;
+  /** Status sidebar filters: highlight matches; neighbors stay visible (muted). */
+  statusFilter?: string | string[];
   /** Inside the card scroll panel (e.g. load-more sentinel). */
   footer?: ReactNode;
   /** Ref for the card's overflow container (infinite scroll root). */
@@ -135,9 +135,6 @@ function AvailabilityStartDateCell({
 
 const availableSlotClass =
   "flex min-h-16 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-200 bg-emerald-50/60 text-xs font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300";
-
-const occupiedSlotClass =
-  "flex min-h-16 items-center justify-center rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400";
 
 function AvailableSlot({
   bookable,
@@ -264,32 +261,14 @@ export default function AvailabilityChartSection({
                   </td>
                   {data.columns.map((column, idx) => {
                     const calls = row.cells[idx] ?? [];
-                    const visibleCalls = filterAvailabilityCalls(
-                      calls,
-                      row.date,
-                      statusFilter,
-                      todayIso,
-                    );
-                    const occupiedOtherStatus =
-                      Boolean(statusFilter) &&
-                      statusFilter !== "c" &&
-                      calls.length > 0 &&
-                      visibleCalls.length === 0;
                     const isRealPosition = column.id > 0;
                     return (
                       <td
                         key={`${row.date}-${column.id}`}
                         className="border-b border-r border-zinc-200 bg-zinc-50/40 p-2 align-top last:border-r-0 group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-950/30"
                       >
-                        {visibleCalls.length === 0 ? (
-                          occupiedOtherStatus ? (
-                            <div
-                              className={occupiedSlotClass}
-                              title="Hay reserva(s) en otro estado"
-                            >
-                              Ocupada
-                            </div>
-                          ) : row.date < todayIso ? (
+                        {calls.length === 0 ? (
+                          row.date < todayIso ? (
                             <div className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-100/80 text-xs font-medium text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-500">
                               Pasado
                             </div>
@@ -308,8 +287,15 @@ export default function AvailabilityChartSection({
                           )
                         ) : (
                           <div className="space-y-2">
-                            {visibleCalls.map((call) => {
+                            {calls.map((call) => {
                               const badgeStatus = asBadgeStatus(call.status);
+                              const matchesFilter =
+                                availabilityCallMatchesStatus(
+                                  call,
+                                  row.date,
+                                  statusFilter,
+                                  todayIso,
+                                );
                               return (
                               <Link
                                 key={call.booking_code}
@@ -317,8 +303,17 @@ export default function AvailabilityChartSection({
                                   { booking_code: call.booking_code },
                                   { returnTo },
                                 )}
-                                className="block rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm transition hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[var(--admin-accent)]/50"
-                                title={`Editar ${call.booking_code}`}
+                                className={[
+                                  "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
+                                  matchesFilter
+                                    ? "border-zinc-200 hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 dark:border-zinc-700 dark:hover:border-[var(--admin-accent)]/50"
+                                    : "border-zinc-200/80 opacity-55 hover:opacity-80 dark:border-zinc-700/80",
+                                ].join(" ")}
+                                title={
+                                  matchesFilter
+                                    ? `Editar ${call.booking_code}`
+                                    : `${call.booking_code} · otro estado (vecino)`
+                                }
                                 aria-label={`Abrir reserva ${call.booking_code}`}
                               >
                                 <div className="flex min-w-0 items-start gap-2">

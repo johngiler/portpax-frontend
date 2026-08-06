@@ -56,7 +56,7 @@ export default function BookingsAvailabilityPanel({
     filters.shipping_line ?? 0,
     filters.vessel ?? 0,
     filters.position ?? 0,
-    filters.status ?? "",
+    (filters.statuses ?? []).join(","),
     heatMode,
   ].join("|");
 

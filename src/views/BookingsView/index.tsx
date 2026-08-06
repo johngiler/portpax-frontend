@@ -57,7 +57,8 @@ import { fetchPositions } from "@/services/catalogs/positionService";
 import { portDisplayName } from "@/types/catalog";
 import {
   bookingDetailHref,
-  type BookingListStatusFilter,
+  bookingStatusFiltersEqual,
+  type BookingStatusFilterValue,
 } from "@/types/booking";
 import {
   addDaysIso,
@@ -163,9 +164,12 @@ export default function BookingsView() {
   );
 
   const [tab, setTab] = useState<BookingsTabQuery>("list");
-  const [statusFilter, setStatusFilter] = useState<BookingListStatusFilter>("");
-  const [appliedStatusFilter, setAppliedStatusFilter] =
-    useState<BookingListStatusFilter>("");
+  const [statusFilter, setStatusFilter] = useState<BookingStatusFilterValue[]>(
+    [],
+  );
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<
+    BookingStatusFilterValue[]
+  >([]);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState(0);
@@ -355,7 +359,7 @@ export default function BookingsView() {
     );
     return {
       search: appliedSearch,
-      status: appliedStatusFilter,
+      statuses: appliedStatusFilter,
       port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
@@ -534,8 +538,8 @@ export default function BookingsView() {
     const week = todayIso();
     const y = new Date().getFullYear();
     const m = new Date().getMonth();
-    setStatusFilter("");
-    setAppliedStatusFilter("");
+    setStatusFilter([]);
+    setAppliedStatusFilter([]);
     setSearch("");
     setAppliedSearch("");
     setPortFilter(port);
@@ -566,7 +570,7 @@ export default function BookingsView() {
     setAppliedMonthIndex(m);
     syncToUrl({
       tab,
-      status: "",
+      status: [],
       search: "",
       port,
       line: 0,
@@ -590,7 +594,7 @@ export default function BookingsView() {
   }
 
   const hasActiveFilters =
-    appliedStatusFilter !== "" ||
+    appliedStatusFilter.length > 0 ||
     appliedSearch !== "" ||
     appliedPortFilter > 0 ||
     appliedShippingLineFilter > 0 ||
@@ -603,7 +607,7 @@ export default function BookingsView() {
 
   const canClearFilters =
     hasActiveFilters ||
-    statusFilter !== "" ||
+    statusFilter.length > 0 ||
     search.trim() !== "" ||
     portFilter > 0 ||
     shippingLineFilter > 0 ||
@@ -615,7 +619,7 @@ export default function BookingsView() {
     (tab === "calendar" && calendarMode !== "monthly");
 
   const canApplyFilters =
-    statusFilter !== appliedStatusFilter ||
+    !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
     search.trim() !== appliedSearch ||
     portFilter !== appliedPortFilter ||
     shippingLineFilter !== appliedShippingLineFilter ||
@@ -638,7 +642,7 @@ export default function BookingsView() {
           await exportBookingsReport({
             exportFormat: format,
             search: listParams.search,
-            status: listParams.status,
+            statuses: listParams.statuses,
             port: listParams.port,
             position: listParams.position,
             shipping_line: listParams.shipping_line,
@@ -667,7 +671,10 @@ export default function BookingsView() {
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
             position:
               appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
-            status: appliedStatusFilter || undefined,
+            statuses:
+              appliedStatusFilter.length > 0
+                ? appliedStatusFilter
+                : undefined,
             exportFormat: format,
           });
           return;
@@ -704,7 +711,10 @@ export default function BookingsView() {
             appliedShippingLineFilter > 0
               ? appliedShippingLineFilter
               : undefined,
-          status: appliedStatusFilter || undefined,
+          statuses:
+            appliedStatusFilter.length > 0
+              ? appliedStatusFilter
+              : undefined,
           exportFormat: format,
         });
       } catch (err) {
@@ -1092,7 +1102,7 @@ export default function BookingsView() {
           portLabel={calendarPortLabel}
           shippingLineId={appliedShippingLineFilter}
           vesselId={appliedVesselFilter}
-          status={appliedStatusFilter}
+          statuses={appliedStatusFilter}
           positionId={appliedPositionFilter}
           search={appliedSearch}
           weekAnchor={weekAnchor}
@@ -1139,7 +1149,10 @@ export default function BookingsView() {
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
             position:
               appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
-            status: appliedStatusFilter || undefined,
+            statuses:
+              appliedStatusFilter.length > 0
+                ? appliedStatusFilter
+                : undefined,
           }}
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}

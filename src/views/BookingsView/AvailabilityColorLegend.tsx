@@ -29,7 +29,7 @@ export default function AvailabilityColorLegend() {
       </span>
       <InfoTooltip
         label="Leyenda de disponibilidad"
-        content="Verde: posición libre hoy o en el futuro. Gris: día pasado (no reservable). Cuadro con reserva: escala del estado filtrado (o todas si no hay filtro). «Ocupada» sin detalle: hay escala en otro estado."
+        content="Verde: posición libre. Gris: día pasado. Reserva con chip: escala en esa posición. Con filtro de estado, las que coinciden se ven normales y las vecinas (otro estado) aparecen atenuadas."
       />
     </div>
   );

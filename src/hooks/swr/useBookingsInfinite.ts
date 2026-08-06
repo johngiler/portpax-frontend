@@ -15,7 +15,7 @@ export type BookingsListFilterParams = Omit<FetchBookingsParams, "page">;
 function listParamsKey(params: BookingsListFilterParams): string {
   return [
     params.search ?? "",
-    params.status ?? "",
+    (params.statuses ?? []).join(",") || (params.status ?? ""),
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,

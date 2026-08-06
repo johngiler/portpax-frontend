@@ -1,4 +1,8 @@
-import type { BookingListStatusFilter, BookingStatus } from "@/types/booking";
+import type {
+  BookingListStatusFilter,
+  BookingStatus,
+  BookingStatusFilterValue,
+} from "@/types/booking";
 import { bookingTodayIso } from "@/types/booking";
 
 const ACTIVE_STATUSES: BookingStatus[] = [
@@ -22,39 +26,74 @@ export type AvailabilityCall = {
   etd: string | null;
 };
 
-/** Whether a call matches the availability status sidebar filter. */
-export function availabilityCallMatchesStatus(
+function matchesOneStatus(
   call: Pick<AvailabilityCall, "status">,
   callDate: string,
-  status: BookingListStatusFilter | string | undefined,
-  todayIso = bookingTodayIso(),
+  status: BookingListStatusFilter | string,
+  todayIso: string,
 ): boolean {
-  if (!status) return true;
   const code = call.status ?? "";
   if (status === "completed") {
     if (code === "c") return false;
     if (code === "r") return true;
     return (
-      callDate < todayIso &&
-      ACTIVE_STATUSES.includes(code as BookingStatus)
+      callDate < todayIso && ACTIVE_STATUSES.includes(code as BookingStatus)
     );
   }
   if (status === "action") {
-    return (
-      (code === "nr" || code === "h") && callDate >= todayIso
-    );
+    return (code === "nr" || code === "h") && callDate >= todayIso;
   }
   return code === status;
+}
+
+/** Whether a call matches any selected availability status filter. */
+export function availabilityCallMatchesStatus(
+  call: Pick<AvailabilityCall, "status">,
+  callDate: string,
+  statuses:
+    | BookingStatusFilterValue[]
+    | BookingListStatusFilter
+    | string
+    | string[]
+    | undefined,
+  todayIso = bookingTodayIso(),
+): boolean {
+  const list = normalizeStatusList(statuses);
+  if (list.length === 0) return true;
+  return list.some((status) =>
+    matchesOneStatus(call, callDate, status, todayIso),
+  );
+}
+
+function normalizeStatusList(
+  statuses:
+    | BookingStatusFilterValue[]
+    | BookingListStatusFilter
+    | string
+    | string[]
+    | undefined,
+): string[] {
+  if (statuses == null || statuses === "") return [];
+  if (Array.isArray(statuses)) {
+    return statuses.filter((s): s is string => Boolean(s));
+  }
+  return [statuses];
 }
 
 export function filterAvailabilityCalls<T extends AvailabilityCall>(
   calls: T[],
   callDate: string,
-  status: BookingListStatusFilter | string | undefined,
+  statuses:
+    | BookingStatusFilterValue[]
+    | BookingListStatusFilter
+    | string
+    | string[]
+    | undefined,
   todayIso = bookingTodayIso(),
 ): T[] {
-  if (!status) return calls;
+  const list = normalizeStatusList(statuses);
+  if (list.length === 0) return calls;
   return calls.filter((call) =>
-    availabilityCallMatchesStatus(call, callDate, status, todayIso),
+    availabilityCallMatchesStatus(call, callDate, list, todayIso),
   );
 }

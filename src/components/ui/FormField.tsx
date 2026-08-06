@@ -446,6 +446,7 @@ export function FormFieldMultiSelect<T extends string | number>({
   compact = false,
   showLogo = false,
   logoKind,
+  labelEnd,
 }: {
   label: string;
   name: string;
@@ -458,15 +459,34 @@ export function FormFieldMultiSelect<T extends string | number>({
   compact?: boolean;
   showLogo?: boolean;
   logoKind?: CatalogLogoKind;
+  labelEnd?: ReactNode;
 }) {
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
   const styles = buildCatalogMultiSelectStyles<T>(Boolean(error), compact);
 
   return (
     <div className={compact ? "mb-3" : "mb-4"}>
-      <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
-        {label}
-      </label>
+      {labelEnd ? (
+        <div
+          className={`flex items-center justify-between gap-2 ${compact ? "mb-1" : "mb-1.5"}`}
+        >
+          <label
+            htmlFor={name}
+            className={
+              compact
+                ? "text-xs font-medium text-zinc-700 dark:text-zinc-200"
+                : "text-sm font-medium text-zinc-700 dark:text-zinc-200"
+            }
+          >
+            {label}
+          </label>
+          {labelEnd}
+        </div>
+      ) : (
+        <label htmlFor={name} className={compact ? labelCompactClass : labelClass}>
+          {label}
+        </label>
+      )}
       <Select<CatalogSelectOption<T>, true>
         inputId={name}
         name={name}
@@ -477,6 +497,7 @@ export function FormFieldMultiSelect<T extends string | number>({
         onChange={(selected) => onChange(selected ? selected.map((item) => item.value) : [])}
         styles={styles}
         placeholder={placeholder ?? "Seleccionar…"}
+        noOptionsMessage={() => "Sin opciones"}
         aria-invalid={!!error}
         isDisabled={disabled}
         formatOptionLabel={(option) => (

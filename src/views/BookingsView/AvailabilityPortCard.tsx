@@ -35,13 +35,13 @@ function todayIsoLocal(): string {
 
 function rowHasOccupancy(
   row: AvailabilityReport["rows"][number],
-  statusFilter?: string,
+  statusFilters?: string[],
   todayIso = bookingTodayIso(),
 ): boolean {
   return row.cells.some((calls) => {
-    if (!statusFilter) return calls.length > 0;
+    if (!statusFilters?.length) return calls.length > 0;
     return (
-      filterAvailabilityCalls(calls, row.date, statusFilter, todayIso).length >
+      filterAvailabilityCalls(calls, row.date, statusFilters, todayIso).length >
       0
     );
   });
@@ -78,7 +78,7 @@ export default function AvailabilityPortCard({
     [dateAllowlist],
   );
   const isOccupancy = heatMode === "occupancy";
-  const statusFilter = filters.status;
+  const statusFilters = filters.statuses;
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
     useAvailabilityInfinite(portId, dateFrom, dateTo, true, filters);
@@ -106,7 +106,7 @@ export default function AvailabilityPortCard({
   useEffect(() => {
     if (!isOccupancy || allowSet || !data || !hasMore || loadingMore || isLoading)
       return;
-    if (data.rows.some((row) => rowHasOccupancy(row, statusFilter, todayIso)))
+    if (data.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)))
       return;
     loadMore();
   }, [
@@ -117,7 +117,7 @@ export default function AvailabilityPortCard({
     loadingMore,
     isLoading,
     loadMore,
-    statusFilter,
+    statusFilters,
     todayIso,
   ]);
 
@@ -129,11 +129,11 @@ export default function AvailabilityPortCard({
     }
     if (isOccupancy) {
       rows = rows.filter((row) =>
-        rowHasOccupancy(row, statusFilter, todayIso),
+        rowHasOccupancy(row, statusFilters, todayIso),
       );
     }
     return { ...data, rows };
-  }, [data, allowSet, isOccupancy, statusFilter, todayIso]);
+  }, [data, allowSet, isOccupancy, statusFilters, todayIso]);
 
   const stillLoadingAllowlist =
     Boolean(allowSet) && hasMore && (loadingMore || isLoading);
@@ -142,7 +142,7 @@ export default function AvailabilityPortCard({
     !allowSet &&
     hasMore &&
     (loadingMore || isLoading) &&
-    !(data?.rows.some((row) => rowHasOccupancy(row, statusFilter, todayIso)));
+    !(data?.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)));
   const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
   const displayTotal = allowSet ? allowSet.size : totalDays;
@@ -190,7 +190,7 @@ export default function AvailabilityPortCard({
     <AvailabilityChartSection
       data={displayData}
       titlePrefix={isOccupancy ? "Ocupación" : "Disponibilidad"}
-      statusFilter={statusFilter}
+      statusFilter={statusFilters}
       scrollRootRef={scrollRootRef}
       canBook={canBook && !isOccupancy}
       returnTo={returnTo}

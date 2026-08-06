@@ -11,10 +11,12 @@ import type {
   BookingBatchPayload,
   BookingListStatusFilter,
   BookingStatus,
+  BookingStatusFilterValue,
   BookingUpdatePayload,
   BookingValidationResult,
   PositionSuggestion,
 } from "@/types/booking";
+import { serializeBookingStatusFilters } from "@/types/booking";
 
 const BASE = "api/bookings/";
 
@@ -26,7 +28,9 @@ export type FetchBookingsParams = {
   shipping_line?: number;
   vessel?: number;
   long_term_agreement?: number;
+  /** @deprecated Prefer `statuses` multi-select. */
   status?: BookingListStatusFilter;
+  statuses?: BookingStatusFilterValue[];
   call_date_from?: string;
   call_date_to?: string;
   ordering?: string;
@@ -44,7 +48,11 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.long_term_agreement) {
     query.set("long_term_agreement", String(params.long_term_agreement));
   }
-  if (params.status) query.set("status", params.status);
+  const statusCsv =
+    params.statuses && params.statuses.length > 0
+      ? serializeBookingStatusFilters(params.statuses)
+      : params.status || "";
+  if (statusCsv) query.set("status", statusCsv);
   if (params.call_date_from) query.set("call_date_from", params.call_date_from);
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);
   if (params.ordering) query.set("ordering", params.ordering);
@@ -85,6 +93,7 @@ export async function exportCalendarReport(
     call_date_to: string;
     shipping_line?: number;
     status?: BookingListStatusFilter;
+    statuses?: BookingStatusFilterValue[];
     exportFormat: "xlsx" | "csv";
   },
 ): Promise<void> {
@@ -94,7 +103,11 @@ export async function exportCalendarReport(
   query.set("call_date_to", params.call_date_to);
   query.set("export_format", params.exportFormat);
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
-  if (params.status) query.set("status", params.status);
+  const statusCsv =
+    params.statuses && params.statuses.length > 0
+      ? serializeBookingStatusFilters(params.statuses)
+      : params.status || "";
+  if (statusCsv) query.set("status", statusCsv);
   const { blob, filename } = await apiDownload(
     `${BASE}calendar-export/?${query.toString()}`,
   );
@@ -275,6 +288,7 @@ export async function fetchAvailabilityReport(params: {
   vessel?: number;
   position?: number;
   status?: string;
+  statuses?: string[];
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -285,7 +299,11 @@ export async function fetchAvailabilityReport(params: {
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
-  if (params.status) query.set("status", params.status);
+  const statusCsv =
+    params.statuses && params.statuses.length > 0
+      ? params.statuses.join(",")
+      : params.status || "";
+  if (statusCsv) query.set("status", statusCsv);
   return apiFetch<AvailabilityReport>(
     `${BASE}report-availability/?${query.toString()}`,
   );
@@ -328,6 +346,7 @@ export async function exportStructuredReport(params: {
   vessel?: number;
   position?: number;
   status?: string;
+  statuses?: string[];
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
@@ -340,7 +359,11 @@ export async function exportStructuredReport(params: {
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
-  if (params.status) query.set("status", params.status);
+  const statusCsv =
+    params.statuses && params.statuses.length > 0
+      ? params.statuses.join(",")
+      : params.status || "";
+  if (statusCsv) query.set("status", statusCsv);
   const { blob, filename } = await apiDownload(
     `${BASE}report-export/?${query.toString()}`,
   );

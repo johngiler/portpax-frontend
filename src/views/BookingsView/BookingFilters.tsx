@@ -5,7 +5,7 @@ import FilterActions from "@/components/layout/FilterActions";
 import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import { suggestBookings } from "@/lib/filterSuggestions";
 import { getMonthOptions, getBookingYearRange } from "@/lib/bookingDates";
 import type {
@@ -18,18 +18,13 @@ import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
-  BOOKING_STATUS_FILTER_OPTIONS,
-  type BookingListStatusFilter,
+  BOOKING_STATUS_MULTI_OPTIONS,
+  type BookingStatusFilterValue,
 } from "@/types/booking";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingsDateFilters, { type BookingsDatePreset } from "./BookingsDateFilters";
 
-const STATUS_OPTIONS = BOOKING_STATUS_FILTER_OPTIONS
-  .filter((option) => option.value !== "")
-  .map((option) => ({
-    value: option.value as Exclude<BookingListStatusFilter, "">,
-    label: option.label,
-  }));
+const STATUS_OPTIONS = BOOKING_STATUS_MULTI_OPTIONS;
 
 const MODE_OPTIONS: { value: CalendarViewModeQuery; label: string }[] = [
   { value: "weekly", label: "Semanal" },
@@ -63,7 +58,7 @@ type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 type BookingFiltersProps = {
   tab: BookingsTabQuery;
-  status: BookingListStatusFilter;
+  status: BookingStatusFilterValue[];
   search: string;
   portFilter: number;
   shippingLineFilter: number;
@@ -83,7 +78,7 @@ type BookingFiltersProps = {
   positionOptions: FilterOption[];
   canClear: boolean;
   canApply: boolean;
-  onStatusChange: (status: BookingListStatusFilter) => void;
+  onStatusChange: (status: BookingStatusFilterValue[]) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
   onShippingLineFilterChange: (lineId: number) => void;
@@ -374,14 +369,13 @@ export default function BookingFilters({
       ) : null}
 
       <>
-        <FormFieldSelect<string>
+        <FormFieldMultiSelect<BookingStatusFilterValue>
           label="Estado"
           name="booking_status_filter"
           value={status}
-          onChange={(value) => onStatusChange(value as BookingListStatusFilter)}
+          onChange={onStatusChange}
           options={STATUS_OPTIONS}
-          optionLabel="Todos los estados"
-          emptyValue=""
+          placeholder="Todos los estados"
           compact
           labelEnd={
             <BookingStatusGuideToggle
