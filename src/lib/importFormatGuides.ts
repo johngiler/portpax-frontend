@@ -23,7 +23,7 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
   title: "Formatos aceptados — reservas masivas",
   summary:
-    "Primera fila = encabezados. Separador: tabulador (Excel) o punto y coma.",
+    "Encabezados Ship, Port, Arrival, Departure (y opcionales). Excel: una fila por reserva (tab o ;). Correo/Outlook: también un campo por línea (cabeceras y luego bloques de valores).",
   rows: [
     {
       field: "Ship",
@@ -64,7 +64,7 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
     },
   ],
   footer:
-    "Normalización: espacios múltiples → uno; puertos sin acentos; años de 2 dígitos → 20xx. Filas sin Ship ni Port se omiten.",
+    "Normalización: espacios múltiples → uno; puertos sin acentos; años de 2 dígitos → 20xx. Filas sin Ship ni Port se omiten. Pegado vertical del correo se reordena automáticamente a columnas.",
 };
 
 /** Availability date list (Excel / paste). */

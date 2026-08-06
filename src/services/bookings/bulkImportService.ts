@@ -17,6 +17,8 @@ export type BulkImportPreviewRow = {
   vessel_name: string | null;
   shipping_line_id: number | null;
   shipping_line_name: string | null;
+  /** Initial booking status for create (Hold default; no NR/C/R). */
+  suggested_status?: "h" | "co" | "cl" | "lta" | "ltd";
   issues: string[];
   warnings: string[];
   selectable: boolean;
@@ -67,6 +69,15 @@ export async function previewBulkBookingImportFromPaste(
   return apiFetch<BulkImportPreviewResponse>(`${BASE}bulk-import/preview/`, {
     method: "POST",
     body: JSON.stringify({ text }),
+  });
+}
+
+export async function revalidateBulkImportRow(
+  row: BulkImportPreviewRow,
+): Promise<BulkImportPreviewRow> {
+  return apiFetch<BulkImportPreviewRow>(`${BASE}bulk-import/revalidate/`, {
+    method: "POST",
+    body: JSON.stringify(row),
   });
 }
 

@@ -8,14 +8,72 @@ const EMPTY_PREVIEW_ROWS = 6;
 export function parseClipboardMatrix(text: string): string[][] {
   const raw = (text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
   if (!raw) return [];
-  return raw
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => {
-      if (line.includes("\t")) return line.split("\t").map((c) => c.trim());
-      if (line.includes(";")) return line.split(";").map((c) => c.trim());
-      return [line.trim()];
-    });
+  const lines = raw.split("\n").filter((line) => line.trim());
+  const vertical = reshapeVerticalItmLines(lines);
+  if (vertical) return vertical;
+
+  return lines.map((line) => {
+    if (line.includes("\t")) return line.split("\t").map((c) => c.trim());
+    if (line.includes(";")) return line.split(";").map((c) => c.trim());
+    return [line.trim()];
+  });
+}
+
+/** Canonical ITM headers when pasting from email (one field per line). */
+const VERTICAL_ITM_HEADERS = [
+  "Ship",
+  "Port",
+  "Arrival",
+  "Departure",
+  "Vendor Name",
+  "Call Type",
+] as const;
+
+const VERTICAL_ITM_HEADER_KEYS = new Set(
+  VERTICAL_ITM_HEADERS.map((h) => h.toLowerCase()),
+);
+
+/**
+ * Email / Outlook often copies ITM tables as one cell per line:
+ * Ship / Port / Arrival / … then repeating value blocks.
+ * Returns a row matrix (header + data) or null if not that shape.
+ */
+export function reshapeVerticalItmLines(lines: string[]): string[][] | null {
+  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
+  if (trimmed.length < 8) return null;
+
+  const mostlySingle =
+    trimmed.filter((l) => !l.includes("\t") && !l.includes(";")).length >=
+    trimmed.length * 0.85;
+  if (!mostlySingle) return null;
+
+  let headerCount = 0;
+  const headers: string[] = [];
+  for (const line of trimmed) {
+    const key = line.toLowerCase();
+    if (!VERTICAL_ITM_HEADER_KEYS.has(key)) break;
+    const canonical =
+      VERTICAL_ITM_HEADERS.find((h) => h.toLowerCase() === key) ?? line;
+    headers.push(canonical);
+    headerCount += 1;
+  }
+
+  // Need at least Ship, Port, Arrival, Departure as first four header labels.
+  if (headerCount < 4) return null;
+  const required = ["ship", "port", "arrival", "departure"];
+  const headerKeys = headers.map((h) => h.toLowerCase());
+  if (!required.every((r) => headerKeys.includes(r))) return null;
+
+  const width = headers.length;
+  const data = trimmed.slice(headerCount);
+  if (data.length < width) return null;
+  if (data.length % width !== 0) return null;
+
+  const rows: string[][] = [];
+  for (let i = 0; i < data.length; i += width) {
+    rows.push(data.slice(i, i + width));
+  }
+  return [headers, ...rows];
 }
 
 export function matrixToTsv(headers: string[], rows: string[][]): string {
@@ -88,6 +146,7 @@ export default function ImportPasteGrid({
   onMatrixChange,
 }: ImportPasteGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const focusCellRef = useRef<{ row: number; col: number }>({ row: 0, col: 0 });
   const displayHeaders = headers.length ? headers : columns;
   const hasData = rows.some(rowHasContent);
   const workingRows =
@@ -97,11 +156,50 @@ export default function ImportPasteGrid({
     if (!disabled) containerRef.current?.focus();
   }, [disabled, columns]);
 
-  function applyClipboardText(text: string) {
+  function cloneWorkingMatrix(): string[][] {
+    const base =
+      rows.length > 0
+        ? rows.map((row) => displayHeaders.map((_, ci) => row[ci] ?? ""))
+        : emptyRows(displayHeaders.length);
+    return base;
+  }
+
+  /** Paste multi-cell clipboard starting at the focused cell (column/row fill). */
+  function applyClipboardAtFocus(text: string) {
     const matrix = parseClipboardMatrix(text);
     if (!matrix.length) return;
-    const next = normalizePasteMatrix(matrix, columns);
-    onMatrixChange(next.headers, next.rows);
+
+    // Empty table + looks like a full sheet → replace whole matrix (headers included).
+    if (!hasData && rowLooksLikeHeader(matrix[0], columns)) {
+      const next = normalizePasteMatrix(matrix, columns);
+      onMatrixChange(next.headers, next.rows);
+      return;
+    }
+    if (!hasData && matrix.length > 1 && matrix[0].length >= columns.length) {
+      const next = normalizePasteMatrix(matrix, columns);
+      onMatrixChange(next.headers, next.rows);
+      return;
+    }
+
+    const { row: startRow, col: startCol } = focusCellRef.current;
+    const base = cloneWorkingMatrix();
+    const colCount = displayHeaders.length;
+
+    for (let r = 0; r < matrix.length; r++) {
+      const targetRow = startRow + r;
+      while (base.length <= targetRow) {
+        base.push(displayHeaders.map(() => ""));
+      }
+      const src = matrix[r];
+      for (let c = 0; c < src.length; c++) {
+        const targetCol = startCol + c;
+        if (targetCol < 0 || targetCol >= colCount) continue;
+        base[targetRow] = displayHeaders.map((_, ci) =>
+          ci === targetCol ? src[c] : (base[targetRow][ci] ?? ""),
+        );
+      }
+    }
+    commitRows(base);
   }
 
   function handlePaste(e: React.ClipboardEvent) {
@@ -110,7 +208,7 @@ export default function ImportPasteGrid({
     if (!text.trim()) return;
     if (!hasData || text.includes("\t") || text.includes("\n")) {
       e.preventDefault();
-      applyClipboardText(text);
+      applyClipboardAtFocus(text);
     }
   }
 
@@ -124,12 +222,7 @@ export default function ImportPasteGrid({
 
   function updateCell(rowIndex: number, colIndex: number, value: string) {
     if (disabled) return;
-    const base =
-      rows.length > 0
-        ? rows.map((row) =>
-            displayHeaders.map((_, ci) => row[ci] ?? ""),
-          )
-        : emptyRows(displayHeaders.length);
+    const base = cloneWorkingMatrix();
     while (base.length <= rowIndex) {
       base.push(displayHeaders.map(() => ""));
     }
@@ -141,10 +234,7 @@ export default function ImportPasteGrid({
 
   function removeRow(rowIndex: number) {
     if (disabled) return;
-    const base =
-      rows.length > 0
-        ? rows.map((row) => displayHeaders.map((_, ci) => row[ci] ?? ""))
-        : emptyRows(displayHeaders.length);
+    const base = cloneWorkingMatrix();
     if (base.length <= 1) {
       onMatrixChange(columns, []);
       return;
@@ -155,10 +245,7 @@ export default function ImportPasteGrid({
 
   function addRow() {
     if (disabled) return;
-    const base =
-      rows.length > 0
-        ? rows.map((row) => displayHeaders.map((_, ci) => row[ci] ?? ""))
-        : emptyRows(displayHeaders.length);
+    const base = cloneWorkingMatrix();
     base.push(displayHeaders.map(() => ""));
     onMatrixChange(displayHeaders, base);
   }
@@ -174,8 +261,8 @@ export default function ImportPasteGrid({
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           {hasData
-            ? `${rows.filter(rowHasContent).length} fila${rows.filter(rowHasContent).length === 1 ? "" : "s"} con datos`
-            : "Tabla vacía"}
+            ? `${rows.filter(rowHasContent).length} fila${rows.filter(rowHasContent).length === 1 ? "" : "s"} con datos · pega desde la celda activa`
+            : "Tabla vacía · pega la hoja completa o empieza a escribir"}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -238,6 +325,9 @@ export default function ImportPasteGrid({
                       type="text"
                       value={row[colIndex] ?? ""}
                       disabled={disabled}
+                      onFocus={() => {
+                        focusCellRef.current = { row: rowIndex, col: colIndex };
+                      }}
                       onChange={(e) =>
                         updateCell(rowIndex, colIndex, e.target.value)
                       }

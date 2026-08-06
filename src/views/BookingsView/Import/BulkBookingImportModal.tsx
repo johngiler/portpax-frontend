@@ -2,19 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
-import ImportFormatGuideTable, {
-  ImportFormatGuideToggle,
-} from "@/components/import/ImportFormatGuideTable";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
-import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { BULK_BOOKINGS_IMPORT_GUIDE } from "@/lib/importFormatGuides";
 import { useNavigationLock } from "@/lib/useNavigationLock";
 import {
   createBulkBookingImport,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
+import BulkImportEditableRow from "./BulkImportEditableRow";
 
 type BulkBookingImportModalProps = {
   open: boolean;
@@ -29,34 +25,42 @@ type BulkBookingImportModalProps = {
   }) => void;
 };
 
-function formatTime(value: string | null): string {
-  if (!value) return "—";
-  return value.slice(0, 5);
-}
-
 export default function BulkBookingImportModal({
   open,
-  rows,
+  rows: initialRows,
   fileName,
   importSource = "file",
   onClose,
   onCreated,
 }: BulkBookingImportModalProps) {
+  const [draftRows, setDraftRows] = useState<BulkImportPreviewRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    const normalized = initialRows.map((r) => ({
+      ...r,
+      suggested_status:
+        r.suggested_status === "co" ||
+        r.suggested_status === "cl" ||
+        r.suggested_status === "lta" ||
+        r.suggested_status === "ltd" ||
+        r.suggested_status === "h"
+          ? r.suggested_status
+          : "h",
+    })) as BulkImportPreviewRow[];
+    setDraftRows(normalized);
     setSelectedIds(
       new Set(
-        rows.filter((r) => r.selected_default && r.selectable).map((r) => r.id),
+        normalized
+          .filter((r) => r.selected_default && r.selectable)
+          .map((r) => r.id),
       ),
     );
     setError(null);
-    setGuideOpen(false);
-  }, [open, rows]);
+  }, [open, initialRows]);
 
   useNavigationLock(
     open && saving,
@@ -65,9 +69,22 @@ export default function BulkBookingImportModal({
 
   const selectedCount = selectedIds.size;
   const selectableRows = useMemo(
-    () => rows.filter((r) => r.selectable),
-    [rows],
+    () => draftRows.filter((r) => r.selectable),
+    [draftRows],
   );
+
+  function updateRow(next: BulkImportPreviewRow) {
+    setDraftRows((prev) => {
+      const was = prev.find((r) => r.id === next.id);
+      setSelectedIds((selected) => {
+        const copy = new Set(selected);
+        if (!next.selectable) copy.delete(next.id);
+        else if (was && !was.selectable && next.selectable) copy.add(next.id);
+        return copy;
+      });
+      return prev.map((r) => (r.id === next.id ? next : r));
+    });
+  }
 
   function toggle(id: string, selectable: boolean) {
     if (!selectable) return;
@@ -89,10 +106,10 @@ export default function BulkBookingImportModal({
 
   async function handleCreate() {
     setError(null);
-    const selectedRows = rows.filter(
+    const selectedRows = draftRows.filter(
       (r) => selectedIds.has(r.id) && r.selectable,
     );
-    const deferredRows = rows.filter(
+    const deferredRows = draftRows.filter(
       (r) => !selectedIds.has(r.id) || !r.selectable,
     );
 
@@ -132,7 +149,7 @@ export default function BulkBookingImportModal({
       onClose={saving ? () => undefined : onClose}
       closeable={!saving}
       title="Carga de reservas masiva"
-      panelClassName="max-w-4xl"
+      panelClassName="max-w-[min(96vw,92rem)]"
       footer={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <button
@@ -170,20 +187,15 @@ export default function BulkBookingImportModal({
             {fileName}
           </span>
           {" · "}
-          {rows.length} filas · {selectableRows.length} listas para crear ·{" "}
+          {draftRows.length} filas · {selectableRows.length} listas para crear ·{" "}
           {selectedCount} seleccionadas
         </p>
-        <ImportFormatGuideToggle
-          open={guideOpen}
-          onToggle={() => setGuideOpen((v) => !v)}
-        />
       </div>
 
-      {guideOpen ? (
-        <div className="mb-4">
-          <ImportFormatGuideTable guide={BULK_BOOKINGS_IMPORT_GUIDE} />
-        </div>
-      ) : null}
+      <p className="mb-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+        Por defecto En evaluación (Hold). Puedes cambiar estado (sin Cancelada),
+        barco, puerto, naviera, fecha y ETA/ETD antes de crear.
+      </p>
 
       <div className="mb-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
         <label className="inline-flex cursor-pointer items-center gap-2">
@@ -197,91 +209,31 @@ export default function BulkBookingImportModal({
         </label>
       </div>
 
-      <div className="max-h-[min(55vh,420px)] overflow-auto rounded-lg border border-[var(--admin-border)]">
+      <div className="max-h-[min(60vh,520px)] overflow-auto rounded-lg border border-[var(--admin-border)]">
         <table className="min-w-full text-left text-xs">
-          <thead className="sticky top-0 bg-[var(--admin-surface-muted)] text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          <thead className="sticky top-0 z-[1] bg-[var(--admin-surface-muted)] text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
             <tr>
-              <th className="px-3 py-2 w-10" />
-              <th className="px-3 py-2">Barco</th>
-              <th className="px-3 py-2">Puerto</th>
-              <th className="px-3 py-2">Fecha</th>
-              <th className="px-3 py-2">ETA–ETD</th>
-              <th className="px-3 py-2">Naviera</th>
-              <th className="px-3 py-2">Estado</th>
+              <th className="w-10 px-2 py-2" />
+              <th className="px-2 py-2">Barco</th>
+              <th className="px-2 py-2">Puerto</th>
+              <th className="px-2 py-2">Fecha</th>
+              <th className="px-2 py-2">ETA–ETD</th>
+              <th className="px-2 py-2">Naviera</th>
+              <th className="px-2 py-2">Estado</th>
+              <th className="px-2 py-2">¿Correcto?</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {rows.map((row) => {
-              const checked = selectedIds.has(row.id);
-              return (
-                <tr
-                  key={row.id}
-                  className={
-                    row.selectable
-                      ? "bg-white dark:bg-zinc-900/60"
-                      : "bg-zinc-50/80 dark:bg-zinc-950/40"
-                  }
-                >
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={!row.selectable}
-                      onChange={() => toggle(row.id, row.selectable)}
-                      className="mt-0.5 h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label={`Seleccionar fila ${row.row_number}`}
-                    />
-                  </td>
-                  <td className="px-3 py-2 align-top font-medium text-zinc-800 dark:text-zinc-100">
-                    {row.vessel_name || row.ship}
-                  </td>
-                  <td className="px-3 py-2 align-top text-zinc-600 dark:text-zinc-300">
-                    {row.port_name || row.port_raw}
-                  </td>
-                  <td className="px-3 py-2 align-top text-zinc-600 dark:text-zinc-300">
-                    {row.call_date
-                      ? formatIsoDateLabel(row.call_date, "short")
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 align-top tabular-nums text-zinc-600 dark:text-zinc-300">
-                    {formatTime(row.eta)}–{formatTime(row.etd)}
-                  </td>
-                  <td className="px-3 py-2 align-top text-zinc-600 dark:text-zinc-300">
-                    {row.shipping_line_name || "—"}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    {row.issues.length === 0 &&
-                    (row.warnings?.length ?? 0) === 0 ? (
-                      <span className="text-emerald-600 dark:text-emerald-400">
-                        Lista
-                      </span>
-                    ) : (
-                      <div className="space-y-1">
-                        {row.issues.length > 0 ? (
-                          <ul className="space-y-0.5 text-red-600 dark:text-red-400">
-                            {row.issues.map((issue) => (
-                              <li key={issue}>{issue}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {(row.warnings?.length ?? 0) > 0 ? (
-                          <ul className="space-y-0.5 text-amber-700 dark:text-amber-400">
-                            {(row.warnings ?? []).map((warning) => (
-                              <li key={warning}>{warning}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {row.selectable && (row.warnings?.length ?? 0) > 0 ? (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                            Se puede crear (con avisos)
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {draftRows.map((row) => (
+              <BulkImportEditableRow
+                key={row.id}
+                row={row}
+                disabled={saving}
+                checked={selectedIds.has(row.id)}
+                onToggle={() => toggle(row.id, row.selectable)}
+                onRowChange={updateRow}
+              />
+            ))}
           </tbody>
         </table>
       </div>

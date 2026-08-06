@@ -282,18 +282,19 @@ export function commonBulkNextStatuses(
   bookings: Array<Pick<Booking, "status">>,
 ): BookingStatus[] {
   if (bookings.length === 0) return [];
-  let common: Set<BookingStatus> | null = null;
-  for (const booking of bookings) {
-    const next = new Set(
-      bookingNextStatuses(booking.status).filter((s) => !BULK_EXCLUDED_NEXT.has(s)),
-    );
-    common =
-      common === null
-        ? next
-        : new Set([...common].filter((s) => next.has(s)));
-  }
-  if (!common || common.size === 0) return [];
-  return BULK_STATUS_ORDER.filter((s) => common!.has(s));
+  const sets = bookings.map(
+    (booking) =>
+      new Set<BookingStatus>(
+        bookingNextStatuses(booking.status).filter(
+          (s) => !BULK_EXCLUDED_NEXT.has(s),
+        ),
+      ),
+  );
+  const [first, ...rest] = sets;
+  const shared = [...first].filter((status) =>
+    rest.every((set) => set.has(status)),
+  );
+  return BULK_STATUS_ORDER.filter((status) => shared.includes(status));
 }
 
 export function canBulkDeleteBookings(
