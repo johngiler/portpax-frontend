@@ -1,5 +1,13 @@
 import { apiDownload, apiFetch, triggerBrowserDownload } from "@/services/apiClient";
 
+export type BulkImportLtaCandidate = {
+  id: number;
+  booking_code: string;
+  vessel_name: string;
+  position_id: number | null;
+  position_code: string | null;
+};
+
 export type BulkImportPreviewRow = {
   id: string;
   row_number: number;
@@ -19,6 +27,10 @@ export type BulkImportPreviewRow = {
   shipping_line_name: string | null;
   /** Initial booking status for create (Hold default; no NR/C/R). */
   suggested_status?: "h" | "co" | "cl" | "lta" | "ltd";
+  position_id?: number | null;
+  position_code?: string | null;
+  replace_lta?: boolean;
+  lta_replace_candidate?: BulkImportLtaCandidate | null;
   issues: string[];
   warnings: string[];
   selectable: boolean;

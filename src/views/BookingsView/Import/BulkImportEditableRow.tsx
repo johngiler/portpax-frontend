@@ -14,6 +14,7 @@ import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import {
   fromTimeInputValue,
 } from "@/lib/bookingDisplay";
+import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
 
 type BulkImportStatus = NonNullable<BulkImportPreviewRow["suggested_status"]>;
 
@@ -146,12 +147,23 @@ export default function BulkImportEditableRow({
           }
           onChange={(id) => {
             const draft: BulkImportPreviewRow = id
-              ? { ...row, vessel_id: id }
+              ? {
+                  ...row,
+                  vessel_id: id,
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
+                }
               : {
                   ...row,
                   vessel_id: null,
                   vessel_name: null,
                   ship: "",
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -180,13 +192,24 @@ export default function BulkImportEditableRow({
           }
           onChange={(id) => {
             const draft: BulkImportPreviewRow = id
-              ? { ...row, port_id: id }
+              ? {
+                  ...row,
+                  port_id: id,
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
+                }
               : {
                   ...row,
                   port_id: null,
                   port_name: null,
                   port_code: null,
                   port_raw: "",
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -199,7 +222,14 @@ export default function BulkImportEditableRow({
           value={row.call_date ?? ""}
           disabled={busy}
           onChange={(e) => {
-            const draft = { ...row, call_date: e.target.value || null };
+            const draft = {
+              ...row,
+              call_date: e.target.value || null,
+              position_id: null,
+              position_code: null,
+              replace_lta: false,
+              lta_replace_candidate: null,
+            };
             onRowChange(draft);
             void revalidate(draft);
           }}
@@ -251,6 +281,14 @@ export default function BulkImportEditableRow({
           />
         </div>
       </td>
+      <td className="min-w-[8.5rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
+        <BulkImportRowPositionSelect
+          row={row}
+          disabled={busy}
+          onChange={onRowChange}
+          onCommit={(draft) => void revalidate(draft)}
+        />
+      </td>
       <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <FormFieldSelect<number>
           label=""
@@ -281,6 +319,10 @@ export default function BulkImportEditableRow({
                   vessel_id: null,
                   vessel_name: null,
                   ship: "",
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
                 }
               : {
                   ...row,
@@ -289,6 +331,10 @@ export default function BulkImportEditableRow({
                   vessel_id: null,
                   vessel_name: null,
                   ship: "",
+                  position_id: null,
+                  position_code: null,
+                  replace_lta: false,
+                  lta_replace_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -309,6 +355,29 @@ export default function BulkImportEditableRow({
             void revalidate(draft);
           }}
         />
+      </td>
+      <td className="w-14 px-2 py-2 align-top text-center">
+        {row.lta_replace_candidate ? (
+          <input
+            type="checkbox"
+            checked={Boolean(row.replace_lta)}
+            disabled={busy}
+            onChange={(e) => {
+              const draft = { ...row, replace_lta: e.target.checked };
+              onRowChange(draft);
+              void revalidate(draft);
+            }}
+            className="mt-1.5 h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={`Reemplazar LTA ${row.lta_replace_candidate.booking_code}`}
+            title={
+              row.lta_replace_candidate.vessel_name
+                ? `Reemplazar LTA de ${row.lta_replace_candidate.vessel_name} (${row.lta_replace_candidate.booking_code})`
+                : `Reemplazar ${row.lta_replace_candidate.booking_code}`
+            }
+          />
+        ) : (
+          <span className="text-[10px] text-zinc-300 dark:text-zinc-600">—</span>
+        )}
       </td>
       <td className="min-w-[12rem] max-w-[16rem] px-2 py-2 align-top">
         {revalidating ? (

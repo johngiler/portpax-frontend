@@ -218,8 +218,12 @@ export default function BulkBookingImportModal({
               <th className="px-2 py-2">Puerto</th>
               <th className="px-2 py-2">Fecha</th>
               <th className="px-2 py-2">ETA–ETD</th>
+              <th className="px-2 py-2">Posición</th>
               <th className="px-2 py-2">Naviera</th>
               <th className="px-2 py-2">Estado</th>
+              <th className="px-2 py-2" title="Reemplazar reserva LTA existente">
+                Reemplazar LTA
+              </th>
               <th className="px-2 py-2">¿Correcto?</th>
             </tr>
           </thead>

@@ -56,6 +56,17 @@ export type ImportBatchRetryRow = {
   vessel_name: string | null;
   shipping_line_id: number | null;
   shipping_line_name: string | null;
+  suggested_status?: "h" | "co" | "cl" | "lta" | "ltd";
+  position_id?: number | null;
+  position_code?: string | null;
+  replace_lta?: boolean;
+  lta_replace_candidate?: {
+    id: number;
+    booking_code: string;
+    vessel_name: string;
+    position_id: number | null;
+    position_code: string | null;
+  } | null;
   issues: string[];
   warnings: string[];
   selectable: boolean;
