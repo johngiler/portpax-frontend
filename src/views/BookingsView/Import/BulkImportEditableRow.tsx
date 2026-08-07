@@ -311,7 +311,9 @@ export default function BulkImportEditableRow({
       <td className="min-w-[8.5rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <BulkImportRowPositionSelect
           row={row}
-          disabled={busy}
+          disabled={
+            busy || Boolean(row.claim_lta_space && row.lta_space_candidate)
+          }
           reloadKey={occupancyReloadKey}
           onChange={onRowChange}
           onCommit={(draft) => void revalidate(draft)}
@@ -395,7 +397,21 @@ export default function BulkImportEditableRow({
             checked={Boolean(row.claim_lta_space)}
             disabled={busy}
             onChange={(e) => {
-              const draft = { ...row, claim_lta_space: e.target.checked };
+              const checked = e.target.checked;
+              const draft: BulkImportPreviewRow = {
+                ...row,
+                claim_lta_space: checked,
+                ...(checked
+                  ? {
+                      suggested_status: "cl" as const,
+                      position_id:
+                        row.lta_space_candidate?.position_id ?? row.position_id,
+                      position_code:
+                        row.lta_space_candidate?.position_code ??
+                        row.position_code,
+                    }
+                  : {}),
+              };
               onRowChange(draft);
               void revalidate(draft);
             }}
@@ -425,6 +441,19 @@ export default function BulkImportEditableRow({
           row={row}
           revalidating={revalidating}
           onRefreshAvisos={refreshAvisos}
+          onClaimLtaSpace={() => {
+            const draft: BulkImportPreviewRow = {
+              ...row,
+              claim_lta_space: true,
+              suggested_status: "cl",
+              position_id:
+                row.lta_space_candidate?.position_id ?? row.position_id,
+              position_code:
+                row.lta_space_candidate?.position_code ?? row.position_code,
+            };
+            onRowChange(draft);
+            return revalidate(draft);
+          }}
         />
       </td>
     </tr>

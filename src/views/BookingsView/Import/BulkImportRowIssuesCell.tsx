@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Loader2, RefreshCw, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import NoticeAlert from "@/components/ui/NoticeAlert";
@@ -12,29 +12,55 @@ import {
 } from "@/types/booking";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { occupantDateLabel } from "@/lib/positionOccupancyHint";
+import BulkImportLtaClaimCard, {
+  isLtaClaimIssueMessage,
+} from "./BulkImportLtaClaimCard";
 
 type BulkImportRowIssuesCellProps = {
   row: BulkImportPreviewRow;
   revalidating?: boolean;
   onRefreshAvisos?: () => void | Promise<void>;
+  onClaimLtaSpace?: () => void | Promise<void>;
 };
 
 export default function BulkImportRowIssuesCell({
   row,
   revalidating = false,
   onRefreshAvisos,
+  onClaimLtaSpace,
 }: BulkImportRowIssuesCellProps) {
   const [open, setOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const refreshingRef = useRef(false);
 
-  const issues = row.issues ?? [];
+  const ltaCandidate = row.lta_space_candidate ?? null;
+  const claimPending = Boolean(ltaCandidate && !row.claim_lta_space);
+  const claimMarked = Boolean(ltaCandidate && row.claim_lta_space);
+
+  const issues = useMemo(() => {
+    const raw = row.issues ?? [];
+    if (!ltaCandidate) return raw;
+    // Rich LTA card replaces the long claim paragraph.
+    return raw.filter((msg) => !isLtaClaimIssueMessage(msg));
+  }, [row.issues, ltaCandidate]);
+
   const occupant = row.position_occupant;
   const occupancyHint = row.position_occupancy_hint?.trim() || null;
-  const hasOccupancy = Boolean(occupant || occupancyHint);
+  const occupancyIsClaimableLta =
+    Boolean(ltaCandidate) &&
+    Boolean(occupant?.booking_code) &&
+    occupant?.booking_code === ltaCandidate?.booking_code;
+  const hasOccupancy = Boolean(
+    (occupant || occupancyHint) && !occupancyIsClaimableLta,
+  );
   const warnings = Array.from(new Set(row.warnings ?? []));
-  const total = issues.length + warnings.length + (hasOccupancy ? 1 : 0);
-  const ok = issues.length === 0;
+  const total =
+    issues.length +
+    warnings.length +
+    (hasOccupancy ? 1 : 0) +
+    (claimPending || claimMarked ? 1 : 0);
+  const ok = (row.issues ?? []).length === 0;
 
   const refresh = useCallback(async () => {
     if (!onRefreshAvisos || refreshingRef.current) return;
@@ -47,6 +73,16 @@ export default function BulkImportRowIssuesCell({
       setRefreshing(false);
     }
   }, [onRefreshAvisos]);
+
+  const claim = useCallback(async () => {
+    if (!onClaimLtaSpace || claiming) return;
+    setClaiming(true);
+    try {
+      await onClaimLtaSpace();
+    } finally {
+      setClaiming(false);
+    }
+  }, [onClaimLtaSpace, claiming]);
 
   if (revalidating && !open) {
     return (
@@ -66,6 +102,7 @@ export default function BulkImportRowIssuesCell({
     : null;
   const dateLabel = occupantDateLabel(occupant?.call_date || row.call_date);
   const busyRefresh = refreshing || revalidating;
+  const busyClaim = claiming || revalidating;
 
   return (
     <>
@@ -145,6 +182,17 @@ export default function BulkImportRowIssuesCell({
               Actualizando avisos…
             </p>
           ) : null}
+
+          {ltaCandidate ? (
+            <BulkImportLtaClaimCard
+              candidate={ltaCandidate}
+              callDate={row.call_date}
+              claimed={claimMarked}
+              disabled={busyClaim}
+              onClaim={onClaimLtaSpace ? () => void claim() : undefined}
+            />
+          ) : null}
+
           {issues.length > 0 ? (
             <NoticeAlert variant="error" messages={issues} />
           ) : null}
@@ -249,7 +297,13 @@ export default function BulkImportRowIssuesCell({
                 <p className="min-w-0 text-sm leading-snug">{occupancyHint}</p>
               )}
             </div>
-          ) : !busyRefresh && issues.length === 0 && warnings.length === 0 ? (
+          ) : null}
+
+          {!busyRefresh &&
+          !ltaCandidate &&
+          issues.length === 0 &&
+          warnings.length === 0 &&
+          !hasOccupancy ? (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Sin avisos para esta fila.
             </p>

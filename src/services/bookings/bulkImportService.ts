@@ -6,6 +6,8 @@ export type BulkImportLtaCandidate = {
   booking_code: string;
   status?: string;
   vessel_name: string;
+  /** True when catalog vessel looks like an LTA class/ghost placeholder. */
+  vessel_is_provisional?: boolean;
   shipping_line_name?: string;
   position_id: number | null;
   position_code: string | null;

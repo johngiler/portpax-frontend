@@ -155,9 +155,17 @@ export default function BookingOperationalSection({
   });
 
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
-  const selectedWarnings = (selectedSuggestion?.warnings ?? []).map(
-    (warning) => warning.message,
-  );
+  // LTA / CL / LTD already sit on the LTA track — horizon soft-fails are noise here.
+  const ltaTrack = booking.status === "lta" || booking.status === "cl" || booking.status === "ltd";
+  const selectedWarnings = (selectedSuggestion?.warnings ?? [])
+    .filter((warning) => {
+      if (!ltaTrack) return true;
+      return (
+        warning.code !== "lta_beyond_horizon" &&
+        warning.code !== "lta_horizon_denied"
+      );
+    })
+    .map((warning) => warning.message);
 
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
