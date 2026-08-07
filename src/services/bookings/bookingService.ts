@@ -278,6 +278,12 @@ export type AvailabilityReport = {
       }>
     >;
   }>;
+  /** Present when ships_per_day filter is applied (server-paged matching days). */
+  ships_per_day?: number;
+  matched_days?: number;
+  page?: number;
+  page_size?: number;
+  has_more?: boolean;
 };
 
 export async function fetchAvailabilityReport(params: {
@@ -289,6 +295,10 @@ export async function fetchAvailabilityReport(params: {
   position?: number;
   status?: string;
   statuses?: string[];
+  /** Exact distinct ships on that day (1–4); enables server pagination. */
+  ships_per_day?: number;
+  page?: number;
+  page_size?: number;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -304,6 +314,13 @@ export async function fetchAvailabilityReport(params: {
       ? params.statuses.join(",")
       : params.status || "";
   if (statusCsv) query.set("status", statusCsv);
+  if (params.ships_per_day != null && params.ships_per_day >= 1) {
+    query.set("ships_per_day", String(params.ships_per_day));
+    if (params.page != null) query.set("page", String(params.page));
+    if (params.page_size != null) {
+      query.set("page_size", String(params.page_size));
+    }
+  }
   return apiFetch<AvailabilityReport>(
     `${BASE}report-availability/?${query.toString()}`,
   );

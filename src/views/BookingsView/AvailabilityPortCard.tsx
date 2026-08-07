@@ -10,7 +10,7 @@ import type { AvailabilityHeatModeQuery } from "@/lib/viewFilterQuery";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import AvailabilityChartSection from "./AvailabilityChartSection";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
-import { filterAvailabilityCalls, countShipsOnAvailabilityRow } from "./availabilityCallFilter";
+import { filterAvailabilityCalls } from "./availabilityCallFilter";
 import { bookingTodayIso } from "@/types/booking";
 
 type AvailabilityPortCardProps = {
@@ -30,6 +30,9 @@ type AvailabilityPortCardProps = {
   onStartDateChange?: (isoDate: string) => void;
 };
 
+/** Max auto-pages to skip empty occupancy prefix (~90 days). */
+const MAX_OCCUPANCY_PREFIX_PAGES = 3;
+
 function todayIsoLocal(): string {
   const d = new Date();
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
@@ -47,19 +50,6 @@ function rowHasOccupancy(
       0
     );
   });
-}
-
-function rowMatchesDensity(
-  row: AvailabilityReport["rows"][number],
-  density: number,
-  statusFilters?: string[],
-  todayIso = bookingTodayIso(),
-): boolean {
-  if (density < 1) return rowHasOccupancy(row, statusFilters, todayIso);
-  return (
-    countShipsOnAvailabilityRow(row.cells, row.date, statusFilters, todayIso) ===
-    density
-  );
 }
 
 /** Hide ports with no pier/anchorage columns or no free future slots in the loaded window. */
@@ -89,6 +79,7 @@ export default function AvailabilityPortCard({
 }: AvailabilityPortCardProps) {
   const todayIso = todayIsoLocal();
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const occupancyPrefixPagesRef = useRef(0);
   const allowSet = useMemo(
     () => (dateAllowlist?.length ? new Set(dateAllowlist) : null),
     [dateAllowlist],
@@ -97,11 +88,21 @@ export default function AvailabilityPortCard({
   const densityFilter = isOccupancy && density >= 1 ? density : 0;
   const statusFilters = filters.statuses;
 
+  const listFilters = useMemo((): AvailabilityListFilters => {
+    if (densityFilter < 1) return filters;
+    return { ...filters, ships_per_day: densityFilter };
+  }, [filters, densityFilter]);
+
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
-    useAvailabilityInfinite(portId, dateFrom, dateTo, true, filters);
+    useAvailabilityInfinite(portId, dateFrom, dateTo, true, listFilters);
+
+  useEffect(() => {
+    occupancyPrefixPagesRef.current = 0;
+  }, [portId, dateFrom, dateTo, isOccupancy, densityFilter]);
 
   // With an Excel allowlist, keep paging until the requested dates are loaded.
   useEffect(() => {
+    if (densityFilter > 0) return;
     if (!allowSet || !data || !hasMore || loadingMore || isLoading) return;
     const loaded = new Set(data.rows.map((row) => row.date));
     const missing = [...allowSet].some(
@@ -117,15 +118,17 @@ export default function AvailabilityPortCard({
     dateFrom,
     dateTo,
     loadMore,
+    densityFilter,
   ]);
 
-  // Occupancy (no density): skip empty prefixes until the first occupied day.
-  // Do NOT auto-page for "Barcos por día" — that would fan out requests across the range.
+  // Occupancy (no density): skip a short empty prefix only — never walk the full range.
   useEffect(() => {
     if (!isOccupancy || densityFilter > 0 || allowSet) return;
     if (!data || !hasMore || loadingMore || isLoading) return;
     if (data.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)))
       return;
+    if (occupancyPrefixPagesRef.current >= MAX_OCCUPANCY_PREFIX_PAGES) return;
+    occupancyPrefixPagesRef.current += 1;
     loadMore();
   }, [
     isOccupancy,
@@ -143,33 +146,46 @@ export default function AvailabilityPortCard({
   const displayData = useMemo((): AvailabilityReport | null => {
     if (!data) return null;
     let rows = data.rows;
-    if (allowSet) {
+    if (allowSet && densityFilter < 1) {
       rows = rows.filter((row) => allowSet.has(row.date));
     }
-    if (isOccupancy) {
+    // Density: server already returns matching days only.
+    if (isOccupancy && densityFilter < 1) {
       rows = rows.filter((row) =>
-        rowMatchesDensity(row, densityFilter, statusFilters, todayIso),
+        rowHasOccupancy(row, statusFilters, todayIso),
       );
     }
     return { ...data, rows };
   }, [data, allowSet, isOccupancy, statusFilters, todayIso, densityFilter]);
 
   const stillLoadingAllowlist =
-    Boolean(allowSet) && hasMore && (loadingMore || isLoading);
+    densityFilter < 1 &&
+    Boolean(allowSet) &&
+    hasMore &&
+    (loadingMore || isLoading);
   const stillLoadingOccupancyPrefix =
     isOccupancy &&
     densityFilter === 0 &&
     !allowSet &&
     hasMore &&
+    occupancyPrefixPagesRef.current < MAX_OCCUPANCY_PREFIX_PAGES &&
     (loadingMore || isLoading) &&
     !(data?.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)));
   const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
-  const displayTotal = allowSet ? allowSet.size : totalDays;
-  const displayHasMore = allowSet ? stillLoadingFocus : hasMore;
-  const footerLoadedCount = isOccupancy
-    ? (data?.rows.length ?? 0)
-    : displayData?.rows.length ?? 0;
+  const displayTotal = densityFilter > 0
+    ? totalDays
+    : allowSet
+      ? allowSet.size
+      : totalDays;
+  const displayHasMore = allowSet && densityFilter < 1 ? stillLoadingFocus : hasMore;
+  const footerLoadedCount = displayData?.rows.length ?? 0;
+  const itemLabel =
+    densityFilter > 0
+      ? `días con ${densityFilter} barco(s)`
+      : isOccupancy
+        ? "días ocupados"
+        : "días";
 
   const hidden = useMemo(() => {
     if (!displayData) return false;
@@ -183,7 +199,10 @@ export default function AvailabilityPortCard({
     return !shouldShowAvailabilityPort(displayData, todayIso);
   }, [displayData, todayIso, stillLoadingFocus, isOccupancy, hasMore]);
 
-  if ((isLoading && !data) || (stillLoadingFocus && (!displayData || displayData.rows.length === 0))) {
+  if (
+    (isLoading && !data) ||
+    (stillLoadingFocus && (!displayData || displayData.rows.length === 0))
+  ) {
     return (
       <BookingsViewSkeleton variant="availability" availabilityCards={1} />
     );
@@ -201,9 +220,7 @@ export default function AvailabilityPortCard({
     hidden ||
     !displayData ||
     displayData.columns.length === 0 ||
-    (displayData.rows.length === 0 &&
-      !stillLoadingFocus &&
-      !(densityFilter > 0 && hasMore))
+    (displayData.rows.length === 0 && !stillLoadingFocus && !hasMore)
   ) {
     return null;
   }
@@ -224,7 +241,7 @@ export default function AvailabilityPortCard({
           onLoadMore={loadMore}
           loadedCount={footerLoadedCount}
           totalCount={displayTotal}
-          itemLabel={isOccupancy ? "días del rango" : "días"}
+          itemLabel={itemLabel}
           scrollRootRef={scrollRootRef}
           rootMargin="80px 0px"
           className="mt-0 sm:mt-0"

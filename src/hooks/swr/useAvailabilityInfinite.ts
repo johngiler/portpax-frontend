@@ -17,6 +17,8 @@ export type AvailabilityListFilters = {
   vessel?: number;
   position?: number;
   statuses?: string[];
+  /** Exact ships per day (1–4); server filters + pages matching days. */
+  ships_per_day?: number;
 };
 
 function minIso(a: string, b: string): string {
@@ -49,6 +51,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
     filters.vessel ?? 0,
     filters.position ?? 0,
     (filters.statuses ?? []).join(","),
+    filters.ships_per_day ?? 0,
   ].join("|");
 }
 
@@ -64,10 +67,23 @@ export function useAvailabilityInfinite(
   const vessel = filters.vessel;
   const position = filters.position;
   const statuses = filters.statuses;
+  const shipsPerDay =
+    filters.ships_per_day != null && filters.ships_per_day >= 1
+      ? filters.ships_per_day
+      : 0;
+  const densityMode = shipsPerDay > 0;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
       if (!enabled || portId <= 0 || !dateFrom || !dateTo) return null;
+      if (densityMode) {
+        if (previousPageData && previousPageData.has_more === false) return null;
+        return [
+          ...swrKeys.availabilityInfinite(portId, dateFrom, dateTo, keyExtra),
+          "ships",
+          pageIndex + 1,
+        ] as const;
+      }
       if (previousPageData && previousPageData.date_to >= dateTo) return null;
       const range = pageDateRange(dateFrom, dateTo, pageIndex);
       if (!range) return null;
@@ -78,11 +94,26 @@ export function useAvailabilityInfinite(
         range.to,
       ] as const;
     },
-    [enabled, portId, dateFrom, dateTo, keyExtra],
+    [enabled, portId, dateFrom, dateTo, keyExtra, densityMode],
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } =
     useSWRInfinite(getKey, (key) => {
+      if (densityMode) {
+        const page = key[key.length - 1] as number;
+        return fetchAvailabilityReport({
+          port: portId,
+          date_from: dateFrom,
+          date_to: dateTo,
+          shipping_line: line,
+          vessel,
+          position,
+          statuses,
+          ships_per_day: shipsPerDay,
+          page,
+          page_size: AVAILABILITY_DAYS_BATCH,
+        });
+      }
       const from = key[key.length - 2] as string;
       const to = key[key.length - 1] as string;
       return fetchAvailabilityReport({
@@ -100,20 +131,37 @@ export function useAvailabilityInfinite(
     if (!data?.length) return null;
     const first = data[0];
     const last = data[data.length - 1];
+    if (densityMode) {
+      return {
+        ...first,
+        date_from: dateFrom,
+        date_to: dateTo,
+        rows: data.flatMap((page) => page.rows),
+        matched_days: last.matched_days ?? first.matched_days,
+        has_more: last.has_more ?? false,
+        page: last.page,
+        page_size: last.page_size ?? AVAILABILITY_DAYS_BATCH,
+        ships_per_day: shipsPerDay,
+      };
+    }
     return {
       ...first,
       date_from: first.date_from,
       date_to: last.date_to,
       rows: data.flatMap((page) => page.rows),
     };
-  }, [data]);
+  }, [data, densityMode, dateFrom, dateTo, shipsPerDay]);
 
   const loadedUntil = merged?.date_to ?? null;
-  const hasMore = Boolean(loadedUntil && loadedUntil < dateTo);
-  const totalDays = useMemo(
-    () => daysInclusive(dateFrom, dateTo),
-    [dateFrom, dateTo],
-  );
+  const hasMore = densityMode
+    ? Boolean(merged?.has_more)
+    : Boolean(loadedUntil && loadedUntil < dateTo);
+  const totalDays = useMemo(() => {
+    if (densityMode && merged?.matched_days != null) {
+      return merged.matched_days;
+    }
+    return daysInclusive(dateFrom, dateTo);
+  }, [densityMode, merged?.matched_days, dateFrom, dateTo]);
   const loadingMore = isValidating && size > 1 && hasMore;
 
   const loadMore = useCallback(() => {
