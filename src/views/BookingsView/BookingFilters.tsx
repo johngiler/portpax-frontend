@@ -44,6 +44,14 @@ const HEAT_MODE_OPTIONS: { value: AvailabilityHeatModeQuery; label: string }[] =
     { value: "occupancy", label: "Ocupación" },
   ];
 
+/** Exact ships-per-day; 0 = any occupied day (emptyValue). */
+const DENSITY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "1 barco" },
+  { value: 2, label: "2 barcos" },
+  { value: 3, label: "3 barcos" },
+  { value: 4, label: "4 barcos" },
+];
+
 const MONTH_OPTIONS = getMonthOptions().map((o) => ({
   value: o.value,
   label: o.label.charAt(0).toUpperCase() + o.label.slice(1),
@@ -72,6 +80,7 @@ type BookingFiltersProps = {
   calendarSeason: CalendarSeasonQuery;
   positionFilter: number;
   heatMode: AvailabilityHeatModeQuery;
+  density: number;
   portOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
@@ -92,6 +101,7 @@ type BookingFiltersProps = {
   onCalendarSeasonChange: (season: CalendarSeasonQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
   onHeatModeChange: (mode: AvailabilityHeatModeQuery) => void;
+  onDensityChange: (density: number) => void;
   importedDatesCount?: number;
   onApply: () => void;
   onClear: () => void;
@@ -115,6 +125,7 @@ export default function BookingFilters({
   calendarSeason,
   positionFilter,
   heatMode,
+  density,
   portOptions,
   shippingLineOptions,
   vesselOptions,
@@ -135,6 +146,7 @@ export default function BookingFilters({
   onCalendarSeasonChange,
   onPositionFilterChange,
   onHeatModeChange,
+  onDensityChange,
   importedDatesCount = 0,
   onApply,
   onClear,
@@ -206,8 +218,24 @@ export default function BookingFilters({
           label="Criterio"
           name="booking_availability_heat"
           value={heatMode}
-          onChange={onHeatModeChange}
+          onChange={(mode) => {
+            onHeatModeChange(mode);
+            if (mode !== "occupancy") onDensityChange(0);
+          }}
           options={HEAT_MODE_OPTIONS}
+          compact
+        />
+      ) : null}
+
+      {showHeatMode && heatMode === "occupancy" ? (
+        <FormFieldSelect<number>
+          label="Barcos por día"
+          name="booking_occupancy_density"
+          value={density}
+          emptyValue={0}
+          optionLabel="Todos"
+          onChange={onDensityChange}
+          options={DENSITY_OPTIONS}
           compact
         />
       ) : null}

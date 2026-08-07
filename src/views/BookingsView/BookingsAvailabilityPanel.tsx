@@ -15,6 +15,8 @@ type BookingsAvailabilityPanelProps = {
   dateTo: string;
   dateAllowlist?: string[] | null;
   heatMode?: AvailabilityHeatModeQuery;
+  /** Occupancy only: exact ships-per-day (0 = any). */
+  density?: number;
   filters?: AvailabilityListFilters;
   canBook?: boolean;
   returnTo?: string | null;
@@ -29,6 +31,7 @@ export default function BookingsAvailabilityPanel({
   dateTo,
   dateAllowlist = null,
   heatMode = "availability",
+  density = 0,
   filters = {},
   canBook = false,
   returnTo = null,
@@ -58,6 +61,7 @@ export default function BookingsAvailabilityPanel({
     filters.position ?? 0,
     (filters.statuses ?? []).join(","),
     heatMode,
+    density,
   ].join("|");
 
   return (
@@ -70,6 +74,7 @@ export default function BookingsAvailabilityPanel({
           dateTo={dateTo}
           dateAllowlist={dateAllowlist}
           heatMode={heatMode}
+          density={density}
           filters={filters}
           canBook={canBook}
           returnTo={returnTo}

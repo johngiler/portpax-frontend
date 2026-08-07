@@ -69,6 +69,10 @@ export type BookingsWorkspaceFilters = {
   month: number; // 0-11
   /** Disponibilidad vs ocupación (availability tab only). */
   heat: AvailabilityHeatModeQuery;
+  /**
+   * Occupancy-only: exact ships-per-day density (0 = all days with any occupancy).
+   */
+  density: number;
 };
 
 export function parseBookingsWorkspaceFilters(
@@ -81,10 +85,23 @@ export function parseBookingsWorkspaceFilters(
   const modeRaw = sp.get("mode");
   const seasonRaw = sp.get("season");
   const heatRaw = sp.get("heat");
+  const densityRaw = sp.get("density");
   const yearRaw = sp.get("year");
   const monthRaw = sp.get("month");
   const year = yearRaw ? Number(yearRaw) : defaults.year;
   const monthNum = monthRaw ? Number(monthRaw) : defaults.month + 1;
+  const heat: AvailabilityHeatModeQuery =
+    heatRaw && HEAT_MODES.has(heatRaw as AvailabilityHeatModeQuery)
+      ? (heatRaw as AvailabilityHeatModeQuery)
+      : "availability";
+  const densityNum = densityRaw ? Number(densityRaw) : 0;
+  const density =
+    heat === "occupancy" &&
+    Number.isFinite(densityNum) &&
+    densityNum >= 1 &&
+    densityNum <= 4
+      ? Math.trunc(densityNum)
+      : 0;
 
   // Legacy /calendar?ports=1,2 → first port
   const portsCsv = sp.get("ports");
@@ -123,10 +140,8 @@ export function parseBookingsWorkspaceFilters(
       Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12
         ? Math.trunc(monthNum) - 1
         : defaults.month,
-    heat:
-      heatRaw && HEAT_MODES.has(heatRaw as AvailabilityHeatModeQuery)
-        ? (heatRaw as AvailabilityHeatModeQuery)
-        : "availability",
+    heat,
+    density,
   };
 }
 
@@ -164,6 +179,7 @@ export function buildBookingsWorkspaceQuery(
   }
   if (state.tab === "availability" && state.heat === "occupancy") {
     sp.set("heat", "occupancy");
+    if (state.density >= 1) sp.set("density", String(state.density));
   }
   return sp.toString();
 }

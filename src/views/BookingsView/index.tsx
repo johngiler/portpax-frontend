@@ -208,6 +208,8 @@ export default function BookingsView() {
     useState<AvailabilityHeatModeQuery>("availability");
   const [appliedHeatMode, setAppliedHeatMode] =
     useState<AvailabilityHeatModeQuery>("availability");
+  const [density, setDensity] = useState(0);
+  const [appliedDensity, setAppliedDensity] = useState(0);
 
   const [positionOptions, setPositionOptions] = useState<
     { value: number; label: string }[]
@@ -268,6 +270,7 @@ export default function BookingsView() {
       year: appliedYear,
       month: appliedMonthIndex,
       heat: appliedHeatMode,
+      density: appliedHeatMode === "occupancy" ? appliedDensity : 0,
       ...overrides,
     };
   }
@@ -317,6 +320,8 @@ export default function BookingsView() {
     setAppliedPositionFilter(parsed.position);
     setHeatMode(parsed.heat);
     setAppliedHeatMode(parsed.heat);
+    setDensity(parsed.density);
+    setAppliedDensity(parsed.density);
     setWeekAnchor(parsed.week);
     setYear(parsed.year);
     setMonthIndex(parsed.month);
@@ -475,6 +480,9 @@ export default function BookingsView() {
     setAppliedMonthIndex(monthIndex);
     setAppliedCalendarSeason(calendarSeason);
     setAppliedHeatMode(heatMode);
+    const nextDensity = heatMode === "occupancy" ? density : 0;
+    setAppliedDensity(nextDensity);
+    if (heatMode !== "occupancy") setDensity(0);
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
       nextWeek = toIsoDate(year, monthIndex, 1);
@@ -497,6 +505,7 @@ export default function BookingsView() {
         month: monthIndex,
         week: nextWeek,
         heat: heatMode,
+        density: nextDensity,
       }),
     );
   }
@@ -562,6 +571,8 @@ export default function BookingsView() {
     setAppliedPositionFilter(0);
     setHeatMode("availability");
     setAppliedHeatMode("availability");
+    setDensity(0);
+    setAppliedDensity(0);
     setAvailabilityDateAllowlist(null);
     setWeekAnchor(week);
     setYear(y);
@@ -585,6 +596,7 @@ export default function BookingsView() {
       year: y,
       month: m,
       heat: "availability",
+      density: 0,
     });
   }
 
@@ -603,6 +615,9 @@ export default function BookingsView() {
     appliedDatePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
     (tab === "availability" && appliedHeatMode !== "availability") ||
+    (tab === "availability" &&
+      appliedHeatMode === "occupancy" &&
+      appliedDensity > 0) ||
     (tab === "calendar" && appliedCalendarMode !== "monthly");
 
   const canClearFilters =
@@ -616,6 +631,7 @@ export default function BookingsView() {
     datePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
     (tab === "availability" && heatMode !== "availability") ||
+    (tab === "availability" && heatMode === "occupancy" && density > 0) ||
     (tab === "calendar" && calendarMode !== "monthly");
 
   const canApplyFilters =
@@ -632,7 +648,8 @@ export default function BookingsView() {
     monthIndex !== appliedMonthIndex ||
     calendarSeason !== appliedCalendarSeason ||
     positionFilter !== appliedPositionFilter ||
-    heatMode !== appliedHeatMode;
+    heatMode !== appliedHeatMode ||
+    density !== appliedDensity;
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
@@ -994,6 +1011,7 @@ export default function BookingsView() {
           calendarSeason={calendarSeason}
           positionFilter={positionFilter}
           heatMode={heatMode}
+          density={density}
           portOptions={portOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
@@ -1017,6 +1035,7 @@ export default function BookingsView() {
           onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
           onHeatModeChange={setHeatMode}
+          onDensityChange={setDensity}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
           onClear={handleClearFilters}
@@ -1140,6 +1159,7 @@ export default function BookingsView() {
           dateTo={availabilityRange.to}
           dateAllowlist={availabilityDateAllowlist}
           heatMode={appliedHeatMode}
+          density={appliedHeatMode === "occupancy" ? appliedDensity : 0}
           filters={{
             shipping_line:
               appliedShippingLineFilter > 0

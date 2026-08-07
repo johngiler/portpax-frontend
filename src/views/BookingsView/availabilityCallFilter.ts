@@ -97,3 +97,24 @@ export function filterAvailabilityCalls<T extends AvailabilityCall>(
     availabilityCallMatchesStatus(call, callDate, list, todayIso),
   );
 }
+
+/** Distinct ships (booking codes) on a day across all pier columns. */
+export function countShipsOnAvailabilityRow(
+  cells: AvailabilityCall[][],
+  callDate: string,
+  statuses?: string[],
+  todayIso = bookingTodayIso(),
+): number {
+  const codes = new Set<string>();
+  for (const calls of cells) {
+    for (const call of filterAvailabilityCalls(
+      calls,
+      callDate,
+      statuses,
+      todayIso,
+    )) {
+      if (call.booking_code) codes.add(call.booking_code);
+    }
+  }
+  return codes.size;
+}
