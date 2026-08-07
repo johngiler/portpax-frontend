@@ -39,6 +39,21 @@ function todayIso(): string {
   return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+function initialViewFromSelected(selectedDates: string[]): {
+  year: number;
+  month: number;
+} {
+  const earliest = [...selectedDates].filter(Boolean).sort()[0];
+  if (earliest) {
+    const { year, monthIndex } = parseIsoDate(earliest);
+    if (Number.isFinite(year) && Number.isFinite(monthIndex)) {
+      return { year, month: monthIndex };
+    }
+  }
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() };
+}
+
 function gridRange(
   year: number,
   monthIndex: number,
@@ -67,8 +82,9 @@ export default function BookingDateCalendar({
 }: BookingDateCalendarProps) {
   const today = todayIso();
   const min = minDate ?? today;
-  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const initialView = initialViewFromSelected(selectedDates);
+  const [viewYear, setViewYear] = useState(() => initialView.year);
+  const [viewMonth, setViewMonth] = useState(() => initialView.month);
   const [direction, setDirection] = useState(0);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [carouselDirection, setCarouselDirection] = useState(1);

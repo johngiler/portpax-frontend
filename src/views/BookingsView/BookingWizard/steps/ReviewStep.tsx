@@ -20,10 +20,45 @@ import {
   previewAssignedPositions,
   validateBookings,
 } from "@/services/bookings/bookingService";
-import type { BookingValidationResult, PositionSuggestion } from "@/types/booking";
+import type {
+  BookingValidationIssue,
+  BookingValidationResult,
+  PositionSuggestion,
+} from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
+
+/** Matches backend LTA_SOFT_FAIL_CODES — Hold still allowed. */
+const LTA_SOFT_FAIL_CODES = new Set([
+  "lta_beyond_horizon",
+  "lta_horizon_denied",
+]);
+
+function splitLtaSoftFails(result: BookingValidationResult): {
+  errors: BookingValidationIssue[];
+  warnings: BookingValidationIssue[];
+  blocked: boolean;
+} {
+  const soft: BookingValidationIssue[] = [];
+  const hard: BookingValidationIssue[] = [];
+  for (const issue of result.errors) {
+    if (LTA_SOFT_FAIL_CODES.has(issue.code)) {
+      soft.push({
+        ...issue,
+        level: "warning",
+        message: `${issue.message} Se creará en Hold (H).`,
+      });
+    } else {
+      hard.push(issue);
+    }
+  }
+  return {
+    errors: hard,
+    warnings: [...result.warnings, ...soft],
+    blocked: hard.length > 0,
+  };
+}
 
 type ReviewStepProps = {
   port: Port | null;
@@ -105,8 +140,14 @@ export default function ReviewStep({
     })
       .then((result) => {
         if (cancelled) return;
-        setValidation(result);
-        onBlockingChange?.(!result.valid);
+        const split = splitLtaSoftFails(result);
+        setValidation({
+          ...result,
+          valid: !split.blocked,
+          errors: split.errors,
+          warnings: split.warnings,
+        });
+        onBlockingChange?.(split.blocked);
       })
       .catch(() => {
         if (cancelled) return;

@@ -35,6 +35,8 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
     "La posición está ocupada por un call CL (LTA inamovible).",
   lta_slot_reserved: "La posición está reservada por un acuerdo LTA.",
   lta_beyond_horizon: "La fecha supera el horizonte máximo del LTA.",
+  lta_horizon_denied:
+    "En este periodo solo navieras con LTA vigente pueden reservar con prioridad; se creará en Hold.",
   loa_exceeds_position: "La eslora del barco excede el máximo de la posición.",
   beam_exceeds_position: "La manga del barco excede el máximo de la posición.",
   draft_too_deep: "El calado del barco supera la profundidad disponible.",
