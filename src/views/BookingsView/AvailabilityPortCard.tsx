@@ -119,19 +119,17 @@ export default function AvailabilityPortCard({
     loadMore,
   ]);
 
-  // Occupancy: skip empty prefixes until the first matching day (or end of range).
+  // Occupancy (no density): skip empty prefixes until the first occupied day.
+  // Do NOT auto-page for "Barcos por día" — that would fan out requests across the range.
   useEffect(() => {
-    if (!isOccupancy || allowSet || !data || !hasMore || loadingMore || isLoading)
-      return;
-    if (
-      data.rows.some((row) =>
-        rowMatchesDensity(row, densityFilter, statusFilters, todayIso),
-      )
-    )
+    if (!isOccupancy || densityFilter > 0 || allowSet) return;
+    if (!data || !hasMore || loadingMore || isLoading) return;
+    if (data.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)))
       return;
     loadMore();
   }, [
     isOccupancy,
+    densityFilter,
     allowSet,
     data,
     hasMore,
@@ -140,7 +138,6 @@ export default function AvailabilityPortCard({
     loadMore,
     statusFilters,
     todayIso,
-    densityFilter,
   ]);
 
   const displayData = useMemo((): AvailabilityReport | null => {
@@ -161,12 +158,11 @@ export default function AvailabilityPortCard({
     Boolean(allowSet) && hasMore && (loadingMore || isLoading);
   const stillLoadingOccupancyPrefix =
     isOccupancy &&
+    densityFilter === 0 &&
     !allowSet &&
     hasMore &&
     (loadingMore || isLoading) &&
-    !(data?.rows.some((row) =>
-      rowMatchesDensity(row, densityFilter, statusFilters, todayIso),
-    ));
+    !(data?.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)));
   const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
   const displayTotal = allowSet ? allowSet.size : totalDays;
@@ -205,7 +201,9 @@ export default function AvailabilityPortCard({
     hidden ||
     !displayData ||
     displayData.columns.length === 0 ||
-    (displayData.rows.length === 0 && !stillLoadingFocus)
+    (displayData.rows.length === 0 &&
+      !stillLoadingFocus &&
+      !(densityFilter > 0 && hasMore))
   ) {
     return null;
   }
