@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
@@ -14,7 +13,10 @@ import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import {
   fromTimeInputValue,
 } from "@/lib/bookingDisplay";
-import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
+import BulkImportRowPositionSelect, {
+  fetchRowPositionOccupancy,
+} from "./BulkImportRowPositionSelect";
+import BulkImportRowIssuesCell from "./BulkImportRowIssuesCell";
 
 type BulkImportStatus = NonNullable<BulkImportPreviewRow["suggested_status"]>;
 
@@ -49,7 +51,10 @@ export default function BulkImportEditableRow({
   onRowChange,
 }: BulkImportEditableRowProps) {
   const [revalidating, setRevalidating] = useState(false);
+  const [occupancyReloadKey, setOccupancyReloadKey] = useState(0);
   const reqIdRef = useRef(0);
+  const rowRef = useRef(row);
+  rowRef.current = row;
 
   const revalidate = useCallback(
     async (draft: BulkImportPreviewRow) => {
@@ -62,6 +67,9 @@ export default function BulkImportEditableRow({
           ...next,
           id: draft.id,
           suggested_status: normalizeStatus(next.suggested_status),
+          // Prefer draft occupancy (incl. null after free) — revalidate API may omit it.
+          position_occupancy_hint: draft.position_occupancy_hint ?? null,
+          position_occupant: draft.position_occupant ?? null,
         });
       } catch {
         if (reqId !== reqIdRef.current) return;
@@ -72,6 +80,15 @@ export default function BulkImportEditableRow({
     },
     [onRowChange],
   );
+
+  const refreshAvisos = useCallback(async () => {
+    const current = rowRef.current;
+    const occupancy = await fetchRowPositionOccupancy(current);
+    const draft = { ...current, ...occupancy };
+    onRowChange(draft);
+    setOccupancyReloadKey((k) => k + 1);
+    await revalidate(draft);
+  }, [onRowChange, revalidate]);
 
   const loadPortOptions = useCallback(async (input: string) => {
     const res = await fetchPorts({ search: input, pageSize: 20 });
@@ -152,8 +169,10 @@ export default function BulkImportEditableRow({
                   vessel_id: id,
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 }
               : {
                   ...row,
@@ -162,8 +181,10 @@ export default function BulkImportEditableRow({
                   ship: "",
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -197,8 +218,10 @@ export default function BulkImportEditableRow({
                   port_id: id,
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 }
               : {
                   ...row,
@@ -208,8 +231,10 @@ export default function BulkImportEditableRow({
                   port_raw: "",
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -227,8 +252,10 @@ export default function BulkImportEditableRow({
               call_date: e.target.value || null,
               position_id: null,
               position_code: null,
-              replace_lta: false,
-              lta_replace_candidate: null,
+              position_occupancy_hint: null,
+              position_occupant: null,
+              claim_lta_space: false,
+              lta_space_candidate: null,
             };
             onRowChange(draft);
             void revalidate(draft);
@@ -255,7 +282,7 @@ export default function BulkImportEditableRow({
               onRowChange(draft);
               void revalidate(draft);
             }}
-            className="w-[6.5rem] rounded-md border border-zinc-200 bg-white px-1.5 py-1.5 text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             aria-label="ETA"
           />
           <span className="text-zinc-400">–</span>
@@ -276,7 +303,7 @@ export default function BulkImportEditableRow({
               onRowChange(draft);
               void revalidate(draft);
             }}
-            className="w-[6.5rem] rounded-md border border-zinc-200 bg-white px-1.5 py-1.5 text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             aria-label="ETD"
           />
         </div>
@@ -285,6 +312,7 @@ export default function BulkImportEditableRow({
         <BulkImportRowPositionSelect
           row={row}
           disabled={busy}
+          reloadKey={occupancyReloadKey}
           onChange={onRowChange}
           onCommit={(draft) => void revalidate(draft)}
         />
@@ -321,8 +349,10 @@ export default function BulkImportEditableRow({
                   ship: "",
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 }
               : {
                   ...row,
@@ -333,8 +363,10 @@ export default function BulkImportEditableRow({
                   ship: "",
                   position_id: null,
                   position_code: null,
-                  replace_lta: false,
-                  lta_replace_candidate: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
                 };
             onRowChange(draft);
             void revalidate(draft);
@@ -356,88 +388,44 @@ export default function BulkImportEditableRow({
           }}
         />
       </td>
-      <td className="w-14 px-2 py-2 align-top text-center">
-        {row.lta_replace_candidate ? (
+      <td className="min-w-[5.5rem] px-2 py-2 align-top text-center">
+        {row.lta_space_candidate ? (
           <input
             type="checkbox"
-            checked={Boolean(row.replace_lta)}
+            checked={Boolean(row.claim_lta_space)}
             disabled={busy}
             onChange={(e) => {
-              const draft = { ...row, replace_lta: e.target.checked };
+              const draft = { ...row, claim_lta_space: e.target.checked };
               onRowChange(draft);
               void revalidate(draft);
             }}
             className="mt-1.5 h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={`Reemplazar LTA ${row.lta_replace_candidate.booking_code}`}
+            aria-label={`Reclamar espacio LTA ${row.lta_space_candidate.booking_code}`}
             title={
-              row.lta_replace_candidate.vessel_name
-                ? `Reemplazar LTA de ${row.lta_replace_candidate.vessel_name} (${row.lta_replace_candidate.booking_code})`
-                : `Reemplazar ${row.lta_replace_candidate.booking_code}`
+              [
+                "Reclamar espacio LTA",
+                row.lta_space_candidate.shipping_line_name ||
+                  row.shipping_line_name ||
+                  null,
+                row.lta_space_candidate.position_code
+                  ? `en ${row.lta_space_candidate.position_code}`
+                  : null,
+                `(${row.lta_space_candidate.booking_code})`,
+              ]
+                .filter(Boolean)
+                .join(" ")
             }
           />
         ) : (
           <span className="text-[10px] text-zinc-300 dark:text-zinc-600">—</span>
         )}
       </td>
-      <td className="min-w-[12rem] max-w-[16rem] px-2 py-2 align-top">
-        {revalidating ? (
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            Validando…
-          </span>
-        ) : row.issues.length > 0 ? (
-          <div className="space-y-1">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
-              <X className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-              No
-            </span>
-            <ul className="space-y-0.5">
-              {row.issues.map((issue) => (
-                <li
-                  key={issue}
-                  className="text-[10px] leading-snug text-red-600 dark:text-red-400"
-                >
-                  {issue}
-                </li>
-              ))}
-            </ul>
-            {(row.warnings?.length ?? 0) > 0 ? (
-              <ul className="space-y-0.5 pt-0.5">
-                {(row.warnings ?? []).map((warning) => (
-                  <li
-                    key={warning}
-                    className="text-[10px] leading-snug text-amber-700 dark:text-amber-400"
-                  >
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              <Check
-                className="h-3.5 w-3.5 shrink-0"
-                strokeWidth={2.5}
-                aria-hidden
-              />
-              Sí
-            </span>
-            {(row.warnings?.length ?? 0) > 0 ? (
-              <ul className="space-y-0.5">
-                {(row.warnings ?? []).map((warning) => (
-                  <li
-                    key={warning}
-                    className="text-[10px] leading-snug text-amber-700 dark:text-amber-400"
-                  >
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        )}
+      <td className="min-w-[7rem] px-2 py-2 align-top">
+        <BulkImportRowIssuesCell
+          row={row}
+          revalidating={revalidating}
+          onRefreshAvisos={refreshAvisos}
+        />
       </td>
     </tr>
   );

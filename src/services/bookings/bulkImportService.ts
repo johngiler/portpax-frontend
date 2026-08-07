@@ -1,9 +1,12 @@
 import { apiDownload, apiFetch, triggerBrowserDownload } from "@/services/apiClient";
+import type { PositionOccupant } from "@/types/booking";
 
 export type BulkImportLtaCandidate = {
   id: number;
   booking_code: string;
+  status?: string;
   vessel_name: string;
+  shipping_line_name?: string;
   position_id: number | null;
   position_code: string | null;
 };
@@ -29,8 +32,12 @@ export type BulkImportPreviewRow = {
   suggested_status?: "h" | "co" | "cl" | "lta" | "ltd";
   position_id?: number | null;
   position_code?: string | null;
-  replace_lta?: boolean;
-  lta_replace_candidate?: BulkImportLtaCandidate | null;
+  /** Occupancy detail for selected position — shown in ¿Correcto? avisos modal. */
+  position_occupancy_hint?: string | null;
+  position_occupant?: PositionOccupant | null;
+  /** Claim pre-reserved LTA capacity for this shipping line (port + date). */
+  claim_lta_space?: boolean;
+  lta_space_candidate?: BulkImportLtaCandidate | null;
   issues: string[];
   warnings: string[];
   selectable: boolean;

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import NoticeAlert from "@/components/ui/NoticeAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +74,7 @@ export default function BookingOperationalSection({
         port: booking.port,
         vessel: booking.vessel,
         call_date: booking.call_date,
+        exclude_booking: booking.id,
       });
       setSuggestions(data.positions);
     } catch {
@@ -80,7 +82,7 @@ export default function BookingOperationalSection({
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [booking.port, booking.vessel, booking.call_date]);
+  }, [booking.port, booking.vessel, booking.call_date, booking.id]);
 
   useEffect(() => {
     setPositionId(booking.position ?? 0);
@@ -152,6 +154,11 @@ export default function BookingOperationalSection({
     };
   });
 
+  const selectedSuggestion = suggestions.find((p) => p.id === positionId);
+  const selectedWarnings = (selectedSuggestion?.warnings ?? []).map(
+    (warning) => warning.message,
+  );
+
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
@@ -173,16 +180,27 @@ export default function BookingOperationalSection({
       ) : null}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <FormFieldSelect<number>
-          label="Reasignar posición"
-          name="booking_position"
-          value={positionId}
-          onChange={setPositionId}
-          options={positionOptions}
-          optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
-          emptyValue={0}
-          disabled={scheduleReadOnly}
-        />
+        <div>
+          <FormFieldSelect<number>
+            label="Reasignar posición"
+            name="booking_position"
+            value={positionId}
+            onChange={setPositionId}
+            options={positionOptions}
+            optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
+            emptyValue={0}
+            disabled={scheduleReadOnly}
+          />
+          <PositionOccupancyHint
+            occupant={
+              selectedSuggestion?.occupied
+                ? selectedSuggestion.occupant
+                : null
+            }
+            positionCode={selectedSuggestion?.code}
+            callDate={booking.call_date}
+          />
+        </div>
         <FormField
           label="ETA"
           name="booking_eta"
@@ -277,15 +295,11 @@ export default function BookingOperationalSection({
         </div>
       ) : null}
 
-      {suggestions.some((position) => position.warnings.length > 0) ? (
+      {selectedWarnings.length > 0 ? (
         <NoticeAlert
           variant="warning"
           className="mt-3"
-          messages={suggestions
-            .filter((position) => position.warnings.length > 0)
-            .flatMap((position) =>
-              position.warnings.map((warning) => `${position.code}: ${warning.message}`),
-            )}
+          messages={selectedWarnings}
         />
       ) : null}
 

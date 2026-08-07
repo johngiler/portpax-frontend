@@ -84,12 +84,25 @@ export type BookingValidationResult = {
   >;
 };
 
+export type PositionOccupant = {
+  booking_id: number;
+  booking_code: string;
+  status: string;
+  vessel_name: string;
+  shipping_line_name: string;
+  position_code?: string | null;
+  call_date?: string | null;
+  eta?: string | null;
+  etd?: string | null;
+};
+
 export type PositionSuggestion = {
   id: number;
   code: string;
   position_type: string;
   max_loa_m: string | null;
   occupied: boolean;
+  occupant?: PositionOccupant | null;
   recommended?: boolean;
   warnings: BookingValidationIssue[];
 };

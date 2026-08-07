@@ -6,10 +6,12 @@ import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import BookingDateCalendar, {
   type BookingDateCalendarVisibleRange,
 } from "@/components/booking/BookingDateCalendar";
+import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import {
   useWizardOccupancy,
   type WizardVisibleRange,
 } from "@/hooks/swr/useWizardOccupancy";
+import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
 import { suggestBookingPositions } from "@/services/bookings/bookingService";
 import type { Booking, PositionSuggestion } from "@/types/booking";
 
@@ -172,6 +174,11 @@ export default function DatesStep({
     );
   }
 
+  const selectedSuggestion = suggestions.find(
+    (p) => p.id === preferredPositionId,
+  );
+  const occupancyHint = positionOccupancyHint(selectedSuggestion);
+
   return (
     <div className="space-y-6">
       <BookingDateCalendar
@@ -252,6 +259,12 @@ export default function DatesStep({
             emptyValue={0}
             compact
             disabled={loadingSuggestions}
+          />
+          <PositionOccupancyHint
+            message={occupancyHint}
+            occupant={selectedSuggestion?.occupied ? selectedSuggestion.occupant : null}
+            positionCode={selectedSuggestion?.code ?? preferredPositionLabel}
+            callDate={selectedDates[0] ?? null}
           />
         </div>
       ) : null}

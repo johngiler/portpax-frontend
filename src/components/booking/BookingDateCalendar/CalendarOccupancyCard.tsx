@@ -9,11 +9,13 @@ import {
   Ship,
 } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
+import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import {
   formatTimeShort,
   toTimeInputValue,
 } from "@/lib/bookingDisplay";
+import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
   suggestBookingPositions,
@@ -92,6 +94,7 @@ export default function CalendarOccupancyCard({
         port: booking.port_id,
         vessel: booking.vessel_id,
         call_date: booking.call_date,
+        exclude_booking: booking.id,
       });
       setSuggestions(data.positions);
     } catch {
@@ -183,6 +186,8 @@ export default function CalendarOccupancyCard({
 
   const etaEtdLabel = `${formatTimeShort(booking.eta)}–${formatTimeShort(booking.etd)}`;
   const detailHref = bookingDetailHref(booking);
+  const selectedSuggestion = suggestions.find((p) => p.id === positionId);
+  const occupancyHint = positionOccupancyHint(selectedSuggestion);
 
   return (
     <article
@@ -300,6 +305,15 @@ export default function CalendarOccupancyCard({
               emptyValue={0}
               compact
               disabled={saving || loadingSuggestions}
+            />
+            <PositionOccupancyHint
+              message={occupancyHint}
+              occupant={
+                selectedSuggestion?.occupied ? selectedSuggestion.occupant : null
+              }
+              positionCode={selectedSuggestion?.code ?? booking.position_code}
+              callDate={booking.call_date}
+              className="text-[11px]"
             />
             {!saveError ? (
               <p className="mt-1.5 text-[11px] text-zinc-500">

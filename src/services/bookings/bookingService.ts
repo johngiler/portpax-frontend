@@ -412,12 +412,17 @@ export async function suggestBookingPositions(params: {
   port: number;
   vessel: number;
   call_date: string;
+  /** When reassigning an existing booking, omit it from occupancy. */
+  exclude_booking?: number;
 }): Promise<{ positions: PositionSuggestion[] }> {
   const query = new URLSearchParams({
     port: String(params.port),
     vessel: String(params.vessel),
     call_date: params.call_date,
   });
+  if (params.exclude_booking != null) {
+    query.set("exclude_booking", String(params.exclude_booking));
+  }
   return apiFetch<{ positions: PositionSuggestion[] }>(
     `${BASE}suggest-positions/?${query.toString()}`,
   );
