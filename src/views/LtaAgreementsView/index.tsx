@@ -29,6 +29,7 @@ import { useLtaAgreementsPage } from "@/hooks/swr/useLtaAgreementsPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
+import { formatCompactCount } from "@/lib/formatCompactCount";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
 import {
   revalidateLtaAgreements,
@@ -48,7 +49,7 @@ import type { LongTermAgreement } from "@/types/lta";
 import { formatLtaWeekdays } from "@/types/lta";
 
 const PAGE_SIZE = 20;
-const COL_SPAN = 7;
+const COL_SPAN = 8;
 
 const linkBtnClass =
   "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-40";
@@ -160,6 +161,7 @@ export default function LtaAgreementsView() {
         );
         await revalidateLtaLinkedBookings(row.id);
       }
+      await revalidateLtaAgreements();
     } catch (err) {
       setViewError(
         getApiErrorMessage(err, "No se pudieron vincular las reservas al acuerdo."),
@@ -272,6 +274,9 @@ export default function LtaAgreementsView() {
                 <MainTableTh>Naviera</MainTableTh>
                 <MainTableTh>Días</MainTableTh>
                 <MainTableTh>Ventana</MainTableTh>
+                <MainTableTh title="Reservas vinculadas al acuerdo (match)">
+                  Vinculadas
+                </MainTableTh>
                 <MainTableTh>Estado</MainTableTh>
                 <MainTableTh className="w-36">Acciones</MainTableTh>
               </MainTableHeader>
@@ -319,6 +324,20 @@ export default function LtaAgreementsView() {
                         {row.interval_days != null && row.cadence_anchor
                           ? `Cada ${row.interval_days} d`
                           : `${row.advance_months_min}–${row.advance_months_max} m`}
+                      </MainTableTd>
+                      <MainTableTd>
+                        <span
+                          className={
+                            (row.linked_bookings_count ?? 0) > 0
+                              ? "font-medium tabular-nums text-zinc-800 dark:text-zinc-100"
+                              : "tabular-nums text-zinc-400"
+                          }
+                          title={`${(row.linked_bookings_count ?? 0).toLocaleString("es")} reserva${
+                            (row.linked_bookings_count ?? 0) === 1 ? "" : "s"
+                          } vinculada${(row.linked_bookings_count ?? 0) === 1 ? "" : "s"}`}
+                        >
+                          {formatCompactCount(row.linked_bookings_count ?? 0)}
+                        </span>
                       </MainTableTd>
                       <MainTableTd>
                         {row.is_active ? (

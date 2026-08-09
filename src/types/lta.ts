@@ -23,6 +23,8 @@ export type LongTermAgreement = {
   valid_until: string | null;
   is_active: boolean;
   notes: string;
+  /** Bookings with this agreement FK (match / link result). */
+  linked_bookings_count: number;
   contract_file_url: string | null;
   contract_file_name: string | null;
   created_at: string;

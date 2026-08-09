@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
@@ -8,8 +8,10 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { useNavigationLock } from "@/lib/useNavigationLock";
 import {
   createBulkBookingImport,
+  revalidateBulkImportRow,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
+import { applyLtaSpaceClaim } from "./applyLtaSpaceClaim";
 import BulkImportEditableRow from "./BulkImportEditableRow";
 
 type BulkBookingImportModalProps = {
@@ -36,7 +38,9 @@ export default function BulkBookingImportModal({
   const [draftRows, setDraftRows] = useState<BulkImportPreviewRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [claimingAllLta, setClaimingAllLta] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const claimAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -72,6 +76,21 @@ export default function BulkBookingImportModal({
     () => draftRows.filter((r) => r.selectable),
     [draftRows],
   );
+  const claimableLtaRows = useMemo(
+    () => draftRows.filter((r) => Boolean(r.lta_space_candidate)),
+    [draftRows],
+  );
+  const allLtaClaimed =
+    claimableLtaRows.length > 0 &&
+    claimableLtaRows.every((r) => Boolean(r.claim_lta_space));
+  const someLtaClaimed = claimableLtaRows.some((r) => Boolean(r.claim_lta_space));
+
+  useEffect(() => {
+    if (claimAllRef.current) {
+      claimAllRef.current.indeterminate =
+        someLtaClaimed && !allLtaClaimed;
+    }
+  }, [someLtaClaimed, allLtaClaimed]);
 
   function updateRow(next: BulkImportPreviewRow) {
     setDraftRows((prev) => {
@@ -101,6 +120,51 @@ export default function BulkBookingImportModal({
       setSelectedIds(new Set(selectableRows.map((r) => r.id)));
     } else {
       setSelectedIds(new Set());
+    }
+  }
+
+  async function toggleAllLtaClaims(claim: boolean) {
+    if (claimableLtaRows.length === 0 || saving || claimingAllLta) return;
+    const nextRows = draftRows.map((row) =>
+      row.lta_space_candidate ? applyLtaSpaceClaim(row, claim) : row,
+    );
+    setDraftRows(nextRows);
+    setClaimingAllLta(true);
+    setError(null);
+    try {
+      const targets = nextRows.filter((r) => r.lta_space_candidate);
+      const settled = await Promise.all(
+        targets.map(async (draft) => {
+          try {
+            const next = await revalidateBulkImportRow(draft);
+            return {
+              id: draft.id,
+              row: {
+                ...next,
+                id: draft.id,
+                suggested_status:
+                  next.suggested_status === "co" ||
+                  next.suggested_status === "cl" ||
+                  next.suggested_status === "lta" ||
+                  next.suggested_status === "ltd" ||
+                  next.suggested_status === "h"
+                    ? next.suggested_status
+                    : draft.suggested_status,
+                position_occupancy_hint: draft.position_occupancy_hint ?? null,
+                position_occupant: draft.position_occupant ?? null,
+              } as BulkImportPreviewRow,
+            };
+          } catch {
+            return { id: draft.id, row: draft };
+          }
+        }),
+      );
+      const byId = new Map(settled.map((item) => [item.id, item.row]));
+      setDraftRows((prev) =>
+        prev.map((row) => byId.get(row.id) ?? row),
+      );
+    } finally {
+      setClaimingAllLta(false);
     }
   }
 
@@ -146,8 +210,8 @@ export default function BulkBookingImportModal({
   return (
     <Modal
       open={open}
-      onClose={saving ? () => undefined : onClose}
-      closeable={!saving}
+      onClose={saving || claimingAllLta ? () => undefined : onClose}
+      closeable={!saving && !claimingAllLta}
       title="Carga de reservas masiva"
       panelClassName="max-w-[min(96vw,92rem)]"
       footer={
@@ -197,16 +261,32 @@ export default function BulkBookingImportModal({
         barco, puerto, naviera, fecha y ETA/ETD antes de crear.
       </p>
 
-      <div className="mb-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
         <label className="inline-flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
             checked={allSelectableChecked}
+            disabled={saving || claimingAllLta}
             onChange={(e) => toggleAll(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-zinc-300"
+            className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
           />
           Seleccionar todas las válidas
         </label>
+        {claimableLtaRows.length > 0 ? (
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <input
+              ref={claimAllRef}
+              type="checkbox"
+              checked={allLtaClaimed}
+              disabled={saving || claimingAllLta}
+              onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+            />
+            {claimingAllLta
+              ? "Actualizando reclamos LTA…"
+              : `Reclamar todos los espacios LTA (${claimableLtaRows.length})`}
+          </label>
+        ) : null}
       </div>
 
       <div className="max-h-[min(60vh,520px)] overflow-auto rounded-lg border border-[var(--admin-border)]">
@@ -221,8 +301,28 @@ export default function BulkBookingImportModal({
               <th className="px-2 py-2">Posición</th>
               <th className="px-2 py-2">Naviera</th>
               <th className="px-2 py-2">Estado</th>
-              <th className="px-2 py-2" title="Reclamar espacio LTA reservado para esta naviera">
-                Reclamar espacio LTA
+              <th
+                className="px-2 py-2"
+                title="Reclamar espacio LTA reservado para esta naviera"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {claimableLtaRows.length > 0 ? (
+                    <input
+                      type="checkbox"
+                      checked={allLtaClaimed}
+                      disabled={saving || claimingAllLta}
+                      onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Reclamar todos los espacios LTA"
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = someLtaClaimed && !allLtaClaimed;
+                        }
+                      }}
+                    />
+                  ) : null}
+                  Reclamar espacio LTA
+                </span>
               </th>
               <th className="px-2 py-2">¿Correcto?</th>
             </tr>
@@ -232,7 +332,7 @@ export default function BulkBookingImportModal({
               <BulkImportEditableRow
                 key={row.id}
                 row={row}
-                disabled={saving}
+                disabled={saving || claimingAllLta}
                 checked={selectedIds.has(row.id)}
                 onToggle={() => toggle(row.id, row.selectable)}
                 onRowChange={updateRow}
