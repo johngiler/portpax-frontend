@@ -274,8 +274,10 @@ export default function LtaAgreementsView() {
                 <MainTableTh>Naviera</MainTableTh>
                 <MainTableTh>Días</MainTableTh>
                 <MainTableTh>Ventana</MainTableTh>
-                <MainTableTh title="Reservas vinculadas al acuerdo (match)">
-                  Vinculadas
+                <MainTableTh>
+                  <span title="Reservas vinculadas al acuerdo (match)">
+                    Vinculadas
+                  </span>
                 </MainTableTh>
                 <MainTableTh>Estado</MainTableTh>
                 <MainTableTh className="w-36">Acciones</MainTableTh>
