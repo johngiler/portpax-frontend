@@ -15,6 +15,9 @@ type TableActionButtonsProps = {
   onDelete?: () => void;
   /** Etiqueta del recurso para el confirm de borrar (ej. "puerto", "barco") */
   deleteLabel?: string;
+  /** Show delete control disabled (e.g. still has linked rows). */
+  deleteDisabled?: boolean;
+  deleteDisabledTitle?: string;
 };
 
 export default function TableActionButtons({
@@ -23,14 +26,19 @@ export default function TableActionButtons({
   onEdit,
   onDelete,
   deleteLabel = "este elemento",
+  deleteDisabled = false,
+  deleteDisabledTitle,
 }: TableActionButtonsProps) {
   const { requestConfirm } = useConfirm();
 
   function handleDeleteClick() {
-    if (onDelete) {
-      requestConfirm(buildDeleteConfirmOptions(deleteLabel, onDelete));
-    }
+    if (deleteDisabled || !onDelete) return;
+    requestConfirm(buildDeleteConfirmOptions(deleteLabel, onDelete));
   }
+
+  const deleteTitle = deleteDisabled
+    ? deleteDisabledTitle || "No se puede eliminar"
+    : "Eliminar";
 
   return (
     <div className="flex items-center justify-start gap-1">
@@ -65,9 +73,10 @@ export default function TableActionButtons({
         <button
           type="button"
           onClick={handleDeleteClick}
+          disabled={deleteDisabled}
           className={`${btnClass} hover:text-red-600 dark:hover:text-red-400`}
-          aria-label="Eliminar"
-          title="Eliminar"
+          aria-label={deleteTitle}
+          title={deleteTitle}
         >
           <Trash2 className="h-4 w-4" strokeWidth={1.5} />
         </button>
