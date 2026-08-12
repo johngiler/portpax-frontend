@@ -167,6 +167,17 @@ function AvailableSlot({
   );
 }
 
+function UnavailableSlot({ reason }: { reason?: string }) {
+  return (
+    <div
+      className="flex min-h-16 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-100/90 text-xs font-medium text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900/70 dark:text-zinc-400"
+      title={reason}
+    >
+      No disponible
+    </div>
+  );
+}
+
 export default function AvailabilityChartSection({
   data,
   titlePrefix = "Availability Chart",
@@ -262,6 +273,14 @@ export default function AvailabilityChartSection({
                   {data.columns.map((column, idx) => {
                     const calls = row.cells[idx] ?? [];
                     const isRealPosition = column.id > 0;
+                    const homeCalls = calls.filter(
+                      (call) =>
+                        call.position_id == null ||
+                        call.position_id === 0 ||
+                        call.position_id === column.id,
+                    );
+                    const relatedOnly =
+                      calls.length > 0 && homeCalls.length === 0;
                     return (
                       <td
                         key={`${row.date}-${column.id}`}
@@ -285,9 +304,19 @@ export default function AvailabilityChartSection({
                               label={`${column.label} · ${row.date}`}
                             />
                           )
+                        ) : relatedOnly ? (
+                          <UnavailableSlot
+                            reason={
+                              calls.length === 1
+                                ? `Ocupada por ${calls[0].vessel_name} (${calls[0].booking_code})`
+                                : `Ocupada por componentes relacionados (${calls
+                                    .map((c) => c.vessel_name)
+                                    .join(", ")})`
+                            }
+                          />
                         ) : (
                           <div className="space-y-2">
-                            {calls.map((call) => {
+                            {homeCalls.map((call) => {
                               const badgeStatus = asBadgeStatus(call.status);
                               const matchesFilter =
                                 availabilityCallMatchesStatus(

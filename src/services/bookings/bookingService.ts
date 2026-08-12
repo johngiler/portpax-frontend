@@ -268,6 +268,7 @@ export type AvailabilityReport = {
       Array<{
         booking_code: string;
         status?: string;
+        position_id?: number;
         shipping_line_name: string;
         shipping_line_logo: string | null;
         vessel_name: string;
