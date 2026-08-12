@@ -71,6 +71,11 @@ export default function BookingDetailSummary({ booking }: BookingDetailSummaryPr
             />
             <span className="truncate">{booking.vessel_name}</span>
           </div>
+          {booking.vessel_loa_m ? (
+            <p className="mt-0.5 text-xs font-normal text-zinc-500">
+              {Number(booking.vessel_loa_m).toLocaleString("es-MX")} m
+            </p>
+          ) : null}
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fecha de escala">
           <span>{formatIsoDateLabel(booking.call_date, "long")}</span>

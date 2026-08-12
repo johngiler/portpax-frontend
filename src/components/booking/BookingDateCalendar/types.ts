@@ -9,6 +9,7 @@ export type CalendarDayBooking = {
   call_date: string;
   position_id: number | null;
   position_code: string | null;
+  vessel_loa_m: string | null;
   eta: string | null;
   etd: string | null;
   status: string;

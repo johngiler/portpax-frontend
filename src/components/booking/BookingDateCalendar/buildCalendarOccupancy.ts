@@ -61,6 +61,7 @@ export function buildCalendarOccupancy(
       call_date: booking.call_date,
       position_id: booking.position,
       position_code: booking.position_code,
+      vessel_loa_m: booking.vessel_loa_m,
       eta: booking.eta,
       etd: booking.etd,
       status: booking.status,

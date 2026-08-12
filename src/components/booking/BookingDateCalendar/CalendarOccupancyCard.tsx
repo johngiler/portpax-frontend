@@ -6,6 +6,7 @@ import {
   Clock3,
   LayoutGrid,
   MapPin,
+  Ruler,
   Ship,
 } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
@@ -306,6 +307,12 @@ export default function CalendarOccupancyCard({
               compact
               disabled={saving || loadingSuggestions}
             />
+            {booking.vessel_loa_m ? (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                <Ruler className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
+                {Number(booking.vessel_loa_m).toLocaleString("es-MX")} m
+              </p>
+            ) : null}
             <PositionOccupancyHint
               message={occupancyHint}
               occupant={
@@ -339,6 +346,12 @@ export default function CalendarOccupancyCard({
               />
               {booking.position_code ?? "Sin asignar"}
             </p>
+            {booking.vessel_loa_m ? (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-zinc-700 dark:text-zinc-200">
+                <Ruler className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden />
+                {Number(booking.vessel_loa_m).toLocaleString("es-MX")} m
+              </p>
+            ) : null}
           </div>
         )}
 
