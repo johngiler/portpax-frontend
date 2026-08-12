@@ -83,6 +83,7 @@ function emptyForm(portId = 0): FormState {
     code: "",
     position_type: "pier",
     max_loa_m: null,
+    min_loa_m: null,
     min_draft_m: null,
     bollard_allocations: [],
     fender_allocations: [],
@@ -103,6 +104,7 @@ function positionToForm(position: Position): FormState {
     code: positionDisplayCode(position),
     position_type: position.position_type,
     max_loa_m: position.max_loa_m != null ? Number(position.max_loa_m) : null,
+    min_loa_m: position.min_loa_m != null ? Number(position.min_loa_m) : null,
     min_draft_m: position.min_draft_m != null ? Number(position.min_draft_m) : null,
     bollard_allocations: position.bollard_allocations ?? [],
     fender_allocations: position.fender_allocations ?? [],
@@ -123,6 +125,13 @@ function validate(form: FormState, isCombined: boolean, componentA: number, comp
   if (isCombined) {
     if (!componentA || !componentB) errors.component = "Selecciona dos posiciones base.";
     else if (componentA === componentB) errors.component = "Las posiciones base deben ser distintas.";
+    if (
+      form.min_loa_m != null &&
+      form.max_loa_m != null &&
+      form.min_loa_m > form.max_loa_m
+    ) {
+      errors.min_loa_m = "Debe ser menor o igual a la eslora máxima.";
+    }
   }
   return errors;
 }
@@ -336,6 +345,8 @@ export default function PositionFormModal({
       }));
       setBollardRows([]);
       setFenderRows([]);
+    } else {
+      setForm((prev) => ({ ...prev, min_loa_m: null }));
     }
   }
 
@@ -365,8 +376,11 @@ export default function PositionFormModal({
     if (isCombined) {
       payload.position_type = "pier";
       payload.component_position_ids = [componentAId, componentBId];
-    } else if (mode === "edit" && initial?.is_combined) {
-      payload.component_position_ids = [];
+    } else {
+      payload.min_loa_m = null;
+      if (mode === "edit" && initial?.is_combined) {
+        payload.component_position_ids = [];
+      }
     }
 
     await submitModalForm(
@@ -477,6 +491,11 @@ export default function PositionFormModal({
                       Combinada
                     </span>
                   )}
+                  {form.min_loa_m ? (
+                    <span className="inline-flex rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      mín. {formatMeters(form.min_loa_m)}
+                    </span>
+                  ) : null}
                   {form.max_loa_m ? (
                     <span className="inline-flex rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                       LOA {formatMeters(form.max_loa_m)}
@@ -603,22 +622,52 @@ export default function PositionFormModal({
             >
               <div className="grid gap-x-4 sm:grid-cols-2">
                 <FormField
-                  label="Eslora (m)"
+                  label="Eslora máx. (m)"
                   name="max_loa_m"
                   type="number"
                   step="0.01"
                   value={form.max_loa_m ?? ""}
                   onChange={(v) => setField("max_loa_m", v === "" ? null : Number(v))}
                 />
-                <FormField
-                  label="Calado (m)"
-                  name="min_draft_m"
-                  type="number"
-                  step="0.01"
-                  value={form.min_draft_m ?? ""}
-                  onChange={(v) => setField("min_draft_m", v === "" ? null : Number(v))}
-                />
+                {isCombined ? (
+                  <FormField
+                    label="Eslora mín. mega-barco (m)"
+                    name="min_loa_m"
+                    type="number"
+                    step="0.01"
+                    value={form.min_loa_m ?? ""}
+                    onChange={(v) =>
+                      setField("min_loa_m", v === "" ? null : Number(v))
+                    }
+                    error={errors.min_loa_m}
+                  />
+                ) : (
+                  <FormField
+                    label="Calado (m)"
+                    name="min_draft_m"
+                    type="number"
+                    step="0.01"
+                    value={form.min_draft_m ?? ""}
+                    onChange={(v) =>
+                      setField("min_draft_m", v === "" ? null : Number(v))
+                    }
+                  />
+                )}
               </div>
+              {isCombined ? (
+                <div className="mt-4">
+                  <FormField
+                    label="Calado (m)"
+                    name="min_draft_m"
+                    type="number"
+                    step="0.01"
+                    value={form.min_draft_m ?? ""}
+                    onChange={(v) =>
+                      setField("min_draft_m", v === "" ? null : Number(v))
+                    }
+                  />
+                </div>
+              ) : null}
               {!isCombined && form.position_type !== "anchorage" && form.port > 0 && (
                 <div className="mt-4 flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
                   <PositionInventoryRows

@@ -187,7 +187,11 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
                     <MainTableTd>{positionTypeLabel(position.position_type)}</MainTableTd>
                     <MainTableTd>{position.berth_code || "—"}</MainTableTd>
                     <MainTableTd>
-                      {position.max_loa_m != null ? `${position.max_loa_m} m` : "—"}
+                      {position.max_loa_m != null || position.min_loa_m != null
+                        ? position.min_loa_m != null && position.max_loa_m != null
+                          ? `${position.min_loa_m}–${position.max_loa_m} m`
+                          : `${position.max_loa_m ?? position.min_loa_m} m`
+                        : "—"}
                     </MainTableTd>
                     <MainTableTd>
                       {position.min_draft_m != null ? `${position.min_draft_m} m` : "—"}

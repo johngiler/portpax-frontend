@@ -11,18 +11,7 @@ export function parseIsoDate(value: string): { year: number; monthIndex: number;
   return { year: y, monthIndex: m - 1, day: d };
 }
 
-export function formatIsoDateLabel(value: string, style: "short" | "long" = "long"): string {
-  const { year, monthIndex, day } = parseIsoDate(value);
-  const date = new Date(year, monthIndex, day);
-  return date.toLocaleDateString("es-MX", {
-    weekday: style === "long" ? "short" : undefined,
-    day: "numeric",
-    month: style === "long" ? "long" : "short",
-    year: "numeric",
-  });
-}
-
-/** Short weekday for calendar headers (e.g. Lun, Mar). */
+/** Short weekday for calendar headers and date labels (e.g. Lun, Mar, Mié). */
 export function formatIsoWeekdayShort(value: string): string {
   const { year, monthIndex, day } = parseIsoDate(value);
   const date = new Date(year, monthIndex, day);
@@ -30,6 +19,19 @@ export function formatIsoWeekdayShort(value: string): string {
   const cleaned = raw.replace(/\.$/, "").trim();
   if (!cleaned) return "";
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+/** Visible calendar dates always include weekday: "Lun 10 ago 2026" / "Lun 10 de agosto de 2026". */
+export function formatIsoDateLabel(value: string, style: "short" | "long" = "long"): string {
+  const { year, monthIndex, day } = parseIsoDate(value);
+  const date = new Date(year, monthIndex, day);
+  const rest = date.toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: style === "long" ? "long" : "short",
+    year: "numeric",
+  });
+  const weekday = formatIsoWeekdayShort(value);
+  return weekday ? `${weekday} ${rest}` : rest;
 }
 
 export function getMonthMatrix(year: number, monthIndex: number): (number | null)[][] {

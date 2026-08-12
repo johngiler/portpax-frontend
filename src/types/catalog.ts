@@ -267,6 +267,7 @@ export type Position = {
   code: string;
   position_type: PositionType;
   max_loa_m: string | null;
+  min_loa_m: string | null;
   min_draft_m: string | null;
   bollard_allocations: PositionBollardAllocation[];
   fender_allocations: PositionFenderAllocation[];
@@ -303,12 +304,29 @@ export type PositionNestingRule = {
   updated_at: string;
 };
 
+/** Remaining sibling LOA on a combined slot after a non-mega occupant. */
+export type PositionLoaRecalcRule = {
+  id: number;
+  port: number;
+  combined_position: number;
+  combined_position_code: string;
+  combined_position_label: string;
+  combined_max_loa_m: string | null;
+  component_labels: string[];
+  min_separation_m: string;
+  is_active: boolean;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type PositionPayload = {
   port: number;
   berth: number | null;
   code: string;
   position_type: PositionType;
   max_loa_m: number | null;
+  min_loa_m: number | null;
   min_draft_m: number | null;
   bollard_allocations: PositionBollardAllocation[];
   fender_allocations: PositionFenderAllocation[];

@@ -38,6 +38,10 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
   lta_horizon_denied:
     "En este periodo solo navieras con LTA vigente pueden reservar con prioridad; se creará en Hold.",
   loa_exceeds_position: "La eslora del barco excede el máximo de la posición.",
+  loa_below_combined_min:
+    "La eslora del barco no alcanza el mínimo de la posición combinada.",
+  loa_requires_combined:
+    "Mega-barco: la eslora alcanza el mínimo del slot combinado; debe ocupar E1+E2.",
   beam_exceeds_position: "La manga del barco excede el máximo de la posición.",
   draft_too_deep: "El calado del barco supera la profundidad disponible.",
   combined_loa_red: "La eslora combinada alcanza o supera el límite rojo.",

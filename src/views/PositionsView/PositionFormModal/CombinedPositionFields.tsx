@@ -26,8 +26,8 @@ export default function CombinedPositionFields({
   return (
     <div className="col-span-full space-y-3 rounded-lg border border-[var(--admin-accent)]/20 bg-[var(--admin-accent)]/5 p-3">
       <p className="text-xs text-zinc-600 dark:text-zinc-300">
-        Selecciona dos posiciones de muelle cuando la eslora del barco supera la capacidad de una
-        sola posición. La eslora, bitas y defensas se calculan a partir de ambas.
+        Dos posiciones de muelle (p. ej. E1 y E2). Si el barco alcanza la eslora
+        mínima mega-barco, debe ocupar este slot combinado.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <FormFieldSelect<number>

@@ -9,7 +9,7 @@ import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConfirmationPdfButton from "@/components/booking/ConfirmationPdfButton";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
-import { parseIsoDate } from "@/lib/bookingDates";
+import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
 import {
   bookingDetailHref,
   bookingStatusLabel,
@@ -44,10 +44,14 @@ function DateBadge({ callDate }: { callDate: string }) {
   const month = new Date(2000, monthIndex, 1).toLocaleDateString("es-MX", {
     month: "short",
   });
+  const weekday = formatIsoWeekdayShort(callDate);
 
   return (
-    <div className="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-      <span className="text-lg font-bold leading-none">{day}</span>
+    <div className="flex h-[4.25rem] w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
+      <span className="text-[10px] font-semibold uppercase tracking-wide leading-none">
+        {weekday}
+      </span>
+      <span className="mt-0.5 text-lg font-bold leading-none">{day}</span>
       <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none">
         {month.replace(/\.$/, "")}
       </span>

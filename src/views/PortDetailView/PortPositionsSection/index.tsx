@@ -102,6 +102,12 @@ function PositionCard({
                 <dt className="text-zinc-400">Eslora máx.</dt>
                 <dd className="font-medium">{formatMeters(position.max_loa_m)}</dd>
               </div>
+              {position.is_combined && position.min_loa_m != null ? (
+                <div>
+                  <dt className="text-zinc-400">Eslora mín. mega</dt>
+                  <dd className="font-medium">{formatMeters(position.min_loa_m)}</dd>
+                </div>
+              ) : null}
               <div>
                 <dt className="text-zinc-400">Calado</dt>
                 <dd className="font-medium">{formatMeters(position.min_draft_m)}</dd>

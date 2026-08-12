@@ -64,16 +64,37 @@ function maxLoaAmong(positions: Position[]): string | null {
   return best == null ? null : String(best);
 }
 
+function expandOccupiedPositionIds(
+  bookingPositionIds: number[],
+  pierRows: Position[],
+): Set<number> {
+  const related = new Map<number, number[]>();
+  for (const position of pierRows) {
+    if (!position.is_combined || !position.component_positions.length) continue;
+    const group = [
+      position.id,
+      ...position.component_positions.map((item) => item.id),
+    ];
+    for (const id of group) related.set(id, group);
+  }
+  const occupied = new Set<number>();
+  for (const id of bookingPositionIds) {
+    for (const relatedId of related.get(id) ?? [id]) occupied.add(relatedId);
+  }
+  return occupied;
+}
+
 function freePiersForPortDay(
   pierRows: Position[],
   portName: string,
   cellBookings: Booking[],
 ): Position[] {
   const portPiers = piersForPort(pierRows, portName);
-  const occupiedIds = new Set(
+  const occupiedIds = expandOccupiedPositionIds(
     cellBookings
       .filter((b) => b.position != null)
       .map((b) => b.position as number),
+    portPiers,
   );
   return portPiers.filter((p) => !occupiedIds.has(p.id));
 }
