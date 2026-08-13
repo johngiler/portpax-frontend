@@ -426,7 +426,11 @@ export async function fetchBookingByCode(code: string): Promise<Booking> {
   const data = await fetchBookings({ search: trimmed, page: 1 });
   const match =
     data.results.find((booking) => booking.booking_code === trimmed) ??
-    data.results.find((booking) => booking.booking_code.includes(trimmed));
+    data.results.find((booking) =>
+      booking.booking_code.toLowerCase().includes(trimmed.toLowerCase()),
+    ) ??
+    // Historical code: API returns the booking under its current nomenclature.
+    data.results[0];
   if (!match) {
     throw new ApiError("Reserva no encontrada.", 404);
   }
