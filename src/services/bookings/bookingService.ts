@@ -461,6 +461,9 @@ export async function suggestBookingPositions(params: {
   call_date: string;
   /** When reassigning an existing booking, omit it from occupancy. */
   exclude_booking?: number;
+  /** Enables schedule rules (FILO, overlap) in suggestion warnings. */
+  eta?: string | null;
+  etd?: string | null;
 }): Promise<{ positions: PositionSuggestion[] }> {
   const query = new URLSearchParams({
     port: String(params.port),
@@ -470,6 +473,8 @@ export async function suggestBookingPositions(params: {
   if (params.exclude_booking != null) {
     query.set("exclude_booking", String(params.exclude_booking));
   }
+  if (params.eta) query.set("eta", params.eta);
+  if (params.etd) query.set("etd", params.etd);
   return apiFetch<{ positions: PositionSuggestion[] }>(
     `${BASE}suggest-positions/?${query.toString()}`,
   );

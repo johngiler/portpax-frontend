@@ -96,6 +96,8 @@ export default function CalendarOccupancyCard({
         vessel: booking.vessel_id,
         call_date: booking.call_date,
         exclude_booking: booking.id,
+        eta: toTimeInputValue(booking.eta) || null,
+        etd: toTimeInputValue(booking.etd) || null,
       });
       setSuggestions(data.positions);
     } catch {
@@ -103,7 +105,15 @@ export default function CalendarOccupancyCard({
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [reassignable, booking.port_id, booking.vessel_id, booking.call_date]);
+  }, [
+    reassignable,
+    booking.port_id,
+    booking.vessel_id,
+    booking.call_date,
+    booking.id,
+    booking.eta,
+    booking.etd,
+  ]);
 
   useEffect(() => {
     void loadSuggestions();

@@ -81,6 +81,8 @@ export default function BookingOperationalSection({
         vessel: booking.vessel,
         call_date: booking.call_date,
         exclude_booking: booking.id,
+        eta: eta || null,
+        etd: etd || null,
       });
       setSuggestions(data.positions);
     } catch {
@@ -88,7 +90,7 @@ export default function BookingOperationalSection({
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [booking.port, booking.vessel, booking.call_date, booking.id]);
+  }, [booking.port, booking.vessel, booking.call_date, booking.id, eta, etd]);
 
   useEffect(() => {
     setPositionId(booking.position ?? 0);
@@ -104,9 +106,11 @@ export default function BookingOperationalSection({
   }, [booking]);
 
   useEffect(() => {
-    if (booking.status !== "c") {
-      loadSuggestions();
-    }
+    if (booking.status === "c") return;
+    const timer = window.setTimeout(() => {
+      void loadSuggestions();
+    }, 300);
+    return () => window.clearTimeout(timer);
   }, [booking.status, loadSuggestions]);
 
   async function handleSave() {
@@ -183,13 +187,21 @@ export default function BookingOperationalSection({
     ...warning,
     severity: issueSeverity(warning),
   }));
-  // Prefer live suggestions for the selected position; fall back to persisted snapshot.
-  const displayIssues =
-    liveNormalized.length > 0
-      ? liveNormalized
-      : positionId === (booking.position ?? 0)
-        ? snapshotIssues
-        : [];
+  // Live suggestions win per code; keep snapshot codes missing from live
+  // (e.g. schedule rules if suggest was called without ETA).
+  const sameSavedPosition = positionId === (booking.position ?? 0);
+  const displayIssues = (() => {
+    const byCode = new Map<string, BookingValidationIssue>();
+    if (sameSavedPosition) {
+      for (const item of snapshotIssues) {
+        byCode.set(item.code || item.message, item);
+      }
+    }
+    for (const item of liveNormalized) {
+      byCode.set(item.code || item.message, item);
+    }
+    return Array.from(byCode.values());
+  })();
 
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
