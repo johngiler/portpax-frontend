@@ -29,6 +29,9 @@ import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
 
+/** Align with backend `LTA_SOFT_FAIL_CODES` — Hold instead of hard block. */
+const LTA_SOFT_FAIL_CODES = new Set(["lta_beyond_horizon", "lta_horizon_denied"]);
+
 /** Operational conflicts are non-blocking; always allow create. */
 function splitOperationalIssues(result: BookingValidationResult): {
   errors: BookingValidationIssue[];
