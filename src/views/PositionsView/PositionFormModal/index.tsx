@@ -22,6 +22,7 @@ import { fetchPortBollards } from "@/services/catalogs/portBollardService";
 import { fetchPortFenders } from "@/services/catalogs/portFenderService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import type {
+  Position,
   PositionDetail,
   PositionPayload,
   PositionType,
