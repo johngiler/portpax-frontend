@@ -28,6 +28,7 @@ import type {
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
+import { issueSeverity } from "@/lib/bookingConflictSeverity";
 
 /** Align with backend `LTA_SOFT_FAIL_CODES` — Hold instead of hard block. */
 const LTA_SOFT_FAIL_CODES = new Set(["lta_beyond_horizon", "lta_horizon_denied"]);
@@ -40,18 +41,19 @@ function splitOperationalIssues(result: BookingValidationResult): {
 } {
   const soft: BookingValidationIssue[] = [];
   for (const issue of result.errors) {
+    const severity = issueSeverity(issue);
     if (LTA_SOFT_FAIL_CODES.has(issue.code)) {
       soft.push({
         ...issue,
         level: "warning",
-        severity: issue.severity ?? "yellow",
+        severity,
         message: `${issue.message} Se creará en Hold (H).`,
       });
     } else {
       soft.push({
         ...issue,
         level: "warning",
-        severity: issue.severity ?? "red",
+        severity,
       });
     }
   }

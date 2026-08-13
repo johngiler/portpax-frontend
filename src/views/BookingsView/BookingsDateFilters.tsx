@@ -1,6 +1,7 @@
 "use client";
 
-import { toIsoDate } from "@/lib/bookingDates";
+import { formatIsoAsDmy, toIsoDate } from "@/lib/bookingDates";
+import IsoDateInput from "@/components/ui/IsoDateInput";
 import {
   TIME_FILTER_LABELS,
   getTimeRange,
@@ -127,22 +128,20 @@ export default function BookingsDateFilters({
               <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                 Desde
               </label>
-              <input
-                type="date"
+              <IsoDateInput
                 value={customDateFrom}
-                onChange={(e) => onCustomDateFromChange(e.target.value)}
-                className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
+                onChange={onCustomDateFromChange}
+                size="filter"
               />
             </div>
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                 Hasta
               </label>
-              <input
-                type="date"
+              <IsoDateInput
                 value={customDateTo}
-                onChange={(e) => onCustomDateToChange(e.target.value)}
-                className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
+                onChange={onCustomDateToChange}
+                size="filter"
               />
             </div>
           </div>
@@ -150,8 +149,8 @@ export default function BookingsDateFilters({
         {!hasImportedDates && datePreset !== "custom" ? (
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             {datePreset === "all" && !showAllRangeHint
-              ? `${timeRange.date_from} → …`
-              : `${timeRange.date_from} → ${timeRange.date_to}`}
+              ? `${formatIsoAsDmy(timeRange.date_from)} → …`
+              : `${formatIsoAsDmy(timeRange.date_from)} → ${formatIsoAsDmy(timeRange.date_to)}`}
           </p>
         ) : null}
       </div>

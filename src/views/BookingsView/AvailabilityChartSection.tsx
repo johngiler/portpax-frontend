@@ -6,7 +6,7 @@ import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
-import { CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
+import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
 import { conflictCardClassName } from "@/lib/bookingConflictStyle";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
@@ -366,6 +366,15 @@ export default function AvailabilityChartSection({
                                           status={badgeStatus}
                                           size="sm"
                                         />
+                                      ) : null}
+                                      {call.has_conflict ? (
+                                        <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+                                          <AlertTriangle
+                                            className="h-2.5 w-2.5"
+                                            aria-hidden
+                                          />
+                                          Conflicto
+                                        </span>
                                       ) : null}
                                     </div>
                                     <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">

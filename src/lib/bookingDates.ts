@@ -11,6 +11,32 @@ export function parseIsoDate(value: string): { year: number; monthIndex: number;
   return { year: y, monthIndex: m - 1, day: d };
 }
 
+/** Display ISO YYYY-MM-DD as dd/mm/aaaa. */
+export function formatIsoAsDmy(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const { year, monthIndex, day } = parseIsoDate(iso);
+  return `${String(day).padStart(2, "0")}/${String(monthIndex + 1).padStart(2, "0")}/${year}`;
+}
+
+/** Parse dd/mm/aaaa (also -, .) into ISO YYYY-MM-DD, or null if invalid. */
+export function parseDmyToIso(value: string): string | null {
+  const match = value.trim().match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const dt = new Date(year, month - 1, day);
+  if (
+    dt.getFullYear() !== year ||
+    dt.getMonth() !== month - 1 ||
+    dt.getDate() !== day
+  ) {
+    return null;
+  }
+  return toIsoDate(year, month - 1, day);
+}
+
 /** Short weekday for calendar headers and date labels (e.g. Lun, Mar, Mié). */
 export function formatIsoWeekdayShort(value: string): string {
   const { year, monthIndex, day } = parseIsoDate(value);

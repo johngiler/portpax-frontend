@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
+import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import NoticeAlert from "@/components/ui/NoticeAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,12 @@ import {
   suggestBookingPositions,
   updateBooking,
 } from "@/services/bookings/bookingService";
-import type { Booking, PositionSuggestion } from "@/types/booking";
+import type {
+  Booking,
+  BookingValidationIssue,
+  PositionSuggestion,
+} from "@/types/booking";
+import { issueSeverity } from "@/lib/bookingConflictSeverity";
 
 type BookingOperationalSectionProps = {
   booking: Booking;
@@ -157,15 +163,33 @@ export default function BookingOperationalSection({
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
   // LTA / CL / LTD already sit on the LTA track — horizon soft-fails are noise here.
   const ltaTrack = booking.status === "lta" || booking.status === "cl" || booking.status === "ltd";
-  const selectedWarnings = (selectedSuggestion?.warnings ?? [])
-    .filter((warning) => {
-      if (!ltaTrack) return true;
-      return (
-        warning.code !== "lta_beyond_horizon" &&
-        warning.code !== "lta_horizon_denied"
-      );
-    })
-    .map((warning) => warning.message);
+  const liveWarnings = (selectedSuggestion?.warnings ?? []).filter((warning) => {
+    if (!ltaTrack) return true;
+    return (
+      warning.code !== "lta_beyond_horizon" &&
+      warning.code !== "lta_horizon_denied"
+    );
+  });
+  const snapshotIssues: BookingValidationIssue[] = (
+    booking.conflict_snapshot ?? []
+  ).map((item) => ({
+    level: item.level ?? "warning",
+    code: item.code,
+    message: item.message,
+    severity: issueSeverity(item),
+    detail: item.detail,
+  }));
+  const liveNormalized = liveWarnings.map((warning) => ({
+    ...warning,
+    severity: issueSeverity(warning),
+  }));
+  // Prefer live suggestions for the selected position; fall back to persisted snapshot.
+  const displayIssues =
+    liveNormalized.length > 0
+      ? liveNormalized
+      : positionId === (booking.position ?? 0)
+        ? snapshotIssues
+        : [];
 
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -303,11 +327,10 @@ export default function BookingOperationalSection({
         </div>
       ) : null}
 
-      {selectedWarnings.length > 0 ? (
-        <NoticeAlert
-          variant="warning"
-          className="mt-3"
-          messages={selectedWarnings}
+      {displayIssues.length > 0 ? (
+        <ValidationIssuesAlert
+          className="mt-4"
+          warnings={displayIssues}
         />
       ) : null}
 

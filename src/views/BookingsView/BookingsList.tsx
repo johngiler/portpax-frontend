@@ -301,7 +301,7 @@ export default function BookingsList({
                         status={getBookingBadgeStatus(booking)}
                       />
                       {booking.has_conflict ? (
-                        <span className="inline-flex rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
                           Conflicto
                         </span>
                       ) : null}

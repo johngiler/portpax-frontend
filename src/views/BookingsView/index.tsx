@@ -852,6 +852,10 @@ export default function BookingsView() {
 
   function handleCustomDateFromChange(value: string) {
     setCustomDateFrom(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const { year, monthIndex, day } = parseIsoDate(value);
+      setCustomDateTo(toIsoDate(year + 1, monthIndex, day));
+    }
     if (availabilityDateAllowlist?.length) {
       setAvailabilityDateAllowlist(null);
     }

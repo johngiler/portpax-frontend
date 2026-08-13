@@ -1,5 +1,7 @@
 "use client";
 
+import IsoDateInput from "@/components/ui/IsoDateInput";
+import { formatIsoAsDmy } from "@/lib/bookingDates";
 import {
   TIME_FILTER_LABELS,
   type TimeFilterPreset,
@@ -68,29 +70,28 @@ export default function TimeRangeFilters({
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               Desde
             </label>
-            <input
-              type="date"
+            <IsoDateInput
               value={customDateFrom}
-              onChange={(e) => setCustomDateFrom(e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
+              onChange={setCustomDateFrom}
+              size="filter"
             />
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               Hasta
             </label>
-            <input
-              type="date"
+            <IsoDateInput
               value={customDateTo}
-              onChange={(e) => setCustomDateTo(e.target.value)}
-              className="w-full cursor-pointer rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-1.5 text-xs dark:bg-zinc-800 dark:text-zinc-100"
+              onChange={setCustomDateTo}
+              size="filter"
             />
           </div>
         </div>
       )}
       {timeFilter !== "custom" && (
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          {timeRange.date_from} → {timeRange.date_to}
+          {formatIsoAsDmy(timeRange.date_from)} →{" "}
+          {formatIsoAsDmy(timeRange.date_to)}
         </p>
       )}
       {canClear && onClear ? (

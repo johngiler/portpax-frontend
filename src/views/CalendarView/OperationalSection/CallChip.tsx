@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { currentReturnTo } from "@/lib/safeReturnTo";
@@ -51,8 +52,14 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
           {corpLabel}
         </span>
       </span>
-      <span className="mt-0.5 inline-flex min-w-0">
+      <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
         <BookingStatusBadge status={booking.status} size="sm" />
+        {booking.has_conflict ? (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-800 dark:text-red-200">
+            <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
+            Conflicto
+          </span>
+        ) : null}
       </span>
       <BookingMetaRow
         className="mt-0.5"

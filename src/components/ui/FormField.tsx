@@ -7,6 +7,7 @@ import AsyncSelect from "react-select/async";
 import CatalogLogoThumb, {
   type CatalogLogoKind,
 } from "@/components/ui/CatalogLogoThumb";
+import IsoDateInput from "@/components/ui/IsoDateInput";
 
 const labelClass =
   "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200";
@@ -191,6 +192,7 @@ export function FormField({
   const isPassword = type === "password";
   // Native type="time" follows OS locale (often 12h a.m./p.m.). Use text + HH:mm.
   const isTime = type === "time";
+  const isDate = type === "date";
   const inputType = isPassword && passwordVisible ? "text" : isTime ? "text" : type;
 
   return (
@@ -199,6 +201,21 @@ export function FormField({
         {label}
         {required && <span className="text-red-500"> *</span>}
       </label>
+      {isDate ? (
+        <IsoDateInput
+          id={name}
+          name={name}
+          value={String(value ?? "")}
+          onChange={(iso) => onChange(iso)}
+          onBlur={onBlur}
+          size={compact ? "compact" : "default"}
+          disabled={disabled}
+          required={required}
+          error={Boolean(error)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${name}-error` : undefined}
+        />
+      ) : (
       <div className="relative">
         <input
           id={name}
@@ -243,6 +260,7 @@ export function FormField({
           </button>
         )}
       </div>
+      )}
       {error && (
         <p id={`${name}-error`} className={errorClass} role="alert">
           {error}
