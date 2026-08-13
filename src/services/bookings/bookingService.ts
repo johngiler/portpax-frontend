@@ -273,6 +273,12 @@ export type AvailabilityReport = {
         booking_code: string;
         status?: string;
         has_conflict?: boolean;
+        conflict_severity?: "green" | "yellow" | "red" | null;
+        conflict_snapshot?: Array<{
+          code: string;
+          message: string;
+          severity: "green" | "yellow" | "red";
+        }>;
         position_id?: number;
         shipping_line_name: string;
         shipping_line_logo: string | null;

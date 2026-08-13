@@ -21,8 +21,10 @@ const ISSUE_TITLE: Record<string, string> = {
   multi_port_conflict: "Conflicto multi-puerto",
   multi_port_proximity: "Proximidad multi-puerto",
   position_occupied: "Posición ocupada",
+  lta_slot_reserved: "Posición reservada por LTA",
   lta_beyond_horizon: "Fuera del horizonte LTA",
   lta_horizon_denied: "Horizonte LTA denegado",
+  mooring_capacity: "Capacidad de amarre",
 };
 
 const SEVERITY_STYLES: Record<
@@ -57,8 +59,14 @@ const SEVERITY_STYLES: Record<
   },
 };
 
-function issueTitle(issue: BookingValidationIssue): string {
-  return ISSUE_TITLE[issue.code] ?? "Aviso operativo";
+function issueTitle(
+  issue: BookingValidationIssue,
+  severity: BookingConflictSeverity,
+): string {
+  if (ISSUE_TITLE[issue.code]) return ISSUE_TITLE[issue.code];
+  if (severity === "red") return "Aviso crítico";
+  if (severity === "green") return "Aviso informativo";
+  return "Aviso operativo";
 }
 
 function IssueCard({ issue }: { issue: BookingValidationIssue }) {
@@ -95,7 +103,7 @@ function IssueCard({ issue }: { issue: BookingValidationIssue }) {
         />
         <div className="min-w-0 flex-1 space-y-2.5">
           <p className={`text-sm font-semibold leading-snug ${styles.title}`}>
-            {issueTitle(issue)}
+            {issueTitle(issue, severity)}
           </p>
           <p className="text-sm leading-relaxed opacity-95">{body}</p>
           {formula ? (

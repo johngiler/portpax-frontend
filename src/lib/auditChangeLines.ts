@@ -32,6 +32,7 @@ const FIELD_LABELS: Record<string, string> = {
   override_reason: "Motivo override",
   acknowledge_combined_red: "Ack. eslora combinada",
   has_conflict: "En conflicto",
+  conflict_severity: "Severidad de conflicto",
   conflicts: "Conflictos",
   resolved_conflicts: "Conflictos resueltos",
   conflicts_from: "Conflictos anteriores",

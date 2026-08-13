@@ -11,7 +11,7 @@ import {
   bookingStatusLabel,
   type Booking,
 } from "@/types/booking";
-import { conflictChipClassName } from "@/lib/bookingConflictStyle";
+import { conflictChipClassName, bookingFrameSeverity, conflictBadgeClassName } from "@/lib/bookingConflictStyle";
 import {
   CORP_CHIP_CLASS,
   CORP_SHORT_LABEL,
@@ -30,6 +30,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
   const corp = corpKeyFromShippingLineCode(booking.shipping_line_code);
   const corpLabel = CORP_SHORT_LABEL[corp];
   const positionLabel = booking.position_code || "Sin asignar";
+  const frameSeverity = bookingFrameSeverity(booking);
 
   return (
     <Link
@@ -40,10 +41,10 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         "block min-w-0 rounded-md px-1.5 py-1 text-left text-[10px] leading-tight shadow-sm transition hover:opacity-90 sm:text-[11px]",
         CORP_CHIP_CLASS[corp],
         booking.status === "h" ? "ring-2 ring-amber-300 ring-offset-1" : "",
-        conflictChipClassName(booking.has_conflict),
+        conflictChipClassName(frameSeverity),
         booking.status === "c" ? "opacity-50 line-through" : "",
       ].join(" ")}
-      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${booking.has_conflict ? " · Conflicto" : ""}`}
+      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${frameSeverity ? " · Conflicto" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span className="flex min-w-0 items-baseline justify-between gap-1">
@@ -54,8 +55,8 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
       </span>
       <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
         <BookingStatusBadge status={booking.status} size="sm" />
-        {booking.has_conflict ? (
-          <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-800 dark:text-red-200">
+        {frameSeverity ? (
+          <span className={conflictBadgeClassName(frameSeverity)}>
             <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
             Conflicto
           </span>

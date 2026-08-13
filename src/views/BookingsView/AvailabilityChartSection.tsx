@@ -7,7 +7,11 @@ import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
-import { conflictCardClassName } from "@/lib/bookingConflictStyle";
+import {
+  bookingFrameSeverity,
+  conflictBadgeClassName,
+  conflictCardClassName,
+} from "@/lib/bookingConflictStyle";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
   bookingDetailHref,
@@ -326,6 +330,7 @@ export default function AvailabilityChartSection({
                                   statusFilter,
                                   todayIso,
                                 );
+                              const frameSeverity = bookingFrameSeverity(call);
                               return (
                               <Link
                                 key={call.booking_code}
@@ -335,7 +340,7 @@ export default function AvailabilityChartSection({
                                 )}
                                 className={[
                                   conflictCardClassName(
-                                    call.has_conflict,
+                                    frameSeverity,
                                     "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
                                   ),
                                   matchesFilter
@@ -344,7 +349,7 @@ export default function AvailabilityChartSection({
                                 ].join(" ")}
                                 title={
                                   matchesFilter
-                                    ? `Editar ${call.booking_code}${call.has_conflict ? " · Conflicto" : ""}`
+                                    ? `Editar ${call.booking_code}${frameSeverity ? " · Conflicto" : ""}`
                                     : `${call.booking_code} · otro estado (vecino)`
                                 }
                                 aria-label={`Abrir reserva ${call.booking_code}`}
@@ -367,8 +372,12 @@ export default function AvailabilityChartSection({
                                           size="sm"
                                         />
                                       ) : null}
-                                      {call.has_conflict ? (
-                                        <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+                                      {frameSeverity ? (
+                                        <span
+                                          className={conflictBadgeClassName(
+                                            frameSeverity,
+                                          )}
+                                        >
                                           <AlertTriangle
                                             className="h-2.5 w-2.5"
                                             aria-hidden

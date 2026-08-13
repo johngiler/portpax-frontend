@@ -5,35 +5,39 @@ import type {
 
 /**
  * Mirror of backend `CONFLICT_SEVERITY_BY_CODE`.
- * Used when the API omits `severity` so UI still paints correctly.
+ * Code map wins over stale snapshot severity for consistent paint.
+ *
+ * yellow — non-blocking aviso (default)
+ * red — very heavy berthing / physical / FILO / semaphore red
+ * green — LOA recalc traffic-light OK
  */
 export const CONFLICT_SEVERITY_BY_CODE: Record<string, BookingConflictSeverity> =
   {
     position_occupied: "red",
     lta_priority_conflict: "red",
-    eta_close: "yellow",
-    eta_before_min: "yellow",
     loa_exceeds_position: "red",
-    loa_overhang: "yellow",
-    loa_shared_pier: "yellow",
     beam_exceeds_position: "red",
     draft_too_deep: "red",
-    mooring_capacity: "yellow",
     combined_position_retired: "red",
     loa_recalc_exceeds: "red",
     loa_recalc_sum_red: "red",
-    loa_recalc_sum_yellow: "yellow",
-    loa_recalc_sum_green: "green",
     combined_loa_red: "red",
-    combined_loa_orange: "yellow",
     filo_eta_violation: "red",
     filo_etd_violation: "red",
-    lta_slot_reserved: "red",
+    eta_close: "yellow",
+    eta_before_min: "yellow",
+    loa_overhang: "yellow",
+    loa_shared_pier: "yellow",
+    mooring_capacity: "yellow",
+    loa_recalc_sum_yellow: "yellow",
+    combined_loa_orange: "yellow",
+    lta_slot_reserved: "yellow",
     lta_beyond_horizon: "yellow",
     lta_horizon_denied: "yellow",
     multi_port_conflict: "yellow",
     multi_port_proximity: "yellow",
     no_position_available: "yellow",
+    loa_recalc_sum_green: "green",
   };
 
 /** Resolve paint color for an operational issue (semaforo or default amber). */
@@ -44,6 +48,8 @@ export function issueSeverity(
     level?: BookingValidationIssue["level"] | null;
   },
 ): BookingConflictSeverity {
+  const mapped = CONFLICT_SEVERITY_BY_CODE[issue.code];
+  if (mapped) return mapped;
   if (
     issue.severity === "red" ||
     issue.severity === "yellow" ||
@@ -51,10 +57,7 @@ export function issueSeverity(
   ) {
     return issue.severity;
   }
-  const mapped = CONFLICT_SEVERITY_BY_CODE[issue.code];
-  if (mapped) return mapped;
-  if (issue.level === "error") return "red";
   if (issue.level === "info") return "green";
-  // Non-blocking defaults without traffic-light → amber/orange.
+  // Non-blocking defaults → amber (never assume red).
   return "yellow";
 }

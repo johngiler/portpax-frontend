@@ -60,6 +60,8 @@ export type Booking = {
   status_display: string;
   notes: string;
   has_conflict?: boolean;
+  /** Highest severity in conflict_snapshot when has_conflict (red|yellow|green). */
+  conflict_severity?: BookingConflictSeverity | null;
   conflict_snapshot?: BookingConflictItem[];
   cancellation_reason: CancellationReason | "";
   cancellation_reason_display: string;
