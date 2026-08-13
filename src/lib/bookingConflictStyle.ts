@@ -78,7 +78,6 @@ const CONFLICT_HIGHLIGHT_BY_CODE: Record<string, ConflictHighlightTarget> = {
   // Not shown as a specific meta field → full card
   beam_exceeds_position: "card",
   draft_too_deep: "card",
-  mooring_capacity: "card",
   multi_port_conflict: "card",
   multi_port_proximity: "card",
   lta_beyond_horizon: "card",

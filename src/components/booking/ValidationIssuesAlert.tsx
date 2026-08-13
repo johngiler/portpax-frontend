@@ -24,7 +24,6 @@ const ISSUE_TITLE: Record<string, string> = {
   lta_slot_reserved: "Posición reservada por LTA",
   lta_beyond_horizon: "Fuera del horizonte LTA",
   lta_horizon_denied: "Horizonte LTA denegado",
-  mooring_capacity: "Capacidad de amarre",
 };
 
 const SEVERITY_STYLES: Record<
