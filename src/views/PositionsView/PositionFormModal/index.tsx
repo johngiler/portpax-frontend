@@ -16,6 +16,7 @@ import {
   buildPositionCode,
   formatPositionStoredCode,
   normalizePositionShortCode,
+  positionDisplayCode,
 } from "@/lib/positionCode";
 import { fetchBerths } from "@/services/catalogs/berthService";
 import { fetchPortBollards } from "@/services/catalogs/portBollardService";
