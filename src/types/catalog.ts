@@ -304,16 +304,20 @@ export type PositionNestingRule = {
   updated_at: string;
 };
 
-/** Remaining sibling LOA on a combined slot after a non-mega occupant. */
+/** Shared pier LOA between two physical positions + traffic-light thresholds. */
 export type PositionLoaRecalcRule = {
   id: number;
   port: number;
-  combined_position: number;
-  combined_position_code: string;
-  combined_position_label: string;
-  combined_max_loa_m: string | null;
-  component_labels: string[];
-  min_separation_m: string;
+  position_a: number;
+  position_a_code: string;
+  position_a_label: string;
+  position_b: number;
+  position_b_code: string;
+  position_b_label: string;
+  max_loa_m: string;
+  separation_m: string;
+  yellow_from_m: string;
+  red_from_m: string;
   is_active: boolean;
   notes: string;
   created_at: string;

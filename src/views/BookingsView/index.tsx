@@ -77,6 +77,7 @@ import BookingsList, {
 import BookingsTabs from "./BookingsTabs";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import BulkBookingImportModal from "./Import/BulkBookingImportModal";
+import BulkBookingsEditModal from "./Import/BulkBookingsEditModal";
 import BulkImportLoadingModal from "./Import/BulkImportLoadingModal";
 import ImportOptionsModal from "./Import/ImportOptionsModal";
 import ImportPasteModal from "./Import/ImportPasteModal";
@@ -170,6 +171,10 @@ export default function BookingsView() {
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<
     BookingStatusFilterValue[]
   >([]);
+  const [conflictFilter, setConflictFilter] = useState<"" | "yes" | "no">("");
+  const [appliedConflictFilter, setAppliedConflictFilter] = useState<
+    "" | "yes" | "no"
+  >("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState(0);
@@ -235,6 +240,8 @@ export default function BookingsView() {
   const [availabilityDateAllowlist, setAvailabilityDateAllowlist] = useState<
     string[] | null
   >(null);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkEditIds, setBulkEditIds] = useState<number[]>([]);
 
   const { vessels } = useActiveVesselsCatalog(
     shippingLineFilter > 0 ? shippingLineFilter : null,
@@ -271,6 +278,7 @@ export default function BookingsView() {
       month: appliedMonthIndex,
       heat: appliedHeatMode,
       density: appliedHeatMode === "occupancy" ? appliedDensity : 0,
+      conflict: appliedConflictFilter,
       ...overrides,
     };
   }
@@ -298,6 +306,8 @@ export default function BookingsView() {
     setTab(tab);
     setStatusFilter(parsed.status);
     setAppliedStatusFilter(parsed.status);
+    setConflictFilter(parsed.conflict);
+    setAppliedConflictFilter(parsed.conflict);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
     setPortFilter(port);
@@ -365,6 +375,12 @@ export default function BookingsView() {
     return {
       search: appliedSearch,
       statuses: appliedStatusFilter,
+      has_conflict:
+        appliedConflictFilter === "yes"
+          ? true
+          : appliedConflictFilter === "no"
+            ? false
+            : undefined,
       port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
@@ -379,6 +395,7 @@ export default function BookingsView() {
   }, [
     appliedSearch,
     appliedStatusFilter,
+    appliedConflictFilter,
     appliedPortFilter,
     appliedShippingLineFilter,
     appliedVesselFilter,
@@ -467,6 +484,15 @@ export default function BookingsView() {
 
   function applyFilters() {
     setAppliedStatusFilter(statusFilter);
+    const nextConflict =
+      tab === "list" ||
+      (tab === "availability" && heatMode === "occupancy")
+        ? conflictFilter
+        : "";
+    setAppliedConflictFilter(nextConflict);
+    if (nextConflict !== conflictFilter) {
+      setConflictFilter(nextConflict);
+    }
     setAppliedSearch(search.trim());
     setAppliedPortFilter(portFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
@@ -482,7 +508,9 @@ export default function BookingsView() {
     setAppliedHeatMode(heatMode);
     const nextDensity = heatMode === "occupancy" ? density : 0;
     setAppliedDensity(nextDensity);
-    if (heatMode !== "occupancy") setDensity(0);
+    if (heatMode !== "occupancy") {
+      setDensity(0);
+    }
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
       nextWeek = toIsoDate(year, monthIndex, 1);
@@ -506,6 +534,7 @@ export default function BookingsView() {
         week: nextWeek,
         heat: heatMode,
         density: nextDensity,
+        conflict: nextConflict,
       }),
     );
   }
@@ -549,6 +578,8 @@ export default function BookingsView() {
     const m = new Date().getMonth();
     setStatusFilter([]);
     setAppliedStatusFilter([]);
+    setConflictFilter("");
+    setAppliedConflictFilter("");
     setSearch("");
     setAppliedSearch("");
     setPortFilter(port);
@@ -597,6 +628,7 @@ export default function BookingsView() {
       month: m,
       heat: "availability",
       density: 0,
+      conflict: "",
     });
   }
 
@@ -607,6 +639,10 @@ export default function BookingsView() {
 
   const hasActiveFilters =
     appliedStatusFilter.length > 0 ||
+    (tab === "list" && appliedConflictFilter !== "") ||
+    (tab === "availability" &&
+      appliedHeatMode === "occupancy" &&
+      appliedConflictFilter !== "") ||
     appliedSearch !== "" ||
     appliedPortFilter > 0 ||
     appliedShippingLineFilter > 0 ||
@@ -623,6 +659,10 @@ export default function BookingsView() {
   const canClearFilters =
     hasActiveFilters ||
     statusFilter.length > 0 ||
+    (tab === "list" && conflictFilter !== "") ||
+    (tab === "availability" &&
+      heatMode === "occupancy" &&
+      conflictFilter !== "") ||
     search.trim() !== "" ||
     portFilter > 0 ||
     shippingLineFilter > 0 ||
@@ -636,6 +676,7 @@ export default function BookingsView() {
 
   const canApplyFilters =
     !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
+    conflictFilter !== appliedConflictFilter ||
     search.trim() !== appliedSearch ||
     portFilter !== appliedPortFilter ||
     shippingLineFilter !== appliedShippingLineFilter ||
@@ -984,6 +1025,26 @@ export default function BookingsView() {
         }}
       />
 
+      <BulkBookingsEditModal
+        open={bulkEditOpen}
+        bookingIds={bulkEditIds}
+        onClose={() => {
+          setBulkEditOpen(false);
+          setBulkEditIds([]);
+        }}
+        onSaved={async ({ updatedCount, failedCount }) => {
+          setViewError(null);
+          await refreshBookings();
+          if (failedCount === 0) {
+            setBulkEditOpen(false);
+            setBulkEditIds([]);
+          }
+          if (failedCount > 0 && updatedCount === 0) {
+            setViewError("No se pudo guardar ninguna de las reservas seleccionadas.");
+          }
+        }}
+      />
+
       <BookingsHistoryModal
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
@@ -998,6 +1059,7 @@ export default function BookingsView() {
         <BookingFilters
           tab={tab}
           status={statusFilter}
+          conflictFilter={conflictFilter}
           search={search}
           portFilter={portFilter}
           shippingLineFilter={shippingLineFilter}
@@ -1019,6 +1081,7 @@ export default function BookingsView() {
           canClear={canClearFilters}
           canApply={canApplyFilters}
           onStatusChange={setStatusFilter}
+          onConflictFilterChange={setConflictFilter}
           onSearchChange={setSearch}
           onPortFilterChange={(id) => {
             setPortFilter(id);
@@ -1034,7 +1097,12 @@ export default function BookingsView() {
           onCalendarMonthChange={setMonthIndex}
           onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
-          onHeatModeChange={setHeatMode}
+          onHeatModeChange={(mode) => {
+            setHeatMode(mode);
+            if (mode !== "occupancy") {
+              setConflictFilter("");
+            }
+          }}
           onDensityChange={setDensity}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
@@ -1094,6 +1162,14 @@ export default function BookingsView() {
               canWrite={canWrite}
               onBulkDelete={canWrite ? handleBulkDeleteCancelled : undefined}
               onBulkStatus={canWrite ? handleBulkStatusChange : undefined}
+              onMassEdit={
+                canWrite
+                  ? (ids) => {
+                      setBulkEditIds(ids);
+                      setBulkEditOpen(true);
+                    }
+                  : undefined
+              }
             />
             {bookings.length > 0 ? (
               <InfiniteScrollFooter
@@ -1172,6 +1248,14 @@ export default function BookingsView() {
             statuses:
               appliedStatusFilter.length > 0
                 ? appliedStatusFilter
+                : undefined,
+            has_conflict:
+              appliedHeatMode === "occupancy"
+                ? appliedConflictFilter === "yes"
+                  ? true
+                  : appliedConflictFilter === "no"
+                    ? false
+                    : undefined
                 : undefined,
           }}
           canBook={canWrite}

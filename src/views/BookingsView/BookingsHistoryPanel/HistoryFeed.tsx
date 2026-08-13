@@ -31,12 +31,20 @@ function actionLabel(action: string): string {
       return "Creación";
     case "operational_update":
       return "Actualización operativa";
+    case "identity_update":
+      return "Actualización de escala";
     case "status_change":
       return "Cambio de estado";
     case "lta_linked":
       return "Vinculación LTA";
     case "bulk_create":
       return "Importación";
+    case "conflict_detected":
+      return "Conflicto detectado";
+    case "conflict_resolved":
+      return "Conflicto resuelto";
+    case "conflict_updated":
+      return "Conflicto actualizado";
     default:
       return action;
   }
@@ -53,10 +61,18 @@ function headline(item: BookingActivityItem): string {
       return item.summary?.startsWith("Override")
         ? item.summary
         : "Actualizó la reserva";
+    case "identity_update":
+      return item.summary || "Actualizó la escala";
     case "status_change":
       return item.summary || "Cambió el estado";
     case "lta_linked":
       return item.summary || "Vinculó acuerdo LTA";
+    case "conflict_detected":
+      return item.summary || "Marcó conflictos operativos";
+    case "conflict_resolved":
+      return item.summary || "Resolvió los conflictos operativos";
+    case "conflict_updated":
+      return item.summary || "Actualizó los conflictos operativos";
     default:
       return item.summary || "Movimiento de reserva";
   }

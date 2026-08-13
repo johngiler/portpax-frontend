@@ -99,7 +99,7 @@ export default function PositionsView() {
         search: appliedSearch,
         port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
       });
-      setPositions(data.results);
+      setPositions(data.results.filter((p) => !p.is_combined));
       setTotalCount(data.count);
     } catch (err) {
       setViewError(

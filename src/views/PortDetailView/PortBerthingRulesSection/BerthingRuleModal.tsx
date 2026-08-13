@@ -7,74 +7,127 @@ import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { positionShortCode } from "@/lib/positionCode";
-import { createPositionLoaRecalcRule } from "@/services/catalogs/positionLoaRecalcRuleService";
-import { createPositionNestingRule } from "@/services/catalogs/positionNestingRuleService";
-import type { PortDetail } from "@/types/catalog";
+import {
+  createPositionLoaRecalcRule,
+  updatePositionLoaRecalcRule,
+} from "@/services/catalogs/positionLoaRecalcRuleService";
+import {
+  createPositionNestingRule,
+  updatePositionNestingRule,
+} from "@/services/catalogs/positionNestingRuleService";
+import type {
+  PortDetail,
+  PositionLoaRecalcRule,
+  PositionNestingRule,
+} from "@/types/catalog";
 import { BERTHING_RULE_KINDS, type BerthingRuleKind } from "./kinds";
+
+export type BerthingRuleEditing =
+  | { kind: "filo"; rule: PositionNestingRule }
+  | { kind: "loa_recalc"; rule: PositionLoaRecalcRule };
 
 type BerthingRuleModalProps = {
   open: boolean;
   port: PortDetail;
+  editing?: BerthingRuleEditing | null;
   onClose: () => void;
   onSaved: () => Promise<void>;
 };
 
+function numOrEmpty(value: string | number | null | undefined): number | "" {
+  if (value === null || value === undefined || value === "") return "";
+  const n = Number(value);
+  return Number.isNaN(n) ? "" : n;
+}
+
 export default function BerthingRuleModal({
   open,
   port,
+  editing = null,
   onClose,
   onSaved,
 }: BerthingRuleModalProps) {
-  const pierOptions = useMemo(
-    () =>
-      port.positions
-        .filter((p) => p.is_active && p.position_type === "pier" && !p.is_combined)
-        .map((p) => ({
-          value: p.id,
-          label: positionShortCode(port.code, p.code),
-        })),
-    [port],
-  );
+  const isEdit = editing != null;
 
-  const combinedOptions = useMemo(
-    () =>
-      port.positions
-        .filter((p) => p.is_active && p.is_combined)
-        .map((p) => ({
-          value: p.id,
-          label: `${positionShortCode(port.code, p.code)}${
-            p.max_loa_m ? ` · máx. ${p.max_loa_m} m` : ""
-          }`,
-        })),
-    [port],
-  );
+  const pierOptions = useMemo(() => {
+    const base = port.positions.filter(
+      (p) => p.position_type === "pier" && !p.is_combined && p.is_active,
+    );
+    const byId = new Map(base.map((p) => [p.id, p]));
+    if (editing?.kind === "filo") {
+      for (const id of [editing.rule.outer_position, editing.rule.inner_position]) {
+        const pos = port.positions.find((p) => p.id === id);
+        if (pos && !byId.has(id)) byId.set(id, pos);
+      }
+    }
+    if (editing?.kind === "loa_recalc") {
+      for (const id of [editing.rule.position_a, editing.rule.position_b]) {
+        const pos = port.positions.find((p) => p.id === id);
+        if (pos && !byId.has(id)) byId.set(id, pos);
+      }
+    }
+    return [...byId.values()].map((p) => ({
+      value: p.id,
+      label: positionShortCode(port.code, p.code),
+    }));
+  }, [port, editing]);
 
   const [kind, setKind] = useState<BerthingRuleKind>("filo");
-  const [outerId, setOuterId] = useState(pierOptions[0]?.value ?? 0);
-  const [innerId, setInnerId] = useState(pierOptions[1]?.value ?? 0);
+  const [outerId, setOuterId] = useState(0);
+  const [innerId, setInnerId] = useState(0);
   const [enforceEta, setEnforceEta] = useState(true);
   const [enforceEtd, setEnforceEtd] = useState(true);
-  const [combinedId, setCombinedId] = useState(combinedOptions[0]?.value ?? 0);
-  const [minSeparation, setMinSeparation] = useState<number | "">(15);
+  const [positionAId, setPositionAId] = useState(0);
+  const [positionBId, setPositionBId] = useState(0);
+  const [maxLoa, setMaxLoa] = useState<number | "">(580);
+  const [separation, setSeparation] = useState<number | "">(15);
+  const [yellowFrom, setYellowFrom] = useState<number | "">(581);
+  const [redFrom, setRedFrom] = useState<number | "">(621);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  function resetFields(nextKind: BerthingRuleKind) {
+  function resetCreateFields(nextKind: BerthingRuleKind) {
     setKind(nextKind);
     setOuterId(pierOptions[0]?.value ?? 0);
-    setInnerId(pierOptions[1]?.value ?? 0);
+    setInnerId(pierOptions[1]?.value ?? pierOptions[0]?.value ?? 0);
     setEnforceEta(true);
     setEnforceEtd(true);
-    setCombinedId(combinedOptions[0]?.value ?? 0);
-    setMinSeparation(15);
+    setPositionAId(pierOptions[0]?.value ?? 0);
+    setPositionBId(pierOptions[1]?.value ?? pierOptions[0]?.value ?? 0);
+    setMaxLoa(580);
+    setSeparation(15);
+    setYellowFrom(581);
+    setRedFrom(621);
     setFieldErrors({});
     setSubmitError(null);
   }
 
+  function hydrateFromEditing(row: BerthingRuleEditing) {
+    setKind(row.kind);
+    setFieldErrors({});
+    setSubmitError(null);
+    if (row.kind === "filo") {
+      setOuterId(row.rule.outer_position);
+      setInnerId(row.rule.inner_position);
+      setEnforceEta(row.rule.enforce_eta);
+      setEnforceEtd(row.rule.enforce_etd);
+      return;
+    }
+    setPositionAId(row.rule.position_a);
+    setPositionBId(row.rule.position_b);
+    setMaxLoa(numOrEmpty(row.rule.max_loa_m));
+    setSeparation(numOrEmpty(row.rule.separation_m));
+    setYellowFrom(numOrEmpty(row.rule.yellow_from_m));
+    setRedFrom(numOrEmpty(row.rule.red_from_m));
+  }
+
   useEffect(() => {
-    if (open) resetFields("filo");
-  }, [open]);
+    if (!open) return;
+    if (editing) hydrateFromEditing(editing);
+    else resetCreateFields("filo");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once per open/edit target
+  }, [open, editing?.kind, editing?.rule.id]);
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -85,11 +138,38 @@ export default function BerthingRuleModal({
         next.inner = "Entrada y fondo deben ser distintas.";
       }
     } else {
-      if (!combinedId) next.combined = "Selecciona una posición combinada.";
-      if (minSeparation === "" || Number.isNaN(Number(minSeparation))) {
-        next.separation = "Indica la separación mínima.";
-      } else if (Number(minSeparation) < 0) {
+      if (!positionAId) next.positionA = "Selecciona la primera posición.";
+      if (!positionBId) next.positionB = "Selecciona la segunda posición.";
+      if (positionAId && positionBId && positionAId === positionBId) {
+        next.positionB = "Las dos posiciones deben ser distintas.";
+      }
+      if (maxLoa === "" || Number(maxLoa) <= 0) {
+        next.maxLoa = "Indica la eslora máxima combinada.";
+      }
+      if (separation === "" || Number.isNaN(Number(separation))) {
+        next.separation = "Indica la separación entre barcos.";
+      } else if (Number(separation) < 0) {
         next.separation = "La separación no puede ser negativa.";
+      }
+      if (yellowFrom === "" || Number.isNaN(Number(yellowFrom))) {
+        next.yellow = "Indica el umbral amarillo.";
+      }
+      if (redFrom === "" || Number.isNaN(Number(redFrom))) {
+        next.red = "Indica el umbral rojo.";
+      }
+      if (
+        maxLoa !== "" &&
+        yellowFrom !== "" &&
+        Number(yellowFrom) <= Number(maxLoa)
+      ) {
+        next.yellow = "El amarillo debe ser mayor que la eslora máxima combinada (verde).";
+      }
+      if (
+        yellowFrom !== "" &&
+        redFrom !== "" &&
+        Number(yellowFrom) >= Number(redFrom)
+      ) {
+        next.red = "El rojo debe ser mayor que el amarillo.";
       }
     }
     setFieldErrors(next);
@@ -102,21 +182,36 @@ export default function BerthingRuleModal({
     setSubmitError(null);
     try {
       if (kind === "filo") {
-        await createPositionNestingRule({
+        const payload = {
           port: port.id,
           outer_position: outerId,
           inner_position: innerId,
           enforce_eta: enforceEta,
           enforce_etd: enforceEtd,
-          is_active: true,
-        });
+          is_active: editing?.kind === "filo" ? editing.rule.is_active : true,
+        };
+        if (editing?.kind === "filo") {
+          await updatePositionNestingRule(editing.rule.id, payload);
+        } else {
+          await createPositionNestingRule(payload);
+        }
       } else {
-        await createPositionLoaRecalcRule({
+        const payload = {
           port: port.id,
-          combined_position: combinedId,
-          min_separation_m: Number(minSeparation),
-          is_active: true,
-        });
+          position_a: positionAId,
+          position_b: positionBId,
+          max_loa_m: Number(maxLoa),
+          separation_m: Number(separation),
+          yellow_from_m: Number(yellowFrom),
+          red_from_m: Number(redFrom),
+          is_active:
+            editing?.kind === "loa_recalc" ? editing.rule.is_active : true,
+        };
+        if (editing?.kind === "loa_recalc") {
+          await updatePositionLoaRecalcRule(editing.rule.id, payload);
+        } else {
+          await createPositionLoaRecalcRule(payload);
+        }
       }
       await onSaved();
       onClose();
@@ -127,13 +222,19 @@ export default function BerthingRuleModal({
     }
   }
 
+  const positionALabel =
+    pierOptions.find((o) => o.value === positionAId)?.label ?? "A";
+  const positionBLabel =
+    pierOptions.find((o) => o.value === positionBId)?.label ?? "B";
+  const maxCombinedLoaLabel = `Eslora máxima combinada (${positionALabel}+${positionBLabel}) (m)`;
+
   return (
     <Modal
       open={open}
       onClose={() => {
         if (!saving) onClose();
       }}
-      title="Agregar regla de atraque"
+      title={isEdit ? "Editar regla de atraque" : "Agregar regla de atraque"}
       footer={
         <div className="flex justify-end gap-3">
           <button
@@ -156,8 +257,12 @@ export default function BerthingRuleModal({
           label="Tipo de regla"
           name="berthing_rule_kind"
           value={kind}
-          onChange={(value) => resetFields(value)}
+          onChange={(value) => {
+            if (isEdit) return;
+            resetCreateFields(value);
+          }}
           options={[...BERTHING_RULE_KINDS]}
+          disabled={isEdit}
           required
         />
 
@@ -203,25 +308,73 @@ export default function BerthingRuleModal({
         ) : (
           <>
             <FormFieldSelect<number>
-              label="Posición combinada"
-              name="loa_recalc_combined"
-              value={combinedId}
-              onChange={setCombinedId}
-              options={combinedOptions}
-              error={fieldErrors.combined}
+              label="Posición A"
+              name="loa_recalc_a"
+              value={positionAId}
+              onChange={setPositionAId}
+              options={pierOptions}
+              error={fieldErrors.positionA}
+              required
+            />
+            <FormFieldSelect<number>
+              label="Posición B"
+              name="loa_recalc_b"
+              value={positionBId}
+              onChange={setPositionBId}
+              options={pierOptions}
+              error={fieldErrors.positionB}
               required
             />
             <FormField
-              label="Separación mínima (m)"
+              label={maxCombinedLoaLabel}
+              name="loa_recalc_max"
+              type="number"
+              min={0}
+              step="0.5"
+              value={maxLoa}
+              onChange={(v) => setMaxLoa(v === "" ? "" : Number(v))}
+              error={fieldErrors.maxLoa}
+              required
+            />
+            <FormField
+              label="Separación entre barcos (m)"
               name="loa_recalc_sep"
               type="number"
               min={0}
               step="0.5"
-              value={minSeparation}
-              onChange={(v) => setMinSeparation(v === "" ? "" : Number(v))}
+              value={separation}
+              onChange={(v) => setSeparation(v === "" ? "" : Number(v))}
               error={fieldErrors.separation}
               required
             />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Semáforo amarillo desde (m)"
+                name="loa_recalc_yellow"
+                type="number"
+                min={0}
+                step="1"
+                value={yellowFrom}
+                onChange={(v) => setYellowFrom(v === "" ? "" : Number(v))}
+                error={fieldErrors.yellow}
+                required
+              />
+              <FormField
+                label="Semáforo rojo desde (m)"
+                name="loa_recalc_red"
+                type="number"
+                min={0}
+                step="1"
+                value={redFrom}
+                onChange={(v) => setRedFrom(v === "" ? "" : Number(v))}
+                error={fieldErrors.red}
+                required
+              />
+            </div>
+            <p className="text-xs text-zinc-500">
+              Verde: suma &lt; amarillo · Amarillo: hasta rojo · Rojo: desde el umbral
+              rojo. Solo avisos (no bloquean).
+            </p>
           </>
         )}
       </div>

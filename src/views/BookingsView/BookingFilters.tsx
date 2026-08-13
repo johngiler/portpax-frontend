@@ -62,11 +62,17 @@ const YEAR_OPTIONS = getBookingYearRange("2024-01-01", 6).map((y) => ({
   label: String(y),
 }));
 
+const CONFLICT_OPTIONS: { value: "yes" | "no"; label: string }[] = [
+  { value: "yes", label: "Con conflicto" },
+  { value: "no", label: "Sin conflicto" },
+];
+
 type FilterOption = { value: number; label: string; logoUrl?: string | null };
 
 type BookingFiltersProps = {
   tab: BookingsTabQuery;
   status: BookingStatusFilterValue[];
+  conflictFilter: "" | "yes" | "no";
   search: string;
   portFilter: number;
   shippingLineFilter: number;
@@ -88,6 +94,7 @@ type BookingFiltersProps = {
   canClear: boolean;
   canApply: boolean;
   onStatusChange: (status: BookingStatusFilterValue[]) => void;
+  onConflictFilterChange: (value: "" | "yes" | "no") => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
   onShippingLineFilterChange: (lineId: number) => void;
@@ -112,6 +119,7 @@ type BookingFiltersProps = {
 export default function BookingFilters({
   tab,
   status,
+  conflictFilter,
   search,
   portFilter,
   shippingLineFilter,
@@ -133,6 +141,7 @@ export default function BookingFilters({
   canClear,
   canApply,
   onStatusChange,
+  onConflictFilterChange,
   onSearchChange,
   onPortFilterChange,
   onShippingLineFilterChange,
@@ -418,6 +427,20 @@ export default function BookingFilters({
           includeFilterExtras
         />
       </>
+
+      {(tab === "list" ||
+        (tab === "availability" && heatMode === "occupancy")) && (
+        <FormFieldSelect<"" | "yes" | "no">
+          label="Conflicto"
+          name="booking_conflict_filter"
+          value={conflictFilter}
+          onChange={onConflictFilterChange}
+          options={CONFLICT_OPTIONS}
+          optionLabel="Todos"
+          emptyValue=""
+          compact
+        />
+      )}
 
       {showDates ? (
         <BookingsDateFilters

@@ -75,7 +75,11 @@ export default function BookingDetailView() {
       )}
 
       <BookingDetailHero booking={booking} />
-      <BookingDetailSummary booking={booking} />
+      <BookingDetailSummary
+        booking={booking}
+        canWrite={canWrite}
+        onUpdated={setBooking}
+      />
       <BookingOperationalSection
         booking={booking}
         onUpdated={setBooking}

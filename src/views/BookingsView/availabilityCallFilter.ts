@@ -17,6 +17,7 @@ const ACTIVE_STATUSES: BookingStatus[] = [
 export type AvailabilityCall = {
   booking_code: string;
   status?: string;
+  has_conflict?: boolean;
   /** Home position; related columns may echo the same call for occupancy. */
   position_id?: number;
   shipping_line_name: string;

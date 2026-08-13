@@ -40,6 +40,8 @@ export type Booking = {
   shipping_line_code: string;
   shipping_line_name: string;
   shipping_line_logo: string | null;
+  /** Corporate group id (ShippingLine.group); used to restrict identity edits. */
+  shipping_line_group: number | null;
   vessel: number;
   vessel_name: string;
   vessel_logo: string | null;
@@ -57,6 +59,8 @@ export type Booking = {
   status: BookingStatus;
   status_display: string;
   notes: string;
+  has_conflict?: boolean;
+  conflict_snapshot?: BookingConflictItem[];
   cancellation_reason: CancellationReason | "";
   cancellation_reason_display: string;
   cancellation_evidence_url: string | null;
@@ -68,10 +72,22 @@ export type Booking = {
   updated_at: string;
 };
 
-export type BookingValidationIssue = {
-  level: "error" | "warning";
+export type BookingConflictSeverity = "green" | "yellow" | "red";
+
+export type BookingConflictItem = {
   code: string;
   message: string;
+  severity: BookingConflictSeverity;
+  level?: "error" | "warning" | "info";
+  detail?: Record<string, string | number | null | undefined>;
+};
+
+export type BookingValidationIssue = {
+  level: "error" | "warning" | "info";
+  code: string;
+  message: string;
+  severity?: BookingConflictSeverity;
+  detail?: Record<string, string | number | null | undefined>;
 };
 
 export type BookingValidationResult = {
@@ -130,6 +146,11 @@ export type BookingUpdatePayload = {
   planned_pax?: number | null;
   actual_pax?: number | null;
   actual_crew?: number | null;
+  port?: number;
+  shipping_line?: number;
+  vessel?: number;
+  call_date?: string;
+  notes?: string;
   cancellation_reason?: CancellationReason | null;
   cancellation_evidence?: File | null;
   port_operator_override?: boolean;

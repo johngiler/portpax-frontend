@@ -16,6 +16,11 @@ function listParamsKey(params: BookingsListFilterParams): string {
   return [
     params.search ?? "",
     (params.statuses ?? []).join(",") || (params.status ?? ""),
+    params.has_conflict === true
+      ? "1"
+      : params.has_conflict === false
+        ? "0"
+        : "",
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,

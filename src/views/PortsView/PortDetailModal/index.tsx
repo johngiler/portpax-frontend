@@ -52,7 +52,7 @@ export default function PortDetailModal({ open, port, onClose }: PortDetailModal
     setError(null);
     try {
       const data = await fetchPositions({ port: port.id, pageSize: 100 });
-      setPositions(data.results);
+      setPositions(data.results.filter((p) => !p.is_combined));
     } catch (err) {
       setError(
         getApiErrorMessage(err, "No se pudieron cargar las posiciones."),

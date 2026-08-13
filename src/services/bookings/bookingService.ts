@@ -35,6 +35,8 @@ export type FetchBookingsParams = {
   call_date_to?: string;
   ordering?: string;
   pageSize?: number;
+  /** true = only conflicted; false = only clean; omit = all */
+  has_conflict?: boolean;
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -57,6 +59,8 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);
   if (params.ordering) query.set("ordering", params.ordering);
   if (params.pageSize) query.set("page_size", String(params.pageSize));
+  if (params.has_conflict === true) query.set("has_conflict", "true");
+  if (params.has_conflict === false) query.set("has_conflict", "false");
   return query;
 }
 
@@ -268,6 +272,7 @@ export type AvailabilityReport = {
       Array<{
         booking_code: string;
         status?: string;
+        has_conflict?: boolean;
         position_id?: number;
         shipping_line_name: string;
         shipping_line_logo: string | null;
@@ -300,6 +305,7 @@ export async function fetchAvailabilityReport(params: {
   ships_per_day?: number;
   page?: number;
   page_size?: number;
+  has_conflict?: boolean;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -315,8 +321,15 @@ export async function fetchAvailabilityReport(params: {
       ? params.statuses.join(",")
       : params.status || "";
   if (statusCsv) query.set("status", statusCsv);
+  if (params.has_conflict === true) query.set("has_conflict", "true");
+  if (params.has_conflict === false) query.set("has_conflict", "false");
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
+  }
+  const paged =
+    (params.ships_per_day != null && params.ships_per_day >= 1) ||
+    params.has_conflict !== undefined;
+  if (paged) {
     if (params.page != null) query.set("page", String(params.page));
     if (params.page_size != null) {
       query.set("page_size", String(params.page_size));
@@ -499,6 +512,11 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.planned_pax !== undefined) body.planned_pax = payload.planned_pax;
   if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
   if (payload.actual_crew !== undefined) body.actual_crew = payload.actual_crew;
+  if (payload.port !== undefined) body.port = payload.port;
+  if (payload.shipping_line !== undefined) body.shipping_line = payload.shipping_line;
+  if (payload.vessel !== undefined) body.vessel = payload.vessel;
+  if (payload.call_date !== undefined) body.call_date = payload.call_date;
+  if (payload.notes !== undefined) body.notes = payload.notes;
   if (payload.cancellation_reason !== undefined) {
     body.cancellation_reason = payload.cancellation_reason;
   }

@@ -31,6 +31,15 @@ const FIELD_LABELS: Record<string, string> = {
   long_term_agreement: "Acuerdo LTA",
   override_reason: "Motivo override",
   acknowledge_combined_red: "Ack. eslora combinada",
+  has_conflict: "En conflicto",
+  conflicts: "Conflictos",
+  resolved_conflicts: "Conflictos resueltos",
+  conflicts_from: "Conflictos anteriores",
+  conflicts_to: "Conflictos actuales",
+  booking_code: "Código de reserva",
+  call_date: "Fecha de escala",
+  vessel_id: "Barco",
+  long_term_agreement_id: "Acuerdo LTA",
   code: "Código",
   name: "Nombre",
   port_id: "Puerto",
@@ -87,6 +96,18 @@ function formatBookingStatus(value: unknown): string {
   return label ?? value;
 }
 
+function formatNamedSide(rec: Record<string, unknown>, side: "from" | "to"): string {
+  const nameKey = side === "from" ? "from_name" : "to_name";
+  const codeKey = side === "from" ? "from_code" : "to_code";
+  const name = rec[nameKey];
+  const code = rec[codeKey];
+  if (typeof name === "string" && name.trim()) return name;
+  if (typeof code === "string" && code.trim()) return code;
+  const raw = rec[side] ?? rec[side === "from" ? "old" : "new"];
+  if (raw == null || raw === "") return "—";
+  return String(raw);
+}
+
 function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): string {
   const codeKey = side === "from" ? "from_code" : "to_code";
   const code = rec[codeKey];
@@ -96,9 +117,39 @@ function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): 
   return String(raw);
 }
 
+const NAMED_ID_FIELDS = new Set([
+  "port_id",
+  "shipping_line_id",
+  "vessel_id",
+]);
+
 const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real"]);
 
+function formatConflictList(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "—";
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return String(item);
+      const rec = item as Record<string, unknown>;
+      const code = typeof rec.code === "string" ? rec.code : "";
+      const sev = typeof rec.severity === "string" ? rec.severity : "";
+      const msg = typeof rec.message === "string" ? rec.message : "";
+      if (code && msg) return `${code} (${sev || "?"}): ${msg}`;
+      if (code) return sev ? `${code} (${sev})` : code;
+      return msg || "—";
+    })
+    .join(" · ");
+}
+
 function formatValue(value: unknown, key?: string): string {
+  if (
+    key === "conflicts" ||
+    key === "resolved_conflicts" ||
+    key === "conflicts_from" ||
+    key === "conflicts_to"
+  ) {
+    return formatConflictList(value);
+  }
   if (key === "weekdays") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
@@ -115,6 +166,14 @@ function formatValue(value: unknown, key?: string): string {
       const rec = value as Record<string, unknown>;
       if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
         return `${formatPositionSide(rec, "from")} → ${formatPositionSide(rec, "to")}`;
+      }
+    }
+  }
+  if (key && NAMED_ID_FIELDS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return `${formatNamedSide(rec, "from")} → ${formatNamedSide(rec, "to")}`;
       }
     }
   }

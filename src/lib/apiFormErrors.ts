@@ -39,12 +39,31 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
     "En este periodo solo navieras con LTA vigente pueden reservar con prioridad; se creará en Hold.",
   loa_exceeds_position: "La eslora del barco excede el máximo de la posición.",
   loa_below_combined_min:
-    "La eslora del barco no alcanza el mínimo de la posición combinada.",
+    "Esta posición combinada ya no está disponible para reservar.",
   loa_requires_combined:
-    "Mega-barco: la eslora alcanza el mínimo del slot combinado; debe ocupar E1+E2.",
+    "Usa una posición física del muelle; las combinadas ya no se reservan.",
+  combined_position_retired:
+    "Esta posición combinada ya no está disponible para reservar.",
+  loa_recalc_sum_yellow: "Suma de esloras en zona amarilla del muelle.",
+  loa_recalc_sum_red: "Suma de esloras en zona roja del muelle.",
+  loa_shared_pier:
+    "La eslora supera el máximo de la posición; se recalcula la vecina.",
+  loa_recalc_exceeds:
+    "La eslora supera el espacio restante del muelle compartido.",
   beam_exceeds_position: "La manga del barco excede el máximo de la posición.",
   draft_too_deep: "El calado del barco supera la profundidad disponible.",
   combined_loa_red: "La eslora combinada alcanza o supera el límite rojo.",
+  multi_port_conflict:
+    "El mismo barco ya tiene escala en otro puerto en esta fecha.",
+  multi_port_proximity:
+    "El mismo barco tiene escala en otro puerto dentro de ±2 días; la escala actual puede no ser viable.",
+  shipping_line_group_mismatch:
+    "No se puede mover la reserva a una naviera de otro grupo corporativo. Cancela esta reserva para liberar la posición y la fecha.",
+  vessel_line_mismatch:
+    "El barco debe pertenecer a la naviera seleccionada.",
+  duplicate_port_vessel_date:
+    "Ya existe una reserva para ese puerto, barco y fecha.",
+  booking_cancelled: "No se puede editar una reserva cancelada.",
 };
 
 const MESSAGE_PATTERNS: Array<{

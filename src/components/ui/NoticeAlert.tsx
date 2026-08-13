@@ -1,6 +1,6 @@
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-type NoticeVariant = "error" | "warning";
+type NoticeVariant = "error" | "warning" | "success";
 
 type NoticeAlertProps = {
   variant: NoticeVariant;
@@ -24,9 +24,19 @@ const NOTICE_STYLES: Record<
     icon: "text-amber-600 dark:text-amber-400",
     Icon: AlertTriangle,
   },
+  success: {
+    container:
+      "border-emerald-200/90 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/25 dark:text-emerald-300",
+    icon: "text-emerald-600 dark:text-emerald-400",
+    Icon: CheckCircle2,
+  },
 };
 
-export default function NoticeAlert({ variant, messages, className = "" }: NoticeAlertProps) {
+export default function NoticeAlert({
+  variant,
+  messages,
+  className = "",
+}: NoticeAlertProps) {
   if (messages.length === 0) return null;
 
   const { container, icon, Icon } = NOTICE_STYLES[variant];
@@ -38,8 +48,8 @@ export default function NoticeAlert({ variant, messages, className = "" }: Notic
     >
       <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${icon}`} strokeWidth={2} aria-hidden />
       <ul className="min-w-0 space-y-1.5 text-sm leading-snug">
-        {messages.map((message, index) => (
-          <li key={`${variant}-${index}`}>{message}</li>
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
         ))}
       </ul>
     </div>

@@ -7,6 +7,7 @@ import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
+import { conflictCardClassName } from "@/lib/bookingConflictStyle";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
   bookingDetailHref,
@@ -333,14 +334,17 @@ export default function AvailabilityChartSection({
                                   { returnTo },
                                 )}
                                 className={[
-                                  "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
+                                  conflictCardClassName(
+                                    call.has_conflict,
+                                    "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
+                                  ),
                                   matchesFilter
                                     ? "border-zinc-200 hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 dark:border-zinc-700 dark:hover:border-[var(--admin-accent)]/50"
                                     : "border-zinc-200/80 opacity-55 hover:opacity-80 dark:border-zinc-700/80",
                                 ].join(" ")}
                                 title={
                                   matchesFilter
-                                    ? `Editar ${call.booking_code}`
+                                    ? `Editar ${call.booking_code}${call.has_conflict ? " · Conflicto" : ""}`
                                     : `${call.booking_code} · otro estado (vecino)`
                                 }
                                 aria-label={`Abrir reserva ${call.booking_code}`}

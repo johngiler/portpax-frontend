@@ -221,21 +221,23 @@ export default function PortPositionsSection({
         }
       >
         <FormErrorAlert message={error} className="mb-3" />
-        {port.positions.length === 0 ? (
+        {port.positions.filter((p) => !p.is_combined).length === 0 ? (
           <p className="text-sm text-zinc-500">Sin posiciones registradas.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {port.positions.map((position) => (
-              <PositionCard
-                key={position.id}
-                position={position}
-                bollards={port.bollards}
-                fenders={port.fenders}
-                canWrite={canWrite}
-                onEdit={() => openEdit(position)}
-                onDelete={() => handleDelete(position)}
-              />
-            ))}
+            {port.positions
+              .filter((p) => !p.is_combined)
+              .map((position) => (
+                <PositionCard
+                  key={position.id}
+                  position={position}
+                  bollards={port.bollards}
+                  fenders={port.fenders}
+                  canWrite={canWrite}
+                  onEdit={() => openEdit(position)}
+                  onDelete={() => handleDelete(position)}
+                />
+              ))}
           </div>
         )}
       </ViewSection>

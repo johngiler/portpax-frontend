@@ -73,7 +73,15 @@ export type BookingsWorkspaceFilters = {
    * Occupancy-only: exact ships-per-day density (0 = all days with any occupancy).
    */
   density: number;
+  /** Conflict filter: empty = all; yes/no for has_conflict. */
+  conflict: "" | "yes" | "no";
 };
+
+function parseConflictFilter(raw: string | null): "" | "yes" | "no" {
+  if (raw === "yes" || raw === "true" || raw === "1") return "yes";
+  if (raw === "no" || raw === "false" || raw === "0") return "no";
+  return "";
+}
 
 export function parseBookingsWorkspaceFilters(
   sp: URLSearchParams,
@@ -102,6 +110,9 @@ export function parseBookingsWorkspaceFilters(
     densityNum <= 4
       ? Math.trunc(densityNum)
       : 0;
+  const conflict = parseConflictFilter(
+    sp.get("conflict") ?? sp.get("has_conflict"),
+  );
 
   // Legacy /calendar?ports=1,2 → first port
   const portsCsv = sp.get("ports");
@@ -142,6 +153,7 @@ export function parseBookingsWorkspaceFilters(
         : defaults.month,
     heat,
     density,
+    conflict,
   };
 }
 
@@ -156,6 +168,9 @@ export function buildBookingsWorkspaceQuery(
   if (state.port > 0) sp.set("port", String(state.port));
   if (state.line > 0) sp.set("line", String(state.line));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
+  if (state.conflict === "yes" || state.conflict === "no") {
+    sp.set("conflict", state.conflict);
+  }
   if (state.datePreset !== "all") {
     sp.set("date", state.datePreset);
     if (state.datePreset === "custom") {
@@ -176,6 +191,10 @@ export function buildBookingsWorkspaceQuery(
     if (state.mode === "annual" && state.season !== "natural") {
       sp.set("season", state.season);
     }
+  }
+  // Position also applies on list / availability (not only calendar).
+  if (state.tab !== "calendar" && state.position > 0) {
+    sp.set("position", String(state.position));
   }
   if (state.tab === "availability" && state.heat === "occupancy") {
     sp.set("heat", "occupancy");

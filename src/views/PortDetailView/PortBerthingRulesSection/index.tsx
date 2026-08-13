@@ -1,6 +1,6 @@
 "use client";
 
-import { Scale } from "lucide-react";
+import { Pencil, Scale } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
@@ -17,21 +17,17 @@ import {
   fetchPositionNestingRules,
   updatePositionNestingRule,
 } from "@/services/catalogs/positionNestingRuleService";
-import type {
-  PortDetail,
-  PositionLoaRecalcRule,
-  PositionNestingRule,
-} from "@/types/catalog";
-import BerthingRuleModal from "./BerthingRuleModal";
+import type { PortDetail } from "@/types/catalog";
+import BerthingRuleModal, {
+  type BerthingRuleEditing,
+} from "./BerthingRuleModal";
 
 type PortBerthingRulesSectionProps = {
   port: PortDetail;
   canWrite?: boolean;
 };
 
-type RuleRow =
-  | { kind: "filo"; rule: PositionNestingRule }
-  | { kind: "loa_recalc"; rule: PositionLoaRecalcRule };
+type RuleRow = BerthingRuleEditing;
 
 export default function PortBerthingRulesSection({
   port,
@@ -41,6 +37,7 @@ export default function PortBerthingRulesSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<BerthingRuleEditing | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,10 +95,16 @@ export default function PortBerthingRulesSection({
     <ViewSection
       icon={Scale}
       title="Reglas de atraque"
-      description="Criterios del puerto: first-in / last-out y recálculo de slora en posiciones combinadas."
+      description="Criterios del puerto: first-in / last-out y recálculo de slora entre muelles."
       actions={
         canWrite ? (
-          <SectionAddButton label="Agregar regla" onClick={() => setModalOpen(true)} />
+          <SectionAddButton
+            label="Agregar regla"
+            onClick={() => {
+              setEditing(null);
+              setModalOpen(true);
+            }}
+          />
         ) : undefined
       }
     >
@@ -121,6 +124,18 @@ export default function PortBerthingRulesSection({
               <RuleRowSummary row={row} />
               {canWrite ? (
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(row);
+                      setModalOpen(true);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    aria-label="Editar"
+                    title="Editar"
+                  >
+                    <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleToggle(row)}
@@ -143,7 +158,11 @@ export default function PortBerthingRulesSection({
       <BerthingRuleModal
         open={modalOpen}
         port={port}
-        onClose={() => setModalOpen(false)}
+        editing={editing}
+        onClose={() => {
+          setModalOpen(false);
+          setEditing(null);
+        }}
         onSaved={load}
       />
     </ViewSection>
@@ -177,24 +196,24 @@ function RuleRowSummary({ row }: { row: RuleRow }) {
   }
 
   const rule = row.rule;
-  const pair = rule.component_labels.join(" ↔ ");
   return (
     <div className="min-w-0">
       <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
         Recalcular slora
       </p>
       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-        {rule.combined_position_label}
+        {rule.position_a_label}
+        <span className="mx-2 font-normal text-zinc-400">↔</span>
+        {rule.position_b_label}
       </p>
       <p className="mt-0.5 text-xs text-zinc-500">
         {[
-          rule.combined_max_loa_m ? `Máx. ${rule.combined_max_loa_m} m` : null,
-          `Sep. ${rule.min_separation_m} m`,
-          pair || null,
+          `Máx. combinada ${rule.max_loa_m} m`,
+          `Sep. ${rule.separation_m} m`,
+          `Ámbar ≥ ${rule.yellow_from_m} m`,
+          `Rojo ≥ ${rule.red_from_m} m`,
           rule.is_active ? "Activa" : "Inactiva",
-        ]
-          .filter(Boolean)
-          .join(" · ")}
+        ].join(" · ")}
       </p>
     </div>
   );
@@ -204,5 +223,5 @@ function deleteLabel(row: RuleRow): string {
   if (row.kind === "filo") {
     return `la regla ${row.rule.outer_position_label} → ${row.rule.inner_position_label}`;
   }
-  return `la regla ${row.rule.combined_position_label}`;
+  return `la regla ${row.rule.position_a_label} ↔ ${row.rule.position_b_label}`;
 }

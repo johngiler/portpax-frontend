@@ -16,10 +16,12 @@ type BookingsBulkBarProps = {
   canDelete: boolean;
   /** True when selection has no shared transition (and cannot delete). */
   noSharedActions: boolean;
+  canMassEdit?: boolean;
   onToggleSelectAll: () => void;
   onClear: () => void;
   onDelete: () => void;
   onStatusAction: (status: BookingStatus) => void;
+  onMassEdit?: () => void;
 };
 
 export default function BookingsBulkBar({
@@ -30,10 +32,12 @@ export default function BookingsBulkBar({
   commonNextStatuses,
   canDelete,
   noSharedActions,
+  canMassEdit = false,
   onToggleSelectAll,
   onClear,
   onDelete,
   onStatusAction,
+  onMassEdit,
 }: BookingsBulkBarProps) {
   if (visibleCount === 0) return null;
 
@@ -69,6 +73,17 @@ export default function BookingsBulkBar({
           >
             Quitar selección
           </button>
+
+          {canMassEdit && onMassEdit ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onMassEdit}
+              className="inline-flex cursor-pointer items-center rounded-md border border-[var(--admin-accent)]/40 bg-[var(--admin-accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--admin-accent)] transition hover:bg-[var(--admin-accent)]/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Modificación masiva
+            </button>
+          ) : null}
 
           {commonNextStatuses.map((status) => (
             <button

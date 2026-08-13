@@ -17,10 +17,18 @@ function actionLabel(action: string): string {
       return "Creación";
     case "operational_update":
       return "Actualización operativa";
+    case "identity_update":
+      return "Actualización de escala";
     case "status_change":
       return "Cambio de estado";
     case "lta_linked":
       return "Vinculación LTA";
+    case "conflict_detected":
+      return "Conflicto detectado";
+    case "conflict_resolved":
+      return "Conflicto resuelto";
+    case "conflict_updated":
+      return "Conflicto actualizado";
     default:
       return action;
   }

@@ -7,6 +7,7 @@ import { ChevronRight, MapPin } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConfirmationPdfButton from "@/components/booking/ConfirmationPdfButton";
+import { conflictCardClassName } from "@/lib/bookingConflictStyle";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
@@ -37,6 +38,7 @@ type BookingsListProps = {
   canWrite?: boolean;
   onBulkDelete?: (ids: number[]) => Promise<void>;
   onBulkStatus?: (ids: number[], payload: BulkStatusPayload) => Promise<void>;
+  onMassEdit?: (ids: number[]) => void;
 };
 
 function DateBadge({ callDate }: { callDate: string }) {
@@ -95,6 +97,7 @@ export default function BookingsList({
   canWrite = false,
   onBulkDelete,
   onBulkStatus,
+  onMassEdit,
 }: BookingsListProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -151,7 +154,13 @@ export default function BookingsList({
   const selectedCount = selectedIds.size;
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
-  const selectionEnabled = Boolean(canWrite && (onBulkDelete || onBulkStatus));
+  const selectionEnabled = Boolean(
+    canWrite && (onBulkDelete || onBulkStatus || onMassEdit),
+  );
+  const canMassEdit =
+    Boolean(onMassEdit) &&
+    selectedBookings.length > 0 &&
+    selectedBookings.every((b) => b.status !== "c");
 
   function toggleOne(id: number, checked: boolean) {
     setSelectedIds((prev) => {
@@ -222,6 +231,7 @@ export default function BookingsList({
           commonNextStatuses={commonNext}
           canDelete={canDelete}
           noSharedActions={noSharedActions}
+          canMassEdit={canMassEdit}
           onToggleSelectAll={toggleSelectAll}
           onClear={() => setSelectedIds(new Set())}
           onDelete={() => {
@@ -229,6 +239,11 @@ export default function BookingsList({
             void runBulk(() => onBulkDelete([...selectedIds]));
           }}
           onStatusAction={handleStatusAction}
+          onMassEdit={
+            canMassEdit && onMassEdit
+              ? () => onMassEdit([...selectedIds])
+              : undefined
+          }
         />
       ) : null}
 
@@ -248,7 +263,12 @@ export default function BookingsList({
 
           return (
             <li key={booking.id}>
-              <article className="group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+              <article
+                className={conflictCardClassName(
+                  booking.has_conflict,
+                  "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
+                )}
+              >
                 <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
                   {selectionEnabled ? (
                     <div className="flex h-14 w-5 shrink-0 items-center justify-center">
@@ -280,6 +300,11 @@ export default function BookingsList({
                       <BookingStatusBadge
                         status={getBookingBadgeStatus(booking)}
                       />
+                      {booking.has_conflict ? (
+                        <span className="inline-flex rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+                          Conflicto
+                        </span>
+                      ) : null}
                       {booking.confirmation_pdf_url ? (
                         <ConfirmationPdfButton
                           href={booking.confirmation_pdf_url}

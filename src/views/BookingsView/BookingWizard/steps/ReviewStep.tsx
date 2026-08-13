@@ -29,34 +29,33 @@ import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
 
-/** Matches backend LTA_SOFT_FAIL_CODES — Hold still allowed. */
-const LTA_SOFT_FAIL_CODES = new Set([
-  "lta_beyond_horizon",
-  "lta_horizon_denied",
-]);
-
-function splitLtaSoftFails(result: BookingValidationResult): {
+/** Operational conflicts are non-blocking; always allow create. */
+function splitOperationalIssues(result: BookingValidationResult): {
   errors: BookingValidationIssue[];
   warnings: BookingValidationIssue[];
   blocked: boolean;
 } {
   const soft: BookingValidationIssue[] = [];
-  const hard: BookingValidationIssue[] = [];
   for (const issue of result.errors) {
     if (LTA_SOFT_FAIL_CODES.has(issue.code)) {
       soft.push({
         ...issue,
         level: "warning",
+        severity: issue.severity ?? "yellow",
         message: `${issue.message} Se creará en Hold (H).`,
       });
     } else {
-      hard.push(issue);
+      soft.push({
+        ...issue,
+        level: "warning",
+        severity: issue.severity ?? "red",
+      });
     }
   }
   return {
-    errors: hard,
+    errors: [],
     warnings: [...result.warnings, ...soft],
-    blocked: hard.length > 0,
+    blocked: false,
   };
 }
 
@@ -140,14 +139,14 @@ export default function ReviewStep({
     })
       .then((result) => {
         if (cancelled) return;
-        const split = splitLtaSoftFails(result);
+        const split = splitOperationalIssues(result);
         setValidation({
           ...result,
-          valid: !split.blocked,
+          valid: true,
           errors: split.errors,
           warnings: split.warnings,
         });
-        onBlockingChange?.(split.blocked);
+        onBlockingChange?.(false);
       })
       .catch(() => {
         if (cancelled) return;

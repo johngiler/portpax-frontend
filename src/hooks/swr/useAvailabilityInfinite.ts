@@ -17,6 +17,7 @@ export type AvailabilityListFilters = {
   vessel?: number;
   position?: number;
   statuses?: string[];
+  has_conflict?: boolean;
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
 };
@@ -51,6 +52,11 @@ function filtersKey(filters: AvailabilityListFilters): string {
     filters.vessel ?? 0,
     filters.position ?? 0,
     (filters.statuses ?? []).join(","),
+    filters.has_conflict === true
+      ? "1"
+      : filters.has_conflict === false
+        ? "0"
+        : "",
     filters.ships_per_day ?? 0,
   ].join("|");
 }
@@ -67,20 +73,23 @@ export function useAvailabilityInfinite(
   const vessel = filters.vessel;
   const position = filters.position;
   const statuses = filters.statuses;
+  const hasConflict = filters.has_conflict;
   const shipsPerDay =
     filters.ships_per_day != null && filters.ships_per_day >= 1
       ? filters.ships_per_day
       : 0;
   const densityMode = shipsPerDay > 0;
+  /** Paginate matching occupied days (conflict filter) instead of empty date windows. */
+  const occupiedDaysMode = densityMode || hasConflict !== undefined;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
       if (!enabled || portId <= 0 || !dateFrom || !dateTo) return null;
-      if (densityMode) {
+      if (occupiedDaysMode) {
         if (previousPageData && previousPageData.has_more === false) return null;
         return [
           ...swrKeys.availabilityInfinite(portId, dateFrom, dateTo, keyExtra),
-          "ships",
+          "occupied",
           pageIndex + 1,
         ] as const;
       }
@@ -94,12 +103,12 @@ export function useAvailabilityInfinite(
         range.to,
       ] as const;
     },
-    [enabled, portId, dateFrom, dateTo, keyExtra, densityMode],
+    [enabled, portId, dateFrom, dateTo, keyExtra, occupiedDaysMode],
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } =
     useSWRInfinite(getKey, (key) => {
-      if (densityMode) {
+      if (occupiedDaysMode) {
         const page = key[key.length - 1] as number;
         return fetchAvailabilityReport({
           port: portId,
@@ -109,7 +118,8 @@ export function useAvailabilityInfinite(
           vessel,
           position,
           statuses,
-          ships_per_day: shipsPerDay,
+          has_conflict: hasConflict,
+          ships_per_day: densityMode ? shipsPerDay : undefined,
           page,
           page_size: AVAILABILITY_DAYS_BATCH,
         });
@@ -124,6 +134,7 @@ export function useAvailabilityInfinite(
         vessel,
         position,
         statuses,
+        has_conflict: hasConflict,
       });
     });
 
@@ -131,7 +142,7 @@ export function useAvailabilityInfinite(
     if (!data?.length) return null;
     const first = data[0];
     const last = data[data.length - 1];
-    if (densityMode) {
+    if (occupiedDaysMode) {
       return {
         ...first,
         date_from: dateFrom,
@@ -141,7 +152,7 @@ export function useAvailabilityInfinite(
         has_more: last.has_more ?? false,
         page: last.page,
         page_size: last.page_size ?? AVAILABILITY_DAYS_BATCH,
-        ships_per_day: shipsPerDay,
+        ships_per_day: densityMode ? shipsPerDay : first.ships_per_day,
       };
     }
     return {
@@ -150,18 +161,18 @@ export function useAvailabilityInfinite(
       date_to: last.date_to,
       rows: data.flatMap((page) => page.rows),
     };
-  }, [data, densityMode, dateFrom, dateTo, shipsPerDay]);
+  }, [data, occupiedDaysMode, densityMode, dateFrom, dateTo, shipsPerDay]);
 
   const loadedUntil = merged?.date_to ?? null;
-  const hasMore = densityMode
+  const hasMore = occupiedDaysMode
     ? Boolean(merged?.has_more)
     : Boolean(loadedUntil && loadedUntil < dateTo);
   const totalDays = useMemo(() => {
-    if (densityMode && merged?.matched_days != null) {
+    if (occupiedDaysMode && merged?.matched_days != null) {
       return merged.matched_days;
     }
     return daysInclusive(dateFrom, dateTo);
-  }, [densityMode, merged?.matched_days, dateFrom, dateTo]);
+  }, [occupiedDaysMode, merged?.matched_days, dateFrom, dateTo]);
   const loadingMore = isValidating && size > 1 && hasMore;
 
   const loadMore = useCallback(() => {

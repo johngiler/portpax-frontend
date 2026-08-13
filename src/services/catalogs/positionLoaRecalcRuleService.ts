@@ -14,8 +14,12 @@ export async function fetchPositionLoaRecalcRules(
 
 export type PositionLoaRecalcRulePayload = {
   port: number;
-  combined_position: number;
-  min_separation_m: number;
+  position_a: number;
+  position_b: number;
+  max_loa_m: number;
+  separation_m: number;
+  yellow_from_m: number;
+  red_from_m: number;
   is_active?: boolean;
   notes?: string;
 };
