@@ -7,7 +7,11 @@ import { ChevronRight, MapPin } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConfirmationPdfButton from "@/components/booking/ConfirmationPdfButton";
-import { conflictCardClassName, bookingFrameSeverity, conflictBadgeClassName } from "@/lib/bookingConflictStyle";
+import {
+  bookingConflictHighlights,
+  conflictBadgeClassName,
+  conflictCardClassName,
+} from "@/lib/bookingConflictStyle";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
@@ -260,13 +264,13 @@ export default function BookingsList({
           const positionLabel = booking.position_code || "Sin asignar";
           const detailHref = bookingDetailHref(booking, { returnTo });
           const checked = selectedIds.has(booking.id);
-          const frameSeverity = bookingFrameSeverity(booking);
+          const conflictUi = bookingConflictHighlights(booking);
 
           return (
             <li key={booking.id}>
               <article
                 className={conflictCardClassName(
-                  frameSeverity,
+                  conflictUi.frameCard ? conflictUi.severity : null,
                   "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
                 )}
               >
@@ -301,8 +305,8 @@ export default function BookingsList({
                       <BookingStatusBadge
                         status={getBookingBadgeStatus(booking)}
                       />
-                      {frameSeverity ? (
-                        <span className={conflictBadgeClassName(frameSeverity)}>
+                      {conflictUi.severity ? (
+                        <span className={conflictBadgeClassName(conflictUi.severity)}>
                           Conflicto
                         </span>
                       ) : null}
@@ -337,6 +341,12 @@ export default function BookingsList({
                     eta={booking.eta}
                     etd={booking.etd}
                     positionLabel={positionLabel}
+                    highlightLoa={conflictUi.highlightLoa}
+                    loaHighlightSeverity={conflictUi.loaSeverity}
+                    highlightSchedule={conflictUi.highlightSchedule}
+                    scheduleHighlightSeverity={conflictUi.scheduleSeverity}
+                    highlightPosition={conflictUi.highlightPosition}
+                    positionHighlightSeverity={conflictUi.positionSeverity}
                   />
                   <CodeActions booking={booking} detailHref={detailHref} />
                 </div>

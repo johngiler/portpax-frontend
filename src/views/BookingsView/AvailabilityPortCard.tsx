@@ -87,7 +87,9 @@ export default function AvailabilityPortCard({
   const isOccupancy = heatMode === "occupancy";
   const densityFilter = isOccupancy && density >= 1 ? density : 0;
   const statusFilters = filters.statuses;
-  const conflictFilterActive = filters.has_conflict !== undefined;
+  const conflictFilterActive =
+    filters.has_conflict !== undefined ||
+    Boolean(filters.conflict_severity);
 
   const listFilters = useMemo((): AvailabilityListFilters => {
     if (densityFilter < 1) return filters;

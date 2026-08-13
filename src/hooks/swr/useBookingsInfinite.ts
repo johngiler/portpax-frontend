@@ -21,6 +21,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
       : params.has_conflict === false
         ? "0"
         : "",
+    params.conflict_severity ?? "",
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,

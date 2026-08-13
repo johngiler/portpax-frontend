@@ -30,7 +30,9 @@ import type {
 } from "@/lib/viewFilterQuery";
 import {
   buildBookingsWorkspaceQuery,
+  conflictFilterToApiParams,
   parseBookingsWorkspaceFilters,
+  type ConflictFilterValue,
 } from "@/lib/viewFilterQuery";
 import {
   setDataExportHandler,
@@ -171,10 +173,9 @@ export default function BookingsView() {
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<
     BookingStatusFilterValue[]
   >([]);
-  const [conflictFilter, setConflictFilter] = useState<"" | "yes" | "no">("");
-  const [appliedConflictFilter, setAppliedConflictFilter] = useState<
-    "" | "yes" | "no"
-  >("");
+  const [conflictFilter, setConflictFilter] = useState<ConflictFilterValue>("");
+  const [appliedConflictFilter, setAppliedConflictFilter] =
+    useState<ConflictFilterValue>("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState(0);
@@ -375,12 +376,7 @@ export default function BookingsView() {
     return {
       search: appliedSearch,
       statuses: appliedStatusFilter,
-      has_conflict:
-        appliedConflictFilter === "yes"
-          ? true
-          : appliedConflictFilter === "no"
-            ? false
-            : undefined,
+      ...conflictFilterToApiParams(appliedConflictFilter),
       port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
@@ -1253,14 +1249,9 @@ export default function BookingsView() {
               appliedStatusFilter.length > 0
                 ? appliedStatusFilter
                 : undefined,
-            has_conflict:
-              appliedHeatMode === "occupancy"
-                ? appliedConflictFilter === "yes"
-                  ? true
-                  : appliedConflictFilter === "no"
-                    ? false
-                    : undefined
-                : undefined,
+            ...(appliedHeatMode === "occupancy"
+              ? conflictFilterToApiParams(appliedConflictFilter)
+              : {}),
           }}
           canBook={canWrite}
           returnTo={currentReturnTo(pathname, searchParams)}

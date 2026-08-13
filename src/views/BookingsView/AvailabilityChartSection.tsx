@@ -8,9 +8,10 @@ import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
 import {
-  bookingFrameSeverity,
+  bookingConflictHighlights,
   conflictBadgeClassName,
   conflictCardClassName,
+  conflictFieldHighlightClassName,
 } from "@/lib/bookingConflictStyle";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
@@ -330,7 +331,11 @@ export default function AvailabilityChartSection({
                                   statusFilter,
                                   todayIso,
                                 );
-                              const frameSeverity = bookingFrameSeverity(call);
+                              const conflictUi = bookingConflictHighlights(call);
+                              // Availability call cards show LOA + schedule only.
+                              const frameCard =
+                                conflictUi.frameCard ||
+                                conflictUi.highlightPosition;
                               return (
                               <Link
                                 key={call.booking_code}
@@ -340,7 +345,7 @@ export default function AvailabilityChartSection({
                                 )}
                                 className={[
                                   conflictCardClassName(
-                                    frameSeverity,
+                                    frameCard ? conflictUi.severity : null,
                                     "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
                                   ),
                                   matchesFilter
@@ -349,7 +354,7 @@ export default function AvailabilityChartSection({
                                 ].join(" ")}
                                 title={
                                   matchesFilter
-                                    ? `Editar ${call.booking_code}${frameSeverity ? " · Conflicto" : ""}`
+                                    ? `Editar ${call.booking_code}${conflictUi.severity ? " · Conflicto" : ""}`
                                     : `${call.booking_code} · otro estado (vecino)`
                                 }
                                 aria-label={`Abrir reserva ${call.booking_code}`}
@@ -372,10 +377,10 @@ export default function AvailabilityChartSection({
                                           size="sm"
                                         />
                                       ) : null}
-                                      {frameSeverity ? (
+                                      {conflictUi.severity ? (
                                         <span
                                           className={conflictBadgeClassName(
-                                            frameSeverity,
+                                            conflictUi.severity,
                                           )}
                                         >
                                           <AlertTriangle
@@ -394,7 +399,17 @@ export default function AvailabilityChartSection({
                                 <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
                                   <div className="flex items-center justify-between gap-3">
                                     {call.loa_m ? (
-                                      <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                      <span
+                                        className={[
+                                          "inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
+                                          conflictUi.highlightLoa
+                                            ? conflictFieldHighlightClassName(
+                                                conflictUi.loaSeverity ??
+                                                  "yellow",
+                                              )
+                                            : "",
+                                        ].join(" ")}
+                                      >
                                         <Ruler
                                           className="h-3.5 w-3.5 shrink-0"
                                           aria-hidden
@@ -407,7 +422,17 @@ export default function AvailabilityChartSection({
                                     ) : (
                                       <span />
                                     )}
-                                    <p className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                    <p
+                                      className={[
+                                        "inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
+                                        conflictUi.highlightSchedule
+                                          ? conflictFieldHighlightClassName(
+                                              conflictUi.scheduleSeverity ??
+                                                "yellow",
+                                            )
+                                          : "",
+                                      ].join(" ")}
+                                    >
                                       <Clock3
                                         className="h-3.5 w-3.5 shrink-0"
                                         aria-hidden

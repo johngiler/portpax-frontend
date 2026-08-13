@@ -37,6 +37,8 @@ export type FetchBookingsParams = {
   pageSize?: number;
   /** true = only conflicted; false = only clean; omit = all */
   has_conflict?: boolean;
+  /** Filter by persisted conflict_severity (yellow|red). */
+  conflict_severity?: "yellow" | "red" | "green";
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -61,6 +63,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   if (params.has_conflict === true) query.set("has_conflict", "true");
   if (params.has_conflict === false) query.set("has_conflict", "false");
+  if (params.conflict_severity) {
+    query.set("conflict_severity", params.conflict_severity);
+  }
   return query;
 }
 
@@ -312,6 +317,7 @@ export async function fetchAvailabilityReport(params: {
   page?: number;
   page_size?: number;
   has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red" | "green";
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -329,12 +335,16 @@ export async function fetchAvailabilityReport(params: {
   if (statusCsv) query.set("status", statusCsv);
   if (params.has_conflict === true) query.set("has_conflict", "true");
   if (params.has_conflict === false) query.set("has_conflict", "false");
+  if (params.conflict_severity) {
+    query.set("conflict_severity", params.conflict_severity);
+  }
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
   }
   const paged =
     (params.ships_per_day != null && params.ships_per_day >= 1) ||
-    params.has_conflict !== undefined;
+    params.has_conflict !== undefined ||
+    Boolean(params.conflict_severity);
   if (paged) {
     if (params.page != null) query.set("page", String(params.page));
     if (params.page_size != null) {

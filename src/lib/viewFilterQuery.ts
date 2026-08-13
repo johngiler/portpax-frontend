@@ -73,14 +73,29 @@ export type BookingsWorkspaceFilters = {
    * Occupancy-only: exact ships-per-day density (0 = all days with any occupancy).
    */
   density: number;
-  /** Conflict filter: empty = all; yes/no for has_conflict. */
-  conflict: "" | "yes" | "no";
+  /** Conflict filter: empty = all; yes/no; yellow/red severity. */
+  conflict: "" | "yes" | "no" | "yellow" | "red";
 };
 
-function parseConflictFilter(raw: string | null): "" | "yes" | "no" {
+export type ConflictFilterValue = BookingsWorkspaceFilters["conflict"];
+
+function parseConflictFilter(raw: string | null): ConflictFilterValue {
   if (raw === "yes" || raw === "true" || raw === "1") return "yes";
   if (raw === "no" || raw === "false" || raw === "0") return "no";
+  if (raw === "yellow" || raw === "red") return raw;
   return "";
+}
+
+/** Map sidebar conflict filter to list/availability API params. */
+export function conflictFilterToApiParams(filter: ConflictFilterValue): {
+  has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red";
+} {
+  if (filter === "yes") return { has_conflict: true };
+  if (filter === "no") return { has_conflict: false };
+  if (filter === "yellow") return { conflict_severity: "yellow" };
+  if (filter === "red") return { conflict_severity: "red" };
+  return {};
 }
 
 export function parseBookingsWorkspaceFilters(
@@ -168,7 +183,12 @@ export function buildBookingsWorkspaceQuery(
   if (state.port > 0) sp.set("port", String(state.port));
   if (state.line > 0) sp.set("line", String(state.line));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
-  if (state.conflict === "yes" || state.conflict === "no") {
+  if (
+    state.conflict === "yes" ||
+    state.conflict === "no" ||
+    state.conflict === "yellow" ||
+    state.conflict === "red"
+  ) {
     sp.set("conflict", state.conflict);
   }
   if (state.datePreset !== "all") {

@@ -2,6 +2,8 @@
 
 import { Clock3, MapPinned, Ruler } from "lucide-react";
 import { formatLoa, formatTimeShort } from "@/lib/bookingDisplay";
+import { conflictFieldHighlightClassName } from "@/lib/bookingConflictStyle";
+import type { BookingConflictSeverity } from "@/types/booking";
 
 type BookingMetaRowProps = {
   loaM?: string | null;
@@ -13,6 +15,15 @@ type BookingMetaRowProps = {
   /** `onColor` = light text on corp chip backgrounds. */
   tone?: "muted" | "onColor";
   className?: string;
+  /** Highlight LOA when conflict is length-related. */
+  highlightLoa?: boolean;
+  loaHighlightSeverity?: BookingConflictSeverity | null;
+  /** Highlight ETA–ETD when conflict is schedule-related. */
+  highlightSchedule?: boolean;
+  scheduleHighlightSeverity?: BookingConflictSeverity | null;
+  /** Highlight position when conflict is berth/slot-related. */
+  highlightPosition?: boolean;
+  positionHighlightSeverity?: BookingConflictSeverity | null;
 };
 
 /**
@@ -26,6 +37,12 @@ export default function BookingMetaRow({
   compact = false,
   tone = "muted",
   className = "",
+  highlightLoa = false,
+  loaHighlightSeverity = null,
+  highlightSchedule = false,
+  scheduleHighlightSeverity = null,
+  highlightPosition = false,
+  positionHighlightSeverity = null,
 }: BookingMetaRowProps) {
   const iconClass = compact ? "h-2.5 w-2.5" : "h-3.5 w-3.5";
   const textClass = compact
@@ -45,17 +62,42 @@ export default function BookingMetaRow({
         className,
       ].join(" ")}
     >
-      <li className="inline-flex min-w-0 items-center gap-1">
+      <li
+        className={[
+          "inline-flex min-w-0 items-center gap-1",
+          highlightLoa
+            ? conflictFieldHighlightClassName(loaHighlightSeverity ?? "yellow")
+            : "",
+        ].join(" ")}
+      >
         <Ruler className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
         <span className="truncate font-medium">{formatLoa(loaM)}</span>
       </li>
-      <li className="inline-flex min-w-0 items-center gap-1">
+      <li
+        className={[
+          "inline-flex min-w-0 items-center gap-1",
+          highlightSchedule
+            ? conflictFieldHighlightClassName(
+                scheduleHighlightSeverity ?? "yellow",
+              )
+            : "",
+        ].join(" ")}
+      >
         <Clock3 className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
         <span className="truncate font-medium">
           {formatTimeShort(eta)}–{formatTimeShort(etd)}
         </span>
       </li>
-      <li className="inline-flex min-w-0 items-center gap-1">
+      <li
+        className={[
+          "inline-flex min-w-0 items-center gap-1",
+          highlightPosition
+            ? conflictFieldHighlightClassName(
+                positionHighlightSeverity ?? "yellow",
+              )
+            : "",
+        ].join(" ")}
+      >
         <MapPinned className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
         <span className="truncate font-medium">{positionLabel}</span>
       </li>

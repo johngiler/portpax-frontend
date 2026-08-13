@@ -18,6 +18,7 @@ export type AvailabilityListFilters = {
   position?: number;
   statuses?: string[];
   has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red" | "green";
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
 };
@@ -57,6 +58,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
       : filters.has_conflict === false
         ? "0"
         : "",
+    filters.conflict_severity ?? "",
     filters.ships_per_day ?? 0,
   ].join("|");
 }
@@ -74,13 +76,15 @@ export function useAvailabilityInfinite(
   const position = filters.position;
   const statuses = filters.statuses;
   const hasConflict = filters.has_conflict;
+  const conflictSeverity = filters.conflict_severity;
   const shipsPerDay =
     filters.ships_per_day != null && filters.ships_per_day >= 1
       ? filters.ships_per_day
       : 0;
   const densityMode = shipsPerDay > 0;
   /** Paginate matching occupied days (conflict filter) instead of empty date windows. */
-  const occupiedDaysMode = densityMode || hasConflict !== undefined;
+  const occupiedDaysMode =
+    densityMode || hasConflict !== undefined || Boolean(conflictSeverity);
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
@@ -119,6 +123,7 @@ export function useAvailabilityInfinite(
           position,
           statuses,
           has_conflict: hasConflict,
+          conflict_severity: conflictSeverity,
           ships_per_day: densityMode ? shipsPerDay : undefined,
           page,
           page_size: AVAILABILITY_DAYS_BATCH,
@@ -135,6 +140,7 @@ export function useAvailabilityInfinite(
         position,
         statuses,
         has_conflict: hasConflict,
+        conflict_severity: conflictSeverity,
       });
     });
 
