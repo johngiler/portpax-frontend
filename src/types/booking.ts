@@ -188,7 +188,7 @@ export const BOOKING_STATUS_DESCRIPTIONS: Record<BookingStatus, string> = {
   nr: "Solicitud recibida de la naviera, aún sin evaluar (New Request).",
   h: "En evaluación o en espera (Hold). Pista general (navieras sin LTA); paso opcional si se confirma de inmediato.",
   co: "Confirmado en pista general. Puede reordenarse o moverse si es necesario; también puede cancelarse.",
-  cl: "Confirmado bajo LTA — inamovible: no puede desplazarse por otro booking sin autorización de port-operator.",
+  cl: "Confirmado bajo LTA. Los avisos de conflicto no bloquean el guardado.",
   lta: "Slot reservado por contrato LTA, pendiente de confirmación formal (no pasa por Hold).",
   ltd: "Despliegue a largo plazo (variante LTA del histórico operativo).",
   r: "Real / completado: el barco atracó; registro cerrado con datos reales de la operación.",

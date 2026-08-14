@@ -53,10 +53,16 @@ export async function revalidateBulkEditRow(
 
 export async function applyBulkEdit(
   rows: BulkEditRow[],
+  options?: {
+    port_operator_override?: boolean;
+    override_reason?: string;
+  },
 ): Promise<BulkEditApplyResponse> {
   return apiFetch(`${BASE}bulk-edit/apply/`, {
     method: "POST",
     body: JSON.stringify({
+      port_operator_override: options?.port_operator_override || undefined,
+      override_reason: options?.override_reason?.trim() || undefined,
       rows: rows.map((r) => ({
         booking_id: r.booking_id,
         port_id: r.port_id,

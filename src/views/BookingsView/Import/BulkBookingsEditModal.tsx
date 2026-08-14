@@ -6,7 +6,6 @@ import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { fromTimeInputValue } from "@/lib/bookingDisplay";
 import { useNavigationLock } from "@/lib/useNavigationLock";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
@@ -20,6 +19,8 @@ import {
 import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
 import BulkImportRowIssuesCell from "./BulkImportRowIssuesCell";
 import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
+import BulkBookingsEditSkeleton from "./BulkBookingsEditSkeleton";
+import BulkEtaEtdInputs from "./BulkEtaEtdInputs";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
 
 type BulkBookingsEditModalProps = {
@@ -78,19 +79,21 @@ function EditRow({
   row,
   checked,
   disabled,
+  saveError,
   onToggle,
   onRowChange,
 }: {
   row: BulkEditRow;
   checked: boolean;
   disabled?: boolean;
+  saveError?: string | null;
   onToggle: () => void;
   onRowChange: (next: BulkEditRow) => void;
 }) {
   const [revalidating, setRevalidating] = useState(false);
   const [occupancyReloadKey, setOccupancyReloadKey] = useState(0);
   const reqIdRef = useRef(0);
-  const busy = disabled || revalidating;
+  const fieldLock = disabled;
 
   const revalidate = useCallback(
     async (draft: BulkEditRow) => {
@@ -167,7 +170,7 @@ function EditRow({
         <input
           type="checkbox"
           checked={checked}
-          disabled={!row.selectable || busy}
+          disabled={!row.selectable || fieldLock}
           onChange={onToggle}
           className="mt-2 h-4 w-4 rounded border-zinc-300"
         />
@@ -178,7 +181,7 @@ function EditRow({
           name={`edit_vessel_${row.booking_id}`}
           value={row.vessel_id}
           compact
-          disabled={busy || !row.shipping_line_id}
+          disabled={fieldLock || !row.shipping_line_id}
           loadOptions={loadVesselOptions}
           logoKind="vessel"
           options={[
@@ -206,7 +209,7 @@ function EditRow({
           name={`edit_port_${row.booking_id}`}
           value={row.port_id}
           compact
-          disabled={busy}
+          disabled={fieldLock}
           loadOptions={loadPortOptions}
           logoKind="port"
           options={[
@@ -229,7 +232,7 @@ function EditRow({
         <input
           type="date"
           value={row.call_date}
-          disabled={busy}
+          disabled={fieldLock}
           onChange={(e) => {
             const draft = { ...row, call_date: e.target.value };
             onRowChange(draft);
@@ -239,48 +242,23 @@ function EditRow({
         />
       </td>
       <td className="px-2 py-1.5 align-top">
-        <div className="flex items-center gap-1">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="08:00"
-            value={(row.eta ?? "").slice(0, 5)}
-            disabled={busy}
-            onChange={(e) => onRowChange({ ...row, eta: e.target.value || null })}
-            onBlur={() => {
-              const draft = {
-                ...row,
-                eta: fromTimeInputValue(row.eta ?? ""),
-              };
-              onRowChange(draft);
-              void revalidate(draft);
-            }}
-            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <span className="text-zinc-400">–</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="17:00"
-            value={(row.etd ?? "").slice(0, 5)}
-            disabled={busy}
-            onChange={(e) => onRowChange({ ...row, etd: e.target.value || null })}
-            onBlur={() => {
-              const draft = {
-                ...row,
-                etd: fromTimeInputValue(row.etd ?? ""),
-              };
-              onRowChange(draft);
-              void revalidate(draft);
-            }}
-            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </div>
+        <BulkEtaEtdInputs
+          eta={row.eta}
+          etd={row.etd}
+          disabled={fieldLock}
+          onEtaChange={(value) => onRowChange({ ...row, eta: value })}
+          onEtdChange={(value) => onRowChange({ ...row, etd: value })}
+          onCommit={({ eta, etd }) => {
+            const draft = { ...row, eta, etd };
+            onRowChange(draft);
+            void revalidate(draft);
+          }}
+        />
       </td>
       <td className="min-w-[8.5rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <BulkImportRowPositionSelect
           row={toPositionRow(row)}
-          disabled={busy}
+          disabled={fieldLock}
           reloadKey={occupancyReloadKey}
           onChange={(preview) => {
             onRowChange({
@@ -306,7 +284,7 @@ function EditRow({
           name={`edit_line_${row.booking_id}`}
           value={row.shipping_line_id}
           compact
-          disabled={busy}
+          disabled={fieldLock}
           loadOptions={loadLineOptions}
           logoKind="shipping_line"
           options={[
@@ -336,7 +314,7 @@ function EditRow({
           name={`edit_status_${row.booking_id}`}
           value={statusValue}
           compact
-          disabled={busy}
+          disabled={fieldLock}
           options={STATUS_OPTIONS}
           onChange={(value) => {
             const draft = { ...row, status: value };
@@ -355,6 +333,11 @@ function EditRow({
           modalTitle={`Avisos · ${row.booking_code}`}
           onRefreshAvisos={() => revalidate(row)}
         />
+        {saveError ? (
+          <p className="mt-1.5 text-[11px] font-medium leading-snug text-red-600 dark:text-red-400">
+            {saveError}
+          </p>
+        ) : null}
       </td>
     </tr>
   );
@@ -371,12 +354,14 @@ export default function BulkBookingsEditModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!open || bookingIds.length === 0) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setRowErrors({});
     void previewBulkEdit(bookingIds)
       .then((res) => {
         if (cancelled) return;
@@ -424,6 +409,7 @@ export default function BulkBookingsEditModal({
 
   async function handleSave() {
     setError(null);
+    setRowErrors({});
     const selected = rows.filter(
       (r) => selectedIds.has(r.booking_id) && r.selectable,
     );
@@ -439,8 +425,18 @@ export default function BulkBookingsEditModal({
         failedCount: result.failed_count,
       });
       if (result.failed_count > 0) {
+        const details = Array.from(
+          new Set(result.failed.map((f) => f.detail).filter(Boolean)),
+        );
         setError(
-          `${result.updated_count} guardadas; ${result.failed_count} fallaron.`,
+          [`${result.updated_count} guardadas; ${result.failed_count} fallaron.`, ...details].join(
+            " ",
+          ),
+        );
+        setRowErrors(
+          Object.fromEntries(
+            result.failed.map((f) => [f.booking_id, f.detail]),
+          ),
         );
         const failedIds = new Set(result.failed.map((f) => f.booking_id));
         setRows((prev) => prev.filter((r) => failedIds.has(r.booking_id)));
@@ -488,10 +484,12 @@ export default function BulkBookingsEditModal({
       }
     >
       <div className="space-y-3">
+        {loading ? (
+          <BulkBookingsEditSkeleton />
+        ) : (
+          <>
         <p className="text-xs text-zinc-500">
-          {loading
-            ? "Cargando…"
-            : `${rows.length} reservas · ${selectedCount} seleccionadas. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
+          {`${rows.length} reservas · ${selectedCount} seleccionadas. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
         </p>
         <ModalFormError message={error} />
         <label className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600">
@@ -536,6 +534,7 @@ export default function BulkBookingsEditModal({
                   row={row}
                   checked={selectedIds.has(row.booking_id)}
                   disabled={saving}
+                  saveError={rowErrors[row.booking_id] ?? null}
                   onToggle={() => {
                     if (!row.selectable) return;
                     setSelectedIds((prev) => {
@@ -550,12 +549,14 @@ export default function BulkBookingsEditModal({
               ))}
             </tbody>
           </table>
-          {!loading && rows.length === 0 ? (
+          {rows.length === 0 ? (
             <p className="px-4 py-6 text-sm text-zinc-500">
               No hay reservas editables en la selección.
             </p>
           ) : null}
         </div>
+          </>
+        )}
       </div>
     </Modal>
   );

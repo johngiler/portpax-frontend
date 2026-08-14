@@ -13,6 +13,7 @@ import {
 } from "@/services/bookings/bulkImportService";
 import { applyLtaSpaceClaim } from "./applyLtaSpaceClaim";
 import BulkImportEditableRow from "./BulkImportEditableRow";
+import { withDraftBatchConflictWarnings } from "./draftBatchConflicts";
 
 type BulkBookingImportModalProps = {
   open: boolean;
@@ -84,6 +85,11 @@ export default function BulkBookingImportModal({
     claimableLtaRows.length > 0 &&
     claimableLtaRows.every((r) => Boolean(r.claim_lta_space));
   const someLtaClaimed = claimableLtaRows.some((r) => Boolean(r.claim_lta_space));
+
+  const displayRows = useMemo(
+    () => withDraftBatchConflictWarnings(draftRows),
+    [draftRows],
+  );
 
   useEffect(() => {
     if (claimAllRef.current) {
@@ -328,7 +334,7 @@ export default function BulkBookingImportModal({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {draftRows.map((row) => (
+            {displayRows.map((row) => (
               <BulkImportEditableRow
                 key={row.id}
                 row={row}

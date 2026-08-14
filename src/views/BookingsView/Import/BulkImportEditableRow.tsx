@@ -10,14 +10,12 @@ import {
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
 import { BOOKING_STATUS_LABELS } from "@/types/booking";
-import {
-  fromTimeInputValue,
-} from "@/lib/bookingDisplay";
 import { applyLtaSpaceClaim } from "./applyLtaSpaceClaim";
 import BulkImportRowPositionSelect, {
   fetchRowPositionOccupancy,
 } from "./BulkImportRowPositionSelect";
 import BulkImportRowIssuesCell from "./BulkImportRowIssuesCell";
+import BulkEtaEtdInputs from "./BulkEtaEtdInputs";
 
 type BulkImportStatus = NonNullable<BulkImportPreviewRow["suggested_status"]>;
 
@@ -122,7 +120,7 @@ export default function BulkImportEditableRow({
     [row.shipping_line_id],
   );
 
-  const busy = disabled || revalidating;
+  const fieldLock = disabled;
   const statusValue = normalizeStatus(row.suggested_status);
 
   return (
@@ -137,7 +135,7 @@ export default function BulkImportEditableRow({
         <input
           type="checkbox"
           checked={checked}
-          disabled={!row.selectable || busy}
+          disabled={!row.selectable || fieldLock}
           onChange={onToggle}
           className="mt-1.5 h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={`Seleccionar fila ${row.row_number}`}
@@ -151,7 +149,7 @@ export default function BulkImportEditableRow({
           emptyValue={0}
           optionLabel="Buscar barco…"
           compact
-          disabled={busy}
+          disabled={fieldLock}
           loadOptions={loadVesselOptions}
           options={
             row.vessel_id
@@ -200,7 +198,7 @@ export default function BulkImportEditableRow({
           emptyValue={0}
           optionLabel="Buscar puerto…"
           compact
-          disabled={busy}
+          disabled={fieldLock}
           loadOptions={loadPortOptions}
           options={
             row.port_id
@@ -246,7 +244,7 @@ export default function BulkImportEditableRow({
         <input
           type="date"
           value={row.call_date ?? ""}
-          disabled={busy}
+          disabled={fieldLock}
           onChange={(e) => {
             const draft = {
               ...row,
@@ -265,55 +263,24 @@ export default function BulkImportEditableRow({
         />
       </td>
       <td className="px-2 py-1.5 align-top">
-        <div className="flex items-center gap-1">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="08:00"
-            value={(row.eta ?? "").slice(0, 5)}
-            disabled={busy}
-            onChange={(e) => {
-              onRowChange({ ...row, eta: e.target.value || null });
-            }}
-            onBlur={() => {
-              const draft = {
-                ...row,
-                eta: fromTimeInputValue(row.eta ?? ""),
-              };
-              onRowChange(draft);
-              void revalidate(draft);
-            }}
-            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            aria-label="ETA"
-          />
-          <span className="text-zinc-400">–</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="17:00"
-            value={(row.etd ?? "").slice(0, 5)}
-            disabled={busy}
-            onChange={(e) => {
-              onRowChange({ ...row, etd: e.target.value || null });
-            }}
-            onBlur={() => {
-              const draft = {
-                ...row,
-                etd: fromTimeInputValue(row.etd ?? ""),
-              };
-              onRowChange(draft);
-              void revalidate(draft);
-            }}
-            className="w-[4.25rem] rounded-md border border-zinc-200 bg-white px-1 py-1.5 text-center text-xs tabular-nums text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            aria-label="ETD"
-          />
-        </div>
+        <BulkEtaEtdInputs
+          eta={row.eta}
+          etd={row.etd}
+          disabled={fieldLock}
+          onEtaChange={(value) => onRowChange({ ...row, eta: value })}
+          onEtdChange={(value) => onRowChange({ ...row, etd: value })}
+          onCommit={({ eta, etd }) => {
+            const draft = { ...row, eta, etd };
+            onRowChange(draft);
+            void revalidate(draft);
+          }}
+        />
       </td>
       <td className="min-w-[8.5rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <BulkImportRowPositionSelect
           row={row}
           disabled={
-            busy || Boolean(row.claim_lta_space && row.lta_space_candidate)
+            fieldLock || Boolean(row.claim_lta_space && row.lta_space_candidate)
           }
           reloadKey={occupancyReloadKey}
           onChange={onRowChange}
@@ -328,7 +295,7 @@ export default function BulkImportEditableRow({
           emptyValue={0}
           optionLabel="Buscar naviera…"
           compact
-          disabled={busy}
+          disabled={fieldLock}
           loadOptions={loadLineOptions}
           logoKind="shipping_line"
           options={
@@ -382,7 +349,7 @@ export default function BulkImportEditableRow({
           name={`bulk_status_${row.id}`}
           value={statusValue}
           compact
-          disabled={busy}
+          disabled={fieldLock}
           options={STATUS_OPTIONS}
           onChange={(value) => {
             const draft = { ...row, suggested_status: value };
@@ -396,7 +363,7 @@ export default function BulkImportEditableRow({
           <input
             type="checkbox"
             checked={Boolean(row.claim_lta_space)}
-            disabled={busy}
+            disabled={fieldLock}
             onChange={(e) => {
               const draft = applyLtaSpaceClaim(row, e.target.checked);
               onRowChange(draft);
