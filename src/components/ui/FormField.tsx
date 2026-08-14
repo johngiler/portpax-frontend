@@ -290,7 +290,7 @@ export function FormFieldSelect<T extends string | number>({
   label: string;
   name: string;
   value: T;
-  onChange: (value: T) => void;
+  onChange: (value: T, option?: CatalogSelectOption<T> | null) => void;
   options: CatalogSelectOption<T>[];
   optionLabel?: string;
   /** Valor cuando se elige la opción vacía (ej. 0 para IDs) */
@@ -316,10 +316,11 @@ export function FormFieldSelect<T extends string | number>({
       onChange(
         (emptyValue ??
           (optionLabel ? ("" as T) : (options[0]?.value ?? ("" as T)))) as T,
+        null,
       );
       return;
     }
-    onChange(selected.value);
+    onChange(selected.value, selected);
   };
 
   const selectedOption =

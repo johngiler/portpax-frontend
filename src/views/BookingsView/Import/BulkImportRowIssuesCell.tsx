@@ -21,6 +21,8 @@ type BulkImportRowIssuesCellProps = {
   revalidating?: boolean;
   onRefreshAvisos?: () => void | Promise<void>;
   onClaimLtaSpace?: () => void | Promise<void>;
+  /** Overrides default title `Avisos · fila {n}`. */
+  modalTitle?: string;
 };
 
 export default function BulkImportRowIssuesCell({
@@ -28,6 +30,7 @@ export default function BulkImportRowIssuesCell({
   revalidating = false,
   onRefreshAvisos,
   onClaimLtaSpace,
+  modalTitle,
 }: BulkImportRowIssuesCellProps) {
   const [open, setOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,7 +139,7 @@ export default function BulkImportRowIssuesCell({
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={`Avisos · fila ${row.row_number}`}
+        title={modalTitle ?? `Avisos · fila ${row.row_number}`}
         panelClassName="max-w-lg"
         footer={
           <div className="flex flex-wrap items-center justify-end gap-3">

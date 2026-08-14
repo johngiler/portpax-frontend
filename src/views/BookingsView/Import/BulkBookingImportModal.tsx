@@ -213,7 +213,7 @@ export default function BulkBookingImportModal({
       onClose={saving || claimingAllLta ? () => undefined : onClose}
       closeable={!saving && !claimingAllLta}
       title="Carga de reservas masiva"
-      panelClassName="max-w-[min(96vw,92rem)]"
+      panelClassName="w-[min(98vw,120rem)] max-w-[min(98vw,120rem)]"
       footer={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <button

@@ -5,7 +5,6 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
-import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { fromTimeInputValue } from "@/lib/bookingDisplay";
 import { useNavigationLock } from "@/lib/useNavigationLock";
@@ -19,6 +18,7 @@ import {
   type BulkEditRow,
 } from "@/services/bookings/bulkEditService";
 import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
+import BulkImportRowIssuesCell from "./BulkImportRowIssuesCell";
 import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
 
@@ -102,11 +102,13 @@ function EditRow({
         onRowChange({
           ...draft,
           ...next,
-          port_name: draft.port_name,
-          port_code: draft.port_code,
-          vessel_name: draft.vessel_name,
-          shipping_line_name: draft.shipping_line_name,
-          shipping_line_group: draft.shipping_line_group,
+          port_name: next.port_name ?? draft.port_name,
+          port_code: next.port_code ?? draft.port_code,
+          vessel_name: next.vessel_name ?? draft.vessel_name,
+          shipping_line_name:
+            next.shipping_line_name ?? draft.shipping_line_name,
+          shipping_line_group:
+            next.shipping_line_group ?? draft.shipping_line_group,
           position_code: next.position_code ?? draft.position_code,
         });
         setOccupancyReloadKey((k) => k + 1);
@@ -159,8 +161,6 @@ function EditRow({
     STATUS_OPTIONS.some((o) => o.value === row.status) ? row.status : "h"
   ) as BookingStatus;
 
-  const avisos = [...(row.blocking_issues ?? []), ...(row.warnings ?? [])];
-
   return (
     <tr className="border-b border-zinc-100 dark:border-zinc-800">
       <td className="px-2 py-2 align-top">
@@ -187,11 +187,11 @@ function EditRow({
               label: row.vessel_name || "Barco",
             },
           ]}
-          onChange={(id) => {
+          onChange={(id, option) => {
             const draft = {
               ...row,
               vessel_id: id,
-              vessel_name: undefined,
+              vessel_name: option?.label ?? row.vessel_name,
               position_id: null,
               position_code: null,
             };
@@ -212,11 +212,11 @@ function EditRow({
           options={[
             { value: row.port_id, label: row.port_name || "Puerto" },
           ]}
-          onChange={(id) => {
+          onChange={(id, option) => {
             const draft = {
               ...row,
               port_id: id,
-              port_name: undefined,
+              port_name: option?.label ?? row.port_name,
               position_id: null,
               position_code: null,
             };
@@ -315,11 +315,11 @@ function EditRow({
               label: row.shipping_line_name || "Naviera",
             },
           ]}
-          onChange={(id) => {
+          onChange={(id, option) => {
             const draft = {
               ...row,
               shipping_line_id: id,
-              shipping_line_name: undefined,
+              shipping_line_name: option?.label ?? row.shipping_line_name,
               vessel_id: 0,
               vessel_name: undefined,
               position_id: null,
@@ -345,19 +345,16 @@ function EditRow({
           }}
         />
       </td>
-      <td className="min-w-[14rem] max-w-[18rem] px-2 py-1.5 align-top">
+      <td className="min-w-[7rem] px-2 py-2 align-top">
         <p className="mb-1 truncate text-[10px] font-medium text-zinc-400">
           {row.booking_code}
         </p>
-        {avisos.length > 0 ? (
-          <ValidationIssuesAlert
-            errors={row.blocking_issues}
-            warnings={row.warnings}
-            className="text-xs"
-          />
-        ) : (
-          <p className="text-xs text-emerald-600">Sin avisos</p>
-        )}
+        <BulkImportRowIssuesCell
+          row={toPositionRow(row)}
+          revalidating={revalidating}
+          modalTitle={`Avisos · ${row.booking_code}`}
+          onRefreshAvisos={() => revalidate(row)}
+        />
       </td>
     </tr>
   );
@@ -467,7 +464,7 @@ export default function BulkBookingsEditModal({
         if (!saving) onClose();
       }}
       title="Modificación masiva de reservas"
-      panelClassName="max-w-[95vw] lg:max-w-6xl"
+      panelClassName="w-[min(98vw,120rem)] max-w-[min(98vw,120rem)]"
       footer={
         <div className="flex justify-end gap-3">
           <button
