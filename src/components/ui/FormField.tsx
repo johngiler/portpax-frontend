@@ -306,8 +306,8 @@ export function FormFieldSelect<T extends string | number>({
   /** Optional control aligned to the right of the label (e.g. help link). */
   labelEnd?: ReactNode;
   /**
-   * When set, typing queries the DB (AsyncSelect). `options` are used as
-   * defaultOptions and to resolve the current value label.
+   * When set, opening the menu loads suggestions (empty query) and typing
+   * filters remotely. `options` resolve the current value label.
    */
   loadOptions?: (inputValue: string) => Promise<CatalogSelectOption<T>[]>;
 }) {
@@ -389,18 +389,16 @@ export function FormFieldSelect<T extends string | number>({
       {loadOptions ? (
         <AsyncSelect<CatalogSelectOption<T>, false>
           {...sharedSelectProps}
-          defaultOptions={options}
+          defaultOptions
           cacheOptions
           loadOptions={async (inputValue) => {
             const remote = await loadOptions(inputValue);
-            if (!inputValue.trim() && options.length > 0) return options;
-            return remote;
+            const extra = options.filter(
+              (opt) => !remote.some((item) => item.value === opt.value),
+            );
+            return extra.length > 0 ? [...extra, ...remote] : remote;
           }}
-          noOptionsMessage={({ inputValue }) =>
-            inputValue.trim().length < 1
-              ? "Escribe para buscar…"
-              : "Sin resultados"
-          }
+          noOptionsMessage={() => "Sin resultados"}
           loadingMessage={() => "Buscando…"}
         />
       ) : (

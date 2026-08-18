@@ -157,7 +157,7 @@ export default function BulkImportEditableRow({
           name={`bulk_vessel_${row.id}`}
           value={row.vessel_id ?? 0}
           emptyValue={0}
-          optionLabel="Buscar barco…"
+          optionLabel={row.ship || row.vessel_name || "Buscar barco…"}
           compact
           disabled={fieldLock}
           loadOptions={loadVesselOptions}
@@ -303,7 +303,7 @@ export default function BulkImportEditableRow({
           name={`bulk_line_${row.id}`}
           value={row.shipping_line_id ?? 0}
           emptyValue={0}
-          optionLabel="Buscar naviera…"
+          optionLabel={row.shipping_line_name || "Buscar naviera…"}
           compact
           disabled={fieldLock}
           loadOptions={loadLineOptions}

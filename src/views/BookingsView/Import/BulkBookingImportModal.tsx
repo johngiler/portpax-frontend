@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
@@ -98,24 +99,10 @@ export default function BulkBookingImportModal({
     [draftRows],
   );
 
-  const sharedGroupId = useMemo(() => {
-    if (forcedGroupId) return forcedGroupId;
-    const ids = new Set(
-      draftRows
-        .map((row) => row.shipping_line_group_id)
-        .filter((id): id is number => Boolean(id)),
-    );
-    return ids.size === 1 ? [...ids][0] : 0;
-  }, [draftRows, forcedGroupId]);
-
-  const sharedGroupLabel = useMemo(() => {
-    if (forcedGroupId) return forcedGroupLabel;
-    if (!sharedGroupId) return "Grupo de naviera";
-    const row = draftRows.find(
-      (r) => r.shipping_line_group_id === sharedGroupId,
-    );
-    return row?.shipping_line_group_name || "Grupo de naviera";
-  }, [draftRows, forcedGroupId, forcedGroupLabel, sharedGroupId]);
+  const sharedGroupId = forcedGroupId;
+  const sharedGroupLabel = forcedGroupId
+    ? forcedGroupLabel
+    : "Grupo de naviera";
 
   const loadGroupOptions = useCallback(async (input: string) => {
     const groups = await fetchShippingLineGroups();
@@ -176,7 +163,7 @@ export default function BulkBookingImportModal({
     if (saving || claimingAllLta || rematchingGroup || draftRows.length === 0) {
       return;
     }
-    const nextRows = draftRows.map((row) => {
+    const payloads = draftRows.map((row) => {
       const shipName = (row.ship || row.vessel_name || "").trim();
       return {
         ...row,
@@ -195,12 +182,11 @@ export default function BulkBookingImportModal({
         lta_space_candidate: null,
       } as BulkImportPreviewRow;
     });
-    setDraftRows(nextRows);
     setRematchingGroup(true);
     setError(null);
     try {
       const settled = await Promise.all(
-        nextRows.map(async (draft) => {
+        payloads.map(async (draft) => {
           try {
             const next = await revalidateBulkImportRow(draft);
             return {
@@ -362,6 +348,14 @@ export default function BulkBookingImportModal({
           Creando reservas… No cambies de sección, no modifiques la URL ni
           cierres la ventana del navegador.
         </p>
+      ) : rematchingGroup ? (
+        <p className="mb-3 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+          <Loader2
+            className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--admin-accent)]"
+            aria-hidden
+          />
+          Recalculando barcos del grupo…
+        </p>
       ) : null}
 
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -432,7 +426,13 @@ export default function BulkBookingImportModal({
         ) : null}
       </div>
 
-      <div className="max-h-[min(60vh,520px)] overflow-auto rounded-lg border border-[var(--admin-border)]">
+      <div className="relative">
+        <div
+          className={`max-h-[min(60vh,520px)] overflow-auto rounded-lg border border-[var(--admin-border)] ${
+            rematchingGroup ? "pointer-events-none opacity-40" : ""
+          }`}
+          aria-busy={rematchingGroup}
+        >
         <table className="min-w-full text-left text-xs">
           <thead className="sticky top-0 z-[1] bg-[var(--admin-surface-muted)] text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
             <tr>
@@ -483,6 +483,23 @@ export default function BulkBookingImportModal({
             ))}
           </tbody>
         </table>
+        </div>
+        {rematchingGroup ? (
+          <div
+            className="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-2 rounded-lg bg-white/80 dark:bg-zinc-950/80"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2
+              className="h-8 w-8 animate-spin text-[var(--admin-accent)]"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+              Recalculando…
+            </p>
+          </div>
+        ) : null}
       </div>
     </Modal>
   );
