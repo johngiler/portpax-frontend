@@ -1,4 +1,7 @@
 import { Anchor, CalendarDays, CheckCircle2, MapPin, Ship } from "lucide-react";
+import type { BookingBatchPayload } from "@/types/booking";
+
+export type WizardCreateStatus = NonNullable<BookingBatchPayload["status"]>;
 
 export const BOOKING_WIZARD_STEPS = [
   { id: "port", label: "Puerto", icon: MapPin },
@@ -19,6 +22,7 @@ export type BookingWizardForm = {
   vesselId: number | null;
   callDates: string[];
   notes: string;
+  status: WizardCreateStatus;
   eta: string;
   etd: string;
   plannedPax: string;
@@ -33,6 +37,7 @@ export const emptyBookingWizardForm = (): BookingWizardForm => ({
   vesselId: null,
   callDates: [],
   notes: "",
+  status: "h",
   eta: "",
   etd: "",
   plannedPax: "",

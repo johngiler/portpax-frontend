@@ -136,6 +136,8 @@ export type BookingBatchPayload = {
   planned_pax?: number | null;
   /** Preferred pier from availability matrix; falls back to auto-assign. */
   position?: number | null;
+  /** Initial status (same set as bulk create). Defaults to Hold. */
+  status?: "h" | "co" | "cl" | "lta" | "ltd";
 };
 
 export type BookingUpdatePayload = {

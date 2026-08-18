@@ -295,6 +295,7 @@ export default function BookingWizard() {
         etd: form.etd || null,
         planned_pax: form.plannedPax === "" ? null : Number(form.plannedPax),
         position: form.preferredPositionId,
+        status: form.status,
       });
       setCreatedBookings(created);
     } catch (err) {
@@ -434,6 +435,8 @@ export default function BookingWizard() {
                 callDates={form.callDates}
                 notes={form.notes}
                 onNotesChange={(notes) => setForm((p) => ({ ...p, notes }))}
+                status={form.status}
+                onStatusChange={(status) => setForm((p) => ({ ...p, status }))}
                 eta={form.eta}
                 etd={form.etd}
                 plannedPax={form.plannedPax}

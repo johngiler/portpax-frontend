@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
@@ -25,12 +26,14 @@ import type {
   BookingValidationResult,
   PositionSuggestion,
 } from "@/types/booking";
+import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
 import { issueSeverity } from "@/lib/bookingConflictSeverity";
+import type { WizardCreateStatus } from "../wizardTypes";
 
-/** Align with backend `LTA_SOFT_FAIL_CODES` — Hold instead of hard block. */
+/** Align with backend `LTA_SOFT_FAIL_CODES` — do not hard-block create. */
 const LTA_SOFT_FAIL_CODES = new Set(["lta_beyond_horizon", "lta_horizon_denied"]);
 
 /** Operational conflicts are non-blocking; always allow create. */
@@ -47,7 +50,7 @@ function splitOperationalIssues(result: BookingValidationResult): {
         ...issue,
         level: "warning",
         severity,
-        message: `${issue.message} Se creará en Hold (H).`,
+        message: issue.message,
       });
     } else {
       soft.push({
@@ -64,6 +67,14 @@ function splitOperationalIssues(result: BookingValidationResult): {
   };
 }
 
+const CREATE_STATUS_OPTIONS: { value: WizardCreateStatus; label: string }[] = [
+  { value: "h", label: BOOKING_STATUS_LABELS.h },
+  { value: "co", label: BOOKING_STATUS_LABELS.co },
+  { value: "cl", label: BOOKING_STATUS_LABELS.cl },
+  { value: "lta", label: BOOKING_STATUS_LABELS.lta },
+  { value: "ltd", label: BOOKING_STATUS_LABELS.ltd },
+];
+
 type ReviewStepProps = {
   port: Port | null;
   line: ShippingLine | null;
@@ -71,6 +82,8 @@ type ReviewStepProps = {
   callDates: string[];
   notes: string;
   onNotesChange: (notes: string) => void;
+  status: WizardCreateStatus;
+  onStatusChange: (status: WizardCreateStatus) => void;
   eta: string;
   etd: string;
   plannedPax: string;
@@ -111,6 +124,8 @@ export default function ReviewStep({
   callDates,
   notes,
   onNotesChange,
+  status,
+  onStatusChange,
   eta,
   etd,
   plannedPax,
@@ -367,7 +382,17 @@ export default function ReviewStep({
         </div>
       </div>
 
-      <div className="border-t border-zinc-200/80 bg-zinc-50/40 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+      <div className="space-y-4 border-t border-zinc-200/80 bg-zinc-50/40 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+        <div className="max-w-md">
+          <FormFieldSelect<WizardCreateStatus>
+            label="Estado"
+            name="wizard_status"
+            value={status}
+            required
+            options={CREATE_STATUS_OPTIONS}
+            onChange={onStatusChange}
+          />
+        </div>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200">
             Notas internas (opcional)
