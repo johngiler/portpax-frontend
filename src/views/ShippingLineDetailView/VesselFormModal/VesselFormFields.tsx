@@ -28,24 +28,25 @@ export default function VesselFormFields({
       <FormSection
         title="Identificación"
         description="Nombre y clasificación del barco en el catálogo."
-        columns={1}
       >
         {!lockedShippingLineId ? (
-          <FormFieldSelect<number>
-            label="Naviera"
-            name="shipping_line"
-            value={form.shipping_line}
-            onChange={(value) => onFieldChange("shipping_line", value)}
-            options={lineOptions}
-            optionLabel="Seleccionar naviera…"
-            emptyValue={0}
-            required
-            error={errors.shipping_line}
-            showLogo
-            logoKind="shipping_line"
-          />
+          <div className="sm:col-span-2">
+            <FormFieldSelect<number>
+              label="Naviera"
+              name="shipping_line"
+              value={form.shipping_line}
+              onChange={(value) => onFieldChange("shipping_line", value)}
+              options={lineOptions}
+              optionLabel="Seleccionar naviera…"
+              emptyValue={0}
+              required
+              error={errors.shipping_line}
+              showLogo
+              logoKind="shipping_line"
+            />
+          </div>
         ) : lockedShippingLineName ? (
-          <div className="mb-4">
+          <div className="mb-4 sm:col-span-2">
             <p className="mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-200">Naviera</p>
             <p className="rounded-md border border-[var(--admin-border)] bg-zinc-50/60 px-4 py-2.5 text-sm text-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-200">
               {lockedShippingLineName}
@@ -60,6 +61,14 @@ export default function VesselFormFields({
           required
           error={errors.name}
           placeholder="AIDAcosma"
+        />
+        <FormField
+          label="Código"
+          name="ship_code"
+          value={form.ship_code}
+          onChange={(value) => onFieldChange("ship_code", String(value))}
+          error={errors.ship_code}
+          placeholder="AROYA"
         />
       </FormSection>
 

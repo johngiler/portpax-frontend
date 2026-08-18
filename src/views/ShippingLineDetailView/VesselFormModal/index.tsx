@@ -36,6 +36,7 @@ function emptyForm(): VesselFormState {
   return {
     shipping_line: 0,
     name: "",
+    ship_code: "",
     vessel_class: "",
     gross_tonnage: null,
     pax_capacity: null,
@@ -58,6 +59,7 @@ function vesselToForm(vessel: Vessel): VesselFormState {
   return {
     shipping_line: vessel.shipping_line,
     name: vessel.name,
+    ship_code: vessel.ship_code || "",
     vessel_class: vessel.vessel_class,
     gross_tonnage: vessel.gross_tonnage != null ? Number(vessel.gross_tonnage) : null,
     pax_capacity: vessel.pax_capacity,
@@ -166,7 +168,11 @@ export default function VesselFormModal({
     await submitModalForm(
       () =>
         onSubmit({
-          payload: { ...form, name: form.name.trim() },
+          payload: {
+            ...form,
+            name: form.name.trim(),
+            ship_code: form.ship_code.trim(),
+          },
           logoFile,
           removeLogo,
         }),

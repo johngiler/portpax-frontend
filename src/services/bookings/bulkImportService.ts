@@ -30,6 +30,8 @@ export type BulkImportPreviewRow = {
   vessel_name: string | null;
   shipping_line_id: number | null;
   shipping_line_name: string | null;
+  shipping_line_group_id?: number | null;
+  shipping_line_group_name?: string | null;
   /** Initial booking status for create (Hold default; no NR/C/R). */
   suggested_status?: "h" | "co" | "cl" | "lta" | "ltd";
   position_id?: number | null;

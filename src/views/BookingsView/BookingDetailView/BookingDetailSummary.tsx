@@ -62,6 +62,7 @@ export default function BookingDetailSummary({
   const [portId, setPortId] = useState(booking.port);
   const [lineId, setLineId] = useState(booking.shipping_line);
   const [vesselId, setVesselId] = useState(booking.vessel);
+  const [vesselName, setVesselName] = useState(booking.vessel_name);
   const [callDate, setCallDate] = useState(booking.call_date);
   const [notes, setNotes] = useState(booking.notes ?? "");
   const [saving, setSaving] = useState(false);
@@ -70,7 +71,7 @@ export default function BookingDetailSummary({
 
   const { ports } = useActivePortsCatalog(editing);
   const { lines } = useActiveShippingLinesCatalog(editing);
-  const { vessels } = useActiveVesselsCatalog(lineId, editing);
+  const { vessels, isLoading: vesselsLoading } = useActiveVesselsCatalog(lineId, editing);
 
   const groupId = booking.shipping_line_group;
 
@@ -79,9 +80,20 @@ export default function BookingDetailSummary({
     setPortId(booking.port);
     setLineId(booking.shipping_line);
     setVesselId(booking.vessel);
+    setVesselName(booking.vessel_name);
     setCallDate(booking.call_date);
     setNotes(booking.notes ?? "");
   }, [booking, editing]);
+
+  useEffect(() => {
+    if (!editing || !lineId || vesselsLoading) return;
+    if (vessels.some((vessel) => vessel.id === vesselId)) return;
+    const needle = vesselName.trim().toLowerCase();
+    const match = vessels.find(
+      (vessel) => vessel.name.trim().toLowerCase() === needle,
+    );
+    setVesselId(match?.id ?? 0);
+  }, [editing, lineId, vessels, vesselsLoading, vesselId, vesselName]);
 
   const portOptions = useMemo(
     () =>
@@ -146,6 +158,7 @@ export default function BookingDetailSummary({
     setPortId(booking.port);
     setLineId(booking.shipping_line);
     setVesselId(booking.vessel);
+    setVesselName(booking.vessel_name);
     setCallDate(booking.call_date);
     setNotes(booking.notes ?? "");
     setEditing(true);
@@ -238,7 +251,6 @@ export default function BookingDetailSummary({
               value={lineId}
               onChange={(id) => {
                 setLineId(id);
-                setVesselId(0);
               }}
               options={lineOptions}
               error={fieldErrors.line}
@@ -251,7 +263,11 @@ export default function BookingDetailSummary({
               label="Barco"
               name="booking_identity_vessel"
               value={vesselId}
-              onChange={setVesselId}
+              onChange={(id) => {
+                const selected = vessels.find((vessel) => vessel.id === id);
+                setVesselId(id);
+                if (selected) setVesselName(selected.name);
+              }}
               options={vesselOptions}
               error={fieldErrors.vessel}
               compact

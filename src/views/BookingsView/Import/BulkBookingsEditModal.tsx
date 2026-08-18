@@ -298,8 +298,6 @@ function EditRow({
               ...row,
               shipping_line_id: id,
               shipping_line_name: option?.label ?? row.shipping_line_name,
-              vessel_id: 0,
-              vessel_name: undefined,
               position_id: null,
               position_code: null,
             };

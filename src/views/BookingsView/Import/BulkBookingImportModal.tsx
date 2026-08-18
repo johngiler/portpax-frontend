@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { useNavigationLock } from "@/lib/useNavigationLock";
+import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import {
   createBulkBookingImport,
   revalidateBulkImportRow,
@@ -40,11 +42,16 @@ export default function BulkBookingImportModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [claimingAllLta, setClaimingAllLta] = useState(false);
+  const [rematchingGroup, setRematchingGroup] = useState(false);
+  const [forcedGroupId, setForcedGroupId] = useState(0);
+  const [forcedGroupLabel, setForcedGroupLabel] = useState("Grupo de naviera");
   const [error, setError] = useState<string | null>(null);
   const claimAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    setForcedGroupId(0);
+    setForcedGroupLabel("Grupo de naviera");
     const normalized = initialRows.map((r) => ({
       ...r,
       suggested_status:
@@ -91,6 +98,42 @@ export default function BulkBookingImportModal({
     [draftRows],
   );
 
+  const sharedGroupId = useMemo(() => {
+    if (forcedGroupId) return forcedGroupId;
+    const ids = new Set(
+      draftRows
+        .map((row) => row.shipping_line_group_id)
+        .filter((id): id is number => Boolean(id)),
+    );
+    return ids.size === 1 ? [...ids][0] : 0;
+  }, [draftRows, forcedGroupId]);
+
+  const sharedGroupLabel = useMemo(() => {
+    if (forcedGroupId) return forcedGroupLabel;
+    if (!sharedGroupId) return "Grupo de naviera";
+    const row = draftRows.find(
+      (r) => r.shipping_line_group_id === sharedGroupId,
+    );
+    return row?.shipping_line_group_name || "Grupo de naviera";
+  }, [draftRows, forcedGroupId, forcedGroupLabel, sharedGroupId]);
+
+  const loadGroupOptions = useCallback(async (input: string) => {
+    const groups = await fetchShippingLineGroups();
+    const q = input.trim().toLowerCase();
+    return groups
+      .filter((group) => group.is_active)
+      .filter(
+        (group) =>
+          !q ||
+          group.name.toLowerCase().includes(q) ||
+          group.code.toLowerCase().includes(q),
+      )
+      .map((group) => ({
+        value: group.id,
+        label: group.name,
+      }));
+  }, []);
+
   useEffect(() => {
     if (claimAllRef.current) {
       claimAllRef.current.indeterminate =
@@ -129,8 +172,78 @@ export default function BulkBookingImportModal({
     }
   }
 
+  async function applyGroupToAll(groupId: number | null, groupName: string | null) {
+    if (saving || claimingAllLta || rematchingGroup || draftRows.length === 0) {
+      return;
+    }
+    const nextRows = draftRows.map((row) => {
+      const shipName = (row.ship || row.vessel_name || "").trim();
+      return {
+        ...row,
+        shipping_line_group_id: groupId,
+        shipping_line_group_name: groupId ? groupName : null,
+        shipping_line_id: null,
+        shipping_line_name: null,
+        vessel_id: null,
+        vessel_name: shipName || null,
+        ship: shipName,
+        position_id: null,
+        position_code: null,
+        position_occupancy_hint: null,
+        position_occupant: null,
+        claim_lta_space: false,
+        lta_space_candidate: null,
+      } as BulkImportPreviewRow;
+    });
+    setDraftRows(nextRows);
+    setRematchingGroup(true);
+    setError(null);
+    try {
+      const settled = await Promise.all(
+        nextRows.map(async (draft) => {
+          try {
+            const next = await revalidateBulkImportRow(draft);
+            return {
+              id: draft.id,
+              row: {
+                ...next,
+                id: draft.id,
+                suggested_status:
+                  next.suggested_status === "co" ||
+                  next.suggested_status === "cl" ||
+                  next.suggested_status === "lta" ||
+                  next.suggested_status === "ltd" ||
+                  next.suggested_status === "h"
+                    ? next.suggested_status
+                    : draft.suggested_status,
+                position_occupancy_hint: draft.position_occupancy_hint ?? null,
+                position_occupant: draft.position_occupant ?? null,
+              } as BulkImportPreviewRow,
+            };
+          } catch {
+            return { id: draft.id, row: draft };
+          }
+        }),
+      );
+      const byId = new Map(settled.map((item) => [item.id, item.row]));
+      setDraftRows((prev) => prev.map((row) => byId.get(row.id) ?? row));
+      setSelectedIds((selected) => {
+        const next = new Set<string>();
+        for (const row of settled.map((item) => item.row)) {
+          if (selected.has(row.id) && row.selectable) next.add(row.id);
+          else if (row.selectable && row.selected_default) next.add(row.id);
+        }
+        return next;
+      });
+    } finally {
+      setRematchingGroup(false);
+    }
+  }
+
   async function toggleAllLtaClaims(claim: boolean) {
-    if (claimableLtaRows.length === 0 || saving || claimingAllLta) return;
+    if (claimableLtaRows.length === 0 || saving || claimingAllLta || rematchingGroup) {
+      return;
+    }
     const nextRows = draftRows.map((row) =>
       row.lta_space_candidate ? applyLtaSpaceClaim(row, claim) : row,
     );
@@ -212,19 +325,20 @@ export default function BulkBookingImportModal({
   const allSelectableChecked =
     selectableRows.length > 0 &&
     selectableRows.every((r) => selectedIds.has(r.id));
+  const tableBusy = saving || claimingAllLta || rematchingGroup;
 
   return (
     <Modal
       open={open}
-      onClose={saving || claimingAllLta ? () => undefined : onClose}
-      closeable={!saving && !claimingAllLta}
+      onClose={tableBusy ? () => undefined : onClose}
+      closeable={!tableBusy}
       title="Carga de reservas masiva"
       panelClassName="w-[min(98vw,120rem)] max-w-[min(98vw,120rem)]"
       footer={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
-            disabled={saving}
+            disabled={tableBusy}
             onClick={onClose}
             className="cursor-pointer rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
@@ -232,7 +346,7 @@ export default function BulkBookingImportModal({
           </button>
           <DefaultButton
             type="button"
-            disabled={saving || selectedCount === 0}
+            disabled={tableBusy || selectedCount === 0}
             onClick={() => void handleCreate()}
             className="disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -262,6 +376,29 @@ export default function BulkBookingImportModal({
         </p>
       </div>
 
+      <div className="mb-3 max-w-md [&_.mb-3]:mb-0">
+        <FormFieldSelect<number>
+          label="Grupo de naviera"
+          name="bulk_force_shipping_line_group"
+          value={sharedGroupId}
+          emptyValue={0}
+          optionLabel="Sin forzar"
+          compact
+          disabled={tableBusy}
+          loadOptions={loadGroupOptions}
+          options={
+            sharedGroupId
+              ? [{ value: sharedGroupId, label: sharedGroupLabel }]
+              : []
+          }
+          onChange={(id, option) => {
+            setForcedGroupId(id || 0);
+            setForcedGroupLabel(option?.label ?? "Grupo de naviera");
+            void applyGroupToAll(id || null, option?.label ?? null);
+          }}
+        />
+      </div>
+
       <p className="mb-3 text-[11px] text-zinc-500 dark:text-zinc-400">
         Por defecto En evaluación (Hold). Puedes cambiar estado (sin Cancelada),
         barco, puerto, naviera, fecha y ETA/ETD antes de crear.
@@ -272,7 +409,7 @@ export default function BulkBookingImportModal({
           <input
             type="checkbox"
             checked={allSelectableChecked}
-            disabled={saving || claimingAllLta}
+            disabled={tableBusy}
             onChange={(e) => toggleAll(e.target.checked)}
             className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
           />
@@ -284,7 +421,7 @@ export default function BulkBookingImportModal({
               ref={claimAllRef}
               type="checkbox"
               checked={allLtaClaimed}
-              disabled={saving || claimingAllLta}
+              disabled={tableBusy}
               onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
               className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
             />
@@ -316,7 +453,7 @@ export default function BulkBookingImportModal({
                     <input
                       type="checkbox"
                       checked={allLtaClaimed}
-                      disabled={saving || claimingAllLta}
+                      disabled={tableBusy}
                       onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
                       className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Reclamar todos los espacios LTA"
@@ -338,7 +475,7 @@ export default function BulkBookingImportModal({
               <BulkImportEditableRow
                 key={row.id}
                 row={row}
-                disabled={saving || claimingAllLta}
+                disabled={tableBusy}
                 checked={selectedIds.has(row.id)}
                 onToggle={() => toggle(row.id, row.selectable)}
                 onRowChange={updateRow}

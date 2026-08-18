@@ -14,6 +14,7 @@ export type FetchVesselsParams = {
   page?: number;
   search?: string;
   shipping_line?: number;
+  shipping_line_group?: number;
   pageSize?: number;
 };
 
@@ -35,6 +36,9 @@ export async function fetchVessels(
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   const qs = query.toString();
   return apiFetch<ApiListResponse<Vessel>>(`${BASE}${qs ? `?${qs}` : ""}`);

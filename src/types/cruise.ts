@@ -43,6 +43,7 @@ export type Vessel = {
   shipping_line_name: string;
   group_name: string;
   name: string;
+  ship_code: string;
   logo: string | null;
   vessel_class: string;
   gross_tonnage: string | null;
@@ -67,6 +68,7 @@ export type Vessel = {
 export type VesselPayload = {
   shipping_line: number;
   name: string;
+  ship_code: string;
   vessel_class: string;
   gross_tonnage: number | null;
   pax_capacity: number | null;

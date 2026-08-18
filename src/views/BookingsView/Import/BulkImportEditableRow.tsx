@@ -97,13 +97,20 @@ export default function BulkImportEditableRow({
     }));
   }, []);
 
-  const loadLineOptions = useCallback(async (input: string) => {
-    const res = await fetchShippingLines({ search: input, pageSize: 20 });
-    return res.results.map((line) => ({
-      value: line.id,
-      label: line.name,
-    }));
-  }, []);
+  const loadLineOptions = useCallback(
+    async (input: string) => {
+      const res = await fetchShippingLines({
+        search: input,
+        pageSize: 20,
+        group: row.shipping_line_group_id ?? undefined,
+      });
+      return res.results.map((line) => ({
+        value: line.id,
+        label: line.name,
+      }));
+    },
+    [row.shipping_line_group_id],
+  );
 
   const loadVesselOptions = useCallback(
     async (input: string) => {
@@ -111,13 +118,16 @@ export default function BulkImportEditableRow({
         search: input,
         pageSize: 20,
         shipping_line: row.shipping_line_id ?? undefined,
+        shipping_line_group: row.shipping_line_id
+          ? undefined
+          : (row.shipping_line_group_id ?? undefined),
       });
       return res.results.map((v) => ({
         value: v.id,
         label: v.name,
       }));
     },
-    [row.shipping_line_id],
+    [row.shipping_line_id, row.shipping_line_group_id],
   );
 
   const fieldLock = disabled;
@@ -309,14 +319,14 @@ export default function BulkImportEditableRow({
               : []
           }
           onChange={(id) => {
+            const shipName = (row.ship || row.vessel_name || "").trim();
             const draft: BulkImportPreviewRow = id
               ? {
                   ...row,
                   shipping_line_id: id,
-                  // Vessel must match the new line — clear until user picks again.
                   vessel_id: null,
-                  vessel_name: null,
-                  ship: "",
+                  vessel_name: shipName || null,
+                  ship: shipName,
                   position_id: null,
                   position_code: null,
                   position_occupancy_hint: null,
@@ -329,8 +339,8 @@ export default function BulkImportEditableRow({
                   shipping_line_id: null,
                   shipping_line_name: null,
                   vessel_id: null,
-                  vessel_name: null,
-                  ship: "",
+                  vessel_name: shipName || null,
+                  ship: shipName,
                   position_id: null,
                   position_code: null,
                   position_occupancy_hint: null,

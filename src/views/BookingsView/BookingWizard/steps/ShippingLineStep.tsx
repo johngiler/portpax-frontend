@@ -52,7 +52,11 @@ export default function ShippingLineStep({
   useEffect(() => {
     fetchShippingLineGroups()
       .then((groups) =>
-        setGroupOptions(groups.map((group) => ({ value: group.id, label: group.name }))),
+        setGroupOptions(
+          groups
+            .filter((group) => group.is_active)
+            .map((group) => ({ value: group.id, label: group.name })),
+        ),
       )
       .catch(() => setGroupOptions([]));
   }, []);
