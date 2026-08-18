@@ -75,6 +75,8 @@ export type BookingsWorkspaceFilters = {
   density: number;
   /** Conflict filter: empty = all; yes/no; yellow/red severity. */
   conflict: "" | "yes" | "no" | "yellow" | "red";
+  /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
+  importedDates: string[];
 };
 
 export type ConflictFilterValue = BookingsWorkspaceFilters["conflict"];
@@ -84,6 +86,23 @@ function parseConflictFilter(raw: string | null): ConflictFilterValue {
   if (raw === "no" || raw === "false" || raw === "0") return "no";
   if (raw === "yellow" || raw === "red") return raw;
   return "";
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Discrete imported availability dates from `idates` query param. */
+export function parseImportedIsoDates(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const iso = part.trim();
+    if (!ISO_DATE.test(iso) || seen.has(iso)) continue;
+    seen.add(iso);
+    out.push(iso);
+  }
+  out.sort();
+  return out;
 }
 
 /** Map sidebar conflict filter to list/availability API params. */
@@ -169,6 +188,9 @@ export function parseBookingsWorkspaceFilters(
     heat,
     density,
     conflict,
+    importedDates: parseImportedIsoDates(
+      sp.getAll("idates").join(",") || sp.get("idates"),
+    ),
   };
 }
 
@@ -219,6 +241,9 @@ export function buildBookingsWorkspaceQuery(
   if (state.tab === "availability" && state.heat === "occupancy") {
     sp.set("heat", "occupancy");
     if (state.density >= 1) sp.set("density", String(state.density));
+  }
+  if (state.importedDates.length > 0) {
+    sp.set("idates", state.importedDates.join(","));
   }
   return sp.toString();
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
@@ -20,7 +20,6 @@ import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { canWriteApp } from "@/lib/navAccess";
-import { currentReturnTo } from "@/lib/safeReturnTo";
 import type {
   AvailabilityHeatModeQuery,
   BookingsTabQuery,
@@ -32,6 +31,7 @@ import {
   buildBookingsWorkspaceQuery,
   conflictFilterToApiParams,
   parseBookingsWorkspaceFilters,
+  parseImportedIsoDates,
   type ConflictFilterValue,
 } from "@/lib/viewFilterQuery";
 import {
@@ -120,7 +120,6 @@ function daysInclusive(from: string, to: string): number {
 
 export default function BookingsView() {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const setFilterOpen = useSetFilterOpen();
@@ -240,7 +239,10 @@ export default function BookingsView() {
   const [reprocessPasteRows, setReprocessPasteRows] = useState<string[][]>([]);
   const [availabilityDateAllowlist, setAvailabilityDateAllowlist] = useState<
     string[] | null
-  >(null);
+  >(() => {
+    const dates = parseImportedIsoDates(searchParams.get("idates"));
+    return dates.length ? dates : null;
+  });
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditIds, setBulkEditIds] = useState<number[]>([]);
 
@@ -280,8 +282,14 @@ export default function BookingsView() {
       heat: appliedHeatMode,
       density: appliedHeatMode === "occupancy" ? appliedDensity : 0,
       conflict: appliedConflictFilter,
+      importedDates: availabilityDateAllowlist ?? [],
       ...overrides,
     };
+  }
+
+  function bookingsReturnTo() {
+    const qs = buildBookingsWorkspaceQuery(workspaceState());
+    return qs ? `/bookings?${qs}` : "/bookings";
   }
 
   function syncToUrl(state: BookingsWorkspaceFilters) {
@@ -338,6 +346,9 @@ export default function BookingsView() {
     setMonthIndex(parsed.month);
     setAppliedYear(parsed.year);
     setAppliedMonthIndex(parsed.month);
+    setAvailabilityDateAllowlist(
+      parsed.importedDates.length ? parsed.importedDates : null,
+    );
   }, [portsReady, searchParams, portOptions, navDefaults]);
 
   useEffect(() => {
@@ -456,6 +467,7 @@ export default function BookingsView() {
       datePreset: "custom",
       customFrom: newFrom,
       customTo: newTo,
+      importedDates: [],
     });
   }, []);
 
@@ -625,6 +637,7 @@ export default function BookingsView() {
       heat: "availability",
       density: 0,
       conflict: "",
+      importedDates: [],
     });
   }
 
@@ -823,7 +836,7 @@ export default function BookingsView() {
     // Partial dates only — do not switch sidebar to continuous "custom" range.
     setAvailabilityDateAllowlist(payload.dates);
     setTab("availability");
-    syncToUrl(workspaceState({ tab: "availability" }));
+    syncToUrl(workspaceState({ tab: "availability", importedDates: payload.dates }));
     setFilterOpen?.(false);
   }
 
@@ -842,6 +855,7 @@ export default function BookingsView() {
         datePreset: preset,
         customFrom: customDateFrom,
         customTo: customDateTo,
+        importedDates: [],
       }),
     );
   }
@@ -1111,7 +1125,7 @@ export default function BookingsView() {
             router.push(
               bookingDetailHref(
                 { booking_code: bookingCode },
-                { returnTo: currentReturnTo(pathname, searchParams) },
+                { returnTo: bookingsReturnTo() },
               ),
             );
           }}
@@ -1254,7 +1268,7 @@ export default function BookingsView() {
               : {}),
           }}
           canBook={canWrite}
-          returnTo={currentReturnTo(pathname, searchParams)}
+          returnTo={bookingsReturnTo()}
           onClearFilters={handleClearFilters}
           onStartDateChange={handleAvailabilityStartChange}
         />
