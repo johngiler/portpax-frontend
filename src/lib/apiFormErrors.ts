@@ -27,9 +27,9 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
     "Usuario o contraseña incorrectos.",
   // Booking validation codes (when API sends code without message)
   filo_eta_violation:
-    "First-in / last-out: la posición interior no puede arribar antes que la exterior.",
+    "El horario de arribo incumple FILO (first-in / last-out) con la escala en la posición anidada.",
   filo_etd_violation:
-    "First-in / last-out: la posición interior no puede zarpar después que la exterior.",
+    "El horario de zarpe incumple FILO (first-in / last-out) con la escala en la posición anidada.",
   position_occupied: "La posición ya está ocupada en esa fecha/horario.",
   lta_priority_conflict:
     "La posición está ocupada por un call CL (LTA inamovible).",
