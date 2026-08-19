@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthOptions } from "@/lib/bookingDates";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import AnnualMonthBlock from "./AnnualMonthBlock";
@@ -21,8 +21,8 @@ type AnnualGridProps = {
   onYearChange: (year: number) => void;
   season: CalendarSeason;
   onSeasonChange?: (season: CalendarSeason) => void;
-  bookings: Booking[];
-  previousYearBookings: Booking[];
+  bookings: BookingListItem[];
+  previousYearBookings: BookingListItem[];
   positions: Position[];
   positionFilterId?: number;
   multiPort?: boolean;

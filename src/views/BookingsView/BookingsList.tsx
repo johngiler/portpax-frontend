@@ -6,11 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, MapPin } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import ConfirmationPdfButton from "@/components/booking/ConfirmationPdfButton";
 import {
-  bookingConflictHighlights,
-  conflictBadgeClassName,
+  conflictCallCardFrameSeverity,
+  conflictChipTitle,
+  conflictChipsFromApi,
+  conflictHighlightsFromApi,
+  conflictListFrameSeverity,
+} from "@/lib/conflictDisplayFromApi";
+import {
   conflictCardClassName,
+  conflictFieldHighlightClassName,
 } from "@/lib/bookingConflictStyle";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
@@ -21,7 +28,7 @@ import {
   canBulkDeleteBookings,
   commonBulkNextStatuses,
   getBookingBadgeStatus,
-  type Booking,
+  type BookingListItem,
   type BookingStatus,
   type BookingUpdatePayload,
   type CancellationReason,
@@ -36,7 +43,7 @@ export type BulkStatusPayload = Pick<
 >;
 
 type BookingsListProps = {
-  bookings: Booking[];
+  bookings: BookingListItem[];
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
   canWrite?: boolean;
@@ -72,7 +79,7 @@ function CodeActions({
   booking,
   detailHref,
 }: {
-  booking: Booking;
+  booking: BookingListItem;
   detailHref: string;
 }) {
   return (
@@ -112,7 +119,7 @@ export default function BookingsList({
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const bookingById = useMemo(() => {
-    const map = new Map<number, Booking>();
+    const map = new Map<number, BookingListItem>();
     for (const b of bookings) map.set(b.id, b);
     return map;
   }, [bookings]);
@@ -134,7 +141,7 @@ export default function BookingsList({
     () =>
       [...selectedIds]
         .map((id) => bookingById.get(id))
-        .filter((b): b is Booking => Boolean(b)),
+        .filter((b): b is BookingListItem => Boolean(b)),
     [selectedIds, bookingById],
   );
 
@@ -264,13 +271,15 @@ export default function BookingsList({
           const positionLabel = booking.position_code || "Sin asignar";
           const detailHref = bookingDetailHref(booking, { returnTo });
           const checked = selectedIds.has(booking.id);
-          const conflictUi = bookingConflictHighlights(booking);
+          const highlights = conflictHighlightsFromApi(booking);
+          const chips = conflictChipsFromApi(booking);
+          const listFrameSeverity = conflictListFrameSeverity(highlights);
 
           return (
             <li key={booking.id}>
               <article
                 className={conflictCardClassName(
-                  conflictUi.frameCard ? conflictUi.severity : null,
+                  listFrameSeverity,
                   "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
                 )}
               >
@@ -305,11 +314,7 @@ export default function BookingsList({
                       <BookingStatusBadge
                         status={getBookingBadgeStatus(booking)}
                       />
-                      {conflictUi.severity ? (
-                        <span className={conflictBadgeClassName(conflictUi.severity)}>
-                          Conflicto
-                        </span>
-                      ) : null}
+                      <ConflictTypeChips chips={chips} />
                       {booking.confirmation_pdf_url ? (
                         <ConfirmationPdfButton
                           href={booking.confirmation_pdf_url}
@@ -341,12 +346,12 @@ export default function BookingsList({
                     eta={booking.eta}
                     etd={booking.etd}
                     positionLabel={positionLabel}
-                    highlightLoa={conflictUi.highlightLoa}
-                    loaHighlightSeverity={conflictUi.loaSeverity}
-                    highlightSchedule={conflictUi.highlightSchedule}
-                    scheduleHighlightSeverity={conflictUi.scheduleSeverity}
-                    highlightPosition={conflictUi.highlightPosition}
-                    positionHighlightSeverity={conflictUi.positionSeverity}
+                    highlightLoa={highlights.highlight_loa}
+                    loaHighlightSeverity={highlights.loa_severity}
+                    highlightSchedule={highlights.highlight_schedule}
+                    scheduleHighlightSeverity={highlights.schedule_severity}
+                    highlightPosition={highlights.highlight_position}
+                    positionHighlightSeverity={highlights.position_severity}
                   />
                   <CodeActions booking={booking} detailHref={detailHref} />
                 </div>

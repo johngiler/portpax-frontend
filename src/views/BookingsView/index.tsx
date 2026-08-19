@@ -73,6 +73,7 @@ import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
 import BookingsHistoryModal from "./BookingsHistoryModal";
+import BookingsVesselProximityPanel from "./BookingsVesselProximityPanel";
 import BookingsList, {
   type BulkStatusPayload,
 } from "./BookingsList";
@@ -306,7 +307,11 @@ export default function BookingsView() {
       return;
     }
     const parsed = parseBookingsWorkspaceFilters(searchParams, navDefaults);
-    const tab = parsed.tab;
+    const tab =
+      parsed.tab === "proximity" &&
+      (parsed.line <= 0 || parsed.vessel <= 0)
+        ? "list"
+        : parsed.tab;
     const port =
       parsed.port > 0 && portOptions.some((p) => p.value === parsed.port)
         ? parsed.port
@@ -315,8 +320,9 @@ export default function BookingsView() {
     setTab(tab);
     setStatusFilter(parsed.status);
     setAppliedStatusFilter(parsed.status);
-    setConflictFilter(parsed.conflict);
-    setAppliedConflictFilter(parsed.conflict);
+    const conflict = tab === "proximity" ? "" : parsed.conflict;
+    setConflictFilter(conflict);
+    setAppliedConflictFilter(conflict);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
     setPortFilter(port);
@@ -412,6 +418,23 @@ export default function BookingsView() {
     appliedCustomDateTo,
   ]);
 
+  const proximityDateRange = useMemo(() => {
+    if (appliedDatePreset === "all") {
+      const range = availabilityDefaultRange();
+      return { from: range.date_from, to: range.date_to };
+    }
+    const range = getTimeRange(
+      appliedDatePreset === "custom" ? "custom" : appliedDatePreset,
+      appliedCustomDateFrom,
+      appliedCustomDateTo,
+    );
+    return { from: range.date_from, to: range.date_to };
+  }, [
+    appliedDatePreset,
+    appliedCustomDateFrom,
+    appliedCustomDateTo,
+  ]);
+
   const availabilityRange = useMemo(() => {
     // Imported dates: fetch window = min→max, grid shows only those days.
     if (availabilityDateAllowlist?.length) {
@@ -492,11 +515,10 @@ export default function BookingsView() {
 
   function applyFilters() {
     setAppliedStatusFilter(statusFilter);
-    const nextConflict =
+    const conflictTabs =
       tab === "list" ||
-      (tab === "availability" && heatMode === "occupancy")
-        ? conflictFilter
-        : "";
+      (tab === "availability" && heatMode === "occupancy");
+    const nextConflict = conflictTabs ? conflictFilter : "";
     setAppliedConflictFilter(nextConflict);
     if (nextConflict !== conflictFilter) {
       setConflictFilter(nextConflict);
@@ -642,15 +664,26 @@ export default function BookingsView() {
   }
 
   function handleTabChange(next: BookingsTabQuery) {
+    if (
+      next === "proximity" &&
+      (appliedShippingLineFilter <= 0 || appliedVesselFilter <= 0)
+    ) {
+      return;
+    }
     setTab(next);
+    if (next === "proximity") {
+      setConflictFilter("");
+      setAppliedConflictFilter("");
+      syncToUrl(workspaceState({ tab: next, conflict: "" }));
+      return;
+    }
     syncToUrl(workspaceState({ tab: next }));
   }
 
   const hasActiveFilters =
     appliedStatusFilter.length > 0 ||
-    (tab === "list" && appliedConflictFilter !== "") ||
-    (tab === "availability" &&
-      appliedHeatMode === "occupancy" &&
+    ((tab === "list" ||
+      (tab === "availability" && appliedHeatMode === "occupancy")) &&
       appliedConflictFilter !== "") ||
     appliedSearch !== "" ||
     appliedPortFilter > 0 ||
@@ -685,7 +718,7 @@ export default function BookingsView() {
 
   const canApplyFilters =
     !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
-    conflictFilter !== appliedConflictFilter ||
+    (tab !== "proximity" && conflictFilter !== appliedConflictFilter) ||
     search.trim() !== appliedSearch ||
     portFilter !== appliedPortFilter ||
     shippingLineFilter !== appliedShippingLineFilter ||
@@ -963,7 +996,9 @@ export default function BookingsView() {
       ? "Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
-        : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
+        : tab === "proximity"
+          ? "Solo escalas con conflicto geo entre puertos del barco seleccionado."
+          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
 
   const calendarPortLabel =
     appliedPortFilter > 0
@@ -1151,7 +1186,13 @@ export default function BookingsView() {
         }
       />
 
-      <BookingsTabs value={tab} onChange={handleTabChange} />
+      <BookingsTabs
+        value={tab}
+        onChange={handleTabChange}
+        proximityEnabled={
+          appliedShippingLineFilter > 0 && appliedVesselFilter > 0
+        }
+      />
 
       {hasActiveFilters ? (
         <ViewFilteredBanner onClear={handleClearFilters} />
@@ -1271,6 +1312,18 @@ export default function BookingsView() {
           returnTo={bookingsReturnTo()}
           onClearFilters={handleClearFilters}
           onStartDateChange={handleAvailabilityStartChange}
+        />
+      ) : null}
+
+      {tab === "proximity" ? (
+        <BookingsVesselProximityPanel
+          shippingLineId={appliedShippingLineFilter}
+          vesselId={appliedVesselFilter}
+          dateFrom={proximityDateRange.from}
+          dateTo={proximityDateRange.to}
+          portId={appliedPortFilter}
+          statuses={appliedStatusFilter}
+          returnTo={bookingsReturnTo()}
         />
       ) : null}
     </>

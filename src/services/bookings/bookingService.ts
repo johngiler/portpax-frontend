@@ -1,4 +1,5 @@
 import { fetchAllPages } from "@/lib/fetchAllPages";
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import {
   apiDownload,
   apiFetch,
@@ -8,6 +9,9 @@ import {
 } from "@/services/apiClient";
 import type {
   Booking,
+  BookingListItem,
+  BookingConflictChip,
+  BookingConflictHighlights,
   BookingBatchPayload,
   BookingListStatusFilter,
   BookingStatus,
@@ -19,6 +23,21 @@ import type {
 import { serializeBookingStatusFilters } from "@/types/booking";
 
 const BASE = "api/bookings/";
+
+export type AvailabilityBookingCall = {
+  booking_code: string;
+  status?: string;
+  conflict_chips?: BookingConflictChip[];
+  conflict_highlights?: BookingConflictHighlights;
+  position_id?: number;
+  shipping_line_name: string;
+  shipping_line_logo: string | null;
+  vessel_name: string;
+  vessel_logo: string | null;
+  loa_m: string | null;
+  eta: string | null;
+  etd: string | null;
+};
 
 export type FetchBookingsParams = {
   page?: number;
@@ -39,6 +58,8 @@ export type FetchBookingsParams = {
   has_conflict?: boolean;
   /** Filter by persisted conflict_severity (yellow|red). */
   conflict_severity?: "yellow" | "red" | "green";
+  /** Filter by operational conflict type group. */
+  conflict_type?: ConflictTypeFilterValue;
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -66,14 +87,17 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.conflict_severity) {
     query.set("conflict_severity", params.conflict_severity);
   }
+  if (params.conflict_type) {
+    query.set("conflict_type", params.conflict_type);
+  }
   return query;
 }
 
 export async function fetchBookings(
   params: FetchBookingsParams = {},
-): Promise<ApiListResponse<Booking>> {
+): Promise<ApiListResponse<BookingListItem>> {
   const qs = bookingsQuery(params).toString();
-  return apiFetch<ApiListResponse<Booking>>(`${BASE}${qs ? `?${qs}` : ""}`);
+  return apiFetch<ApiListResponse<BookingListItem>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }
 
 export async function exportBookingsReport(
@@ -91,7 +115,7 @@ export async function exportBookingsReport(
 
 export async function fetchAllBookings(
   params: Omit<FetchBookingsParams, "page"> = {},
-): Promise<Booking[]> {
+): Promise<BookingListItem[]> {
   return fetchAllPages((page, pageSize) => fetchBookings({ ...params, page, pageSize }));
 }
 
@@ -273,27 +297,7 @@ export type AvailabilityReport = {
   }>;
   rows: Array<{
     date: string;
-    cells: Array<
-      Array<{
-        booking_code: string;
-        status?: string;
-        has_conflict?: boolean;
-        conflict_severity?: "green" | "yellow" | "red" | null;
-        conflict_snapshot?: Array<{
-          code: string;
-          message: string;
-          severity: "green" | "yellow" | "red";
-        }>;
-        position_id?: number;
-        shipping_line_name: string;
-        shipping_line_logo: string | null;
-        vessel_name: string;
-        vessel_logo: string | null;
-        loa_m: string | null;
-        eta: string | null;
-        etd: string | null;
-      }>
-    >;
+    cells: Array<Array<AvailabilityBookingCall>>;
   }>;
   /** Present when ships_per_day filter is applied (server-paged matching days). */
   ships_per_day?: number;
@@ -318,6 +322,7 @@ export async function fetchAvailabilityReport(params: {
   page_size?: number;
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
+  conflict_type?: ConflictTypeFilterValue;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -338,13 +343,17 @@ export async function fetchAvailabilityReport(params: {
   if (params.conflict_severity) {
     query.set("conflict_severity", params.conflict_severity);
   }
+  if (params.conflict_type) {
+    query.set("conflict_type", params.conflict_type);
+  }
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
   }
   const paged =
     (params.ships_per_day != null && params.ships_per_day >= 1) ||
     params.has_conflict !== undefined ||
-    Boolean(params.conflict_severity);
+    Boolean(params.conflict_severity) ||
+    Boolean(params.conflict_type);
   if (paged) {
     if (params.page != null) query.set("page", String(params.page));
     if (params.page_size != null) {
@@ -423,22 +432,16 @@ export async function fetchBooking(id: number): Promise<Booking> {
 
 export async function fetchBookingByCode(code: string): Promise<Booking> {
   const trimmed = code.trim();
-  const data = await fetchBookings({ search: trimmed, page: 1 });
-  const match =
-    data.results.find((booking) => booking.booking_code === trimmed) ??
-    data.results.find((booking) =>
-      booking.booking_code.toLowerCase().includes(trimmed.toLowerCase()),
-    ) ??
-    // Historical code: API returns the booking under its current nomenclature.
-    data.results[0];
-  if (!match) {
+  if (!trimmed) {
     throw new ApiError("Reserva no encontrada.", 404);
   }
-  return fetchBooking(match.id);
+  return apiFetch<Booking>(`${BASE}by-code/${encodeURIComponent(trimmed)}/`);
 }
 
-export async function createBookingBatch(payload: BookingBatchPayload): Promise<Booking[]> {
-  return apiFetch<Booking[]>(`${BASE}batch/`, {
+export async function createBookingBatch(
+  payload: BookingBatchPayload,
+): Promise<BookingListItem[]> {
+  return apiFetch<BookingListItem[]>(`${BASE}batch/`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

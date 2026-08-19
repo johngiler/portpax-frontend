@@ -3,7 +3,7 @@
 import { formatIsoWeekdayShort, toIsoDate } from "@/lib/bookingDates";
 import { formatLoa } from "@/lib/bookingDisplay";
 import { positionDisplayCode } from "@/lib/positionCode";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
 import {
@@ -16,7 +16,7 @@ type AnnualMonthBlockProps = {
   year: number;
   monthIndex: number;
   monthLabel: string;
-  bookings: Booking[];
+  bookings: BookingListItem[];
   pierRows: Position[];
   multiPort: boolean;
   portNames: string[];
@@ -25,10 +25,10 @@ type AnnualMonthBlockProps = {
 };
 
 function bookingsForCell(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   date: string,
   positionId: number | null,
-): Booking[] {
+): BookingListItem[] {
   return bookings.filter((b) => {
     if (b.call_date !== date || b.status === "c") return false;
     if (positionId === null) return b.position == null;
@@ -37,10 +37,10 @@ function bookingsForCell(
 }
 
 function bookingsForPortDay(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   date: string,
   portName: string,
-): Booking[] {
+): BookingListItem[] {
   return bookings.filter(
     (b) =>
       b.call_date === date &&
@@ -87,11 +87,11 @@ function expandOccupiedPositionIds(
 function freePiersForPortDay(
   pierRows: Position[],
   portName: string,
-  cellBookings: Booking[],
+  cellBookingListItems: BookingListItem[],
 ): Position[] {
   const portPiers = piersForPort(pierRows, portName);
   const occupiedIds = expandOccupiedPositionIds(
-    cellBookings
+    cellBookingListItems
       .filter((b) => b.position != null)
       .map((b) => b.position as number),
     portPiers,
@@ -195,18 +195,18 @@ export default function AnnualMonthBlock({
                   : position
                     ? positionDisplayCode(position)
                     : key;
-              const rowHasBooking = days.some((day) => {
+              const rowHasBookingListItem = days.some((day) => {
                 const iso = toIsoDate(year, monthIndex, day);
-                const cellBookings = multiPort
+                const cellBookingListItems = multiPort
                   ? bookingsForPortDay(bookings, iso, key)
                   : bookingsForCell(
                       bookings,
                       iso,
                       key === "unassigned" ? null : Number(key.slice(4)),
                     );
-                return cellBookings.length > 0;
+                return cellBookingListItems.length > 0;
               });
-              const rowTint = rowHasBooking
+              const rowTint = rowHasBookingListItem
                 ? "bg-[var(--admin-accent)]/[0.06] dark:bg-[var(--admin-accent)]/10"
                 : "bg-white dark:bg-zinc-900";
               return (
@@ -214,7 +214,7 @@ export default function AnnualMonthBlock({
                   key={key}
                   className={[
                     "border-t border-zinc-100 dark:border-zinc-800",
-                    rowHasBooking
+                    rowHasBookingListItem
                       ? "bg-[var(--admin-accent)]/[0.06] dark:bg-[var(--admin-accent)]/10"
                       : "",
                   ].join(" ")}
@@ -243,7 +243,7 @@ export default function AnnualMonthBlock({
                   </th>
                   {days.map((day) => {
                     const iso = toIsoDate(year, monthIndex, day);
-                    const cellBookings = multiPort
+                    const cellBookingListItems = multiPort
                       ? bookingsForPortDay(bookings, iso, key)
                       : bookingsForCell(
                           bookings,
@@ -254,12 +254,12 @@ export default function AnnualMonthBlock({
                         );
 
                     const freePiers = multiPort
-                      ? freePiersForPortDay(pierRows, key, cellBookings)
+                      ? freePiersForPortDay(pierRows, key, cellBookingListItems)
                       : [];
                     const freeMaxLoa = maxLoaAmong(freePiers);
                     const portTraffic =
                       multiPort && portPiers.length > 0
-                        ? dayTrafficLight(cellBookings, portPiers.length)
+                        ? dayTrafficLight(cellBookingListItems, portPiers.length)
                         : null;
 
                     return (
@@ -267,9 +267,9 @@ export default function AnnualMonthBlock({
                         key={iso}
                         className="min-w-[8.5rem] px-0.5 py-0.5 align-top"
                       >
-                        {cellBookings.length > 0 ? (
+                        {cellBookingListItems.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
-                            {cellBookings.map((b) => (
+                            {cellBookingListItems.map((b) => (
                               <CallChip key={b.id} booking={b} compact />
                             ))}
                             {availabilityCheck &&

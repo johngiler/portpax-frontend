@@ -6,13 +6,19 @@ import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
-import { AlertTriangle, CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
+import { CalendarRange, CheckCircle2, Clock3, Ruler } from "lucide-react";
+import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import {
-  bookingConflictHighlights,
-  conflictBadgeClassName,
+  conflictCallCardFrameSeverity,
+  conflictChipTitle,
+  conflictChipsFromApi,
+  conflictHighlightsFromApi,
+} from "@/lib/conflictDisplayFromApi";
+import {
   conflictCardClassName,
   conflictFieldHighlightClassName,
 } from "@/lib/bookingConflictStyle";
+import type { BookingConflictSeverity } from "@/types/booking";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
   bookingDetailHref,
@@ -331,11 +337,12 @@ export default function AvailabilityChartSection({
                                   statusFilter,
                                   todayIso,
                                 );
-                              const conflictUi = bookingConflictHighlights(call);
-                              // Availability call cards show LOA + schedule only.
-                              const frameCard =
-                                conflictUi.frameCard ||
-                                conflictUi.highlightPosition;
+                              const highlights = conflictHighlightsFromApi(call);
+                              const chips = conflictChipsFromApi(call);
+                              const frameSeverity = conflictCallCardFrameSeverity(
+                                highlights,
+                              );
+                              const chipTitle = conflictChipTitle(chips);
                               return (
                               <Link
                                 key={call.booking_code}
@@ -345,7 +352,7 @@ export default function AvailabilityChartSection({
                                 )}
                                 className={[
                                   conflictCardClassName(
-                                    frameCard ? conflictUi.severity : null,
+                                    frameSeverity,
                                     "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
                                   ),
                                   matchesFilter
@@ -354,7 +361,7 @@ export default function AvailabilityChartSection({
                                 ].join(" ")}
                                 title={
                                   matchesFilter
-                                    ? `Editar ${call.booking_code}${conflictUi.severity ? " · Conflicto" : ""}`
+                                    ? `Editar ${call.booking_code}${chipTitle ? ` · ${chipTitle}` : ""}`
                                     : `${call.booking_code} · otro estado (vecino)`
                                 }
                                 aria-label={`Abrir reserva ${call.booking_code}`}
@@ -377,19 +384,7 @@ export default function AvailabilityChartSection({
                                           size="sm"
                                         />
                                       ) : null}
-                                      {conflictUi.severity ? (
-                                        <span
-                                          className={conflictBadgeClassName(
-                                            conflictUi.severity,
-                                          )}
-                                        >
-                                          <AlertTriangle
-                                            className="h-2.5 w-2.5"
-                                            aria-hidden
-                                          />
-                                          Conflicto
-                                        </span>
-                                      ) : null}
+                                      <ConflictTypeChips chips={chips} />
                                     </div>
                                     <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                                       {call.shipping_line_name}
@@ -402,9 +397,9 @@ export default function AvailabilityChartSection({
                                       <span
                                         className={[
                                           "inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
-                                          conflictUi.highlightLoa
+                                          highlights.highlight_loa
                                             ? conflictFieldHighlightClassName(
-                                                conflictUi.loaSeverity ??
+                                                (highlights.loa_severity as BookingConflictSeverity) ??
                                                   "yellow",
                                               )
                                             : "",
@@ -425,9 +420,9 @@ export default function AvailabilityChartSection({
                                     <p
                                       className={[
                                         "inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
-                                        conflictUi.highlightSchedule
+                                        highlights.highlight_schedule
                                           ? conflictFieldHighlightClassName(
-                                              conflictUi.scheduleSeverity ??
+                                              (highlights.schedule_severity as BookingConflictSeverity) ??
                                                 "yellow",
                                             )
                                           : "",

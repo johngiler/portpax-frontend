@@ -49,6 +49,21 @@ export const swrKeys = {
   ) =>
     ["availability", "infinite", portId, dateFrom, dateTo, filtersKey] as const,
 
+  vesselProximityInfinite: (
+    vesselId: number,
+    dateFrom: string,
+    dateTo: string,
+    filtersKey = "",
+  ) =>
+    [
+      "vessel-proximity",
+      "infinite",
+      vesselId,
+      dateFrom,
+      dateTo,
+      filtersKey,
+    ] as const,
+
   dashboardStats: (paramsKey: string) =>
     ["dashboard", "stats", paramsKey] as const,
 

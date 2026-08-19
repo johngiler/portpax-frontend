@@ -29,35 +29,42 @@ export type BookingAuditEntry = {
   created_at: string;
 };
 
-export type Booking = {
+/** List / calendar / matrix card payload from GET /api/bookings/ (list). */
+export type BookingListItem = {
   id: number;
   booking_code: string;
   port: number;
-  port_code: string;
   port_name: string;
-  port_logo: string | null;
-  shipping_line: number;
-  shipping_line_code: string;
-  shipping_line_name: string;
-  shipping_line_logo: string | null;
-  /** Corporate group id (ShippingLine.group); used to restrict identity edits. */
-  shipping_line_group: number | null;
   vessel: number;
   vessel_name: string;
-  vessel_logo: string | null;
   vessel_loa_m: string | null;
+  shipping_line_code: string;
+  shipping_line_name: string;
   position: number | null;
   position_code: string | null;
   call_date: string;
   eta: string | null;
   etd: string | null;
-  eta_real: string | null;
-  etd_real: string | null;
   planned_pax: number | null;
-  actual_pax: number | null;
-  actual_crew: number | null;
   status: BookingStatus;
   status_display: string;
+  confirmation_pdf_url: string | null;
+  conflict_chips?: BookingConflictChip[];
+  conflict_highlights?: BookingConflictHighlights;
+};
+
+export type Booking = BookingListItem & {
+  port_code: string;
+  port_logo: string | null;
+  shipping_line: number;
+  shipping_line_logo: string | null;
+  /** Corporate group id (ShippingLine.group); used to restrict identity edits. */
+  shipping_line_group: number | null;
+  vessel_logo: string | null;
+  eta_real: string | null;
+  etd_real: string | null;
+  actual_pax: number | null;
+  actual_crew: number | null;
   notes: string;
   has_conflict?: boolean;
   /** Highest severity in conflict_snapshot when has_conflict (red|yellow|green). */
@@ -66,7 +73,6 @@ export type Booking = {
   cancellation_reason: CancellationReason | "";
   cancellation_reason_display: string;
   cancellation_evidence_url: string | null;
-  confirmation_pdf_url: string | null;
   long_term_agreement: number | null;
   long_term_agreement_code: string | null;
   audit_entries: BookingAuditEntry[];
@@ -75,6 +81,23 @@ export type Booking = {
 };
 
 export type BookingConflictSeverity = "green" | "yellow" | "red";
+
+export type BookingConflictChip = {
+  type: string;
+  label: string;
+  severity: BookingConflictSeverity;
+};
+
+export type BookingConflictHighlights = {
+  severity: BookingConflictSeverity | null;
+  frame_card: boolean;
+  highlight_loa: boolean;
+  highlight_schedule: boolean;
+  highlight_position: boolean;
+  loa_severity: BookingConflictSeverity | null;
+  schedule_severity: BookingConflictSeverity | null;
+  position_severity: BookingConflictSeverity | null;
+};
 
 export type BookingConflictItem = {
   code: string;

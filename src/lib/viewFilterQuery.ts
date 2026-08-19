@@ -4,6 +4,8 @@ import {
   type BookingStatusFilterValue,
 } from "@/types/booking";
 
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
+
 export type BookingsDatePresetQuery =
   | "all"
   | "hoy"
@@ -16,7 +18,7 @@ export type CalendarViewModeQuery = "weekly" | "monthly" | "annual";
 
 export type CalendarSeasonQuery = "natural" | "summer" | "winter";
 
-export type BookingsTabQuery = "list" | "calendar" | "availability";
+export type BookingsTabQuery = "list" | "calendar" | "availability" | "proximity";
 
 /** Heatmap focus on Disponibilidad de puerto tab. */
 export type AvailabilityHeatModeQuery = "availability" | "occupancy";
@@ -32,7 +34,7 @@ const DATE_PRESETS = new Set<BookingsDatePresetQuery>([
 
 const MODES = new Set<CalendarViewModeQuery>(["weekly", "monthly", "annual"]);
 const SEASONS = new Set<CalendarSeasonQuery>(["natural", "summer", "winter"]);
-const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability"]);
+const TABS = new Set<BookingsTabQuery>(["list", "calendar", "availability", "proximity"]);
 const HEAT_MODES = new Set<AvailabilityHeatModeQuery>([
   "availability",
   "occupancy",
@@ -73,18 +75,36 @@ export type BookingsWorkspaceFilters = {
    * Occupancy-only: exact ships-per-day density (0 = all days with any occupancy).
    */
   density: number;
-  /** Conflict filter: empty = all; yes/no; yellow/red severity. */
-  conflict: "" | "yes" | "no" | "yellow" | "red";
+  /** Conflict filter: empty = all; yes/no; yellow/red severity; or conflict type. */
+  conflict:
+    | ""
+    | "yes"
+    | "no"
+    | "yellow"
+    | "red"
+    | ConflictTypeFilterValue;
   /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
   importedDates: string[];
 };
 
 export type ConflictFilterValue = BookingsWorkspaceFilters["conflict"];
 
+const CONFLICT_TYPE_VALUES = new Set<ConflictTypeFilterValue>([
+  "proximity",
+  "loa",
+  "schedule",
+  "position",
+  "lta",
+  "physical",
+]);
+
 function parseConflictFilter(raw: string | null): ConflictFilterValue {
   if (raw === "yes" || raw === "true" || raw === "1") return "yes";
   if (raw === "no" || raw === "false" || raw === "0") return "no";
   if (raw === "yellow" || raw === "red") return raw;
+  if (raw && CONFLICT_TYPE_VALUES.has(raw as ConflictTypeFilterValue)) {
+    return raw as ConflictTypeFilterValue;
+  }
   return "";
 }
 
@@ -109,11 +129,15 @@ export function parseImportedIsoDates(raw: string | null | undefined): string[] 
 export function conflictFilterToApiParams(filter: ConflictFilterValue): {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red";
+  conflict_type?: ConflictTypeFilterValue;
 } {
   if (filter === "yes") return { has_conflict: true };
   if (filter === "no") return { has_conflict: false };
   if (filter === "yellow") return { conflict_severity: "yellow" };
   if (filter === "red") return { conflict_severity: "red" };
+  if (CONFLICT_TYPE_VALUES.has(filter as ConflictTypeFilterValue)) {
+    return { conflict_type: filter as ConflictTypeFilterValue };
+  }
   return {};
 }
 
@@ -209,7 +233,8 @@ export function buildBookingsWorkspaceQuery(
     state.conflict === "yes" ||
     state.conflict === "no" ||
     state.conflict === "yellow" ||
-    state.conflict === "red"
+    state.conflict === "red" ||
+    CONFLICT_TYPE_VALUES.has(state.conflict as ConflictTypeFilterValue)
   ) {
     sp.set("conflict", state.conflict);
   }

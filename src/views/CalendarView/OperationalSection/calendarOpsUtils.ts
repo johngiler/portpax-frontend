@@ -1,5 +1,5 @@
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 
 /** Monday-based week start for the given ISO date. */
@@ -96,7 +96,7 @@ export function monthsInSeason(
 }
 
 export function summarizeMonth(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   year: number,
   monthIndex: number,
 ): { ships: number; plannedPax: number } {
@@ -113,7 +113,7 @@ export function summarizeMonth(
   return { ships, plannedPax };
 }
 
-export function summarizeYear(bookings: Booking[], year: number): {
+export function summarizeYear(bookings: BookingListItem[], year: number): {
   calls: number;
   plannedPax: number;
 } {
@@ -130,7 +130,7 @@ export function summarizeYear(bookings: Booking[], year: number): {
 
 /** Aggregate ships + PAX for an arbitrary inclusive ISO range. */
 export function summarizeRange(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   from: string,
   to: string,
 ): { ships: number; plannedPax: number } {
@@ -153,7 +153,7 @@ export function yoyDeltaPct(current: number, previous: number): number | null {
 export type DayTraffic = "free" | "limited" | "full";
 
 export function dayTrafficLight(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   pierPositionCount: number,
 ): DayTraffic {
   const active = bookings.filter((b) => b.status !== "c");
@@ -181,7 +181,7 @@ export function dayTrafficLight(
 
 /** Annual mini-calendar heat: vacant days = free (green); busy = limited/full. */
 export function dayAnnualHeat(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   pierPositionCount: number,
   multiPort: boolean,
 ): DayTraffic {
@@ -224,7 +224,7 @@ const OCCUPANCY_STATUSES = new Set(["co", "cl", "lta", "ltd", "r"]);
  * Same formula as dashboard KPIs.
  */
 export function monthOccupancy(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   pierCount: number,
   year: number,
   monthIndex: number,

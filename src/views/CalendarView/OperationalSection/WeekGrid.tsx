@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatIsoDateLabel, formatIsoWeekdayShort } from "@/lib/bookingDates";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import CallChip from "./CallChip";
@@ -17,7 +17,7 @@ import {
 type WeekGridProps = {
   weekAnchor: string;
   onWeekAnchorChange: (iso: string) => void;
-  bookings: Booking[];
+  bookings: BookingListItem[];
   positions: Position[];
   positionFilterId: number;
   multiPort?: boolean;
@@ -25,10 +25,10 @@ type WeekGridProps = {
 };
 
 function bookingsForCell(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   date: string,
   positionId: number | null,
-): Booking[] {
+): BookingListItem[] {
   return bookings.filter((b) => {
     if (b.call_date !== date) return false;
     if (positionId === null) return b.position == null;
@@ -108,13 +108,13 @@ export default function WeekGrid({
                   Puerto
                 </th>
                 {days.map((iso) => {
-                  const dayBookings = bookings.filter(
+                  const dayBookingListItems = bookings.filter(
                     (b) => b.call_date === iso && b.status !== "c",
                   );
                   const traffic =
-                    dayBookings.length === 0
+                    dayBookingListItems.length === 0
                       ? "free"
-                      : dayBookings.length <= 2
+                      : dayBookingListItems.length <= 2
                         ? "limited"
                         : "full";
                   return (
@@ -188,10 +188,10 @@ export default function WeekGrid({
                   Posición
                 </th>
                 {days.map((iso) => {
-                  const dayBookings = bookings.filter(
+                  const dayBookingListItems = bookings.filter(
                     (b) => b.call_date === iso && b.status !== "c",
                   );
-                  const traffic = dayTrafficLight(dayBookings, pierAll.length);
+                  const traffic = dayTrafficLight(dayBookingListItems, pierAll.length);
                   return (
                     <th
                       key={iso}

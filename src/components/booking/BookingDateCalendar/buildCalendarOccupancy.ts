@@ -1,8 +1,8 @@
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { CalendarDayBooking } from "./types";
 
-export function mergeBookingsById(...lists: Booking[][]): Booking[] {
-  const map = new Map<number, Booking>();
+export function mergeBookingsById(...lists: BookingListItem[][]): BookingListItem[] {
+  const map = new Map<number, BookingListItem>();
   for (const list of lists) {
     for (const booking of list) {
       map.set(booking.id, booking);
@@ -38,7 +38,7 @@ export function applyBookingPositionToOccupancy(
 }
 
 export function buildCalendarOccupancy(
-  bookings: Booking[],
+  bookings: BookingListItem[],
   portId: number,
   vesselId: number,
 ): {

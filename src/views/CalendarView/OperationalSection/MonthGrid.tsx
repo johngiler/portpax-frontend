@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
 import {
@@ -19,14 +19,14 @@ type MonthGridProps = {
   monthIndex: number;
   onYearChange: (year: number) => void;
   onMonthChange: (monthIndex: number) => void;
-  bookings: Booking[];
+  bookings: BookingListItem[];
   positions: Position[];
   multiPort?: boolean;
   loading?: boolean;
 };
 
-function groupByPort(bookings: Booking[]): { port: string; items: Booking[] }[] {
-  const map = new Map<string, Booking[]>();
+function groupByPort(bookings: BookingListItem[]): { port: string; items: BookingListItem[] }[] {
+  const map = new Map<string, BookingListItem[]>();
   for (const b of bookings) {
     const key = b.port_name || "Puerto";
     const list = map.get(key) ?? [];

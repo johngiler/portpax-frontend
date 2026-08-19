@@ -8,7 +8,7 @@ import {
   type FetchBookingsParams,
 } from "@/services/bookings/bookingService";
 import { swrKeys } from "@/lib/swr/keys";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 
 export type BookingsListFilterParams = Omit<FetchBookingsParams, "page">;
 
@@ -22,6 +22,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
         ? "0"
         : "",
     params.conflict_severity ?? "",
+    params.conflict_type ?? "",
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,
@@ -41,7 +42,7 @@ export function useBookingsInfinite(
   const pageSize = params.pageSize ?? 20;
 
   const getKey = useCallback(
-    (pageIndex: number, previousPageData: ApiListResponse<Booking> | null) => {
+    (pageIndex: number, previousPageData: ApiListResponse<BookingListItem> | null) => {
       if (!enabled) return null;
       if (previousPageData && !previousPageData.next) return null;
       return [...swrKeys.bookingsInfinite(paramsKey), pageIndex + 1] as const;

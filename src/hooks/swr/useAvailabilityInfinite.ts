@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import { parseIsoDate } from "@/lib/bookingDates";
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchAvailabilityReport,
@@ -19,6 +20,7 @@ export type AvailabilityListFilters = {
   statuses?: string[];
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
+  conflict_type?: ConflictTypeFilterValue;
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
 };
@@ -59,6 +61,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
         ? "0"
         : "",
     filters.conflict_severity ?? "",
+    filters.conflict_type ?? "",
     filters.ships_per_day ?? 0,
   ].join("|");
 }
@@ -77,6 +80,7 @@ export function useAvailabilityInfinite(
   const statuses = filters.statuses;
   const hasConflict = filters.has_conflict;
   const conflictSeverity = filters.conflict_severity;
+  const conflictType = filters.conflict_type;
   const shipsPerDay =
     filters.ships_per_day != null && filters.ships_per_day >= 1
       ? filters.ships_per_day
@@ -84,7 +88,10 @@ export function useAvailabilityInfinite(
   const densityMode = shipsPerDay > 0;
   /** Paginate matching occupied days (conflict filter) instead of empty date windows. */
   const occupiedDaysMode =
-    densityMode || hasConflict !== undefined || Boolean(conflictSeverity);
+    densityMode ||
+    hasConflict !== undefined ||
+    Boolean(conflictSeverity) ||
+    Boolean(conflictType);
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
@@ -124,6 +131,7 @@ export function useAvailabilityInfinite(
           statuses,
           has_conflict: hasConflict,
           conflict_severity: conflictSeverity,
+          conflict_type: conflictType,
           ships_per_day: densityMode ? shipsPerDay : undefined,
           page,
           page_size: AVAILABILITY_DAYS_BATCH,
@@ -141,6 +149,7 @@ export function useAvailabilityInfinite(
         statuses,
         has_conflict: hasConflict,
         conflict_severity: conflictSeverity,
+        conflict_type: conflictType,
       });
     });
 

@@ -89,7 +89,8 @@ export default function AvailabilityPortCard({
   const statusFilters = filters.statuses;
   const conflictFilterActive =
     filters.has_conflict !== undefined ||
-    Boolean(filters.conflict_severity);
+    Boolean(filters.conflict_severity) ||
+    Boolean(filters.conflict_type);
 
   const listFilters = useMemo((): AvailabilityListFilters => {
     if (densityFilter < 1) return filters;

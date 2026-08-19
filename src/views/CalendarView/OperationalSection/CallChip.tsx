@@ -2,18 +2,22 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
+import {
+  conflictCallCardFrameSeverity,
+  conflictChipTitle,
+  conflictChipsFromApi,
+  conflictHighlightsFromApi,
+} from "@/lib/conflictDisplayFromApi";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
   bookingDetailHref,
   bookingStatusLabel,
-  type Booking,
+  type BookingListItem,
 } from "@/types/booking";
 import {
-  bookingConflictHighlights,
-  conflictBadgeClassName,
   conflictChipClassName,
 } from "@/lib/bookingConflictStyle";
 import {
@@ -23,7 +27,7 @@ import {
 } from "../corpColors";
 
 type CallChipProps = {
-  booking: Booking;
+  booking: BookingListItem;
   /** Dense meta — calendar month cells. */
   compact?: boolean;
 };
@@ -34,7 +38,10 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
   const corp = corpKeyFromShippingLineCode(booking.shipping_line_code);
   const corpLabel = CORP_SHORT_LABEL[corp];
   const positionLabel = booking.position_code || "Sin asignar";
-  const conflictUi = bookingConflictHighlights(booking);
+  const highlights = conflictHighlightsFromApi(booking);
+  const chips = conflictChipsFromApi(booking);
+  const chipTitle = conflictChipTitle(chips);
+  const frameSeverity = conflictCallCardFrameSeverity(highlights);
 
   return (
     <Link
@@ -45,12 +52,12 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         "block min-w-0 rounded-md px-1.5 py-1 text-left text-[10px] leading-tight shadow-sm transition hover:opacity-90 sm:text-[11px]",
         CORP_CHIP_CLASS[corp],
         booking.status === "h" ? "ring-2 ring-amber-300 ring-offset-1" : "",
-        conflictUi.frameCard
-          ? conflictChipClassName(conflictUi.severity)
+        highlights.frame_card
+          ? conflictChipClassName(frameSeverity)
           : "",
         booking.status === "c" ? "opacity-50 line-through" : "",
       ].join(" ")}
-      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${conflictUi.severity ? " · Conflicto" : ""}`}
+      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${chipTitle ? ` · ${chipTitle}` : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span className="flex min-w-0 items-baseline justify-between gap-1">
@@ -61,12 +68,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
       </span>
       <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
         <BookingStatusBadge status={booking.status} size="sm" />
-        {conflictUi.severity ? (
-          <span className={conflictBadgeClassName(conflictUi.severity)}>
-            <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
-            Conflicto
-          </span>
-        ) : null}
+        <ConflictTypeChips chips={chips} />
       </span>
       <BookingMetaRow
         className="mt-0.5"
@@ -76,12 +78,12 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
         eta={booking.eta}
         etd={booking.etd}
         positionLabel={positionLabel}
-        highlightLoa={conflictUi.highlightLoa}
-        loaHighlightSeverity={conflictUi.loaSeverity}
-        highlightSchedule={conflictUi.highlightSchedule}
-        scheduleHighlightSeverity={conflictUi.scheduleSeverity}
-        highlightPosition={conflictUi.highlightPosition}
-        positionHighlightSeverity={conflictUi.positionSeverity}
+        highlightLoa={highlights.highlight_loa}
+        loaHighlightSeverity={highlights.loa_severity}
+        highlightSchedule={highlights.highlight_schedule}
+        scheduleHighlightSeverity={highlights.schedule_severity}
+        highlightPosition={highlights.highlight_position}
+        positionHighlightSeverity={highlights.position_severity}
       />
     </Link>
   );

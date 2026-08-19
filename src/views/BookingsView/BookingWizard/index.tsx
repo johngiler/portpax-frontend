@@ -13,7 +13,7 @@ import { fetchAllShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import type { Port } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
-import type { Booking } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import BookingWizardChrome from "./BookingWizardChrome";
 import BookingWizardSuccess from "./BookingWizardSuccess";
 import WizardCardActions from "./WizardCardActions";
@@ -121,7 +121,7 @@ export default function BookingWizard() {
 
   const [viewError, setViewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [createdBookings, setCreatedBookings] = useState<Booking[] | null>(null);
+  const [createdBookings, setCreatedBookings] = useState<BookingListItem[] | null>(null);
   const [reviewBlocked, setReviewBlocked] = useState(true);
 
   const handleReviewBlockingChange = useCallback((blocked: boolean) => {

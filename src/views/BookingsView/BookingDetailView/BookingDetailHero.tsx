@@ -5,10 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import {
-  bookingFrameSeverity,
-  conflictBadgeClassName,
-} from "@/lib/bookingConflictStyle";
+  conflictChipsFromApi,
+} from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
 import type { Booking } from "@/types/booking";
 
@@ -21,7 +21,7 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
   const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
   const backHref = returnTo ?? "/bookings";
   const backLabel = returnToLabel(returnTo);
-  const frameSeverity = bookingFrameSeverity(booking);
+  const chips = conflictChipsFromApi(booking);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -36,11 +36,7 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           <BookingStatusBadge status={booking.status} className="text-xs" />
-          {frameSeverity ? (
-            <span className={conflictBadgeClassName(frameSeverity)}>
-              Conflicto
-            </span>
-          ) : null}
+          <ConflictTypeChips chips={chips} size="md" />
           <span className="text-xs font-medium text-zinc-400">
             Actualizado {new Date(booking.updated_at).toLocaleDateString("es-MX")}
           </span>

@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchAllBookings } from "@/services/bookings/bookingService";
 import { fetchPositions } from "@/services/catalogs/positionService";
-import type { Booking, BookingStatusFilterValue } from "@/types/booking";
+import type { BookingListItem, BookingStatusFilterValue } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import {
@@ -41,8 +41,8 @@ function calendarParamsKey(p: CalendarBookingsParams): string {
 }
 
 type CalendarPayload = {
-  bookings: Booking[];
-  previousYearBookings: Booking[];
+  bookings: BookingListItem[];
+  previousYearBookings: BookingListItem[];
   positions: Position[];
 };
 
@@ -59,8 +59,8 @@ async function fetchCalendarPayload(
     pageSize: 500,
   };
 
-  let bookings: Booking[];
-  let previousYearBookings: Booking[] = [];
+  let bookings: BookingListItem[];
+  let previousYearBookings: BookingListItem[] = [];
 
   if (params.mode === "annual") {
     const season = params.season ?? "natural";

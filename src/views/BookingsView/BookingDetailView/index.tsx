@@ -85,6 +85,7 @@ export default function BookingDetailView() {
         onUpdated={setBooking}
         onError={setViewError}
         canWrite={canWrite}
+        returnTo={returnTo}
       />
       <BookingStatusActions
         booking={booking}

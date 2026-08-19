@@ -3,12 +3,14 @@ import type {
   BookingValidationIssue,
 } from "@/types/booking";
 import { issueSeverity } from "@/lib/bookingConflictSeverity";
+import { renderTextWithBookingCodeLinks } from "@/lib/renderBookingCodeLinks";
 import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 type ValidationIssuesAlertProps = {
   errors?: BookingValidationIssue[];
   warnings?: BookingValidationIssue[];
   className?: string;
+  returnTo?: string | null;
 };
 
 const ISSUE_TITLE: Record<string, string> = {
@@ -68,7 +70,13 @@ function issueTitle(
   return "Aviso operativo";
 }
 
-function IssueCard({ issue }: { issue: BookingValidationIssue }) {
+function IssueCard({
+  issue,
+  returnTo = null,
+}: {
+  issue: BookingValidationIssue;
+  returnTo?: string | null;
+}) {
   const severity = issueSeverity(issue);
   const styles = SEVERITY_STYLES[severity];
   const { Icon } = styles;
@@ -104,7 +112,9 @@ function IssueCard({ issue }: { issue: BookingValidationIssue }) {
           <p className={`text-sm font-semibold leading-snug ${styles.title}`}>
             {issueTitle(issue, severity)}
           </p>
-          <p className="text-sm leading-relaxed opacity-95">{body}</p>
+          <p className="text-sm leading-relaxed opacity-95">
+            {renderTextWithBookingCodeLinks(body, { returnTo })}
+          </p>
           {formula ? (
             <p className="rounded-lg border border-black/5 bg-white/60 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-700 dark:border-white/10 dark:bg-black/20 dark:text-zinc-200">
               {formula}
@@ -125,6 +135,7 @@ export default function ValidationIssuesAlert({
   errors = [],
   warnings = [],
   className = "",
+  returnTo = null,
 }: ValidationIssuesAlertProps) {
   const all = [...errors, ...warnings];
   if (all.length === 0) return null;
@@ -145,6 +156,7 @@ export default function ValidationIssuesAlert({
             <IssueCard
               key={`${issue.code}:${issue.message}`}
               issue={issue}
+              returnTo={returnTo}
             />
           ))}
         </div>

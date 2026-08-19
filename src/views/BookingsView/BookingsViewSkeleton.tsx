@@ -20,7 +20,7 @@ type BookingsViewSkeletonProps = {
 function TabsSkeleton() {
   return (
     <div className="mb-6 flex flex-wrap gap-1 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]/50 p-1 dark:bg-zinc-900/40">
-      {Array.from({ length: 3 }).map((_, i) => (
+      {Array.from({ length: 4 }).map((_, i) => (
         <Skeleton key={i} className="h-10 w-28 rounded-lg sm:w-36" />
       ))}
     </div>

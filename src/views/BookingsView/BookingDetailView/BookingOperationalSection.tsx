@@ -25,6 +25,7 @@ type BookingOperationalSectionProps = {
   onUpdated: (booking: Booking) => void;
   onError: (message: string | null) => void;
   canWrite?: boolean;
+  returnTo?: string | null;
 };
 
 function apiErrorMentionsCode(err: unknown, code: string): boolean {
@@ -38,6 +39,7 @@ export default function BookingOperationalSection({
   onUpdated,
   onError,
   canWrite = true,
+  returnTo = null,
 }: BookingOperationalSectionProps) {
   const { user } = useAuth();
   const mayAuthorize = canAuthorizeExceptions(user?.role);
@@ -285,6 +287,7 @@ export default function BookingOperationalSection({
         <ValidationIssuesAlert
           className="mt-4"
           warnings={displayIssues}
+          returnTo={returnTo}
         />
       ) : null}
 

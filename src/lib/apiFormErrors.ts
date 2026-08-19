@@ -56,7 +56,7 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
   multi_port_conflict:
     "El mismo barco ya tiene escala en otro puerto en esta fecha.",
   multi_port_proximity:
-    "El mismo barco tiene escala en otro puerto dentro de ±2 días.",
+    "El salto entre escalas es menor al tiempo mínimo de viaje entre puertos.",
   shipping_line_group_mismatch:
     "El barco y la naviera deben pertenecer al mismo grupo de naviera.",
   vessel_line_mismatch:

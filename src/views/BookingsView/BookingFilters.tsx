@@ -13,6 +13,7 @@ import type {
   BookingsTabQuery,
   CalendarSeasonQuery,
   CalendarViewModeQuery,
+  ConflictFilterValue,
 } from "@/lib/viewFilterQuery";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
@@ -62,14 +63,17 @@ const YEAR_OPTIONS = getBookingYearRange("2024-01-01", 6).map((y) => ({
   label: String(y),
 }));
 
-const CONFLICT_OPTIONS: {
-  value: "yes" | "no" | "yellow" | "red";
-  label: string;
-}[] = [
+const CONFLICT_OPTIONS: { value: ConflictFilterValue; label: string }[] = [
   { value: "yes", label: "Con conflicto (amarillo y rojo)" },
   { value: "yellow", label: "Solo amarillo" },
   { value: "red", label: "Solo rojo" },
   { value: "no", label: "Sin conflicto" },
+  { value: "proximity", label: "Tipo · Proximidad" },
+  { value: "loa", label: "Tipo · Eslora" },
+  { value: "schedule", label: "Tipo · Horario" },
+  { value: "position", label: "Tipo · Posición" },
+  { value: "lta", label: "Tipo · LTA" },
+  { value: "physical", label: "Tipo · Físico (manga/calado)" },
 ];
 
 type FilterOption = { value: number; label: string; logoUrl?: string | null };
@@ -77,7 +81,7 @@ type FilterOption = { value: number; label: string; logoUrl?: string | null };
 type BookingFiltersProps = {
   tab: BookingsTabQuery;
   status: BookingStatusFilterValue[];
-  conflictFilter: "" | "yes" | "no" | "yellow" | "red";
+  conflictFilter: ConflictFilterValue;
   search: string;
   portFilter: number;
   shippingLineFilter: number;
@@ -99,7 +103,7 @@ type BookingFiltersProps = {
   canClear: boolean;
   canApply: boolean;
   onStatusChange: (status: BookingStatusFilterValue[]) => void;
-  onConflictFilterChange: (value: "" | "yes" | "no" | "yellow" | "red") => void;
+  onConflictFilterChange: (value: ConflictFilterValue) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portId: number) => void;
   onShippingLineFilterChange: (lineId: number) => void;
@@ -174,9 +178,10 @@ export default function BookingFilters({
         : getTimeRange("hoy")
       : getTimeRange(datePreset, customDateFrom, customDateTo);
 
-  const showVessel = tab === "list" || tab === "calendar" || tab === "availability";
-  const showSearch = tab !== "availability";
-  const showDates = tab === "list" || tab === "availability";
+  const showVessel =
+    tab === "list" || tab === "calendar" || tab === "availability" || tab === "proximity";
+  const showSearch = tab !== "availability" && tab !== "proximity";
+  const showDates = tab === "list" || tab === "availability" || tab === "proximity";
   const showCalendarMode = tab === "calendar";
   const showHeatMode = tab === "availability";
   const showPosition =
@@ -400,7 +405,11 @@ export default function BookingFilters({
             shippingLineFilter > 0 ? loadVesselOptions : undefined
           }
           optionLabel={
-            shippingLineFilter > 0 ? "Todos los barcos" : "Elige una naviera primero"
+            tab === "proximity"
+              ? "Selecciona un barco"
+              : shippingLineFilter > 0
+                ? "Todos los barcos"
+                : "Elige una naviera primero"
           }
           emptyValue={0}
           compact
@@ -435,7 +444,7 @@ export default function BookingFilters({
 
       {(tab === "list" ||
         (tab === "availability" && heatMode === "occupancy")) && (
-        <FormFieldSelect<"" | "yes" | "no" | "yellow" | "red">
+        <FormFieldSelect<ConflictFilterValue>
           label="Conflicto"
           name="booking_conflict_filter"
           value={conflictFilter}
@@ -453,7 +462,7 @@ export default function BookingFilters({
           customDateFrom={customDateFrom}
           customDateTo={customDateTo}
           timeRange={timeRange}
-          showAllRangeHint={tab === "availability"}
+          showAllRangeHint={tab === "availability" || tab === "proximity"}
           importedDatesCount={
             tab === "availability" ? importedDatesCount : 0
           }

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import { bookingDetailHref, type Booking } from "@/types/booking";
+import { bookingDetailHref, type BookingListItem } from "@/types/booking";
 
 type BookingWizardSuccessProps = {
-  bookings: Booking[];
+  bookings: BookingListItem[];
   onNewBooking: () => void;
   onViewAll: () => void;
 };
