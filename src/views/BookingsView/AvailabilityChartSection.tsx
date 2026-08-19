@@ -21,6 +21,7 @@ import {
 import type { BookingConflictSeverity } from "@/types/booking";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   newBookingHref,
   type BookingBadgeStatus,
@@ -350,6 +351,7 @@ export default function AvailabilityChartSection({
                                   { booking_code: call.booking_code },
                                   { returnTo },
                                 )}
+                                {...BOOKING_DETAIL_LINK_PROPS}
                                 className={[
                                   conflictCardClassName(
                                     frameSeverity,

@@ -13,6 +13,7 @@ import {
 } from "@/lib/conflictDisplayFromApi";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   bookingStatusLabel,
   type BookingListItem,
@@ -48,6 +49,7 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
       href={bookingDetailHref(booking, {
         returnTo: currentReturnTo(pathname, searchParams),
       })}
+      {...BOOKING_DETAIL_LINK_PROPS}
       className={[
         "block min-w-0 rounded-md px-1.5 py-1 text-left text-[10px] leading-tight shadow-sm transition hover:opacity-90 sm:text-[11px]",
         CORP_CHIP_CLASS[corp],

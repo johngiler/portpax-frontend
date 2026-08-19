@@ -2,6 +2,7 @@
 
 import { Anchor, Check } from "lucide-react";
 import {
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   BOOKING_STATUS_LABELS,
   type BookingStatus,
@@ -130,8 +131,7 @@ export default function BulkImportLtaClaimCard({
                 {href ? (
                   <a
                     href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    {...BOOKING_DETAIL_LINK_PROPS}
                     className="font-semibold underline underline-offset-2 hover:opacity-90"
                   >
                     {candidate.booking_code}

@@ -7,6 +7,7 @@ import NoticeAlert from "@/components/ui/NoticeAlert";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
 import {
   BOOKING_STATUS_LABELS,
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingStatus,
 } from "@/types/booking";
@@ -280,8 +281,7 @@ export default function BulkImportRowIssuesCell({
                           {bookingHref ? (
                             <a
                               href={bookingHref}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              {...BOOKING_DETAIL_LINK_PROPS}
                               className="font-semibold underline underline-offset-2 hover:opacity-90"
                             >
                               {occupant.booking_code}

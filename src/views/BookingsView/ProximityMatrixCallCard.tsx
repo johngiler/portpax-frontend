@@ -16,6 +16,7 @@ import {
 } from "@/lib/bookingConflictStyle";
 import type { VesselProximityMatrixCell } from "@/services/bookings/vesselProximityMatrixService";
 import {
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingBadgeStatus,
   type BookingConflictSeverity,
@@ -60,6 +61,7 @@ export default function ProximityMatrixCallCard({
         { booking_code: cell.booking_code },
         { returnTo },
       )}
+      {...BOOKING_DETAIL_LINK_PROPS}
       className={conflictCardClassName(
         frameSeverity,
         [

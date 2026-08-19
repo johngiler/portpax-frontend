@@ -6,7 +6,10 @@ import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import { useLtaLinkedBookings } from "@/hooks/swr/useLtaLinkedBookings";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { bookingDetailHref } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 
 const RETURN_TO = "/lta";
 
@@ -55,6 +58,7 @@ export default function LtaLinkedBookings({
             <li key={booking.id}>
               <Link
                 href={bookingDetailHref(booking, { returnTo: RETURN_TO })}
+                {...BOOKING_DETAIL_LINK_PROPS}
                 className="group -mx-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg px-1.5 py-2.5 text-sm transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
               >
                 <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-[var(--admin-accent)] group-hover:underline">

@@ -9,7 +9,10 @@ import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { currentReturnTo } from "@/lib/safeReturnTo";
-import { bookingDetailHref } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 import { exportImportBatchPendingXlsx } from "@/services/bookings/bulkImportService";
 import type {
   ImportBatchDetail,
@@ -185,6 +188,7 @@ export default function ImportBatchDetailModal({
                   <li key={row.id}>
                     <Link
                       href={bookingDetailHref(row, { returnTo })}
+                      {...BOOKING_DETAIL_LINK_PROPS}
                       className="text-sm text-[var(--admin-accent)] hover:underline"
                       onClick={onClose}
                     >

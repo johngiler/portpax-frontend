@@ -23,6 +23,7 @@ import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
 import {
+  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   bookingStatusLabel,
   canBulkDeleteBookings,
@@ -299,7 +300,11 @@ export default function BookingsList({
                     </div>
                   ) : null}
 
-                  <Link href={detailHref} className="shrink-0 cursor-pointer">
+                  <Link
+                    href={detailHref}
+                    {...BOOKING_DETAIL_LINK_PROPS}
+                    className="shrink-0 cursor-pointer"
+                  >
                     <DateBadge callDate={booking.call_date} />
                   </Link>
 
@@ -307,6 +312,7 @@ export default function BookingsList({
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Link
                         href={detailHref}
+                        {...BOOKING_DETAIL_LINK_PROPS}
                         className="min-w-0 truncate text-sm font-semibold text-zinc-900 hover:text-[var(--admin-accent)] dark:text-zinc-50"
                       >
                         {booking.vessel_name}
@@ -324,6 +330,7 @@ export default function BookingsList({
                     </div>
                     <Link
                       href={detailHref}
+                      {...BOOKING_DETAIL_LINK_PROPS}
                       className="mt-1 flex min-w-0 cursor-pointer items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300"
                     >
                       <MapPin

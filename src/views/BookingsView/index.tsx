@@ -1157,11 +1157,13 @@ export default function BookingsView() {
           onApply={applyFilters}
           onClear={handleClearFilters}
           onBookingCodePick={(bookingCode) => {
-            router.push(
+            window.open(
               bookingDetailHref(
                 { booking_code: bookingCode },
                 { returnTo: bookingsReturnTo() },
               ),
+              "_blank",
+              "noopener,noreferrer",
             );
           }}
         />

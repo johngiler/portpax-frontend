@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
-import { bookingDetailHref } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 
 /** PortPax operational booking_code (…-YYYYMMDD). */
 export const BOOKING_CODE_IN_TEXT_RE =
@@ -35,6 +38,7 @@ export function renderTextWithBookingCodeLinks(
       <Link
         key={`${code}-${start}`}
         href={bookingDetailHref({ booking_code: code }, { returnTo })}
+        {...BOOKING_DETAIL_LINK_PROPS}
         className={linkClassName}
       >
         {code}

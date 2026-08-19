@@ -6,6 +6,10 @@ import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
 import { useAuthOptional } from "@/contexts/AuthContext";
 import { canBrowseCatalogs } from "@/lib/navAccess";
 import { globalSearch } from "@/services/searchService";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 import type { GlobalSearchResult } from "@/types/search";
 
 const DEBOUNCE_MS = 300;
@@ -251,7 +255,8 @@ export default function GlobalSearch() {
                       {results!.scales.map((sc) => (
                         <Link
                           key={sc.id}
-                          href={`/bookings/detail?code=${encodeURIComponent(sc.booking_code)}`}
+                          href={bookingDetailHref({ booking_code: sc.booking_code })}
+                          {...BOOKING_DETAIL_LINK_PROPS}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >

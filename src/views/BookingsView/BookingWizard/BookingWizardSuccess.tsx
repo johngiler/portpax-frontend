@@ -3,7 +3,11 @@
 import Link from "next/link";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import { bookingDetailHref, type BookingListItem } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+  type BookingListItem,
+} from "@/types/booking";
 
 type BookingWizardSuccessProps = {
   bookings: BookingListItem[];
@@ -34,6 +38,7 @@ export default function BookingWizardSuccess({
           <li key={booking.id}>
             <Link
               href={bookingDetailHref(booking)}
+              {...BOOKING_DETAIL_LINK_PROPS}
               className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-zinc-200/80 px-4 py-3 text-sm transition-colors hover:border-[var(--admin-accent)]/30 hover:bg-[var(--admin-accent)]/[0.04] dark:border-zinc-700 dark:hover:bg-[var(--admin-accent)]/10"
             >
               <span className="font-medium text-zinc-800 dark:text-zinc-200">

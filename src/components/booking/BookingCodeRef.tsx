@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, ClipboardCopy, FileDown, Hash } from "lucide-react";
+import { BOOKING_DETAIL_LINK_PROPS } from "@/types/booking";
 
 type BookingCodeRefProps = {
   code: string;
@@ -52,8 +53,7 @@ export default function BookingCodeRef({
         {href ? (
           <a
             href={href}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...BOOKING_DETAIL_LINK_PROPS}
             className={`${codeClassName} cursor-pointer underline-offset-2 hover:underline`}
             title="Abrir detalle de la reserva"
           >

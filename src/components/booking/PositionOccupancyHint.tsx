@@ -1,7 +1,10 @@
 "use client";
 
 import type { PositionOccupant } from "@/types/booking";
-import { bookingDetailHref } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 import {
   occupantDateLabel,
   positionOccupancyHintFromOccupant,
@@ -75,8 +78,7 @@ export default function PositionOccupancyHint({
             {href ? (
               <a
                 href={href}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...BOOKING_DETAIL_LINK_PROPS}
                 className="font-semibold underline underline-offset-2 hover:opacity-90"
               >
                 {occupant.booking_code}

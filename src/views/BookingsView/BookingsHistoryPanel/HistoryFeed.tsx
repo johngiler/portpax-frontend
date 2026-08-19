@@ -15,7 +15,10 @@ import {
   auditFieldChangeLines,
 } from "@/lib/auditChangeLines";
 import { currentReturnTo } from "@/lib/safeReturnTo";
-import { bookingDetailHref } from "@/types/booking";
+import {
+  BOOKING_DETAIL_LINK_PROPS,
+  bookingDetailHref,
+} from "@/types/booking";
 import type { BookingActivityItem } from "@/services/bookings/bookingActivityService";
 
 type HistoryFeedProps = {
@@ -344,6 +347,7 @@ export default function HistoryFeed({
                   { booking_code: item.booking_code },
                   { returnTo },
                 )}
+                {...BOOKING_DETAIL_LINK_PROPS}
                 className={`block ${cardClass}`}
               >
                 {body}
