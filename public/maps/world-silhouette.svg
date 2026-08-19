@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 180" aria-hidden="true">
+  <g fill="#bae6fd" fill-opacity="0.55" stroke="#e0f2fe" stroke-width="0.35" stroke-opacity="0.7">
+    <!-- Stylized equirectangular land masses (lon+180, 90-lat) -->
+    <ellipse cx="72" cy="52" rx="34" ry="26" />
+    <ellipse cx="98" cy="68" rx="14" ry="10" />
+    <ellipse cx="255" cy="108" rx="24" ry="36" />
+    <ellipse cx="198" cy="42" rx="22" ry="14" />
+    <ellipse cx="204" cy="78" rx="30" ry="34" />
+    <ellipse cx="248" cy="52" rx="46" ry="28" />
+    <ellipse cx="292" cy="58" rx="28" ry="22" />
+    <ellipse cx="312" cy="124" rx="20" ry="11" />
+    <ellipse cx="168" cy="148" rx="16" ry="9" />
+    <ellipse cx="340" cy="72" rx="12" ry="18" />
+    <path d="M 0 148 Q 40 132 78 140 T 120 152 T 0 148 Z" />
+  </g>
+</svg>

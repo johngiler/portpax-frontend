@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Plus } from "lucide-react";
+import { LucideWaves, MapPin, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
@@ -19,6 +19,7 @@ import { revalidatePortsLists } from "@/lib/swr/mutateHelpers";
 import { createPort } from "@/services/catalogs/portService";
 import PortCard from "./PortCard";
 import PortFormModal, { type PortFormSubmitPayload } from "./PortFormModal";
+import PortsProximityModal from "./PortsProximityModal";
 import PortsEmptyState from "./PortsEmptyState";
 import PortsHistoryModal from "./PortsHistoryModal";
 import PortsViewSkeleton from "./PortsViewSkeleton";
@@ -34,6 +35,7 @@ export default function PortsView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [proximityOpen, setProximityOpen] = useState(false);
 
   const {
     ports,
@@ -118,14 +120,22 @@ export default function PortsView() {
         title="Puertos"
         description="Selecciona un puerto para ver su ficha, muelles, bitas y posiciones."
         actions={
-          canWrite ? (
-            <DefaultButton type="button" onClick={() => setModalOpen(true)}>
+          <div className="flex items-center gap-3">
+            <DefaultButton type="button" onClick={() => setProximityOpen(true)}>
               <span className="inline-flex items-center gap-2">
-                <Plus className="h-4 w-4" strokeWidth={2} />
-                Nuevo puerto
+                <LucideWaves className="h-4 w-4" strokeWidth={2} />
+                Proximidad
               </span>
             </DefaultButton>
-          ) : undefined
+            {canWrite ? (
+              <DefaultButton type="button" onClick={() => setModalOpen(true)}>
+                <span className="inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" strokeWidth={2} />
+                  Nuevo puerto
+                </span>
+              </DefaultButton>
+            ) : undefined}
+          </div>
         }
       />
 
@@ -171,6 +181,8 @@ export default function PortsView() {
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
       />
+
+      <PortsProximityModal open={proximityOpen} onClose={() => setProximityOpen(false)} />
     </>
   );
 }
