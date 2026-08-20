@@ -2,6 +2,8 @@ import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 
+export { bookingMatchesCatalogFocus } from "@/lib/bookingCatalogFocus";
+
 /** Monday-based week start for the given ISO date. */
 export function startOfWeekMonday(iso: string): string {
   const { year, monthIndex, day } = parseIsoDate(iso);

@@ -5,6 +5,8 @@ import { formatIsoDateLabel, formatIsoWeekdayShort } from "@/lib/bookingDates";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
+import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
+import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
@@ -19,9 +21,11 @@ type WeekGridProps = {
   onWeekAnchorChange: (iso: string) => void;
   bookings: BookingListItem[];
   positions: Position[];
-  positionFilterId: number;
+  /** @deprecated Soft-focus uses focus.positionId; columns always show all piers. */
+  positionFilterId?: number;
   multiPort?: boolean;
   loading?: boolean;
+  focus?: BookingCalendarFocus;
 };
 
 function bookingsForCell(
@@ -41,16 +45,13 @@ export default function WeekGrid({
   onWeekAnchorChange,
   bookings,
   positions,
-  positionFilterId,
   multiPort = false,
   loading = false,
+  focus = {},
 }: WeekGridProps) {
   const days = weekDatesFrom(weekAnchor);
-  const pierAll = activePierPositions(positions);
-  const pierRows =
-    positionFilterId > 0
-      ? pierAll.filter((p) => p.id === positionFilterId)
-      : pierAll;
+  // Keep all pier columns so neighbors on other berths stay visible.
+  const pierRows = activePierPositions(positions);
 
   const portNames = multiPort
     ? [...new Set(bookings.map((b) => b.port_name || "Puerto"))].sort((a, b) =>
@@ -167,7 +168,11 @@ export default function WeekGrid({
                         <td key={iso} className="px-1 py-1.5 align-top">
                           <div className="flex min-h-[4.5rem] flex-col gap-1">
                             {cell.map((b) => (
-                              <CallChip key={b.id} booking={b} />
+                              <CallChip
+                                key={b.id}
+                                booking={b}
+                                focused={bookingMatchesCalendarFocus(b, focus)}
+                              />
                             ))}
                           </div>
                         </td>
@@ -191,7 +196,7 @@ export default function WeekGrid({
                   const dayBookingListItems = bookings.filter(
                     (b) => b.call_date === iso && b.status !== "c",
                   );
-                  const traffic = dayTrafficLight(dayBookingListItems, pierAll.length);
+                  const traffic = dayTrafficLight(dayBookingListItems, pierRows.length);
                   return (
                     <th
                       key={iso}
@@ -228,7 +233,11 @@ export default function WeekGrid({
                       <td key={iso} className="px-1 py-1.5 align-top">
                         <div className="flex min-h-[4.5rem] flex-col gap-1">
                           {cell.map((b) => (
-                            <CallChip key={b.id} booking={b} />
+                            <CallChip
+                              key={b.id}
+                              booking={b}
+                              focused={bookingMatchesCalendarFocus(b, focus)}
+                            />
                           ))}
                         </div>
                       </td>
@@ -236,8 +245,7 @@ export default function WeekGrid({
                   })}
                 </tr>
               ))}
-              {positionFilterId === 0 ? (
-                <tr className="border-t border-dashed border-zinc-200 dark:border-zinc-700">
+              <tr className="border-t border-dashed border-zinc-200 dark:border-zinc-700">
                   <td className="sticky left-0 z-10 bg-amber-50/80 px-2 py-2 align-top text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                     Sin asignar
                   </td>
@@ -250,14 +258,17 @@ export default function WeekGrid({
                       >
                         <div className="flex min-h-[4.5rem] flex-col gap-1">
                           {cell.map((b) => (
-                            <CallChip key={b.id} booking={b} />
+                            <CallChip
+                              key={b.id}
+                              booking={b}
+                              focused={bookingMatchesCalendarFocus(b, focus)}
+                            />
                           ))}
                         </div>
                       </td>
                     );
                   })}
                 </tr>
-              ) : null}
             </tbody>
           </table>
         </div>

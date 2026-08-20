@@ -92,18 +92,34 @@ export default function UnifiedCalendarCard({
     useCalendarBookings({
       mode,
       portId,
-      shippingLineId,
-      vesselId,
-      statuses,
       search,
       from: range.from,
       to: range.to,
       year,
       season,
+    });
+
+  const calendarFocus = useMemo(
+    () => ({
+      statuses,
+      vesselId,
+      shippingLineId,
+      positionId: multiPort ? 0 : positionId,
       has_conflict: conflictFilters.has_conflict,
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
-    });
+    }),
+    [
+      statuses,
+      vesselId,
+      shippingLineId,
+      multiPort,
+      positionId,
+      conflictFilters.has_conflict,
+      conflictFilters.conflict_severity,
+      conflictFilters.conflict_type,
+    ],
+  );
 
   const modeLabel =
     mode === "weekly"
@@ -163,6 +179,7 @@ export default function UnifiedCalendarCard({
             positionFilterId={effectivePositionId}
             multiPort={multiPort}
             loading={isLoading}
+            focus={calendarFocus}
           />
         ) : mode === "monthly" ? (
           <MonthGrid
@@ -174,6 +191,7 @@ export default function UnifiedCalendarCard({
             positions={positions}
             multiPort={multiPort}
             loading={isLoading}
+            focus={calendarFocus}
           />
         ) : (
           <AnnualGrid
@@ -187,6 +205,7 @@ export default function UnifiedCalendarCard({
             positionFilterId={effectivePositionId}
             multiPort={multiPort}
             loading={isLoading}
+            focus={calendarFocus}
             onSelectMonth={(m) => {
               onMonthChange(m);
               onModeChange("monthly");

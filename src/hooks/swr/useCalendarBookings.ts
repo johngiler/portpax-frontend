@@ -1,11 +1,10 @@
 "use client";
 
 import useSWR from "swr";
-import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchAllBookings } from "@/services/bookings/bookingService";
 import { fetchPositions } from "@/services/catalogs/positionService";
-import type { BookingListItem, BookingStatusFilterValue } from "@/types/booking";
+import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import {
@@ -16,34 +15,22 @@ import {
 export type CalendarBookingsParams = {
   mode: CalendarViewModeQuery;
   portId: number;
-  shippingLineId: number;
-  vesselId: number;
-  statuses: BookingStatusFilterValue[];
-  search: string;
   from: string;
   to: string;
   year: number;
   season?: CalendarSeason;
-  has_conflict?: boolean;
-  conflict_severity?: "yellow" | "red" | "green";
-  conflict_type?: ConflictTypeFilterValue;
+  search: string;
 };
 
 function calendarParamsKey(p: CalendarBookingsParams): string {
   return [
     p.mode,
     p.portId,
-    p.shippingLineId,
-    p.vesselId,
-    p.statuses.join(","),
     p.search.trim(),
     p.from,
     p.to,
     p.year,
     p.season ?? "natural",
-    p.has_conflict === true ? "1" : p.has_conflict === false ? "0" : "",
-    p.conflict_severity ?? "",
-    p.conflict_type ?? "",
   ].join("|");
 }
 
@@ -56,15 +43,11 @@ type CalendarPayload = {
 async function fetchCalendarPayload(
   params: CalendarBookingsParams,
 ): Promise<CalendarPayload> {
+  // Soft-focus filters (status, vessel, line, conflict, position) stay on the
+  // client so neighbors remain visible in the grids.
   const common = {
     port: params.portId > 0 ? params.portId : undefined,
-    shipping_line: params.shippingLineId > 0 ? params.shippingLineId : undefined,
-    vessel: params.vesselId > 0 ? params.vesselId : undefined,
-    statuses: params.statuses.length > 0 ? params.statuses : undefined,
     search: params.search.trim() || undefined,
-    has_conflict: params.has_conflict,
-    conflict_severity: params.conflict_severity,
-    conflict_type: params.conflict_type,
     ordering: "call_date" as const,
     pageSize: 500,
   };

@@ -29,7 +29,7 @@ export default function AvailabilityColorLegend() {
       </span>
       <InfoTooltip
         label="Leyenda de disponibilidad"
-        content="Verde: posición libre. Gris: día pasado. Reserva con chip: escala en esa posición. Con filtro de estado, las que coinciden se ven normales y las vecinas (otro estado) aparecen atenuadas."
+        content="Verde: posición libre. Gris: día pasado. Reserva con chip: escala en esa posición. Con cualquier filtro (estado, naviera, barco, posición o conflicto), las coincidencias se ven normales y las vecinas aparecen atenuadas."
       />
     </div>
   );

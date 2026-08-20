@@ -6,6 +6,7 @@ import { getMonthOptions } from "@/lib/bookingDates";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
+import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
 import AnnualMonthBlock from "./AnnualMonthBlock";
 import {
   activePierPositions,
@@ -24,9 +25,11 @@ type AnnualGridProps = {
   bookings: BookingListItem[];
   previousYearBookings: BookingListItem[];
   positions: Position[];
+  /** @deprecated Soft-focus uses focus.positionId; columns always show all piers. */
   positionFilterId?: number;
   multiPort?: boolean;
   loading?: boolean;
+  focus?: BookingCalendarFocus;
   onSelectMonth?: (monthIndex: number) => void;
 };
 
@@ -38,9 +41,9 @@ export default function AnnualGrid({
   bookings,
   previousYearBookings,
   positions,
-  positionFilterId = 0,
   multiPort = false,
   loading = false,
+  focus = {},
   onSelectMonth,
 }: AnnualGridProps) {
   const [availabilityCheck, setAvailabilityCheck] = useState(false);
@@ -60,17 +63,13 @@ export default function AnnualGrid({
     [previousYearBookings, prevRange],
   );
 
-  const pierAll = activePierPositions(positions);
-  const pierRows =
-    positionFilterId > 0
-      ? pierAll.filter((p) => p.id === positionFilterId)
-      : pierAll;
+  const pierRows = activePierPositions(positions);
 
   const portNames = multiPort
     ? [
         ...new Set([
           ...bookings.map((b) => b.port_name || "Puerto"),
-          ...pierAll.map((p) => p.port_name || "Puerto"),
+          ...pierRows.map((p) => p.port_name || "Puerto"),
         ]),
       ].sort((a, b) => a.localeCompare(b, "es"))
     : [];
@@ -180,6 +179,7 @@ export default function AnnualGrid({
               multiPort={multiPort}
               portNames={portNames}
               availabilityCheck={availabilityCheck}
+              focus={focus}
               onSelectMonth={
                 y === year
                   ? onSelectMonth

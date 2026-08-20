@@ -82,10 +82,19 @@ function IssueCard({
   const severity = issueSeverity(issue);
   const styles = SEVERITY_STYLES[severity];
   const { Icon } = styles;
+  const isSumLight = issue.code.startsWith("loa_recalc_sum_");
   const formula =
-    issue.detail && typeof issue.detail.formula === "string"
-      ? issue.detail.formula
-      : null;
+    issue.detail &&
+    typeof (isSumLight ? issue.detail.sum_formula : issue.detail.formula) ===
+      "string"
+      ? String(
+          isSumLight
+            ? issue.detail.sum_formula
+            : issue.detail.formula,
+        )
+      : issue.detail && typeof issue.detail.formula === "string"
+        ? issue.detail.formula
+        : null;
   const overhang =
     issue.detail && issue.detail.overhang_m != null
       ? String(issue.detail.overhang_m)
@@ -94,6 +103,17 @@ function IssueCard({
   if (formula) {
     body = body
       .replace(formula, "")
+      .replace(/\s*\.\s*\.?$/u, ".")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+  if (
+    issue.detail &&
+    typeof issue.detail.sum_formula === "string" &&
+    issue.detail.sum_formula !== formula
+  ) {
+    body = body
+      .replace(String(issue.detail.sum_formula), "")
       .replace(/\s*\.\s*\.?$/u, ".")
       .replace(/\s{2,}/g, " ")
       .trim();

@@ -10,8 +10,6 @@ import type { AvailabilityHeatModeQuery } from "@/lib/viewFilterQuery";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import AvailabilityChartSection from "./AvailabilityChartSection";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
-import { filterAvailabilityCalls } from "./availabilityCallFilter";
-import { bookingTodayIso } from "@/types/booking";
 
 type AvailabilityPortDisplayState = "loading" | "visible" | "empty" | "error";
 
@@ -46,16 +44,8 @@ function todayIsoLocal(): string {
 
 function rowHasOccupancy(
   row: AvailabilityReport["rows"][number],
-  statusFilters?: string[],
-  todayIso = bookingTodayIso(),
 ): boolean {
-  return row.cells.some((calls) => {
-    if (!statusFilters?.length) return calls.length > 0;
-    return (
-      filterAvailabilityCalls(calls, row.date, statusFilters, todayIso).length >
-      0
-    );
-  });
+  return row.cells.some((calls) => calls.length > 0);
 }
 
 /** Hide ports with no pier/anchorage columns or no free future slots in the loaded window. */
@@ -94,32 +84,39 @@ export default function AvailabilityPortCard({
   const isOccupancy = heatMode === "occupancy";
   const densityFilter = isOccupancy && density >= 1 ? density : 0;
   const statusFilters = filters.statuses;
-  const conflictFilterActive =
-    filters.has_conflict !== undefined ||
-    Boolean(filters.conflict_severity) ||
-    Boolean(filters.conflict_type);
 
   const listFilters = useMemo((): AvailabilityListFilters => {
-    const base: AvailabilityListFilters = { ...filters };
+    // Soft-focus filters stay on the client so neighbors remain visible.
+    const {
+      vessel: _vessel,
+      shipping_line: _shippingLine,
+      position: _position,
+      statuses: _statuses,
+      has_conflict: _hasConflict,
+      conflict_severity: _conflictSeverity,
+      conflict_type: _conflictType,
+      ...rest
+    } = filters;
+    const base: AvailabilityListFilters = { ...rest };
     if (densityFilter >= 1) {
       base.ships_per_day = densityFilter;
-    } else if (isOccupancy && !conflictFilterActive) {
+    } else if (isOccupancy) {
       // Server-page only occupied days so counters match (not the full 3-year span).
       base.occupied_only = true;
     }
     return base;
-  }, [filters, densityFilter, isOccupancy, conflictFilterActive]);
+  }, [filters, densityFilter, isOccupancy]);
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
     useAvailabilityInfinite(portId, dateFrom, dateTo, true, listFilters);
 
   useEffect(() => {
     occupancyPrefixPagesRef.current = 0;
-  }, [portId, dateFrom, dateTo, isOccupancy, densityFilter, conflictFilterActive]);
+  }, [portId, dateFrom, dateTo, isOccupancy, densityFilter]);
 
   // With an Excel allowlist, keep paging until the requested dates are loaded.
   useEffect(() => {
-    if (densityFilter > 0 || conflictFilterActive) return;
+    if (densityFilter > 0) return;
     if (!allowSet || !data || !hasMore || loadingMore || isLoading) return;
     const loaded = new Set(data.rows.map((row) => row.date));
     const missing = [...allowSet].some(
@@ -136,31 +133,25 @@ export default function AvailabilityPortCard({
     dateTo,
     loadMore,
     densityFilter,
-    conflictFilterActive,
   ]);
 
-  // Occupancy (no density / no conflict filter): skip a short empty prefix only.
+  // Occupancy (no density): skip a short empty prefix only.
   useEffect(() => {
-    if (!isOccupancy || densityFilter > 0 || conflictFilterActive || allowSet)
-      return;
+    if (!isOccupancy || densityFilter > 0 || allowSet) return;
     if (!data || !hasMore || loadingMore || isLoading) return;
-    if (data.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)))
-      return;
+    if (data.rows.some((row) => rowHasOccupancy(row))) return;
     if (occupancyPrefixPagesRef.current >= MAX_OCCUPANCY_PREFIX_PAGES) return;
     occupancyPrefixPagesRef.current += 1;
     loadMore();
   }, [
     isOccupancy,
     densityFilter,
-    conflictFilterActive,
     allowSet,
     data,
     hasMore,
     loadingMore,
     isLoading,
     loadMore,
-    statusFilters,
-    todayIso,
   ]);
 
   const displayData = useMemo((): AvailabilityReport | null => {
@@ -171,12 +162,10 @@ export default function AvailabilityPortCard({
     }
     // Density: server already returns matching days only.
     if (isOccupancy && densityFilter < 1) {
-      rows = rows.filter((row) =>
-        rowHasOccupancy(row, statusFilters, todayIso),
-      );
+      rows = rows.filter((row) => rowHasOccupancy(row));
     }
     return { ...data, rows };
-  }, [data, allowSet, isOccupancy, statusFilters, todayIso, densityFilter]);
+  }, [data, allowSet, isOccupancy, densityFilter]);
 
   const stillLoadingAllowlist =
     densityFilter < 1 &&
@@ -186,41 +175,37 @@ export default function AvailabilityPortCard({
   const stillLoadingOccupancyPrefix =
     isOccupancy &&
     densityFilter === 0 &&
-    !conflictFilterActive &&
     !allowSet &&
     hasMore &&
     occupancyPrefixPagesRef.current < MAX_OCCUPANCY_PREFIX_PAGES &&
     (loadingMore || isLoading) &&
-    !(data?.rows.some((row) => rowHasOccupancy(row, statusFilters, todayIso)));
+    !(data?.rows.some((row) => rowHasOccupancy(row)));
   const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
   const displayTotal =
-    densityFilter > 0 || conflictFilterActive || isOccupancy
+    densityFilter > 0 || isOccupancy
       ? totalDays
       : allowSet
         ? allowSet.size
         : totalDays;
   const displayHasMore =
-    allowSet && densityFilter < 1 && !conflictFilterActive && !isOccupancy
+    allowSet && densityFilter < 1 && !isOccupancy
       ? stillLoadingFocus
       : hasMore;
   const footerLoadedCount = displayData?.rows.length ?? 0;
   const itemLabel =
     densityFilter > 0
       ? `días con ${densityFilter} barco(s)`
-      : conflictFilterActive
-        ? "días con conflicto"
-        : isOccupancy
-          ? "días ocupados"
-          : "días";
+      : isOccupancy
+        ? "días ocupados"
+        : "días";
 
   const hidden = useMemo(() => {
     if (!displayData) return false;
     if (stillLoadingFocus) return false;
-    // Occupancy and conflict filters only return days with matching calls —
-    // do not require a free slot (availability default) or La Paz-style ports
-    // with a full pier day disappear while Roatán still shows empty cells.
-    if (isOccupancy || conflictFilterActive) {
+    // Occupancy only returns days with calls — do not require a free slot
+    // (availability default) or full-pier ports disappear incorrectly.
+    if (isOccupancy) {
       return (
         displayData.columns.length === 0 ||
         (displayData.rows.length === 0 && !hasMore)
@@ -232,7 +217,6 @@ export default function AvailabilityPortCard({
     todayIso,
     stillLoadingFocus,
     isOccupancy,
-    conflictFilterActive,
     hasMore,
   ]);
 
@@ -294,6 +278,14 @@ export default function AvailabilityPortCard({
       data={displayData}
       titlePrefix={isOccupancy ? "Ocupación" : "Disponibilidad"}
       statusFilter={statusFilters}
+      vesselFocusId={filters.vessel ?? 0}
+      shippingLineFocusId={filters.shipping_line ?? 0}
+      positionFocusId={filters.position ?? 0}
+      conflictFocus={{
+        has_conflict: filters.has_conflict,
+        conflict_severity: filters.conflict_severity,
+        conflict_type: filters.conflict_type,
+      }}
       scrollRootRef={scrollRootRef}
       canBook={canBook && !isOccupancy}
       returnTo={returnTo}

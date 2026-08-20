@@ -6,6 +6,8 @@ import { positionDisplayCode } from "@/lib/positionCode";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
+import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
+import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
 import {
   TRAFFIC_LABEL,
   dayTrafficLight,
@@ -21,6 +23,7 @@ type AnnualMonthBlockProps = {
   multiPort: boolean;
   portNames: string[];
   availabilityCheck: boolean;
+  focus?: BookingCalendarFocus;
   onSelectMonth?: (monthIndex: number) => void;
 };
 
@@ -125,6 +128,7 @@ export default function AnnualMonthBlock({
   multiPort,
   portNames,
   availabilityCheck,
+  focus = {},
   onSelectMonth,
 }: AnnualMonthBlockProps) {
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -270,7 +274,12 @@ export default function AnnualMonthBlock({
                         {cellBookingListItems.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
                             {cellBookingListItems.map((b) => (
-                              <CallChip key={b.id} booking={b} compact />
+                              <CallChip
+                                key={b.id}
+                                booking={b}
+                                compact
+                                focused={bookingMatchesCalendarFocus(b, focus)}
+                              />
                             ))}
                             {availabilityCheck &&
                             multiPort &&

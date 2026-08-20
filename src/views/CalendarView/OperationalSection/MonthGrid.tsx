@@ -6,6 +6,8 @@ import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
+import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
+import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
 import {
   TRAFFIC_DOT,
   activePierPositions,
@@ -23,6 +25,7 @@ type MonthGridProps = {
   positions: Position[];
   multiPort?: boolean;
   loading?: boolean;
+  focus?: BookingCalendarFocus;
 };
 
 function groupByPort(bookings: BookingListItem[]): { port: string; items: BookingListItem[] }[] {
@@ -47,6 +50,7 @@ export default function MonthGrid({
   positions,
   multiPort = false,
   loading = false,
+  focus = {},
 }: MonthGridProps) {
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
@@ -141,7 +145,12 @@ export default function MonthGrid({
                               {group.port}
                             </p>
                             {group.items.slice(0, 2).map((b) => (
-                              <CallChip key={b.id} booking={b} compact />
+                              <CallChip
+                                key={b.id}
+                                booking={b}
+                                compact
+                                focused={bookingMatchesCalendarFocus(b, focus)}
+                              />
                             ))}
                             {group.items.length > 2 ? (
                               <span className="text-[9px] text-zinc-500">
@@ -151,7 +160,12 @@ export default function MonthGrid({
                           </div>
                         ))
                       : dayBookings.slice(0, maxShow).map((b) => (
-                          <CallChip key={b.id} booking={b} compact />
+                          <CallChip
+                            key={b.id}
+                            booking={b}
+                            compact
+                            focused={bookingMatchesCalendarFocus(b, focus)}
+                          />
                         ))}
                     {!byPort && dayBookings.length > maxShow ? (
                       <span className="text-[10px] text-zinc-500">

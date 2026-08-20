@@ -38,6 +38,7 @@ export type BookingListItem = {
   vessel: number;
   vessel_name: string;
   vessel_loa_m: string | null;
+  shipping_line: number;
   shipping_line_code: string;
   shipping_line_name: string;
   position: number | null;

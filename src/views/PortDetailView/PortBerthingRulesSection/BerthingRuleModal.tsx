@@ -372,7 +372,8 @@ export default function BerthingRuleModal({
               />
             </div>
             <p className="text-xs text-zinc-500">
-              Verde: suma &lt; amarillo · Amarillo: hasta rojo · Rojo: desde el umbral
+              Verde: esloras + sep. &lt; amarillo · Amarillo: hasta rojo · Rojo: desde el umbral
+              (la separación cuenta en el semáforo, igual que en el recálculo).
               rojo. Solo avisos (no bloquean).
             </p>
           </>

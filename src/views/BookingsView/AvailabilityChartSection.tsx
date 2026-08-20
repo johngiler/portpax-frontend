@@ -27,8 +27,12 @@ import {
   type BookingBadgeStatus,
 } from "@/types/booking";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
-import { availabilityCallMatchesStatus } from "./availabilityCallFilter";
+import {
+  availabilityCallMatchesFocus,
+  availabilityFocusNeighborTitle,
+} from "./availabilityCallFilter";
 
 const BOOKING_BADGE_STATUSES = new Set<string>([
   "nr",
@@ -52,6 +56,18 @@ type Props = {
   titlePrefix?: string;
   /** Status sidebar filters: highlight matches; neighbors stay visible (muted). */
   statusFilter?: string | string[];
+  /** Vessel sidebar focus: highlight matches; other ships stay muted. */
+  vesselFocusId?: number;
+  /** Shipping-line focus when no vessel is selected. */
+  shippingLineFocusId?: number;
+  /** Position focus: other berths stay visible (muted). */
+  positionFocusId?: number;
+  /** Conflict sidebar focus (neighbors stay muted). */
+  conflictFocus?: {
+    has_conflict?: boolean;
+    conflict_severity?: "yellow" | "red" | "green";
+    conflict_type?: ConflictTypeFilterValue;
+  };
   /** Inside the card scroll panel (e.g. load-more sentinel). */
   footer?: ReactNode;
   /** Ref for the card's overflow container (infinite scroll root). */
@@ -195,6 +211,10 @@ export default function AvailabilityChartSection({
   data,
   titlePrefix = "Availability Chart",
   statusFilter,
+  vesselFocusId = 0,
+  shippingLineFocusId = 0,
+  positionFocusId = 0,
+  conflictFocus,
   footer,
   scrollRootRef,
   canBook = false,
@@ -202,6 +222,15 @@ export default function AvailabilityChartSection({
   onStartDateChange,
 }: Props) {
   const todayIso = todayIsoLocal();
+  const focus = {
+    statuses: statusFilter,
+    vesselId: vesselFocusId,
+    shippingLineId: shippingLineFocusId,
+    positionId: positionFocusId,
+    has_conflict: conflictFocus?.has_conflict,
+    conflict_severity: conflictFocus?.conflict_severity,
+    conflict_type: conflictFocus?.conflict_type,
+  };
 
   return (
     <ViewSection
@@ -331,13 +360,12 @@ export default function AvailabilityChartSection({
                           <div className="space-y-2">
                             {homeCalls.map((call) => {
                               const badgeStatus = asBadgeStatus(call.status);
-                              const matchesFilter =
-                                availabilityCallMatchesStatus(
-                                  call,
-                                  row.date,
-                                  statusFilter,
-                                  todayIso,
-                                );
+                              const matchesFilter = availabilityCallMatchesFocus(
+                                call,
+                                row.date,
+                                focus,
+                                todayIso,
+                              );
                               const highlights = conflictHighlightsFromApi(call);
                               const chips = conflictChipsFromApi(call);
                               const frameSeverity = conflictCallCardFrameSeverity(
@@ -364,7 +392,12 @@ export default function AvailabilityChartSection({
                                 title={
                                   matchesFilter
                                     ? `Editar ${call.booking_code}${chipTitle ? ` · ${chipTitle}` : ""}`
-                                    : `${call.booking_code} · otro estado (vecino)`
+                                    : availabilityFocusNeighborTitle(
+                                        call,
+                                        row.date,
+                                        focus,
+                                        todayIso,
+                                      )
                                 }
                                 aria-label={`Abrir reserva ${call.booking_code}`}
                               >

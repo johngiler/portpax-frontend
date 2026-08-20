@@ -30,8 +30,10 @@ export type AvailabilityBookingCall = {
   conflict_chips?: BookingConflictChip[];
   conflict_highlights?: BookingConflictHighlights;
   position_id?: number;
+  shipping_line_id?: number;
   shipping_line_name: string;
   shipping_line_logo: string | null;
+  vessel_id?: number;
   vessel_name: string;
   vessel_logo: string | null;
   loa_m: string | null;

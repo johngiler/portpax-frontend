@@ -31,9 +31,18 @@ type CallChipProps = {
   booking: BookingListItem;
   /** Dense meta — calendar month cells. */
   compact?: boolean;
+  /**
+   * Soft focus: muted when false. Used for vessel / shipping-line sidebar
+   * filters so neighbors stay visible.
+   */
+  focused?: boolean;
 };
 
-export default function CallChip({ booking, compact = false }: CallChipProps) {
+export default function CallChip({
+  booking,
+  compact = false,
+  focused = true,
+}: CallChipProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const corp = corpKeyFromShippingLineCode(booking.shipping_line_code);
@@ -58,8 +67,9 @@ export default function CallChip({ booking, compact = false }: CallChipProps) {
           ? conflictChipClassName(frameSeverity)
           : "",
         booking.status === "c" ? "opacity-50 line-through" : "",
+        !focused ? "opacity-55 hover:opacity-80" : "",
       ].join(" ")}
-      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${chipTitle ? ` · ${chipTitle}` : ""}`}
+      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span className="flex min-w-0 items-baseline justify-between gap-1">
