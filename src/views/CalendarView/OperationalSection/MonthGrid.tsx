@@ -7,7 +7,10 @@ import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
 import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
-import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
+import {
+  bookingMatchesCalendarFocus,
+  bookingsWithFocusNeighbors,
+} from "@/lib/bookingCatalogFocus";
 import {
   TRAFFIC_DOT,
   activePierPositions,
@@ -112,7 +115,10 @@ export default function MonthGrid({
                 );
               }
               const iso = toIsoDate(year, monthIndex, day);
-              const dayBookings = bookings.filter((b) => b.call_date === iso);
+              const dayBookings = bookingsWithFocusNeighbors(
+                bookings.filter((b) => b.call_date === iso),
+                focus,
+              );
               const active = dayBookings.filter((b) => b.status !== "c");
               const traffic = multiPort
                 ? active.length === 0
@@ -121,7 +127,12 @@ export default function MonthGrid({
                     ? "limited"
                     : "full"
                 : dayTrafficLight(active, pierCount);
-              const byPort = multiPort ? groupByPort(dayBookings) : null;
+              const byPort = multiPort
+                ? groupByPort(dayBookings).map((group) => ({
+                    ...group,
+                    items: bookingsWithFocusNeighbors(group.items, focus),
+                  })).filter((group) => group.items.length > 0)
+                : null;
               const maxShow = multiPort ? 6 : 4;
 
               return (

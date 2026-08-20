@@ -7,7 +7,10 @@ import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import CallChip from "./CallChip";
 import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
-import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
+import {
+  bookingMatchesCalendarFocus,
+  bookingsWithFocusNeighbors,
+} from "@/lib/bookingCatalogFocus";
 import {
   TRAFFIC_LABEL,
   dayTrafficLight,
@@ -31,9 +34,13 @@ function bookingsForCell(
   bookings: BookingListItem[],
   date: string,
   positionId: number | null,
+  focus: BookingCalendarFocus,
 ): BookingListItem[] {
-  return bookings.filter((b) => {
-    if (b.call_date !== date || b.status === "c") return false;
+  const day = bookingsWithFocusNeighbors(
+    bookings.filter((b) => b.call_date === date && b.status !== "c"),
+    focus,
+  );
+  return day.filter((b) => {
     if (positionId === null) return b.position == null;
     return b.position === positionId;
   });
@@ -43,12 +50,16 @@ function bookingsForPortDay(
   bookings: BookingListItem[],
   date: string,
   portName: string,
+  focus: BookingCalendarFocus,
 ): BookingListItem[] {
-  return bookings.filter(
-    (b) =>
-      b.call_date === date &&
-      b.status !== "c" &&
-      (b.port_name || "Puerto") === portName,
+  return bookingsWithFocusNeighbors(
+    bookings.filter(
+      (b) =>
+        b.call_date === date &&
+        b.status !== "c" &&
+        (b.port_name || "Puerto") === portName,
+    ),
+    focus,
   );
 }
 
@@ -202,11 +213,12 @@ export default function AnnualMonthBlock({
               const rowHasBookingListItem = days.some((day) => {
                 const iso = toIsoDate(year, monthIndex, day);
                 const cellBookingListItems = multiPort
-                  ? bookingsForPortDay(bookings, iso, key)
+                  ? bookingsForPortDay(bookings, iso, key, focus)
                   : bookingsForCell(
                       bookings,
                       iso,
                       key === "unassigned" ? null : Number(key.slice(4)),
+                      focus,
                     );
                 return cellBookingListItems.length > 0;
               });
@@ -248,13 +260,14 @@ export default function AnnualMonthBlock({
                   {days.map((day) => {
                     const iso = toIsoDate(year, monthIndex, day);
                     const cellBookingListItems = multiPort
-                      ? bookingsForPortDay(bookings, iso, key)
+                      ? bookingsForPortDay(bookings, iso, key, focus)
                       : bookingsForCell(
                           bookings,
                           iso,
                           key === "unassigned"
                             ? null
                             : Number(key.slice(4)),
+                          focus,
                         );
 
                     const freePiers = multiPort

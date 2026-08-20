@@ -10,6 +10,7 @@ import type { AvailabilityHeatModeQuery } from "@/lib/viewFilterQuery";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import AvailabilityChartSection from "./AvailabilityChartSection";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
+import { availabilityFocusIsActive } from "./availabilityCallFilter";
 
 type AvailabilityPortDisplayState = "loading" | "visible" | "empty" | "error";
 
@@ -84,24 +85,34 @@ export default function AvailabilityPortCard({
   const isOccupancy = heatMode === "occupancy";
   const densityFilter = isOccupancy && density >= 1 ? density : 0;
   const statusFilters = filters.statuses;
+  const chartFocus = useMemo(
+    () => ({
+      statuses: statusFilters,
+      vesselId: filters.vessel ?? 0,
+      shippingLineId: filters.shipping_line ?? 0,
+      positionId: filters.position ?? 0,
+      has_conflict: filters.has_conflict,
+      conflict_severity: filters.conflict_severity,
+      conflict_type: filters.conflict_type,
+    }),
+    [
+      statusFilters,
+      filters.vessel,
+      filters.shipping_line,
+      filters.position,
+      filters.has_conflict,
+      filters.conflict_severity,
+      filters.conflict_type,
+    ],
+  );
+  const focusActive = availabilityFocusIsActive(chartFocus);
 
   const listFilters = useMemo((): AvailabilityListFilters => {
-    // Soft-focus filters stay on the client so neighbors remain visible.
-    const {
-      vessel: _vessel,
-      shipping_line: _shippingLine,
-      position: _position,
-      statuses: _statuses,
-      has_conflict: _hasConflict,
-      conflict_severity: _conflictSeverity,
-      conflict_type: _conflictType,
-      ...rest
-    } = filters;
-    const base: AvailabilityListFilters = { ...rest };
+    // Soft-focus filters go to the API: matching days + neighbors on those days.
+    const base: AvailabilityListFilters = { ...filters };
     if (densityFilter >= 1) {
       base.ships_per_day = densityFilter;
     } else if (isOccupancy) {
-      // Server-page only occupied days so counters match (not the full 3-year span).
       base.occupied_only = true;
     }
     return base;
@@ -112,11 +123,11 @@ export default function AvailabilityPortCard({
 
   useEffect(() => {
     occupancyPrefixPagesRef.current = 0;
-  }, [portId, dateFrom, dateTo, isOccupancy, densityFilter]);
+  }, [portId, dateFrom, dateTo, isOccupancy, densityFilter, chartFocus]);
 
   // With an Excel allowlist, keep paging until the requested dates are loaded.
   useEffect(() => {
-    if (densityFilter > 0) return;
+    if (densityFilter > 0 || focusActive) return;
     if (!allowSet || !data || !hasMore || loadingMore || isLoading) return;
     const loaded = new Set(data.rows.map((row) => row.date));
     const missing = [...allowSet].some(
@@ -133,11 +144,12 @@ export default function AvailabilityPortCard({
     dateTo,
     loadMore,
     densityFilter,
+    focusActive,
   ]);
 
-  // Occupancy (no density): skip a short empty prefix only.
+  // Occupancy (no density / soft-focus): skip a short empty prefix only.
   useEffect(() => {
-    if (!isOccupancy || densityFilter > 0 || allowSet) return;
+    if (!isOccupancy || densityFilter > 0 || allowSet || focusActive) return;
     if (!data || !hasMore || loadingMore || isLoading) return;
     if (data.rows.some((row) => rowHasOccupancy(row))) return;
     if (occupancyPrefixPagesRef.current >= MAX_OCCUPANCY_PREFIX_PAGES) return;
@@ -147,6 +159,7 @@ export default function AvailabilityPortCard({
     isOccupancy,
     densityFilter,
     allowSet,
+    focusActive,
     data,
     hasMore,
     loadingMore,
@@ -157,18 +170,25 @@ export default function AvailabilityPortCard({
   const displayData = useMemo((): AvailabilityReport | null => {
     if (!data) return null;
     let rows = data.rows;
-    if (allowSet && densityFilter < 1) {
+    if (allowSet && densityFilter < 1 && !focusActive) {
       rows = rows.filter((row) => allowSet.has(row.date));
     }
-    // Density: server already returns matching days only.
-    if (isOccupancy && densityFilter < 1) {
+    // Density / soft-focus: server already returns matching days only.
+    if (isOccupancy && densityFilter < 1 && !focusActive) {
       rows = rows.filter((row) => rowHasOccupancy(row));
     }
     return { ...data, rows };
-  }, [data, allowSet, isOccupancy, densityFilter]);
+  }, [
+    data,
+    allowSet,
+    isOccupancy,
+    densityFilter,
+    focusActive,
+  ]);
 
   const stillLoadingAllowlist =
     densityFilter < 1 &&
+    !focusActive &&
     Boolean(allowSet) &&
     hasMore &&
     (loadingMore || isLoading);
@@ -176,36 +196,38 @@ export default function AvailabilityPortCard({
     isOccupancy &&
     densityFilter === 0 &&
     !allowSet &&
+    !focusActive &&
     hasMore &&
     occupancyPrefixPagesRef.current < MAX_OCCUPANCY_PREFIX_PAGES &&
     (loadingMore || isLoading) &&
     !(data?.rows.some((row) => rowHasOccupancy(row)));
-  const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
+  const stillLoadingFocus =
+    stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
   const displayTotal =
-    densityFilter > 0 || isOccupancy
+    densityFilter > 0 || isOccupancy || focusActive
       ? totalDays
       : allowSet
         ? allowSet.size
         : totalDays;
   const displayHasMore =
-    allowSet && densityFilter < 1 && !isOccupancy
+    allowSet && densityFilter < 1 && !isOccupancy && !focusActive
       ? stillLoadingFocus
       : hasMore;
   const footerLoadedCount = displayData?.rows.length ?? 0;
   const itemLabel =
     densityFilter > 0
       ? `días con ${densityFilter} barco(s)`
-      : isOccupancy
+      : isOccupancy || focusActive
         ? "días ocupados"
         : "días";
 
   const hidden = useMemo(() => {
     if (!displayData) return false;
     if (stillLoadingFocus) return false;
-    // Occupancy only returns days with calls — do not require a free slot
-    // (availability default) or full-pier ports disappear incorrectly.
-    if (isOccupancy) {
+    // Occupancy / soft-focus only return days with matching focus calls —
+    // do not require a free slot (availability default).
+    if (isOccupancy || focusActive) {
       return (
         displayData.columns.length === 0 ||
         (displayData.rows.length === 0 && !hasMore)
@@ -217,6 +239,7 @@ export default function AvailabilityPortCard({
     todayIso,
     stillLoadingFocus,
     isOccupancy,
+    focusActive,
     hasMore,
   ]);
 
@@ -289,7 +312,7 @@ export default function AvailabilityPortCard({
       scrollRootRef={scrollRootRef}
       canBook={canBook && !isOccupancy}
       returnTo={returnTo}
-      onStartDateChange={isOccupancy ? undefined : onStartDateChange}
+      onStartDateChange={isOccupancy || focusActive ? undefined : onStartDateChange}
       footer={
         <InfiniteScrollFooter
           hasMore={displayHasMore}

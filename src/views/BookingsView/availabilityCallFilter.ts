@@ -186,6 +186,40 @@ export function availabilityFocusNeighborTitle(
   return call.booking_code;
 }
 
+/** True when any availability soft-focus filter is active. */
+export function availabilityFocusIsActive(
+  focus: AvailabilityFocusFilters,
+): boolean {
+  const statuses = normalizeStatusList(focus.statuses);
+  return Boolean(
+    statuses.length > 0 ||
+      (focus.vesselId && focus.vesselId > 0) ||
+      (focus.shippingLineId && focus.shippingLineId > 0) ||
+      (focus.positionId && focus.positionId > 0) ||
+      focus.has_conflict !== undefined ||
+      focus.conflict_severity ||
+      focus.conflict_type,
+  );
+}
+
+/** Day row has at least one call matching the sidebar focus. */
+export function availabilityRowHasFocusMatch(
+  cells: AvailabilityCall[][],
+  callDate: string,
+  focus: AvailabilityFocusFilters,
+  todayIso = bookingTodayIso(),
+): boolean {
+  if (!availabilityFocusIsActive(focus)) return true;
+  for (const calls of cells) {
+    for (const call of calls) {
+      if (availabilityCallMatchesFocus(call, callDate, focus, todayIso)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function filterAvailabilityCalls<T extends AvailabilityCall>(
   calls: T[],
   callDate: string,

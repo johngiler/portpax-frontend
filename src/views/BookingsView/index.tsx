@@ -394,7 +394,9 @@ export default function BookingsView() {
       statuses: appliedStatusFilter,
       ...conflictFilterToApiParams(appliedConflictFilter),
       port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
-      // Vessel / shipping-line soft-focus in the list (neighbors stay visible).
+      shipping_line:
+        appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
       position:
         appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
       call_date_from: dateRange.call_date_from,
@@ -407,6 +409,8 @@ export default function BookingsView() {
     appliedStatusFilter,
     appliedConflictFilter,
     appliedPortFilter,
+    appliedShippingLineFilter,
+    appliedVesselFilter,
     appliedPositionFilter,
     appliedDatePreset,
     appliedCustomDateFrom,
@@ -1230,8 +1234,6 @@ export default function BookingsView() {
               bookings={bookings}
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
-              vesselFocusId={appliedVesselFilter}
-              shippingLineFocusId={appliedShippingLineFilter}
               canWrite={canWrite}
               onBulkDelete={canWrite ? handleBulkDeleteCancelled : undefined}
               onBulkStatus={canWrite ? handleBulkStatusChange : undefined}

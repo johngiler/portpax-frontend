@@ -37,7 +37,6 @@ import {
 import BookingsBulkBar from "./BookingsBulkBar";
 import BookingsBulkCancelModal from "./BookingsBulkCancelModal";
 import BookingsEmptyState from "./BookingsEmptyState";
-import { bookingMatchesCatalogFocus } from "@/lib/bookingCatalogFocus";
 
 export type BulkStatusPayload = Pick<
   BookingUpdatePayload,
@@ -48,9 +47,6 @@ type BookingsListProps = {
   bookings: BookingListItem[];
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
-  /** Soft focus: matching rows full opacity; neighbors muted. */
-  vesselFocusId?: number;
-  shippingLineFocusId?: number;
   canWrite?: boolean;
   onBulkDelete?: (ids: number[]) => Promise<void>;
   onBulkStatus?: (ids: number[], payload: BulkStatusPayload) => Promise<void>;
@@ -110,8 +106,6 @@ export default function BookingsList({
   bookings,
   hasActiveFilters = false,
   onClearFilters,
-  vesselFocusId = 0,
-  shippingLineFocusId = 0,
   canWrite = false,
   onBulkDelete,
   onBulkStatus,
@@ -281,24 +275,14 @@ export default function BookingsList({
           const highlights = conflictHighlightsFromApi(booking);
           const chips = conflictChipsFromApi(booking);
           const listFrameSeverity = conflictListFrameSeverity(highlights);
-          const focused = bookingMatchesCatalogFocus(
-            booking,
-            vesselFocusId,
-            shippingLineFocusId,
-          );
 
           return (
             <li key={booking.id}>
               <article
-                className={[
-                  conflictCardClassName(
-                    listFrameSeverity,
-                    "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
-                  ),
-                  focused ? "" : "opacity-55 hover:opacity-80",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
+                className={conflictCardClassName(
+                  listFrameSeverity,
+                  "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
+                )}
               >
                 <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
                   {selectionEnabled ? (

@@ -6,7 +6,10 @@ import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
-import { bookingMatchesCalendarFocus } from "@/lib/bookingCatalogFocus";
+import {
+  bookingMatchesCalendarFocus,
+  bookingsWithFocusNeighbors,
+} from "@/lib/bookingCatalogFocus";
 import CallChip from "./CallChip";
 import {
   TRAFFIC_DOT,
@@ -28,13 +31,25 @@ type WeekGridProps = {
   focus?: BookingCalendarFocus;
 };
 
+function dayBookingsVisible(
+  bookings: BookingListItem[],
+  date: string,
+  focus: BookingCalendarFocus,
+): BookingListItem[] {
+  return bookingsWithFocusNeighbors(
+    bookings.filter((b) => b.call_date === date),
+    focus,
+  );
+}
+
 function bookingsForCell(
   bookings: BookingListItem[],
   date: string,
   positionId: number | null,
+  focus: BookingCalendarFocus,
 ): BookingListItem[] {
-  return bookings.filter((b) => {
-    if (b.call_date !== date) return false;
+  const day = dayBookingsVisible(bookings, date, focus);
+  return day.filter((b) => {
     if (positionId === null) return b.position == null;
     return b.position === positionId;
   });
@@ -109,9 +124,11 @@ export default function WeekGrid({
                   Puerto
                 </th>
                 {days.map((iso) => {
-                  const dayBookingListItems = bookings.filter(
-                    (b) => b.call_date === iso && b.status !== "c",
-                  );
+                  const dayBookingListItems = dayBookingsVisible(
+                    bookings,
+                    iso,
+                    focus,
+                  ).filter((b) => b.status !== "c");
                   const traffic =
                     dayBookingListItems.length === 0
                       ? "free"
@@ -159,10 +176,13 @@ export default function WeekGrid({
                       {portName}
                     </td>
                     {days.map((iso) => {
-                      const cell = bookings.filter(
-                        (b) =>
-                          b.call_date === iso &&
-                          (b.port_name || "Puerto") === portName,
+                      const cell = bookingsWithFocusNeighbors(
+                        bookings.filter(
+                          (b) =>
+                            b.call_date === iso &&
+                            (b.port_name || "Puerto") === portName,
+                        ),
+                        focus,
                       );
                       return (
                         <td key={iso} className="px-1 py-1.5 align-top">
@@ -193,10 +213,15 @@ export default function WeekGrid({
                   Posición
                 </th>
                 {days.map((iso) => {
-                  const dayBookingListItems = bookings.filter(
-                    (b) => b.call_date === iso && b.status !== "c",
+                  const dayBookingListItems = dayBookingsVisible(
+                    bookings,
+                    iso,
+                    focus,
+                  ).filter((b) => b.status !== "c");
+                  const traffic = dayTrafficLight(
+                    dayBookingListItems,
+                    pierRows.length,
                   );
-                  const traffic = dayTrafficLight(dayBookingListItems, pierRows.length);
                   return (
                     <th
                       key={iso}
@@ -228,7 +253,12 @@ export default function WeekGrid({
                     {position.short_code || position.code}
                   </td>
                   {days.map((iso) => {
-                    const cell = bookingsForCell(bookings, iso, position.id);
+                    const cell = bookingsForCell(
+                      bookings,
+                      iso,
+                      position.id,
+                      focus,
+                    );
                     return (
                       <td key={iso} className="px-1 py-1.5 align-top">
                         <div className="flex min-h-[4.5rem] flex-col gap-1">
@@ -250,7 +280,7 @@ export default function WeekGrid({
                     Sin asignar
                   </td>
                   {days.map((iso) => {
-                    const cell = bookingsForCell(bookings, iso, null);
+                    const cell = bookingsForCell(bookings, iso, null, focus);
                     return (
                       <td
                         key={iso}

@@ -135,3 +135,34 @@ export function bookingMatchesCalendarFocus(
   if (positionId > 0 && booking.position !== positionId) return false;
   return true;
 }
+
+/** True when any sidebar soft-focus filter is active. */
+export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
+  return Boolean(
+    (focus.statuses && focus.statuses.length > 0) ||
+      (focus.vesselId && focus.vesselId > 0) ||
+      (focus.shippingLineId && focus.shippingLineId > 0) ||
+      (focus.positionId && focus.positionId > 0) ||
+      focus.has_conflict !== undefined ||
+      focus.conflict_severity ||
+      focus.conflict_type,
+  );
+}
+
+/**
+ * Same-day (or same cell group) bookings: keep neighbors only when at least
+ * one booking matches the focus. Orphan non-matches are dropped.
+ */
+export function bookingsWithFocusNeighbors(
+  bookings: BookingListItem[],
+  focus: BookingCalendarFocus,
+  todayIso = bookingTodayIso(),
+): BookingListItem[] {
+  if (!calendarFocusIsActive(focus)) return bookings;
+  if (
+    !bookings.some((b) => bookingMatchesCalendarFocus(b, focus, todayIso))
+  ) {
+    return [];
+  }
+  return bookings;
+}

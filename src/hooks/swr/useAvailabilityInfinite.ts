@@ -90,13 +90,17 @@ export function useAvailabilityInfinite(
       : 0;
   const densityMode = shipsPerDay > 0;
   const occupiedOnly = Boolean(filters.occupied_only);
-  /** Paginate matching occupied days instead of empty date windows. */
-  const occupiedDaysMode =
-    densityMode ||
-    occupiedOnly ||
-    hasConflict !== undefined ||
-    Boolean(conflictSeverity) ||
-    Boolean(conflictType);
+  const softFocusMode = Boolean(
+    (line != null && line > 0) ||
+      (vessel != null && vessel > 0) ||
+      (position != null && position > 0) ||
+      (statuses != null && statuses.length > 0) ||
+      hasConflict !== undefined ||
+      Boolean(conflictSeverity) ||
+      Boolean(conflictType),
+  );
+  /** Paginate matching focus/occupied days instead of empty date windows. */
+  const occupiedDaysMode = densityMode || occupiedOnly || softFocusMode;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: AvailabilityReport | null) => {
