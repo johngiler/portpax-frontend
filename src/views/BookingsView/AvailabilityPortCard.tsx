@@ -211,14 +211,24 @@ export default function AvailabilityPortCard({
   const hidden = useMemo(() => {
     if (!displayData) return false;
     if (stillLoadingFocus) return false;
-    if (isOccupancy) {
+    // Occupancy and conflict filters only return days with matching calls —
+    // do not require a free slot (availability default) or La Paz-style ports
+    // with a full pier day disappear while Roatán still shows empty cells.
+    if (isOccupancy || conflictFilterActive) {
       return (
         displayData.columns.length === 0 ||
         (displayData.rows.length === 0 && !hasMore)
       );
     }
     return !shouldShowAvailabilityPort(displayData, todayIso);
-  }, [displayData, todayIso, stillLoadingFocus, isOccupancy, hasMore]);
+  }, [
+    displayData,
+    todayIso,
+    stillLoadingFocus,
+    isOccupancy,
+    conflictFilterActive,
+    hasMore,
+  ]);
 
   const isInitialLoading =
     (isLoading && !data) ||
