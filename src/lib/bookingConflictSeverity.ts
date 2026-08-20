@@ -19,7 +19,8 @@ export const CONFLICT_SEVERITY_BY_CODE: Record<string, BookingConflictSeverity> 
     beam_exceeds_position: "red",
     draft_too_deep: "red",
     combined_position_retired: "red",
-    loa_recalc_exceeds: "red",
+    /** Legacy overhang-only; paint yellow — red only for loa_recalc_sum_red. */
+    loa_recalc_exceeds: "yellow",
     loa_recalc_sum_red: "red",
     combined_loa_red: "red",
     filo_eta_violation: "red",
