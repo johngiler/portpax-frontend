@@ -320,9 +320,8 @@ export default function BookingsView() {
     setTab(tab);
     setStatusFilter(parsed.status);
     setAppliedStatusFilter(parsed.status);
-    const conflict = tab === "proximity" ? "" : parsed.conflict;
-    setConflictFilter(conflict);
-    setAppliedConflictFilter(conflict);
+    setConflictFilter(parsed.conflict);
+    setAppliedConflictFilter(parsed.conflict);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
     setPortFilter(port);
@@ -517,7 +516,9 @@ export default function BookingsView() {
     setAppliedStatusFilter(statusFilter);
     const conflictTabs =
       tab === "list" ||
-      (tab === "availability" && heatMode === "occupancy");
+      tab === "proximity" ||
+      tab === "availability" ||
+      tab === "calendar";
     const nextConflict = conflictTabs ? conflictFilter : "";
     setAppliedConflictFilter(nextConflict);
     if (nextConflict !== conflictFilter) {
@@ -606,10 +607,11 @@ export default function BookingsView() {
     const week = todayIso();
     const y = new Date().getFullYear();
     const m = new Date().getMonth();
+    const clearedConflict = "";
     setStatusFilter([]);
     setAppliedStatusFilter([]);
-    setConflictFilter("");
-    setAppliedConflictFilter("");
+    setConflictFilter(clearedConflict);
+    setAppliedConflictFilter(clearedConflict);
     setSearch("");
     setAppliedSearch("");
     setPortFilter(port);
@@ -658,7 +660,7 @@ export default function BookingsView() {
       month: m,
       heat: "availability",
       density: 0,
-      conflict: "",
+      conflict: clearedConflict,
       importedDates: [],
     });
   }
@@ -671,22 +673,20 @@ export default function BookingsView() {
       return;
     }
     setTab(next);
-    if (next === "proximity") {
-      setConflictFilter("");
-      setAppliedConflictFilter("");
-      syncToUrl(workspaceState({ tab: next, conflict: "" }));
-      return;
-    }
+    // Keep shared filters (port, line, vessel, conflict, dates). Proximity
+    // ignores port/position in the matrix but must not clear them for other tabs.
     syncToUrl(workspaceState({ tab: next }));
   }
 
   const hasActiveFilters =
     appliedStatusFilter.length > 0 ||
     ((tab === "list" ||
-      (tab === "availability" && appliedHeatMode === "occupancy")) &&
+      tab === "proximity" ||
+      tab === "availability" ||
+      tab === "calendar") &&
       appliedConflictFilter !== "") ||
     appliedSearch !== "" ||
-    appliedPortFilter > 0 ||
+    (tab !== "proximity" && appliedPortFilter > 0) ||
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
     appliedPositionFilter > 0 ||
@@ -701,12 +701,13 @@ export default function BookingsView() {
   const canClearFilters =
     hasActiveFilters ||
     statusFilter.length > 0 ||
-    (tab === "list" && conflictFilter !== "") ||
-    (tab === "availability" &&
-      heatMode === "occupancy" &&
+    ((tab === "list" ||
+      tab === "proximity" ||
+      tab === "availability" ||
+      tab === "calendar") &&
       conflictFilter !== "") ||
     search.trim() !== "" ||
-    portFilter > 0 ||
+    (tab !== "proximity" && portFilter > 0) ||
     shippingLineFilter > 0 ||
     vesselFilter > 0 ||
     positionFilter > 0 ||
@@ -718,9 +719,13 @@ export default function BookingsView() {
 
   const canApplyFilters =
     !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
-    (tab !== "proximity" && conflictFilter !== appliedConflictFilter) ||
+    ((tab === "list" ||
+      tab === "proximity" ||
+      tab === "availability" ||
+      tab === "calendar") &&
+      conflictFilter !== appliedConflictFilter) ||
     search.trim() !== appliedSearch ||
-    portFilter !== appliedPortFilter ||
+    (tab !== "proximity" && portFilter !== appliedPortFilter) ||
     shippingLineFilter !== appliedShippingLineFilter ||
     vesselFilter !== appliedVesselFilter ||
     datePreset !== appliedDatePreset ||
@@ -989,6 +994,11 @@ export default function BookingsView() {
     [portOptions],
   );
 
+  const appliedConflictApiFilters = useMemo(
+    () => conflictFilterToApiParams(appliedConflictFilter),
+    [appliedConflictFilter],
+  );
+
   if (!portsReady) return <BookingsViewSkeleton variant="page" />;
 
   const description =
@@ -997,7 +1007,7 @@ export default function BookingsView() {
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
         : tab === "proximity"
-          ? "Solo escalas con conflicto geo entre puertos del barco seleccionado."
+          ? "Itinerario multi-puerto del barco seleccionado (filtro de conflicto editable)."
           : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
 
   const calendarPortLabel =
@@ -1257,6 +1267,7 @@ export default function BookingsView() {
           statuses={appliedStatusFilter}
           positionId={appliedPositionFilter}
           search={appliedSearch}
+          conflictFilters={appliedConflictApiFilters}
           weekAnchor={weekAnchor}
           onWeekAnchorChange={(iso) => {
             setWeekAnchor(iso);
@@ -1306,9 +1317,7 @@ export default function BookingsView() {
               appliedStatusFilter.length > 0
                 ? appliedStatusFilter
                 : undefined,
-            ...(appliedHeatMode === "occupancy"
-              ? conflictFilterToApiParams(appliedConflictFilter)
-              : {}),
+            ...conflictFilterToApiParams(appliedConflictFilter),
           }}
           canBook={canWrite}
           returnTo={bookingsReturnTo()}
@@ -1323,8 +1332,9 @@ export default function BookingsView() {
           vesselId={appliedVesselFilter}
           dateFrom={proximityDateRange.from}
           dateTo={proximityDateRange.to}
-          portId={appliedPortFilter}
+          portId={0}
           statuses={appliedStatusFilter}
+          conflictFilters={appliedConflictApiFilters}
           returnTo={bookingsReturnTo()}
         />
       ) : null}

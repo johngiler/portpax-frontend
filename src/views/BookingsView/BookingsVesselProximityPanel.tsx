@@ -6,7 +6,10 @@ import ViewSection from "@/components/layout/ViewSection";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import { useVesselProximityInfinite } from "@/hooks/swr/useVesselProximityInfinite";
+import {
+  useVesselProximityInfinite,
+  type VesselProximityListFilters,
+} from "@/hooks/swr/useVesselProximityInfinite";
 import type { VesselProximityMatrixCell } from "@/services/bookings/vesselProximityMatrixService";
 import type { BookingStatusFilterValue } from "@/types/booking";
 import ProximityMatrixCallCard from "./ProximityMatrixCallCard";
@@ -18,8 +21,40 @@ type BookingsVesselProximityPanelProps = {
   dateTo?: string;
   portId: number;
   statuses: BookingStatusFilterValue[];
+  conflictFilters?: Pick<
+    VesselProximityListFilters,
+    "has_conflict" | "conflict_severity" | "conflict_type"
+  >;
   returnTo: string;
 };
+
+function emptyMatrixCopy(filters: VesselProximityListFilters): {
+  descriptionSuffix: string;
+  body: string;
+} {
+  if (filters.conflict_type === "proximity") {
+    return {
+      descriptionSuffix: "sin conflictos de proximidad",
+      body: "No hay escalas con conflicto de proximidad en el rango de fechas aplicado.",
+    };
+  }
+  if (filters.has_conflict === false) {
+    return {
+      descriptionSuffix: "sin escalas libres de conflicto",
+      body: "No hay escalas sin conflicto en el rango de fechas aplicado.",
+    };
+  }
+  if (filters.has_conflict === true || filters.conflict_severity || filters.conflict_type) {
+    return {
+      descriptionSuffix: "sin escalas que coincidan con el filtro de conflicto",
+      body: "No hay escalas que coincidan con el filtro de conflicto en el rango aplicado.",
+    };
+  }
+  return {
+    descriptionSuffix: "sin escalas",
+    body: "No hay escalas del barco en el rango de fechas aplicado.",
+  };
+}
 
 export default function BookingsVesselProximityPanel({
   shippingLineId,
@@ -28,10 +63,20 @@ export default function BookingsVesselProximityPanel({
   dateTo,
   portId,
   statuses,
+  conflictFilters = {},
   returnTo,
 }: BookingsVesselProximityPanelProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const filtersReady = shippingLineId > 0 && vesselId > 0;
+
+  const listFilters = useMemo(
+    (): VesselProximityListFilters => ({
+      port: portId > 0 ? portId : undefined,
+      statuses: statuses.length > 0 ? statuses : undefined,
+      ...conflictFilters,
+    }),
+    [portId, statuses, conflictFilters],
+  );
 
   const {
     data,
@@ -47,10 +92,7 @@ export default function BookingsVesselProximityPanel({
     dateFrom,
     dateTo,
     filtersReady && Boolean(dateFrom && dateTo),
-    {
-      port: portId > 0 ? portId : undefined,
-      statuses: statuses.length > 0 ? statuses : undefined,
-    },
+    listFilters,
   );
 
   const cellMap = useMemo(() => {
@@ -127,14 +169,15 @@ export default function BookingsVesselProximityPanel({
       : "overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800";
 
   if (!data || (data.cells.length === 0 && !hasMore)) {
+    const empty = emptyMatrixCopy(listFilters);
     return (
       <ViewSection
         icon={Ship}
         title="Proximidad barco / puerto"
-        description={`${vesselLabel} · sin conflictos de proximidad · ${rangeLabel}`}
+        description={`${vesselLabel} · ${empty.descriptionSuffix} · ${rangeLabel}`}
       >
         <div className="rounded-xl border border-dashed border-zinc-300/90 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-          No hay escalas con conflicto de proximidad en el rango de fechas aplicado.
+          {empty.body}
         </div>
       </ViewSection>
     );
@@ -144,7 +187,7 @@ export default function BookingsVesselProximityPanel({
     <ViewSection
       icon={Ship}
       title="Proximidad barco / puerto"
-      description={`${data.vessel_name} · ${data.cells.length} escala${data.cells.length === 1 ? "" : "s"} con proximidad · ${rangeLabel}`}
+      description={`${data.vessel_name} · ${data.cells.length} escala${data.cells.length === 1 ? "" : "s"} · ${rangeLabel}`}
     >
       <div ref={scrollRootRef} className={matrixScrollClassName}>
         <table

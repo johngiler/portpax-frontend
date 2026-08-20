@@ -65,6 +65,8 @@ export default function BookingsAvailabilityPanel({
       : filters.has_conflict === false
         ? "0"
         : "",
+    filters.conflict_severity ?? "",
+    filters.conflict_type ?? "",
     heatMode,
     density,
   ].join("|");

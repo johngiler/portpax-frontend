@@ -186,7 +186,7 @@ export default function BookingFilters({
   const showHeatMode = tab === "availability";
   const showPosition =
     tab === "list" || tab === "calendar" || tab === "availability";
-  const showPort = true;
+  const showPort = tab !== "proximity";
   const showLine = true;
 
   const loadPortOptions = useCallback(async (input: string) => {
@@ -443,7 +443,9 @@ export default function BookingFilters({
       </>
 
       {(tab === "list" ||
-        (tab === "availability" && heatMode === "occupancy")) && (
+        tab === "proximity" ||
+        tab === "availability" ||
+        tab === "calendar") && (
         <FormFieldSelect<ConflictFilterValue>
           label="Conflicto"
           name="booking_conflict_filter"

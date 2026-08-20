@@ -7,6 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { useCalendarBookings } from "@/hooks/swr/useCalendarBookings";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type { BookingStatusFilterValue } from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import AnnualGrid from "./AnnualGrid";
@@ -20,6 +21,12 @@ import {
   type CalendarSeason,
 } from "./calendarOpsUtils";
 
+type CalendarConflictFilters = {
+  has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red" | "green";
+  conflict_type?: ConflictTypeFilterValue;
+};
+
 type UnifiedCalendarCardProps = {
   mode: CalendarViewModeQuery;
   onModeChange: (mode: CalendarViewModeQuery) => void;
@@ -31,6 +38,7 @@ type UnifiedCalendarCardProps = {
   statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
+  conflictFilters?: CalendarConflictFilters;
   hasFilters?: boolean;
   onClearFilters?: () => void;
   weekAnchor: string;
@@ -53,6 +61,7 @@ export default function UnifiedCalendarCard({
   statuses,
   positionId,
   search,
+  conflictFilters = {},
   hasFilters = false,
   onClearFilters,
   weekAnchor,
@@ -87,6 +96,9 @@ export default function UnifiedCalendarCard({
       to: range.to,
       year,
       season,
+      has_conflict: conflictFilters.has_conflict,
+      conflict_severity: conflictFilters.conflict_severity,
+      conflict_type: conflictFilters.conflict_type,
     });
 
   const modeLabel =
@@ -135,7 +147,7 @@ export default function UnifiedCalendarCard({
             icon={CalendarRange}
             filtered
             title="Sin escalas con estos filtros"
-            description="No hay escalas en el período con los filtros aplicados. Ajusta puerto, naviera, barco, estado o búsqueda."
+            description="No hay escalas en el período con los filtros aplicados. Ajusta puerto, naviera, barco, estado, conflicto o búsqueda."
             onClearFilters={onClearFilters}
           />
         ) : mode === "weekly" ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchAllBookings } from "@/services/bookings/bookingService";
 import { fetchPositions } from "@/services/catalogs/positionService";
@@ -23,6 +24,9 @@ export type CalendarBookingsParams = {
   to: string;
   year: number;
   season?: CalendarSeason;
+  has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red" | "green";
+  conflict_type?: ConflictTypeFilterValue;
 };
 
 function calendarParamsKey(p: CalendarBookingsParams): string {
@@ -37,6 +41,9 @@ function calendarParamsKey(p: CalendarBookingsParams): string {
     p.to,
     p.year,
     p.season ?? "natural",
+    p.has_conflict === true ? "1" : p.has_conflict === false ? "0" : "",
+    p.conflict_severity ?? "",
+    p.conflict_type ?? "",
   ].join("|");
 }
 
@@ -55,6 +62,9 @@ async function fetchCalendarPayload(
     vessel: params.vesselId > 0 ? params.vesselId : undefined,
     statuses: params.statuses.length > 0 ? params.statuses : undefined,
     search: params.search.trim() || undefined,
+    has_conflict: params.has_conflict,
+    conflict_severity: params.conflict_severity,
+    conflict_type: params.conflict_type,
     ordering: "call_date" as const,
     pageSize: 500,
   };

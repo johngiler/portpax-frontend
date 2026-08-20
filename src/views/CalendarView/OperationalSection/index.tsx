@@ -1,9 +1,16 @@
 "use client";
 
+import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import type { BookingStatusFilterValue } from "@/types/booking";
 import type { CalendarSeason } from "./calendarOpsUtils";
 import UnifiedCalendarCard from "./UnifiedCalendarCard";
+
+type CalendarConflictFilters = {
+  has_conflict?: boolean;
+  conflict_severity?: "yellow" | "red" | "green";
+  conflict_type?: ConflictTypeFilterValue;
+};
 
 type OperationalSectionProps = {
   mode: CalendarViewModeQuery;
@@ -16,6 +23,7 @@ type OperationalSectionProps = {
   statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
+  conflictFilters?: CalendarConflictFilters;
   weekAnchor: string;
   onWeekAnchorChange: (iso: string) => void;
   year: number;
@@ -37,6 +45,7 @@ export default function OperationalSection({
   statuses,
   positionId,
   search,
+  conflictFilters = {},
   weekAnchor,
   onWeekAnchorChange,
   year,
@@ -53,7 +62,10 @@ export default function OperationalSection({
     positionId > 0 ||
     statuses.length > 0 ||
     Boolean(search.trim()) ||
-    portId > 0;
+    portId > 0 ||
+    conflictFilters.has_conflict !== undefined ||
+    Boolean(conflictFilters.conflict_severity) ||
+    Boolean(conflictFilters.conflict_type);
 
   return (
     <UnifiedCalendarCard
@@ -66,6 +78,7 @@ export default function OperationalSection({
       statuses={statuses}
       positionId={positionId}
       search={search}
+      conflictFilters={conflictFilters}
       hasFilters={hasFilters}
       onClearFilters={onClearFilters}
       weekAnchor={weekAnchor}

@@ -99,6 +99,7 @@ const CONFLICT_TYPE_VALUES = new Set<ConflictTypeFilterValue>([
 ]);
 
 function parseConflictFilter(raw: string | null): ConflictFilterValue {
+  if (raw === "all") return "";
   if (raw === "yes" || raw === "true" || raw === "1") return "yes";
   if (raw === "no" || raw === "false" || raw === "0") return "no";
   if (raw === "yellow" || raw === "red") return raw;
@@ -107,7 +108,6 @@ function parseConflictFilter(raw: string | null): ConflictFilterValue {
   }
   return "";
 }
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Discrete imported availability dates from `idates` query param. */
@@ -168,6 +168,12 @@ export function parseBookingsWorkspaceFilters(
     densityNum <= 4
       ? Math.trunc(densityNum)
       : 0;
+  const tab: BookingsTabQuery =
+    tabRaw === "history"
+      ? "list"
+      : tabRaw && TABS.has(tabRaw as BookingsTabQuery)
+        ? (tabRaw as BookingsTabQuery)
+        : "list";
   const conflict = parseConflictFilter(
     sp.get("conflict") ?? sp.get("has_conflict"),
   );
@@ -180,12 +186,7 @@ export function parseBookingsWorkspaceFilters(
     .find((id) => id > 0);
 
   return {
-    tab:
-      tabRaw === "history"
-        ? "list"
-        : tabRaw && TABS.has(tabRaw as BookingsTabQuery)
-          ? (tabRaw as BookingsTabQuery)
-          : "list",
+    tab,
     status: parseBookingStatusFilters(statusRaw),
     search: sp.get("q")?.trim() ?? "",
     port: parseIntId(sp.get("port")) || portFromCsv || 0,
