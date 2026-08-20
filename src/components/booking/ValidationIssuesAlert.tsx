@@ -62,6 +62,14 @@ const SEVERITY_STYLES: Record<
   },
 };
 
+type LoaVesselLine = {
+  name?: string;
+  position?: string;
+  loa_m?: string;
+  booking_code?: string;
+  role?: string;
+};
+
 function issueTitle(
   issue: BookingValidationIssue,
   severity: BookingConflictSeverity,
@@ -70,6 +78,103 @@ function issueTitle(
   if (severity === "red") return "Aviso crítico";
   if (severity === "green") return "Aviso informativo";
   return "Aviso operativo";
+}
+
+function parseVesselLines(detail: BookingValidationIssue["detail"]): LoaVesselLine[] {
+  if (!detail || !Array.isArray(detail.vessel_lines)) return [];
+  return detail.vessel_lines.filter(
+    (row): row is LoaVesselLine =>
+      Boolean(row) && typeof row === "object" && !Array.isArray(row),
+  );
+}
+
+function LoaRecalcBody({
+  issue,
+  returnTo,
+}: {
+  issue: BookingValidationIssue;
+  returnTo?: string | null;
+}) {
+  const detail = issue.detail ?? {};
+  const lines = parseVesselLines(detail);
+  const sumFormula =
+    typeof detail.sum_formula === "string" ? detail.sum_formula : null;
+  const remainingFormula =
+    typeof detail.remaining_formula === "string"
+      ? detail.remaining_formula
+      : typeof detail.formula === "string"
+        ? detail.formula
+        : null;
+  const overhang =
+    detail.overhang_m != null ? String(detail.overhang_m) : null;
+  const portLabel =
+    typeof detail.port_label === "string" && detail.port_label
+      ? detail.port_label
+      : null;
+
+  const bandMatch = issue.message.match(
+    /^(?:.+? · )?(Semáforo (?:rojo|amarillo|verde):[^.]+)\./u,
+  );
+  const bandText = bandMatch?.[1] ?? null;
+
+  return (
+    <div className="space-y-2.5">
+      {portLabel || bandText ? (
+        <p className="text-sm leading-relaxed opacity-95">
+          {portLabel ? <span className="font-medium">{portLabel}</span> : null}
+          {portLabel && bandText ? " · " : null}
+          {bandText
+            ? renderTextWithBookingCodeLinks(bandText, { returnTo })
+            : null}
+        </p>
+      ) : (
+        <p className="text-sm leading-relaxed opacity-95">
+          {renderTextWithBookingCodeLinks(issue.message.trim(), { returnTo })}
+        </p>
+      )}
+      {lines.length > 0 ? (
+        <ul className="space-y-1 text-sm leading-relaxed opacity-95">
+          {lines.map((row) => {
+            const code = (row.booking_code || "").trim();
+            const label = [
+              row.name || "Barco",
+              row.position ? `en ${row.position}` : null,
+              row.loa_m != null ? `(${row.loa_m} m)` : null,
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const suffix = code
+              ? ` · ${code}`
+              : row.role === "self"
+                ? " · esta reserva"
+                : "";
+            return (
+              <li key={`${row.position}-${row.name}-${code || row.role}`}>
+                {renderTextWithBookingCodeLinks(`${label}${suffix}`, {
+                  returnTo,
+                })}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {sumFormula ? (
+        <p className="rounded-lg border border-black/5 bg-white/60 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-700 dark:border-white/10 dark:bg-black/20 dark:text-zinc-200">
+          {sumFormula}
+        </p>
+      ) : null}
+      {overhang && remainingFormula ? (
+        <p className="rounded-lg border border-black/5 bg-white/60 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-700 dark:border-white/10 dark:bg-black/20 dark:text-zinc-200">
+          {remainingFormula}
+        </p>
+      ) : null}
+      {overhang ? (
+        <p className="text-xs font-semibold uppercase tracking-wide opacity-90">
+          Overhang: {overhang} m
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function IssueCard({
@@ -82,7 +187,8 @@ function IssueCard({
   const severity = issueSeverity(issue);
   const styles = SEVERITY_STYLES[severity];
   const { Icon } = styles;
-  const isSumLight = issue.code.startsWith("loa_recalc_sum_");
+  const isLoaRecalcSum = issue.code.startsWith("loa_recalc_sum_");
+  const isSumLight = isLoaRecalcSum;
   const formula =
     issue.detail &&
     typeof (isSumLight ? issue.detail.sum_formula : issue.detail.formula) ===
@@ -134,23 +240,38 @@ function IssueCard({
           <p className={`text-sm font-semibold leading-snug ${styles.title}`}>
             {issueTitle(issue, severity)}
           </p>
-          <p className="text-sm leading-relaxed opacity-95">
-            {renderTextWithBookingCodeLinks(body, { returnTo })}
-          </p>
-          {formula ? (
-            <p className="rounded-lg border border-black/5 bg-white/60 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-700 dark:border-white/10 dark:bg-black/20 dark:text-zinc-200">
-              {formula}
-            </p>
-          ) : null}
-          {overhang ? (
-            <p className="text-xs font-semibold uppercase tracking-wide opacity-90">
-              Overhang: {overhang} m
-            </p>
-          ) : null}
+          {isLoaRecalcSum ? (
+            <LoaRecalcBody issue={issue} returnTo={returnTo} />
+          ) : (
+            <>
+              <p className="text-sm leading-relaxed opacity-95">
+                {renderTextWithBookingCodeLinks(body, { returnTo })}
+              </p>
+              {formula ? (
+                <p className="rounded-lg border border-black/5 bg-white/60 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-700 dark:border-white/10 dark:bg-black/20 dark:text-zinc-200">
+                  {formula}
+                </p>
+              ) : null}
+              {overhang ? (
+                <p className="text-xs font-semibold uppercase tracking-wide opacity-90">
+                  Overhang: {overhang} m
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+/** Drop legacy duplicate overhang when a unified LOA sum aviso is present. */
+function dedupeLoaRecalcIssues(
+  issues: BookingValidationIssue[],
+): BookingValidationIssue[] {
+  const hasSum = issues.some((i) => i.code.startsWith("loa_recalc_sum_"));
+  if (!hasSum) return issues;
+  return issues.filter((i) => i.code !== "loa_recalc_exceeds");
 }
 
 export default function ValidationIssuesAlert({
@@ -159,7 +280,7 @@ export default function ValidationIssuesAlert({
   className = "",
   returnTo = null,
 }: ValidationIssuesAlertProps) {
-  const all = [...errors, ...warnings];
+  const all = dedupeLoaRecalcIssues([...errors, ...warnings]);
   if (all.length === 0) return null;
 
   const order: BookingConflictSeverity[] = ["red", "yellow", "green"];

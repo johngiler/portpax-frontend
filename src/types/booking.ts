@@ -105,7 +105,7 @@ export type BookingConflictItem = {
   message: string;
   severity: BookingConflictSeverity;
   level?: "error" | "warning" | "info";
-  detail?: Record<string, string | number | null | undefined>;
+  detail?: Record<string, unknown>;
 };
 
 export type BookingValidationIssue = {
@@ -113,7 +113,7 @@ export type BookingValidationIssue = {
   code: string;
   message: string;
   severity?: BookingConflictSeverity;
-  detail?: Record<string, string | number | null | undefined>;
+  detail?: Record<string, unknown>;
 };
 
 export type BookingValidationResult = {
