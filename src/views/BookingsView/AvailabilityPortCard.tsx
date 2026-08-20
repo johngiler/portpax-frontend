@@ -269,7 +269,7 @@ export default function AvailabilityPortCard({
     );
   }
 
-  if (isEmpty) {
+  if (isEmpty || !displayData) {
     return null;
   }
 
