@@ -6,7 +6,7 @@ import FilterSuggestField from "@/components/layout/FilterSuggestField";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
 import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
-import { suggestBookings } from "@/lib/filterSuggestions";
+import { suggestBookings, suggestBookingsPortVessel } from "@/lib/filterSuggestions";
 import { getMonthOptions, getBookingYearRange } from "@/lib/bookingDates";
 import type {
   AvailabilityHeatModeQuery,
@@ -180,7 +180,8 @@ export default function BookingFilters({
 
   const showVessel =
     tab === "list" || tab === "calendar" || tab === "availability" || tab === "proximity";
-  const showSearch = tab !== "availability" && tab !== "proximity";
+  const showSearch = tab === "list" || tab === "calendar" || tab === "availability";
+  const searchCatalogOnly = tab === "calendar" || tab === "availability";
   const showDates = tab === "list" || tab === "availability" || tab === "proximity";
   const showCalendarMode = tab === "calendar";
   const showHeatMode = tab === "availability";
@@ -232,6 +233,58 @@ export default function BookingFilters({
 
   return (
     <>
+      {showSearch ? (
+        <FilterSuggestField
+          label="Buscar"
+          name="booking_search"
+          value={search}
+          onChange={onSearchChange}
+          loadSuggestions={
+            searchCatalogOnly ? suggestBookingsPortVessel : suggestBookings
+          }
+          placeholder={
+            searchCatalogOnly
+              ? "Puerto, barco…"
+              : "Código de reserva, puerto, barco…"
+          }
+          onPick={(suggestion) => {
+            if (
+              !searchCatalogOnly &&
+              suggestion.filterEntity === "booking" &&
+              suggestion.applyValue
+            ) {
+              onBookingCodePick?.(suggestion.applyValue);
+              onSearchChange("");
+              return;
+            }
+            if (suggestion.filterEntity === "port" && suggestion.entityId) {
+              onPortFilterChange(suggestion.entityId);
+              onSearchChange("");
+              return;
+            }
+            if (
+              !searchCatalogOnly &&
+              suggestion.filterEntity === "shipping_line" &&
+              suggestion.entityId
+            ) {
+              onShippingLineFilterChange(suggestion.entityId);
+              onVesselFilterChange(0);
+              onSearchChange("");
+              return;
+            }
+            if (
+              suggestion.filterEntity === "vessel" &&
+              suggestion.entityId &&
+              suggestion.shippingLineId
+            ) {
+              onShippingLineFilterChange(suggestion.shippingLineId);
+              onVesselFilterChange(suggestion.entityId);
+              onSearchChange("");
+            }
+          }}
+        />
+      ) : null}
+
       {showHeatMode ? (
         <FormFieldSelect<AvailabilityHeatModeQuery>
           label="Criterio"
@@ -256,47 +309,6 @@ export default function BookingFilters({
           onChange={onDensityChange}
           options={DENSITY_OPTIONS}
           compact
-        />
-      ) : null}
-
-      {showSearch ? (
-        <FilterSuggestField
-          label="Buscar"
-          name="booking_search"
-          value={search}
-          onChange={onSearchChange}
-          loadSuggestions={suggestBookings}
-          placeholder="Código de reserva, puerto, barco…"
-          onPick={(suggestion) => {
-            if (suggestion.filterEntity === "booking" && suggestion.applyValue) {
-              onBookingCodePick?.(suggestion.applyValue);
-              onSearchChange("");
-              return;
-            }
-            if (suggestion.filterEntity === "port" && suggestion.entityId) {
-              onPortFilterChange(suggestion.entityId);
-              onSearchChange("");
-              return;
-            }
-            if (
-              suggestion.filterEntity === "shipping_line" &&
-              suggestion.entityId
-            ) {
-              onShippingLineFilterChange(suggestion.entityId);
-              onVesselFilterChange(0);
-              onSearchChange("");
-              return;
-            }
-            if (
-              suggestion.filterEntity === "vessel" &&
-              suggestion.entityId &&
-              suggestion.shippingLineId
-            ) {
-              onShippingLineFilterChange(suggestion.shippingLineId);
-              onVesselFilterChange(suggestion.entityId);
-              onSearchChange("");
-            }
-          }}
         />
       ) : null}
 

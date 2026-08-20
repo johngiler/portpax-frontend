@@ -23,6 +23,8 @@ export type AvailabilityListFilters = {
   conflict_type?: ConflictTypeFilterValue;
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
+  /** Occupancy criterion: only days with ≥1 call; server-paged. */
+  occupied_only?: boolean;
 };
 
 function minIso(a: string, b: string): string {
@@ -63,6 +65,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
     filters.ships_per_day ?? 0,
+    filters.occupied_only ? "1" : "0",
   ].join("|");
 }
 
@@ -86,9 +89,11 @@ export function useAvailabilityInfinite(
       ? filters.ships_per_day
       : 0;
   const densityMode = shipsPerDay > 0;
-  /** Paginate matching occupied days (conflict filter) instead of empty date windows. */
+  const occupiedOnly = Boolean(filters.occupied_only);
+  /** Paginate matching occupied days instead of empty date windows. */
   const occupiedDaysMode =
     densityMode ||
+    occupiedOnly ||
     hasConflict !== undefined ||
     Boolean(conflictSeverity) ||
     Boolean(conflictType);
@@ -133,6 +138,7 @@ export function useAvailabilityInfinite(
           conflict_severity: conflictSeverity,
           conflict_type: conflictType,
           ships_per_day: densityMode ? shipsPerDay : undefined,
+          occupied_only: occupiedOnly && !densityMode ? true : undefined,
           page,
           page_size: AVAILABILITY_DAYS_BATCH,
         });

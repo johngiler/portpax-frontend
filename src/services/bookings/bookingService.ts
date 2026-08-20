@@ -318,6 +318,8 @@ export async function fetchAvailabilityReport(params: {
   statuses?: string[];
   /** Exact distinct ships on that day (1–4); enables server pagination. */
   ships_per_day?: number;
+  /** Only days with ≥1 call (occupancy criterion); enables server pagination. */
+  occupied_only?: boolean;
   page?: number;
   page_size?: number;
   has_conflict?: boolean;
@@ -349,8 +351,10 @@ export async function fetchAvailabilityReport(params: {
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
   }
+  if (params.occupied_only) query.set("occupied_only", "true");
   const paged =
     (params.ships_per_day != null && params.ships_per_day >= 1) ||
+    params.occupied_only === true ||
     params.has_conflict !== undefined ||
     Boolean(params.conflict_severity) ||
     Boolean(params.conflict_type);

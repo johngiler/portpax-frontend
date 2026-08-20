@@ -100,9 +100,15 @@ export default function AvailabilityPortCard({
     Boolean(filters.conflict_type);
 
   const listFilters = useMemo((): AvailabilityListFilters => {
-    if (densityFilter < 1) return filters;
-    return { ...filters, ships_per_day: densityFilter };
-  }, [filters, densityFilter]);
+    const base: AvailabilityListFilters = { ...filters };
+    if (densityFilter >= 1) {
+      base.ships_per_day = densityFilter;
+    } else if (isOccupancy && !conflictFilterActive) {
+      // Server-page only occupied days so counters match (not the full 3-year span).
+      base.occupied_only = true;
+    }
+    return base;
+  }, [filters, densityFilter, isOccupancy, conflictFilterActive]);
 
   const { data, totalDays, hasMore, isLoading, loadingMore, error, loadMore } =
     useAvailabilityInfinite(portId, dateFrom, dateTo, true, listFilters);
@@ -189,13 +195,13 @@ export default function AvailabilityPortCard({
   const stillLoadingFocus = stillLoadingAllowlist || stillLoadingOccupancyPrefix;
 
   const displayTotal =
-    densityFilter > 0 || conflictFilterActive
+    densityFilter > 0 || conflictFilterActive || isOccupancy
       ? totalDays
       : allowSet
         ? allowSet.size
         : totalDays;
   const displayHasMore =
-    allowSet && densityFilter < 1 && !conflictFilterActive
+    allowSet && densityFilter < 1 && !conflictFilterActive && !isOccupancy
       ? stillLoadingFocus
       : hasMore;
   const footerLoadedCount = displayData?.rows.length ?? 0;

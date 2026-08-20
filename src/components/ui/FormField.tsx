@@ -393,10 +393,16 @@ export function FormFieldSelect<T extends string | number>({
           cacheOptions
           loadOptions={async (inputValue) => {
             const remote = await loadOptions(inputValue);
-            const extra = options.filter(
-              (opt) => !remote.some((item) => item.value === opt.value),
-            );
-            return extra.length > 0 ? [...extra, ...remote] : remote;
+            // Keep only the current selection if remote search omits it —
+            // never re-merge the full static `options` list (that made
+            // typing look like the suggestions never filtered).
+            if (
+              selectedOption &&
+              !remote.some((item) => item.value === selectedOption.value)
+            ) {
+              return [selectedOption, ...remote];
+            }
+            return remote;
           }}
           noOptionsMessage={() => "Sin resultados"}
           loadingMessage={() => "Buscando…"}

@@ -524,7 +524,11 @@ export default function BookingsView() {
     if (nextConflict !== conflictFilter) {
       setConflictFilter(nextConflict);
     }
-    setAppliedSearch(search.trim());
+    setAppliedSearch(tab === "list" ? search.trim() : "");
+    if (tab !== "list" && search.trim() !== "") {
+      setSearch("");
+    }
+    const nextSearch = tab === "list" ? search.trim() : "";
     setAppliedPortFilter(portFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
     setAppliedVesselFilter(vesselFilter);
@@ -550,7 +554,7 @@ export default function BookingsView() {
     syncToUrl(
       workspaceState({
         status: statusFilter,
-        search: search.trim(),
+        search: nextSearch,
         port: portFilter,
         line: shippingLineFilter,
         vessel: vesselFilter,
@@ -673,8 +677,13 @@ export default function BookingsView() {
       return;
     }
     setTab(next);
-    // Keep shared filters (port, line, vessel, conflict, dates). Proximity
-    // ignores port/position in the matrix but must not clear them for other tabs.
+    // Free-text / booking-code search only applies on list.
+    if (next !== "list" && (search || appliedSearch)) {
+      setSearch("");
+      setAppliedSearch("");
+      syncToUrl(workspaceState({ tab: next, search: "" }));
+      return;
+    }
     syncToUrl(workspaceState({ tab: next }));
   }
 
@@ -685,7 +694,7 @@ export default function BookingsView() {
       tab === "availability" ||
       tab === "calendar") &&
       appliedConflictFilter !== "") ||
-    appliedSearch !== "" ||
+    (tab === "list" && appliedSearch !== "") ||
     (tab !== "proximity" && appliedPortFilter > 0) ||
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
@@ -706,7 +715,7 @@ export default function BookingsView() {
       tab === "availability" ||
       tab === "calendar") &&
       conflictFilter !== "") ||
-    search.trim() !== "" ||
+    (tab === "list" && search.trim() !== "") ||
     (tab !== "proximity" && portFilter > 0) ||
     shippingLineFilter > 0 ||
     vesselFilter > 0 ||
@@ -724,7 +733,7 @@ export default function BookingsView() {
       tab === "availability" ||
       tab === "calendar") &&
       conflictFilter !== appliedConflictFilter) ||
-    search.trim() !== appliedSearch ||
+    (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && portFilter !== appliedPortFilter) ||
     shippingLineFilter !== appliedShippingLineFilter ||
     vesselFilter !== appliedVesselFilter ||
@@ -1261,7 +1270,7 @@ export default function BookingsView() {
           vesselId={appliedVesselFilter}
           statuses={appliedStatusFilter}
           positionId={appliedPositionFilter}
-          search={appliedSearch}
+          search=""
           conflictFilters={appliedConflictApiFilters}
           weekAnchor={weekAnchor}
           onWeekAnchorChange={(iso) => {

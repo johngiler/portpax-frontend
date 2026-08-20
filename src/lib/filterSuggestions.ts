@@ -34,8 +34,18 @@ function formatScaleDate(d: string | null): string {
   }
 }
 
-/** Bookings filter: vessels, ports, then booking codes from global search. */
-export async function suggestBookings(query: string): Promise<FilterSuggestion[]> {
+/** Bookings filter suggestions from global search. */
+export async function suggestBookings(
+  query: string,
+  options?: {
+    /** Default true — list tab opens a reservation by code. */
+    includeBookingCodes?: boolean;
+    /** Default true — list also suggests shipping lines. */
+    includeShippingLines?: boolean;
+  },
+): Promise<FilterSuggestion[]> {
+  const includeBookingCodes = options?.includeBookingCodes !== false;
+  const includeShippingLines = options?.includeShippingLines !== false;
   const data = await globalSearch(query);
   const items: FilterSuggestion[] = [];
 
@@ -62,30 +72,42 @@ export async function suggestBookings(query: string): Promise<FilterSuggestion[]
       entityId: p.id,
     });
   }
-  for (const sl of data.shipping_lines) {
-    items.push({
-      id: `line-${sl.id}`,
-      label: sl.name,
-      hint: sl.code,
-      applyValue: "",
-      group: "Navieras",
-      filterEntity: "shipping_line",
-      entityId: sl.id,
-    });
+  if (includeShippingLines) {
+    for (const sl of data.shipping_lines) {
+      items.push({
+        id: `line-${sl.id}`,
+        label: sl.name,
+        hint: sl.code,
+        applyValue: "",
+        group: "Navieras",
+        filterEntity: "shipping_line",
+        entityId: sl.id,
+      });
+    }
   }
-  for (const sc of data.scales) {
-    const dateHint = formatScaleDate(sc.date);
-    items.push({
-      id: `scale-${sc.id}`,
-      label: sc.booking_code,
-      hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
-      applyValue: sc.booking_code,
-      group: "Códigos de reserva",
-      filterEntity: "booking",
-      entityId: sc.id,
-    });
+  if (includeBookingCodes) {
+    for (const sc of data.scales) {
+      const dateHint = formatScaleDate(sc.date);
+      items.push({
+        id: `scale-${sc.id}`,
+        label: sc.booking_code,
+        hint: [sc.ship_name, sc.port_name, dateHint].filter(Boolean).join(" · "),
+        applyValue: sc.booking_code,
+        group: "Códigos de reserva",
+        filterEntity: "booking",
+        entityId: sc.id,
+      });
+    }
   }
   return items;
+}
+
+/** Calendar / availability: port + vessel only (no booking codes). */
+export function suggestBookingsPortVessel(query: string): Promise<FilterSuggestion[]> {
+  return suggestBookings(query, {
+    includeBookingCodes: false,
+    includeShippingLines: false,
+  });
 }
 
 export async function suggestPorts(query: string): Promise<FilterSuggestion[]> {
@@ -99,24 +121,14 @@ export async function suggestPorts(query: string): Promise<FilterSuggestion[]> {
 }
 
 export async function suggestShippingLines(query: string): Promise<FilterSuggestion[]> {
-  const data = await globalSearch(query);
   const items: FilterSuggestion[] = [];
   const seenLineIds = new Set<number>();
 
-  for (const ship of data.ships) {
-    items.push({
-      id: `ship-${ship.id}`,
-      label: ship.name,
-      hint: ship.shipping_line_name ?? ship.shipping_line_code,
-      // Filter list by vessel name so API `vessels__name` search finds the line.
-      applyValue: ship.name,
-      group: "Barcos",
-    });
-    if (ship.shipping_line_id) seenLineIds.add(ship.shipping_line_id);
-  }
-
-  for (const line of data.shipping_lines) {
-    if (seenLineIds.has(line.id)) continue;
+  // Catalog list API is the source of truth (works for all frontend roles;
+  // global search only returns shipping lines for ADMIN/VIEWER).
+  const listed = await fetchShippingLines({ search: query, pageSize: SUGGEST_LIMIT });
+  for (const line of listed.results) {
+    seenLineIds.add(line.id);
     items.push({
       id: `line-${line.id}`,
       label: line.name,
@@ -126,16 +138,35 @@ export async function suggestShippingLines(query: string): Promise<FilterSuggest
     });
   }
 
-  // Fallback: list search also matches vessels__name when global search is empty.
-  if (items.length === 0) {
-    const listed = await fetchShippingLines({ search: query, pageSize: SUGGEST_LIMIT });
-    return listed.results.map((line) => ({
-      id: `line-${line.id}`,
-      label: line.name,
-      hint: line.code,
-      applyValue: line.name,
-      group: "Navieras",
-    }));
+  // Optional vessel hits so operators can find a line by ship name.
+  try {
+    const data = await globalSearch(query);
+    for (const ship of data.ships) {
+      items.push({
+        id: `ship-${ship.id}`,
+        label: ship.name,
+        hint: ship.shipping_line_name ?? ship.shipping_line_code,
+        // Filter list by vessel name so API `vessels__name` search finds the line.
+        applyValue: ship.name,
+        group: "Barcos",
+      });
+      if (
+        ship.shipping_line_id &&
+        ship.shipping_line_name &&
+        !seenLineIds.has(ship.shipping_line_id)
+      ) {
+        seenLineIds.add(ship.shipping_line_id);
+        items.push({
+          id: `line-${ship.shipping_line_id}`,
+          label: ship.shipping_line_name,
+          hint: ship.shipping_line_code,
+          applyValue: ship.shipping_line_name,
+          group: "Navieras",
+        });
+      }
+    }
+  } catch {
+    // Line list above is enough if global search fails or is role-gated.
   }
 
   return items.slice(0, SUGGEST_LIMIT);
