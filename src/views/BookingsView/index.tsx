@@ -1336,6 +1336,7 @@ export default function BookingsView() {
           statuses={appliedStatusFilter}
           conflictFilters={appliedConflictApiFilters}
           returnTo={bookingsReturnTo()}
+          onClearFilters={handleClearFilters}
         />
       ) : null}
     </>

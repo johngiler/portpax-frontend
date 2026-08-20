@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useAvailabilityInfinite } from "@/hooks/swr/useAvailabilityInfinite";
 import type { AvailabilityListFilters } from "@/hooks/swr/useAvailabilityInfinite";
@@ -12,6 +12,8 @@ import AvailabilityChartSection from "./AvailabilityChartSection";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import { filterAvailabilityCalls } from "./availabilityCallFilter";
 import { bookingTodayIso } from "@/types/booking";
+
+type AvailabilityPortDisplayState = "loading" | "visible" | "empty" | "error";
 
 type AvailabilityPortCardProps = {
   portId: number;
@@ -28,6 +30,10 @@ type AvailabilityPortCardProps = {
   returnTo?: string | null;
   /** Shift grid start; parent recalculates consecutive range. */
   onStartDateChange?: (isoDate: string) => void;
+  onDisplayStateChange?: (
+    portId: number,
+    state: AvailabilityPortDisplayState,
+  ) => void;
 };
 
 /** Max auto-pages to skip empty occupancy prefix (~90 days). */
@@ -76,6 +82,7 @@ export default function AvailabilityPortCard({
   canBook = false,
   returnTo = null,
   onStartDateChange,
+  onDisplayStateChange,
 }: AvailabilityPortCardProps) {
   const todayIso = todayIsoLocal();
   const scrollRootRef = useRef<HTMLDivElement>(null);
@@ -213,10 +220,42 @@ export default function AvailabilityPortCard({
     return !shouldShowAvailabilityPort(displayData, todayIso);
   }, [displayData, todayIso, stillLoadingFocus, isOccupancy, hasMore]);
 
-  if (
+  const isInitialLoading =
     (isLoading && !data) ||
-    (stillLoadingFocus && (!displayData || displayData.rows.length === 0))
-  ) {
+    (stillLoadingFocus && (!displayData || displayData.rows.length === 0));
+  const isEmpty =
+    !isInitialLoading &&
+    !error &&
+    (hidden ||
+      !displayData ||
+      displayData.columns.length === 0 ||
+      (displayData.rows.length === 0 && !stillLoadingFocus && !hasMore));
+
+  useLayoutEffect(() => {
+    if (!onDisplayStateChange) return;
+    if (isInitialLoading) {
+      onDisplayStateChange(portId, "loading");
+      return;
+    }
+    if (error && !data) {
+      onDisplayStateChange(portId, "error");
+      return;
+    }
+    if (isEmpty) {
+      onDisplayStateChange(portId, "empty");
+      return;
+    }
+    onDisplayStateChange(portId, "visible");
+  }, [
+    onDisplayStateChange,
+    portId,
+    isInitialLoading,
+    error,
+    data,
+    isEmpty,
+  ]);
+
+  if (isInitialLoading) {
     return (
       <BookingsViewSkeleton variant="availability" availabilityCards={1} />
     );
@@ -230,12 +269,7 @@ export default function AvailabilityPortCard({
     );
   }
 
-  if (
-    hidden ||
-    !displayData ||
-    displayData.columns.length === 0 ||
-    (displayData.rows.length === 0 && !stillLoadingFocus && !hasMore)
-  ) {
+  if (isEmpty) {
     return null;
   }
 

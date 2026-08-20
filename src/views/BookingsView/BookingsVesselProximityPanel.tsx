@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Ship } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
+import EmptyState from "@/components/ui/EmptyState";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
@@ -12,6 +13,10 @@ import {
 } from "@/hooks/swr/useVesselProximityInfinite";
 import type { VesselProximityMatrixCell } from "@/services/bookings/vesselProximityMatrixService";
 import type { BookingStatusFilterValue } from "@/types/booking";
+import {
+  BOOKINGS_FILTERED_EMPTY_DESCRIPTION,
+  BOOKINGS_FILTERED_EMPTY_TITLE,
+} from "./bookingsEmptyCopy";
 import ProximityMatrixCallCard from "./ProximityMatrixCallCard";
 
 type BookingsVesselProximityPanelProps = {
@@ -26,35 +31,8 @@ type BookingsVesselProximityPanelProps = {
     "has_conflict" | "conflict_severity" | "conflict_type"
   >;
   returnTo: string;
+  onClearFilters?: () => void;
 };
-
-function emptyMatrixCopy(filters: VesselProximityListFilters): {
-  descriptionSuffix: string;
-  body: string;
-} {
-  if (filters.conflict_type === "proximity") {
-    return {
-      descriptionSuffix: "sin conflictos de proximidad",
-      body: "No hay escalas con conflicto de proximidad en el rango de fechas aplicado.",
-    };
-  }
-  if (filters.has_conflict === false) {
-    return {
-      descriptionSuffix: "sin escalas libres de conflicto",
-      body: "No hay escalas sin conflicto en el rango de fechas aplicado.",
-    };
-  }
-  if (filters.has_conflict === true || filters.conflict_severity || filters.conflict_type) {
-    return {
-      descriptionSuffix: "sin escalas que coincidan con el filtro de conflicto",
-      body: "No hay escalas que coincidan con el filtro de conflicto en el rango aplicado.",
-    };
-  }
-  return {
-    descriptionSuffix: "sin escalas",
-    body: "No hay escalas del barco en el rango de fechas aplicado.",
-  };
-}
 
 export default function BookingsVesselProximityPanel({
   shippingLineId,
@@ -65,6 +43,7 @@ export default function BookingsVesselProximityPanel({
   statuses,
   conflictFilters = {},
   returnTo,
+  onClearFilters,
 }: BookingsVesselProximityPanelProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const filtersReady = shippingLineId > 0 && vesselId > 0;
@@ -114,9 +93,11 @@ export default function BookingsVesselProximityPanel({
         title="Proximidad barco / puerto"
         description="Selecciona naviera y barco en el panel de filtros y pulsa Aplicar."
       >
-        <div className="rounded-xl border border-dashed border-zinc-300/90 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-          La naviera y el barco son obligatorios para esta vista.
-        </div>
+        <EmptyState
+          icon={Ship}
+          title="Faltan naviera y barco"
+          description="La naviera y el barco son obligatorios para esta vista."
+        />
       </ViewSection>
     );
   }
@@ -128,9 +109,11 @@ export default function BookingsVesselProximityPanel({
         title="Proximidad barco / puerto"
         description="Ajusta el rango de fechas en el panel de filtros."
       >
-        <div className="rounded-xl border border-dashed border-zinc-300/90 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-          Ajusta el rango de fechas en el panel de filtros.
-        </div>
+        <EmptyState
+          icon={Ship}
+          title="Sin rango de fechas"
+          description="Ajusta el rango de fechas en el panel de filtros."
+        />
       </ViewSection>
     );
   }
@@ -169,16 +152,19 @@ export default function BookingsVesselProximityPanel({
       : "overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800";
 
   if (!data || (data.cells.length === 0 && !hasMore)) {
-    const empty = emptyMatrixCopy(listFilters);
     return (
       <ViewSection
         icon={Ship}
         title="Proximidad barco / puerto"
-        description={`${vesselLabel} · ${empty.descriptionSuffix} · ${rangeLabel}`}
+        description={`${vesselLabel} · ${rangeLabel}`}
       >
-        <div className="rounded-xl border border-dashed border-zinc-300/90 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-          {empty.body}
-        </div>
+        <EmptyState
+          icon={Ship}
+          filtered
+          title={BOOKINGS_FILTERED_EMPTY_TITLE}
+          description={BOOKINGS_FILTERED_EMPTY_DESCRIPTION}
+          onClearFilters={onClearFilters}
+        />
       </ViewSection>
     );
   }

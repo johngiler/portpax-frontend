@@ -10,6 +10,10 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type { BookingStatusFilterValue } from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
+import {
+  BOOKINGS_FILTERED_EMPTY_DESCRIPTION,
+  BOOKINGS_FILTERED_EMPTY_TITLE,
+} from "@/views/BookingsView/bookingsEmptyCopy";
 import AnnualGrid from "./AnnualGrid";
 import CalendarColorLegend from "./CalendarColorLegend";
 import MonthGrid from "./MonthGrid";
@@ -146,8 +150,8 @@ export default function UnifiedCalendarCard({
           <EmptyState
             icon={CalendarRange}
             filtered
-            title="Sin escalas con estos filtros"
-            description="No hay escalas en el período con los filtros aplicados. Ajusta puerto, naviera, barco, estado, conflicto o búsqueda."
+            title={BOOKINGS_FILTERED_EMPTY_TITLE}
+            description={BOOKINGS_FILTERED_EMPTY_DESCRIPTION}
             onClearFilters={onClearFilters}
           />
         ) : mode === "weekly" ? (
