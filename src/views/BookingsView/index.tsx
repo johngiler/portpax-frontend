@@ -1156,12 +1156,7 @@ export default function BookingsView() {
           onCalendarMonthChange={setMonthIndex}
           onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
-          onHeatModeChange={(mode) => {
-            setHeatMode(mode);
-            if (mode !== "occupancy") {
-              setConflictFilter("");
-            }
-          }}
+          onHeatModeChange={setHeatMode}
           onDensityChange={setDensity}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           onApply={applyFilters}
