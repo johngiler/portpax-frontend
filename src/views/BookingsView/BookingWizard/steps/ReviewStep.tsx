@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import {
   Anchor,
   CalendarDays,
+  ChevronDown,
   Clock3,
   Hash,
   LayoutGrid,
@@ -34,7 +35,11 @@ import { issueSeverity } from "@/lib/bookingConflictSeverity";
 import type { WizardCreateStatus } from "../wizardTypes";
 
 /** Align with backend `LTA_SOFT_FAIL_CODES` — do not hard-block create. */
-const LTA_SOFT_FAIL_CODES = new Set(["lta_beyond_horizon", "lta_horizon_denied"]);
+const LTA_SOFT_FAIL_CODES = new Set([
+  "lta_beyond_horizon",
+  "lta_horizon_denied",
+  "lta_policy_denied",
+]);
 
 /** Operational conflicts are non-blocking; always allow create. */
 function splitOperationalIssues(result: BookingValidationResult): {
@@ -274,10 +279,44 @@ export default function ReviewStep({
           ) : null}
         </SummaryItem>
         <SummaryItem icon={CalendarDays} label="Fechas">
-          <span>
-            {callDates.length} día{callDates.length === 1 ? "" : "s"}{" "}
-            seleccionado{callDates.length === 1 ? "" : "s"}
-          </span>
+          {callDates.length === 0 ? (
+            <span>—</span>
+          ) : callDates.length === 1 ? (
+            <span className="leading-snug">
+              {formatIsoDateLabel(callDates[0], "long")}
+            </span>
+          ) : (
+            <details className="group min-w-0">
+              <summary className="flex cursor-pointer list-none items-center gap-1 font-semibold text-zinc-900 marker:content-none dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
+                <span>
+                  {callDates.length} día{callDates.length === 1 ? "" : "s"}{" "}
+                  seleccionado{callDates.length === 1 ? "" : "s"}
+                </span>
+                <ChevronDown
+                  className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition group-open:rotate-180"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </summary>
+              <ul className="mt-2 max-h-44 divide-y divide-zinc-100 overflow-y-auto rounded-xl border border-zinc-200/80 bg-white shadow-[0_8px_24px_-12px_rgba(15,23,42,0.35)] ring-1 ring-[var(--admin-accent)]/10 dark:divide-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/40 dark:ring-[var(--admin-accent)]/20">
+                {[...callDates]
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((iso, index) => (
+                    <li
+                      key={iso}
+                      className="flex items-center gap-2.5 px-2.5 py-2 first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--admin-accent)]/10 text-[11px] font-bold tabular-nums text-[var(--admin-accent)]">
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0 text-xs font-semibold leading-snug text-zinc-800 dark:text-zinc-100">
+                        {formatIsoDateLabel(iso, "long")}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </details>
+          )}
           {plannedPax ? (
             <p className="mt-1 text-xs font-normal text-zinc-500">
               PAX {plannedPax}

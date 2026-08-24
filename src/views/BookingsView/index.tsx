@@ -1091,22 +1091,6 @@ export default function BookingsView() {
     [appliedConflictFilter],
   );
 
-  if (!portsReady) return <BookingsViewSkeleton variant="page" />;
-
-  const description =
-    tab === "list"
-      ? "Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
-      : tab === "calendar"
-        ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
-        : tab === "proximity"
-          ? "Itinerario multi-puerto del barco seleccionado (filtro de conflicto editable)."
-          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
-
-  const calendarPortLabel =
-    appliedPortFilter > 0
-      ? (portsById.get(appliedPortFilter) ?? "Puerto")
-      : "Todos los puertos";
-
   const activeFilterChips = useMemo(() => {
     const lineLabel =
       appliedShippingLineFilter > 0
@@ -1166,6 +1150,22 @@ export default function BookingsView() {
     appliedDensity,
     appliedCalendarMode,
   ]);
+
+  if (!portsReady) return <BookingsViewSkeleton variant="page" />;
+
+  const description =
+    tab === "list"
+      ? "Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
+      : tab === "calendar"
+        ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
+        : tab === "proximity"
+          ? "Itinerario multi-puerto del barco seleccionado (filtro de conflicto editable)."
+          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
+
+  const calendarPortLabel =
+    appliedPortFilter > 0
+      ? (portsById.get(appliedPortFilter) ?? "Puerto")
+      : "Todos los puertos";
 
   return (
     <>

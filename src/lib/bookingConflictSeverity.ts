@@ -34,10 +34,12 @@ export const CONFLICT_SEVERITY_BY_CODE: Record<string, BookingConflictSeverity> 
     lta_slot_reserved: "yellow",
     lta_beyond_horizon: "yellow",
     lta_horizon_denied: "yellow",
+    lta_policy_denied: "yellow",
     multi_port_conflict: "yellow",
     multi_port_proximity: "yellow",
     no_position_available: "yellow",
     loa_recalc_sum_green: "green",
+    lta_agreement_match: "green",
   };
 
 /** Resolve paint color for an operational issue (semaforo or default amber). */

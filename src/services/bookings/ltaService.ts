@@ -35,8 +35,6 @@ function buildLtaFormData(
   const form = new FormData();
   const data = payload as LongTermAgreementPayload;
 
-  if (data.code != null) appendScalar(form, "code", data.code);
-  if (data.name != null) appendScalar(form, "name", data.name);
   if (data.port != null) appendScalar(form, "port", data.port);
   if (data.shipping_line != null) appendScalar(form, "shipping_line", data.shipping_line);
   if (data.all_vessels != null) appendScalar(form, "all_vessels", data.all_vessels);
@@ -47,6 +45,15 @@ function buildLtaFormData(
   }
   if (data.advance_months_max != null) {
     appendScalar(form, "advance_months_max", data.advance_months_max);
+  }
+  if (data.booking_policy != null) {
+    appendScalar(form, "booking_policy", data.booking_policy);
+  }
+  if (data.lta_depth_blocks != null) {
+    appendScalar(form, "lta_depth_blocks", data.lta_depth_blocks);
+  }
+  if (data.reserve_foreign_slots != null) {
+    appendScalar(form, "reserve_foreign_slots", data.reserve_foreign_slots);
   }
   if ("interval_days" in data) {
     if (data.interval_days != null) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Link2, Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
@@ -20,7 +20,6 @@ import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
 import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
-import { useConfirm } from "@/contexts/ConfirmContext";
 import {
   useActivePortsCatalog,
   useActiveShippingLinesCatalog,
@@ -31,14 +30,10 @@ import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { formatCompactCount } from "@/lib/formatCompactCount";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
-import {
-  revalidateLtaAgreements,
-  revalidateLtaLinkedBookings,
-} from "@/lib/swr/mutateHelpers";
+import { revalidateLtaAgreements } from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
   deleteLongTermAgreement,
-  linkLongTermAgreementBookings,
   updateLongTermAgreement,
 } from "@/services/bookings/ltaService";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
@@ -51,12 +46,8 @@ import { formatLtaWeekdays } from "@/types/lta";
 const PAGE_SIZE = 20;
 const COL_SPAN = 8;
 
-const linkBtnClass =
-  "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors duration-200 hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-40";
-
 export default function LtaAgreementsView() {
   const { user } = useAuth();
-  const { requestConfirm } = useConfirm();
   const canWrite = canWriteApp(user?.role);
   const canBrowse = canBrowseCatalogs(user?.role);
 
@@ -65,7 +56,6 @@ export default function LtaAgreementsView() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [viewError, setViewError] = useState<string | null>(null);
   const [viewSuccess, setViewSuccess] = useState<string | null>(null);
-  const [linkingId, setLinkingId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -143,48 +133,6 @@ export default function LtaAgreementsView() {
     }
   }
 
-  async function runLinkBookings(row: LongTermAgreement) {
-    setViewError(null);
-    setViewSuccess(null);
-    setLinkingId(row.id);
-    try {
-      const result = await linkLongTermAgreementBookings(row.id);
-      if (result.detail && result.linked === 0) {
-        setViewError(result.detail);
-      } else if (result.linked === 0) {
-        setViewSuccess(
-          `No había reservas sin LTA que coincidan con «${row.code}».`,
-        );
-      } else {
-        setViewSuccess(
-          `Se vincularon ${result.linked} reserva${result.linked === 1 ? "" : "s"} a «${row.code}».`,
-        );
-        await revalidateLtaLinkedBookings(row.id);
-      }
-      await revalidateLtaAgreements();
-    } catch (err) {
-      setViewError(
-        getApiErrorMessage(err, "No se pudieron vincular las reservas al acuerdo."),
-      );
-    } finally {
-      setLinkingId(null);
-    }
-  }
-
-  function confirmLinkBookings(row: LongTermAgreement) {
-    requestConfirm({
-      title: "Vincular reservas",
-      message:
-        `Se buscarán reservas existentes de ${row.port_name} / ${row.shipping_line_name} ` +
-        `sin acuerdo LTA que coincidan con «${row.code}» (barco, día, vigencia y posición). ` +
-        `No se cambiará el estado de las reservas.`,
-      confirmLabel: "Vincular",
-      onConfirm: () => {
-        void runLinkBookings(row);
-      },
-    });
-  }
-
   if (isLoading) {
     return <LtaAgreementsViewSkeleton />;
   }
@@ -256,7 +204,7 @@ export default function LtaAgreementsView() {
           description={
             appliedSearch.trim()
               ? "Ajusta la búsqueda o crea un nuevo acuerdo."
-              : "Crea el primer acuerdo para vincular naviera, puerto, días y posiciones."
+              : "Crea el primer acuerdo con naviera, puerto, días y posiciones."
           }
           primaryAction={
             canWrite
@@ -275,8 +223,8 @@ export default function LtaAgreementsView() {
                 <MainTableTh>Días</MainTableTh>
                 <MainTableTh>Ventana</MainTableTh>
                 <MainTableTh>
-                  <span title="Reservas vinculadas al acuerdo (match)">
-                    Vinculadas
+                  <span title="Reservas con este acuerdo asignado automáticamente">
+                    Reservas
                   </span>
                 </MainTableTh>
                 <MainTableTh>Estado</MainTableTh>
@@ -336,7 +284,7 @@ export default function LtaAgreementsView() {
                           }
                           title={`${(row.linked_bookings_count ?? 0).toLocaleString("es")} reserva${
                             (row.linked_bookings_count ?? 0) === 1 ? "" : "s"
-                          } vinculada${(row.linked_bookings_count ?? 0) === 1 ? "" : "s"}`}
+                          } con este acuerdo`}
                         >
                           {formatCompactCount(row.linked_bookings_count ?? 0)}
                         </span>
@@ -349,39 +297,25 @@ export default function LtaAgreementsView() {
                         )}
                       </MainTableTd>
                       <MainTableTd>
-                        <div className="flex items-center justify-start gap-1">
-                          {canWrite ? (
-                            <button
-                              type="button"
-                              onClick={() => confirmLinkBookings(row)}
-                              disabled={linkingId === row.id || !row.is_active}
-                              className={linkBtnClass}
-                              aria-label="Vincular reservas existentes"
-                              title="Vincular reservas existentes"
-                            >
-                              <Link2 className="h-4 w-4" strokeWidth={1.5} />
-                            </button>
-                          ) : null}
-                          <TableActionButtons
-                            onView={() =>
-                              setExpandedId(isExpanded ? null : row.id)
-                            }
-                            viewActive={isExpanded}
-                            onEdit={canWrite ? () => openEdit(row) : undefined}
-                            onDelete={
-                              canWrite
-                                ? () => void handleDelete(row)
-                                : undefined
-                            }
-                            deleteLabel={`el acuerdo ${row.code}`}
-                            deleteDisabled={(row.linked_bookings_count ?? 0) > 0}
-                            deleteDisabledTitle={
-                              (row.linked_bookings_count ?? 0) > 0
-                                ? `No se puede eliminar: ${formatCompactCount(row.linked_bookings_count ?? 0)} reserva(s) vinculada(s)`
-                                : undefined
-                            }
-                          />
-                        </div>
+                        <TableActionButtons
+                          onView={() =>
+                            setExpandedId(isExpanded ? null : row.id)
+                          }
+                          viewActive={isExpanded}
+                          onEdit={canWrite ? () => openEdit(row) : undefined}
+                          onDelete={
+                            canWrite
+                              ? () => void handleDelete(row)
+                              : undefined
+                          }
+                          deleteLabel={`el acuerdo ${row.code}`}
+                          deleteDisabled={(row.linked_bookings_count ?? 0) > 0}
+                          deleteDisabledTitle={
+                            (row.linked_bookings_count ?? 0) > 0
+                              ? `No se puede eliminar: ${formatCompactCount(row.linked_bookings_count ?? 0)} reserva(s) con este acuerdo`
+                              : undefined
+                          }
+                        />
                       </MainTableTd>
                     </AccordionTableRow>
                   );

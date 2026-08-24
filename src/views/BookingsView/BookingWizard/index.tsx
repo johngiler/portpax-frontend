@@ -229,7 +229,11 @@ export default function BookingWizard() {
 
   function goNext() {
     if (stepDataLoading || !canAdvance(step, form)) return;
-    const nextIndex = stepIndex(step) + 1;
+    let nextIndex = stepIndex(step) + 1;
+    // Line step resolved via vessel search → skip vessel selection.
+    if (step === "line" && form.vesselId != null) {
+      nextIndex = stepIndex("dates");
+    }
     if (nextIndex >= BOOKING_WIZARD_STEPS.length) return;
     setDirection(1);
     setStep(BOOKING_WIZARD_STEPS[nextIndex].id);
@@ -255,11 +259,11 @@ export default function BookingWizard() {
     }));
   }
 
-  function selectLine(lineId: number) {
+  function selectLine(lineId: number, matchedVesselId?: number | null) {
     setForm((prev) => ({
       ...prev,
       shippingLineId: lineId,
-      vesselId: null,
+      vesselId: matchedVesselId ?? null,
       callDates: prev.callDates,
     }));
   }

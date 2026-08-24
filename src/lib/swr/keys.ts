@@ -35,8 +35,8 @@ export const swrKeys = {
   ltaAgreementsPage: (page: number, search: string, pageSize: number) =>
     ["lta-agreements", "page", page, search, pageSize] as const,
 
-  ltaLinkedBookings: (agreementId: number) =>
-    ["lta-agreements", "bookings", agreementId] as const,
+  ltaLinkedBookings: (agreementId: number, pageSize = 12) =>
+    ["lta-agreements", "bookings", agreementId, pageSize] as const,
 
   bookingsInfinite: (paramsKey: string) =>
     ["bookings", "infinite", paramsKey] as const,

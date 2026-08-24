@@ -149,7 +149,8 @@ export default function BookingOperationalSection({
     if (!ltaTrack) return true;
     return (
       warning.code !== "lta_beyond_horizon" &&
-      warning.code !== "lta_horizon_denied"
+      warning.code !== "lta_horizon_denied" &&
+      warning.code !== "lta_policy_denied"
     );
   });
   const snapshotIssues: BookingValidationIssue[] = (

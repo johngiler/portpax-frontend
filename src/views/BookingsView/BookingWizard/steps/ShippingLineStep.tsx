@@ -11,29 +11,50 @@ import WizardStepSearch from "../WizardStepSearch";
 import { useWizardGridPage } from "../useWizardGridPage";
 import { WIZARD_GRID_PAGE_SIZE } from "../wizardTypes";
 
+type VesselHit = { id: number; name: string };
+
 type ShippingLineStepProps = {
   lines: ShippingLine[];
   selectedId: number | null;
-  onSelect: (lineId: number) => void;
+  /** When search matched a single vessel, pass its id so the wizard can skip the vessel step. */
+  onSelect: (lineId: number, matchedVesselId?: number | null) => void;
   loading: boolean;
 };
+
+function lineMatchesIdentity(line: ShippingLine, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  return (
+    line.name.toLowerCase().includes(q) ||
+    line.code.toLowerCase().includes(q) ||
+    line.group_name.toLowerCase().includes(q)
+  );
+}
 
 function matchesLine(
   line: ShippingLine,
   query: string,
-  vesselNamesByLine: Map<number, string[]>,
+  vesselsByLine: Map<number, VesselHit[]>,
 ): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  if (
-    line.name.toLowerCase().includes(q) ||
-    line.code.toLowerCase().includes(q) ||
-    line.group_name.toLowerCase().includes(q)
-  ) {
-    return true;
-  }
-  const vesselNames = vesselNamesByLine.get(line.id) ?? [];
-  return vesselNames.some((name) => name.toLowerCase().includes(q));
+  if (lineMatchesIdentity(line, q)) return true;
+  const vessels = vesselsByLine.get(line.id) ?? [];
+  return vessels.some((vessel) => vessel.name.toLowerCase().includes(q));
+}
+
+/** Vessel-only search hit: exactly one ship on the line matches; line identity does not. */
+function resolveVesselMatchFromSearch(
+  line: ShippingLine,
+  query: string,
+  vesselsByLine: Map<number, VesselHit[]>,
+): number | null {
+  const q = query.trim().toLowerCase();
+  if (!q || lineMatchesIdentity(line, q)) return null;
+  const hits = (vesselsByLine.get(line.id) ?? []).filter((vessel) =>
+    vessel.name.toLowerCase().includes(q),
+  );
+  return hits.length === 1 ? hits[0].id : null;
 }
 
 export default function ShippingLineStep({
@@ -45,7 +66,7 @@ export default function ShippingLineStep({
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState(0);
   const [groupOptions, setGroupOptions] = useState<{ value: number; label: string }[]>([]);
-  const [vesselNamesByLine, setVesselNamesByLine] = useState<Map<number, string[]>>(
+  const [vesselsByLine, setVesselsByLine] = useState<Map<number, VesselHit[]>>(
     () => new Map(),
   );
 
@@ -66,17 +87,17 @@ export default function ShippingLineStep({
     fetchAllVessels()
       .then((vessels) => {
         if (cancelled) return;
-        const map = new Map<number, string[]>();
+        const map = new Map<number, VesselHit[]>();
         for (const vessel of vessels) {
           if (!vessel.is_active) continue;
-          const names = map.get(vessel.shipping_line) ?? [];
-          names.push(vessel.name);
-          map.set(vessel.shipping_line, names);
+          const list = map.get(vessel.shipping_line) ?? [];
+          list.push({ id: vessel.id, name: vessel.name });
+          map.set(vessel.shipping_line, list);
         }
-        setVesselNamesByLine(map);
+        setVesselsByLine(map);
       })
       .catch(() => {
-        if (!cancelled) setVesselNamesByLine(new Map());
+        if (!cancelled) setVesselsByLine(new Map());
       });
     return () => {
       cancelled = true;
@@ -87,10 +108,10 @@ export default function ShippingLineStep({
     () =>
       lines.filter(
         (line) =>
-          matchesLine(line, search, vesselNamesByLine) &&
+          matchesLine(line, search, vesselsByLine) &&
           (groupFilter === 0 || line.group === groupFilter),
       ),
-    [lines, search, groupFilter, vesselNamesByLine],
+    [lines, search, groupFilter, vesselsByLine],
   );
 
   const filterKey = `${search}|${groupFilter}`;
@@ -189,7 +210,12 @@ export default function ShippingLineStep({
                 <button
                   key={line.id}
                   type="button"
-                  onClick={() => onSelect(line.id)}
+                  onClick={() =>
+                    onSelect(
+                      line.id,
+                      resolveVesselMatchFromSearch(line, search, vesselsByLine),
+                    )
+                  }
                   className={[
                     "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border text-left shadow-[var(--admin-card-shadow)] transition-all duration-200",
                     selected

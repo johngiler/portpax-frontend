@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  Anchor,
-  CalendarRange,
-  FileText,
-  MapPin,
-  Package,
-  Ship,
-  StickyNote,
-} from "lucide-react";
+import LtaBookingWindowPanel from "@/components/lta/LtaBookingWindowPanel";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import type { LongTermAgreement } from "@/types/lta";
-import { formatLtaWeekdays } from "@/types/lta";
+import {
+  LTA_BOOKING_POLICY_OPTIONS,
+  formatLtaWeekdays,
+  type LongTermAgreement,
+} from "@/types/lta";
 import LtaLinkedBookings from "./LtaLinkedBookings";
 
 type LtaRowDetailProps = {
@@ -19,22 +14,53 @@ type LtaRowDetailProps = {
   active: boolean;
 };
 
-function MetaCard({
-  icon: Icon,
-  label,
+function DetailSection({
+  title,
+  description,
+  columns = 2,
   children,
 }: {
-  icon: typeof FileText;
-  label: string;
+  title: string;
+  description?: string;
+  columns?: 1 | 2;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200/70 bg-white/90 p-3.5 shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/70">
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-        {label}
+    <section className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/30">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          {title}
+        </h3>
+        {description ? (
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
+        ) : null}
       </div>
-      <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">{children}</div>
+      <div
+        className={
+          columns === 2 ? "grid gap-x-4 gap-y-3 sm:grid-cols-2" : "grid grid-cols-1 gap-y-3"
+        }
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function DetailField({
+  label,
+  children,
+  span = 1,
+}: {
+  label: string;
+  children: React.ReactNode;
+  span?: 1 | 2;
+}) {
+  return (
+    <div className={span === 2 ? "sm:col-span-2" : undefined}>
+      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+      <div className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+        {children}
+      </div>
     </div>
   );
 }
@@ -55,19 +81,23 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
     ? agreement.position_codes.join(", ")
     : "Todo el puerto";
 
+  const policyLabel =
+    LTA_BOOKING_POLICY_OPTIONS.find((o) => o.value === agreement.booking_policy)?.label ??
+    agreement.booking_policy;
+
   return (
-    <div className="w-full rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="w-full space-y-4 rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <p className="truncate font-mono text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             {agreement.code}
           </p>
-          <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 truncate text-sm text-zinc-600 dark:text-zinc-300">
             {agreement.name}
           </p>
         </div>
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+          className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
             agreement.is_active
               ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
               : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-300"
@@ -77,43 +107,75 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
         </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <MetaCard icon={MapPin} label="Puerto">
+      <DetailSection title="Puerto y naviera" description="Alcance geográfico y titular del acuerdo.">
+        <DetailField label="Puerto">
           {agreement.port_name}
           <span className="mt-0.5 block text-xs font-normal text-zinc-500">
             {agreement.port_code}
           </span>
-        </MetaCard>
-        <MetaCard icon={Anchor} label="Naviera">
+        </DetailField>
+        <DetailField label="Naviera">
           {agreement.shipping_line_name}
           <span className="mt-0.5 block text-xs font-normal text-zinc-500">
             {agreement.shipping_line_code}
           </span>
-        </MetaCard>
-        <MetaCard icon={Ship} label="Barcos">
-          {vesselsLabel}
-        </MetaCard>
-        <MetaCard icon={MapPin} label="Posiciones">
-          {positionsLabel}
-        </MetaCard>
-        <MetaCard icon={CalendarRange} label="Días de la semana">
+        </DetailField>
+      </DetailSection>
+
+      <DetailSection
+        title="Slots operativos"
+        description="Barcos, posiciones y días cubiertos por el contrato."
+        columns={1}
+      >
+        <DetailField label="Barcos">{vesselsLabel}</DetailField>
+        <DetailField label="Posiciones">{positionsLabel}</DetailField>
+        <DetailField label="Días de la semana">
           {formatLtaWeekdays(agreement.weekdays)}
-        </MetaCard>
-        <MetaCard icon={CalendarRange} label="Cadencia">
-          {agreement.interval_days != null && agreement.cadence_anchor
-            ? `Cada ${agreement.interval_days} días desde ${formatDate(agreement.cadence_anchor)}`
-            : "Sin ritmo fijo"}
-        </MetaCard>
-        <MetaCard icon={CalendarRange} label="Ventana (ref. meses)">
-          {agreement.advance_months_min}–{agreement.advance_months_max} meses
-        </MetaCard>
-        <MetaCard icon={CalendarRange} label="Vigencia">
-          {formatDate(agreement.valid_from)} → {formatDate(agreement.valid_until)}
-        </MetaCard>
-        <MetaCard icon={Package} label="Packs mínimos">
+        </DetailField>
+      </DetailSection>
+
+      <DetailSection title="Cadencia" description="Ritmo de escalas acordado.">
+        <DetailField label="Cadencia (días)">
+          {agreement.interval_days != null ? agreement.interval_days : "—"}
+        </DetailField>
+        <DetailField label="Fecha ancla">
+          {agreement.cadence_anchor ? formatDate(agreement.cadence_anchor) : "—"}
+        </DetailField>
+      </DetailSection>
+
+      <DetailSection
+        title="Política y vigencia"
+        description="Ventana LTA del acuerdo (bloques: actual + 3 open + zona LTA)."
+      >
+        <DetailField label="Política de ventana">{policyLabel}</DetailField>
+        <DetailField label="Profundidad LTA (bloques)">
+          {agreement.lta_depth_blocks}
+        </DetailField>
+        <DetailField label="Vigente desde">{formatDate(agreement.valid_from)}</DetailField>
+        <DetailField label="Vigente hasta">{formatDate(agreement.valid_until)}</DetailField>
+        <DetailField label="Reserva de slot en zona LTA" span={2}>
+          {agreement.reserve_foreign_slots ? "Sí" : "No"}
+        </DetailField>
+      </DetailSection>
+
+      <DetailSection
+        title="Mapa de bloques"
+        description="Posición del acuerdo según vigencia y política (referencia: hoy)."
+        columns={1}
+      >
+        <LtaBookingWindowPanel
+          validFrom={agreement.valid_from}
+          validUntil={agreement.valid_until}
+          bookingPolicy={agreement.booking_policy}
+          ltaDepthBlocks={agreement.lta_depth_blocks}
+        />
+      </DetailSection>
+
+      <DetailSection title="Contrato" description="Compromiso comercial y adjunto." columns={1}>
+        <DetailField label="Mínimo de PAX">
           {agreement.min_packs != null ? agreement.min_packs : "—"}
-        </MetaCard>
-        <MetaCard icon={FileText} label="Contrato">
+        </DetailField>
+        <DetailField label="Archivo">
           {agreement.contract_file_url ? (
             <a
               href={agreement.contract_file_url}
@@ -126,13 +188,13 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
           ) : (
             <span className="font-normal text-zinc-400">Sin archivo</span>
           )}
-        </MetaCard>
+        </DetailField>
         {agreement.notes ? (
-          <MetaCard icon={StickyNote} label="Notas">
+          <DetailField label="Notas">
             <span className="whitespace-pre-wrap font-normal">{agreement.notes}</span>
-          </MetaCard>
+          </DetailField>
         ) : null}
-      </div>
+      </DetailSection>
 
       <LtaLinkedBookings agreementId={agreement.id} active={active} />
     </div>

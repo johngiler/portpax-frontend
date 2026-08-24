@@ -1,6 +1,6 @@
 "use client";
 
-import { Anchor, CalendarDays, FileText, MapPin, Pencil, Ship } from "lucide-react";
+import { Anchor, CalendarDays, MapPin, Pencil, Ship } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DefaultButton from "@/components/buttons/DefaultButton";
@@ -232,7 +232,7 @@ export default function BookingDetailSummary({
       {editing ? (
         <div className="mt-4 space-y-4">
           {formError ? <FormErrorAlert message={formError} /> : null}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <FormFieldSelect<number>
               label="Puerto"
               name="booking_identity_port"
@@ -286,19 +286,6 @@ export default function BookingDetailSummary({
               compact
               required
             />
-            <div className="flex gap-3 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-                <FileText className="h-5 w-5" strokeWidth={2} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-                  Acuerdo LTA
-                </p>
-                <p className="mt-0.5 text-sm font-semibold text-zinc-500">
-                  {booking.long_term_agreement_code || "Sin acuerdo vinculado"}
-                </p>
-              </div>
-            </div>
           </div>
           <div>
             <label
@@ -336,7 +323,7 @@ export default function BookingDetailSummary({
         </div>
       ) : (
         <>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <SummaryItem icon={MapPin} label="Puerto">
               <div className="flex items-center gap-2">
                 <CatalogLogoThumb
@@ -388,15 +375,6 @@ export default function BookingDetailSummary({
                   Posición {booking.position_code}
                 </p>
               ) : null}
-            </SummaryItem>
-            <SummaryItem icon={FileText} label="Acuerdo LTA">
-              {booking.long_term_agreement_code ? (
-                <span>{booking.long_term_agreement_code}</span>
-              ) : (
-                <span className="font-normal text-zinc-500">
-                  Sin acuerdo vinculado
-                </span>
-              )}
             </SummaryItem>
           </div>
 

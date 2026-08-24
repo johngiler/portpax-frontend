@@ -1,3 +1,5 @@
+export type LtaBookingPolicy = "standard" | "rci_staggered";
+
 export type LongTermAgreement = {
   id: number;
   code: string;
@@ -19,6 +21,9 @@ export type LongTermAgreement = {
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
+  booking_policy: LtaBookingPolicy;
+  lta_depth_blocks: number;
+  reserve_foreign_slots: boolean;
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
@@ -45,6 +50,9 @@ export type LongTermAgreementPayload = {
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
+  booking_policy: LtaBookingPolicy;
+  lta_depth_blocks: number;
+  reserve_foreign_slots: boolean;
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
@@ -55,6 +63,31 @@ export type LongTermAgreementSaveOptions = {
   contractFile?: File | null;
   removeContract?: boolean;
 };
+
+export const LTA_BOOKING_POLICY_OPTIONS: { value: LtaBookingPolicy; label: string }[] = [
+  { value: "standard", label: "Estándar (MSC y similares)" },
+  { value: "rci_staggered", label: "RCI — alternancia Summer/Winter" },
+];
+
+/** Operator guide for the booking window policy field (form accordion). */
+export const LTA_BOOKING_POLICY_GUIDE: {
+  value: LtaBookingPolicy;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "standard",
+    label: "Estándar (MSC y similares)",
+    description:
+      "En zona LTA puede reservar en todos los bloques cubiertos por la profundidad del acuerdo (p. ej. 2 bloques). No hay alternancia Summer/Winter: si el bloque está dentro de la profundidad, está permitido.",
+  },
+  {
+    value: "rci_staggered",
+    label: "RCI — alternancia Summer/Winter",
+    description:
+      "Primer año (estabilización, 12 meses desde la vigencia): hasta 3 bloques LTA consecutivos. Después solo la temporada opuesta a la actual (en Summer → Winter; en Winter → Summer). Refleja la política comercial RCI en zona LTA.",
+  },
+];
 
 export const LTA_WEEKDAY_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: "Lunes" },

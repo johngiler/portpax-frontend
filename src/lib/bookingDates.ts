@@ -6,6 +6,12 @@ export function toIsoDate(year: number, monthIndex: number, day: number): string
   return `${y}-${m}-${d}`;
 }
 
+/** Today's date in local timezone as ISO YYYY-MM-DD. */
+export function localTodayIso(): string {
+  const d = new Date();
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 export function parseIsoDate(value: string): { year: number; monthIndex: number; day: number } {
   const [y, m, d] = value.split("-").map(Number);
   return { year: y, monthIndex: m - 1, day: d };

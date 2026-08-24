@@ -39,6 +39,9 @@ export const CONFLICT_TYPE_FILTER_CODES: Record<
     "lta_priority_conflict",
     "lta_beyond_horizon",
     "lta_horizon_denied",
+    "lta_policy_denied",
+    "lta_agreement_match",
+    "lta_slot_reserved",
   ],
   physical: ["beam_exceeds_position", "draft_too_deep"],
 };

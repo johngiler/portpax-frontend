@@ -37,6 +37,9 @@ const MESSAGE_TRANSLATIONS: Record<string, string> = {
   lta_beyond_horizon: "La fecha supera el horizonte máximo del LTA.",
   lta_horizon_denied:
     "En este periodo solo navieras con LTA vigente pueden reservar con prioridad; se creará en Hold.",
+  lta_policy_denied:
+    "La fecha no está permitida por la política o profundidad del acuerdo LTA.",
+  lta_agreement_match: "Escala cubierta por un acuerdo LTA.",
   loa_exceeds_position: "La eslora del barco excede el máximo de la posición.",
   loa_below_combined_min:
     "Esta posición combinada ya no está disponible para reservar.",

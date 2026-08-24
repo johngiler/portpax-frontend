@@ -2,6 +2,7 @@ import type {
   BookingConflictSeverity,
   BookingValidationIssue,
 } from "@/types/booking";
+import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { issueSeverity } from "@/lib/bookingConflictSeverity";
 import { renderTextWithBookingCodeLinks } from "@/lib/renderBookingCodeLinks";
 import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -28,6 +29,8 @@ const ISSUE_TITLE: Record<string, string> = {
   lta_slot_reserved: "Posición reservada por LTA",
   lta_beyond_horizon: "Fuera del horizonte LTA",
   lta_horizon_denied: "Horizonte LTA denegado",
+  lta_policy_denied: "Política LTA",
+  lta_agreement_match: "Acuerdo LTA",
 };
 
 const SEVERITY_STYLES: Record<
@@ -177,6 +180,12 @@ function LoaRecalcBody({
   );
 }
 
+function issueCallDateLabel(issue: BookingValidationIssue): string | null {
+  const raw = issue.detail?.call_date;
+  if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  return formatIsoDateLabel(raw, "long");
+}
+
 function IssueCard({
   issue,
   returnTo = null,
@@ -187,6 +196,7 @@ function IssueCard({
   const severity = issueSeverity(issue);
   const styles = SEVERITY_STYLES[severity];
   const { Icon } = styles;
+  const callDateLabel = issueCallDateLabel(issue);
   const isLoaRecalcSum = issue.code.startsWith("loa_recalc_sum_");
   const isSumLight = isLoaRecalcSum;
   const formula =
@@ -237,9 +247,14 @@ function IssueCard({
           aria-hidden
         />
         <div className="min-w-0 flex-1 space-y-2.5">
-          <p className={`text-sm font-semibold leading-snug ${styles.title}`}>
-            {issueTitle(issue, severity)}
-          </p>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className={`text-sm font-semibold leading-snug ${styles.title}`}>
+              {issueTitle(issue, severity)}
+            </p>
+            {callDateLabel ? (
+              <p className="text-xs font-medium opacity-80">{callDateLabel}</p>
+            ) : null}
+          </div>
           {isLoaRecalcSum ? (
             <LoaRecalcBody issue={issue} returnTo={returnTo} />
           ) : (
@@ -287,7 +302,15 @@ export default function ValidationIssuesAlert({
   const grouped = order
     .map((severity) => ({
       severity,
-      issues: all.filter((i) => issueSeverity(i) === severity),
+      issues: all
+        .filter((i) => issueSeverity(i) === severity)
+        .sort((a, b) => {
+          const da =
+            typeof a.detail?.call_date === "string" ? a.detail.call_date : "";
+          const db =
+            typeof b.detail?.call_date === "string" ? b.detail.call_date : "";
+          return da.localeCompare(db) || a.code.localeCompare(b.code);
+        }),
     }))
     .filter((g) => g.issues.length > 0);
 
@@ -295,13 +318,19 @@ export default function ValidationIssuesAlert({
     <div className={`space-y-3 ${className}`}>
       {grouped.map(({ severity, issues }) => (
         <div key={severity} className="space-y-2.5">
-          {issues.map((issue) => (
-            <IssueCard
-              key={`${issue.code}:${issue.message}`}
-              issue={issue}
-              returnTo={returnTo}
-            />
-          ))}
+          {issues.map((issue) => {
+            const callDate =
+              typeof issue.detail?.call_date === "string"
+                ? issue.detail.call_date
+                : "";
+            return (
+              <IssueCard
+                key={`${issue.code}:${callDate}:${issue.message}`}
+                issue={issue}
+                returnTo={returnTo}
+              />
+            );
+          })}
         </div>
       ))}
     </div>

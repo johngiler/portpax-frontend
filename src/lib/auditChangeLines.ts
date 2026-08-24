@@ -51,7 +51,7 @@ const FIELD_LABELS: Record<string, string> = {
   vessel_ids: "Barcos",
   position_ids: "Posiciones",
   weekdays: "Días",
-  min_packs: "Packs mín.",
+  min_packs: "PAX mín.",
   advance_months_min: "Anticipación mín.",
   advance_months_max: "Anticipación máx.",
   interval_days: "Cadencia (días)",
