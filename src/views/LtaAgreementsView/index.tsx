@@ -309,12 +309,6 @@ export default function LtaAgreementsView() {
                               : undefined
                           }
                           deleteLabel={`el acuerdo ${row.code}`}
-                          deleteDisabled={(row.linked_bookings_count ?? 0) > 0}
-                          deleteDisabledTitle={
-                            (row.linked_bookings_count ?? 0) > 0
-                              ? `No se puede eliminar: ${formatCompactCount(row.linked_bookings_count ?? 0)} reserva(s) con este acuerdo`
-                              : undefined
-                          }
                         />
                       </MainTableTd>
                     </AccordionTableRow>
