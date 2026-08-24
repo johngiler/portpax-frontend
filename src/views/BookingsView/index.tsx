@@ -17,8 +17,10 @@ import {
   useActiveVesselsCatalog,
 } from "@/hooks/swr/useCatalogs";
 import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
+import { useFirstMatchingCallDate } from "@/hooks/swr/useFirstMatchingCallDate";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
+import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 import { canWriteApp } from "@/lib/navAccess";
 import type {
   AvailabilityHeatModeQuery,
@@ -78,12 +80,19 @@ import BookingsList, {
   type BulkStatusPayload,
 } from "./BookingsList";
 import BookingsTabs from "./BookingsTabs";
+import FilteredResultsFromHint from "./FilteredResultsFromHint";
+import { buildBookingsActiveFilterChips } from "./bookingsActiveFilterChips";
 import BookingsViewSkeleton from "./BookingsViewSkeleton";
 import BulkBookingImportModal from "./Import/BulkBookingImportModal";
 import BulkBookingsEditModal from "./Import/BulkBookingsEditModal";
 import BulkImportLoadingModal from "./Import/BulkImportLoadingModal";
 import ImportOptionsModal from "./Import/ImportOptionsModal";
 import ImportPasteModal from "./Import/ImportPasteModal";
+import {
+  canonicalizeBulkBookingPaste,
+  normalizePasteMatrix,
+  parseClipboardMatrix,
+} from "./Import/ImportPasteGrid";
 import {
   retryRowsToPasteMatrix,
 } from "./Import/retryRows";
@@ -231,6 +240,8 @@ export default function BookingsView() {
   const [bulkImportSource, setBulkImportSource] = useState<"file" | "paste">(
     "file",
   );
+  /** Raw TSV kept so paste-source import can return to the paste modal. */
+  const [bulkImportPasteText, setBulkImportPasteText] = useState("");
   const [historyBatchId, setHistoryBatchId] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [reprocessPasteOpen, setReprocessPasteOpen] = useState(false);
@@ -281,7 +292,7 @@ export default function BookingsView() {
       year: appliedYear,
       month: appliedMonthIndex,
       heat: appliedHeatMode,
-      density: appliedHeatMode === "occupancy" ? appliedDensity : 0,
+      density: appliedDensity,
       conflict: appliedConflictFilter,
       importedDates: availabilityDateAllowlist ?? [],
       ...overrides,
@@ -401,6 +412,9 @@ export default function BookingsView() {
         appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
       call_date_from: dateRange.call_date_from,
       call_date_to: dateRange.call_date_to,
+      call_dates: availabilityDateAllowlist?.length
+        ? availabilityDateAllowlist
+        : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
     };
@@ -415,6 +429,7 @@ export default function BookingsView() {
     appliedDatePreset,
     appliedCustomDateFrom,
     appliedCustomDateTo,
+    availabilityDateAllowlist,
   ]);
 
   const proximityDateRange = useMemo(() => {
@@ -504,6 +519,53 @@ export default function BookingsView() {
     refresh: refreshBookings,
   } = useBookingsInfinite(listParams, tab === "list" && portsReady);
 
+  const listProbeFilters = useMemo(
+    () => ({
+      search: appliedSearch || undefined,
+      port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+      shipping_line:
+        appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      position:
+        appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+      statuses:
+        appliedStatusFilter.length > 0 ? appliedStatusFilter : undefined,
+      ...conflictFilterToApiParams(appliedConflictFilter),
+      call_dates: availabilityDateAllowlist?.length
+        ? availabilityDateAllowlist
+        : undefined,
+    }),
+    [
+      appliedSearch,
+      appliedPortFilter,
+      appliedShippingLineFilter,
+      appliedVesselFilter,
+      appliedPositionFilter,
+      appliedStatusFilter,
+      appliedConflictFilter,
+      availabilityDateAllowlist,
+    ],
+  );
+
+  const listHasSidebarFilters =
+    Boolean(appliedSearch) ||
+    appliedPortFilter > 0 ||
+    appliedShippingLineFilter > 0 ||
+    appliedVesselFilter > 0 ||
+    appliedPositionFilter > 0 ||
+    appliedStatusFilter.length > 0 ||
+    appliedConflictFilter !== "" ||
+    Boolean(availabilityDateAllowlist?.length);
+
+  const { firstDate: listFirstOutsideDate } = useFirstMatchingCallDate(
+    listProbeFilters,
+    tab === "list" &&
+      portsReady &&
+      !loading &&
+      bookings.length === 0 &&
+      listHasSidebarFilters,
+  );
+
   useEffect(() => {
     if (bookingsError) {
       setViewError(
@@ -513,13 +575,16 @@ export default function BookingsView() {
   }, [bookingsError]);
 
   function applyFilters() {
-    setAppliedStatusFilter(statusFilter);
+    // Keep transversal filters in state/URL across criteria and tabs.
+    // Gaps chart only consumes port + dates (+ imported); occupancy uses focus too.
     const conflictTabs =
       tab === "list" ||
       tab === "proximity" ||
-      tab === "availability" ||
-      tab === "calendar";
+      tab === "calendar" ||
+      tab === "availability";
     const nextConflict = conflictTabs ? conflictFilter : "";
+
+    setAppliedStatusFilter(statusFilter);
     setAppliedConflictFilter(nextConflict);
     if (nextConflict !== conflictFilter) {
       setConflictFilter(nextConflict);
@@ -541,11 +606,8 @@ export default function BookingsView() {
     setAppliedMonthIndex(monthIndex);
     setAppliedCalendarSeason(calendarSeason);
     setAppliedHeatMode(heatMode);
-    const nextDensity = heatMode === "occupancy" ? density : 0;
-    setAppliedDensity(nextDensity);
-    if (heatMode !== "occupancy") {
-      setDensity(0);
-    }
+    // Stash density across criteria; panel only sends ships_per_day in occupancy.
+    setAppliedDensity(density);
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
       nextWeek = toIsoDate(year, monthIndex, 1);
@@ -568,7 +630,7 @@ export default function BookingsView() {
         month: monthIndex,
         week: nextWeek,
         heat: heatMode,
-        density: nextDensity,
+        density,
         conflict: nextConflict,
       }),
     );
@@ -687,51 +749,65 @@ export default function BookingsView() {
     syncToUrl(workspaceState({ tab: next }));
   }
 
-  const hasActiveFilters =
-    appliedStatusFilter.length > 0 ||
-    ((tab === "list" ||
-      tab === "proximity" ||
-      tab === "availability" ||
-      tab === "calendar") &&
-      appliedConflictFilter !== "") ||
-    (tab === "list" && appliedSearch !== "") ||
-    (tab !== "proximity" && appliedPortFilter > 0) ||
-    appliedShippingLineFilter > 0 ||
-    appliedVesselFilter > 0 ||
-    appliedPositionFilter > 0 ||
-    appliedDatePreset !== "all" ||
-    Boolean(availabilityDateAllowlist?.length) ||
-    (tab === "availability" && appliedHeatMode !== "availability") ||
-    (tab === "availability" &&
-      appliedHeatMode === "occupancy" &&
-      appliedDensity > 0) ||
-    (tab === "calendar" && appliedCalendarMode !== "monthly");
+  const gapsViewActive =
+    tab === "availability" && appliedHeatMode === "availability";
+
+  // Banner = filters that affect the *current* view response.
+  // Stashed focus (vessel/conflict/…) stays in state on gaps but does not count here.
+  const hasActiveFilters = gapsViewActive
+    ? (tab !== "proximity" && appliedPortFilter > 0) ||
+      appliedDatePreset !== "all" ||
+      Boolean(availabilityDateAllowlist?.length)
+    : appliedStatusFilter.length > 0 ||
+      ((tab === "list" ||
+        tab === "proximity" ||
+        tab === "calendar" ||
+        tab === "availability") &&
+        appliedConflictFilter !== "") ||
+      (tab === "list" && appliedSearch !== "") ||
+      (tab !== "proximity" && appliedPortFilter > 0) ||
+      appliedShippingLineFilter > 0 ||
+      appliedVesselFilter > 0 ||
+      (tab !== "proximity" && appliedPositionFilter > 0) ||
+      appliedDatePreset !== "all" ||
+      Boolean(availabilityDateAllowlist?.length) ||
+      (tab === "availability" && appliedHeatMode !== "availability") ||
+      (tab === "availability" && appliedDensity > 0) ||
+      (tab === "calendar" && appliedCalendarMode !== "monthly");
 
   const canClearFilters =
     hasActiveFilters ||
     statusFilter.length > 0 ||
+    appliedStatusFilter.length > 0 ||
     ((tab === "list" ||
       tab === "proximity" ||
-      tab === "availability" ||
-      tab === "calendar") &&
-      conflictFilter !== "") ||
-    (tab === "list" && search.trim() !== "") ||
-    (tab !== "proximity" && portFilter > 0) ||
+      tab === "calendar" ||
+      tab === "availability") &&
+      (conflictFilter !== "" || appliedConflictFilter !== "")) ||
+    (tab === "list" && (search.trim() !== "" || appliedSearch !== "")) ||
+    (tab !== "proximity" && (portFilter > 0 || appliedPortFilter > 0)) ||
     shippingLineFilter > 0 ||
+    appliedShippingLineFilter > 0 ||
     vesselFilter > 0 ||
+    appliedVesselFilter > 0 ||
     positionFilter > 0 ||
+    appliedPositionFilter > 0 ||
     datePreset !== "all" ||
+    appliedDatePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
     (tab === "availability" && heatMode !== "availability") ||
-    (tab === "availability" && heatMode === "occupancy" && density > 0) ||
-    (tab === "calendar" && calendarMode !== "monthly");
+    appliedHeatMode !== "availability" ||
+    density > 0 ||
+    appliedDensity > 0 ||
+    (tab === "calendar" && calendarMode !== "monthly") ||
+    appliedCalendarMode !== "monthly";
 
   const canApplyFilters =
     !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
     ((tab === "list" ||
       tab === "proximity" ||
-      tab === "availability" ||
-      tab === "calendar") &&
+      tab === "calendar" ||
+      tab === "availability") &&
       conflictFilter !== appliedConflictFilter) ||
     (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && portFilter !== appliedPortFilter) ||
@@ -944,6 +1020,7 @@ export default function BookingsView() {
         return;
       }
       setBulkImportSource("file");
+      setBulkImportPasteText("");
       const preview = await previewBulkBookingImport(file);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
@@ -977,7 +1054,9 @@ export default function BookingsView() {
         return;
       }
       setBulkImportSource("paste");
-      const preview = await previewBulkBookingImportFromPaste(text);
+      const pasteText = canonicalizeBulkBookingPaste(text) || text;
+      setBulkImportPasteText(pasteText);
+      const preview = await previewBulkBookingImportFromPaste(pasteText);
       setBulkImportRows(preview.rows);
       setBulkImportOpen(true);
     } catch (err) {
@@ -1028,6 +1107,66 @@ export default function BookingsView() {
       ? (portsById.get(appliedPortFilter) ?? "Puerto")
       : "Todos los puertos";
 
+  const activeFilterChips = useMemo(() => {
+    const lineLabel =
+      appliedShippingLineFilter > 0
+        ? shippingLineOptions.find((o) => o.value === appliedShippingLineFilter)
+            ?.label
+        : null;
+    const vesselLabel =
+      appliedVesselFilter > 0
+        ? vesselOptions.find((o) => o.value === appliedVesselFilter)?.label
+        : null;
+    const positionLabel =
+      appliedPositionFilter > 0
+        ? positionOptions.find((o) => o.value === appliedPositionFilter)?.label
+        : null;
+    const calendarModeLabel =
+      tab === "calendar"
+        ? appliedCalendarMode === "weekly"
+          ? "Vista semanal"
+          : appliedCalendarMode === "annual"
+            ? "Vista anual"
+            : null
+        : null;
+    return buildBookingsActiveFilterChips({
+      tab,
+      portLabel:
+        appliedPortFilter > 0
+          ? (portsById.get(appliedPortFilter) ?? null)
+          : null,
+      positionLabel: positionLabel ?? null,
+      lineLabel: lineLabel ?? null,
+      vesselLabel: vesselLabel ?? null,
+      statuses: appliedStatusFilter,
+      conflict: appliedConflictFilter,
+      search: appliedSearch,
+      datePreset: appliedDatePreset,
+      importedDatesCount: availabilityDateAllowlist?.length ?? 0,
+      heatMode: appliedHeatMode,
+      density: appliedDensity,
+      calendarModeLabel,
+    });
+  }, [
+    tab,
+    appliedPortFilter,
+    portsById,
+    appliedPositionFilter,
+    positionOptions,
+    appliedShippingLineFilter,
+    shippingLineOptions,
+    appliedVesselFilter,
+    vesselOptions,
+    appliedStatusFilter,
+    appliedConflictFilter,
+    appliedSearch,
+    appliedDatePreset,
+    availabilityDateAllowlist,
+    appliedHeatMode,
+    appliedDensity,
+    appliedCalendarMode,
+  ]);
+
   return (
     <>
       <ImportOptionsModal
@@ -1050,15 +1189,8 @@ export default function BookingsView() {
       <ImportPasteModal
         open={reprocessPasteOpen && !bulkImportLoading}
         title="Pegar reservas masivas"
-        hint="Revisa o corrige las filas pendientes y pulsa «Aplicar datos» para validarlas de nuevo."
-        columns={[
-          "Ship",
-          "Port",
-          "Arrival",
-          "Departure",
-          "Vendor Name",
-          "Call Type",
-        ]}
+        hint="Corrige el pegado y pulsa «Aplicar datos» para validar de nuevo."
+        columns={BULK_BOOKING_PASTE_COLUMNS as unknown as string[]}
         formatGuideId="bulk_bookings"
         initialHeaders={reprocessPasteHeaders}
         initialRows={reprocessPasteRows}
@@ -1067,6 +1199,7 @@ export default function BookingsView() {
           setReprocessPasteOpen(false);
           setReprocessPasteHeaders([]);
           setReprocessPasteRows([]);
+          setBulkImportPasteText("");
         }}
         onApply={(text) => {
           setReprocessPasteOpen(false);
@@ -1081,15 +1214,34 @@ export default function BookingsView() {
         rows={bulkImportRows}
         fileName={bulkImportFileName}
         importSource={bulkImportSource}
+        onBackToPaste={
+          bulkImportSource === "paste" && bulkImportPasteText
+            ? () => {
+                const columns = [...BULK_BOOKING_PASTE_COLUMNS];
+                const matrix = normalizePasteMatrix(
+                  parseClipboardMatrix(bulkImportPasteText),
+                  columns,
+                );
+                setBulkImportOpen(false);
+                setBulkImportRows([]);
+                setBulkImportFileName("");
+                setReprocessPasteHeaders(matrix.headers);
+                setReprocessPasteRows(matrix.rows);
+                setReprocessPasteOpen(true);
+              }
+            : undefined
+        }
         onClose={() => {
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
+          setBulkImportPasteText("");
         }}
         onCreated={async ({ batchId }) => {
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
+          setBulkImportPasteText("");
           setViewError(null);
           await refreshBookings();
           setHistoryBatchId(batchId);
@@ -1215,7 +1367,10 @@ export default function BookingsView() {
       />
 
       {hasActiveFilters ? (
-        <ViewFilteredBanner onClear={handleClearFilters} />
+        <ViewFilteredBanner
+          onClear={handleClearFilters}
+          chips={activeFilterChips}
+        />
       ) : null}
 
       {viewError && (
@@ -1230,6 +1385,30 @@ export default function BookingsView() {
           <BookingsViewSkeleton variant="list" />
         ) : (
           <>
+            {!loading &&
+            bookings.length === 0 &&
+            listFirstOutsideDate ? (
+              <FilteredResultsFromHint
+                firstDate={listFirstOutsideDate}
+                className="mb-4"
+                onGoToDate={(iso) => {
+                  setDatePreset("custom");
+                  setCustomDateFrom(iso);
+                  setAppliedDatePreset("custom");
+                  setAppliedCustomDateFrom(iso);
+                  const to = appliedCustomDateTo || defaultCustomTo();
+                  setCustomDateTo(to);
+                  setAppliedCustomDateTo(to);
+                  syncToUrl(
+                    workspaceState({
+                      datePreset: "custom",
+                      customFrom: iso,
+                      customTo: to,
+                    }),
+                  );
+                }}
+              />
+            ) : null}
             <BookingsList
               bookings={bookings}
               hasActiveFilters={hasActiveFilters}
@@ -1276,6 +1455,7 @@ export default function BookingsView() {
           positionId={appliedPositionFilter}
           search=""
           conflictFilters={appliedConflictApiFilters}
+          callDates={availabilityDateAllowlist}
           weekAnchor={weekAnchor}
           onWeekAnchorChange={(iso) => {
             setWeekAnchor(iso);
@@ -1312,21 +1492,29 @@ export default function BookingsView() {
           dateAllowlist={availabilityDateAllowlist}
           heatMode={appliedHeatMode}
           density={appliedHeatMode === "occupancy" ? appliedDensity : 0}
-          filters={{
-            shipping_line:
-              appliedShippingLineFilter > 0
-                ? appliedShippingLineFilter
-                : undefined,
-            vessel:
-              appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
-            position:
-              appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
-            statuses:
-              appliedStatusFilter.length > 0
-                ? appliedStatusFilter
-                : undefined,
-            ...conflictFilterToApiParams(appliedConflictFilter),
-          }}
+          filters={
+            appliedHeatMode === "occupancy"
+              ? {
+                  shipping_line:
+                    appliedShippingLineFilter > 0
+                      ? appliedShippingLineFilter
+                      : undefined,
+                  vessel:
+                    appliedVesselFilter > 0
+                      ? appliedVesselFilter
+                      : undefined,
+                  position:
+                    appliedPositionFilter > 0
+                      ? appliedPositionFilter
+                      : undefined,
+                  statuses:
+                    appliedStatusFilter.length > 0
+                      ? appliedStatusFilter
+                      : undefined,
+                  ...conflictFilterToApiParams(appliedConflictFilter),
+                }
+              : {}
+          }
           canBook={canWrite}
           returnTo={bookingsReturnTo()}
           onClearFilters={handleClearFilters}
@@ -1343,6 +1531,7 @@ export default function BookingsView() {
           portId={0}
           statuses={appliedStatusFilter}
           conflictFilters={appliedConflictApiFilters}
+          callDates={availabilityDateAllowlist}
           returnTo={bookingsReturnTo()}
           onClearFilters={handleClearFilters}
         />

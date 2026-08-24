@@ -21,6 +21,7 @@ export type VesselProximityListFilters = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  call_dates?: string[];
 };
 
 function filtersKey(filters: VesselProximityListFilters): string {
@@ -36,6 +37,7 @@ function filtersKey(filters: VesselProximityListFilters): string {
         : "",
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
+    (filters.call_dates ?? []).join(","),
   ].join("|");
 }
 
@@ -93,6 +95,7 @@ export function useVesselProximityInfinite(
   const hasConflict = filters.has_conflict;
   const conflictSeverity = filters.conflict_severity;
   const conflictType = filters.conflict_type;
+  const callDates = filters.call_dates;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: VesselProximityMatrixResponse | null) => {
@@ -119,6 +122,7 @@ export function useVesselProximityInfinite(
         has_conflict: hasConflict,
         conflict_severity: conflictSeverity,
         conflict_type: conflictType,
+        call_dates: callDates && callDates.length > 0 ? callDates : undefined,
         page,
         page_size: PROXIMITY_DAYS_BATCH,
       });

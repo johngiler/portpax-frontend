@@ -5,6 +5,7 @@ import { CalendarSearch, FileSpreadsheet, type LucideIcon } from "lucide-react";
 import ImportOptionDropCard from "@/components/ui/ImportOptionDropCard";
 import Modal from "@/components/ui/Modal";
 import ImportPasteModal from "./ImportPasteModal";
+import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 
 export type BookingImportOptionId = "bulk_bookings" | "availability_filter";
 
@@ -27,14 +28,7 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     icon: FileSpreadsheet,
     allowPaste: true,
     pasteTitle: "Pegar reservas masivas",
-    pasteColumns: [
-      "Ship",
-      "Port",
-      "Arrival",
-      "Departure",
-      "Vendor Name",
-      "Call Type",
-    ],
+    pasteColumns: [...BULK_BOOKING_PASTE_COLUMNS],
   },
   {
     id: "availability_filter",

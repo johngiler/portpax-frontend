@@ -161,11 +161,9 @@ export function parseBookingsWorkspaceFilters(
       ? (heatRaw as AvailabilityHeatModeQuery)
       : "availability";
   const densityNum = densityRaw ? Number(densityRaw) : 0;
+  // Keep density across heat criteria (gaps ignores it; occupancy reuses it).
   const density =
-    heat === "occupancy" &&
-    Number.isFinite(densityNum) &&
-    densityNum >= 1 &&
-    densityNum <= 4
+    Number.isFinite(densityNum) && densityNum >= 1 && densityNum <= 4
       ? Math.trunc(densityNum)
       : 0;
   const tab: BookingsTabQuery =
@@ -246,28 +244,22 @@ export function buildBookingsWorkspaceQuery(
       if (state.customTo) sp.set("to", state.customTo);
     }
   }
-  if (state.tab === "calendar") {
-    if (state.mode !== "monthly") sp.set("mode", state.mode);
-    if (state.position > 0) sp.set("position", String(state.position));
-    if (state.mode === "weekly" && state.week) sp.set("week", state.week);
-    if (state.mode === "monthly" || state.mode === "annual") {
-      sp.set("year", String(state.year));
-    }
-    if (state.mode === "monthly") {
-      sp.set("month", String(state.month + 1));
-    }
-    if (state.mode === "annual" && state.season !== "natural") {
-      sp.set("season", state.season);
-    }
+  // Calendar view params: keep across tabs so returning restores mode/year/month.
+  if (state.mode !== "monthly") sp.set("mode", state.mode);
+  if (state.mode === "weekly" && state.week) sp.set("week", state.week);
+  if (state.mode === "monthly" || state.mode === "annual") {
+    sp.set("year", String(state.year));
   }
-  // Position also applies on list / availability (not only calendar).
-  if (state.tab !== "calendar" && state.position > 0) {
-    sp.set("position", String(state.position));
+  if (state.mode === "monthly") {
+    sp.set("month", String(state.month + 1));
   }
-  if (state.tab === "availability" && state.heat === "occupancy") {
-    sp.set("heat", "occupancy");
-    if (state.density >= 1) sp.set("density", String(state.density));
+  if (state.mode === "annual" && state.season !== "natural") {
+    sp.set("season", state.season);
   }
+  if (state.position > 0) sp.set("position", String(state.position));
+  // Availability criterion/density: stash across tabs (only occupancy consumes density).
+  if (state.heat === "occupancy") sp.set("heat", "occupancy");
+  if (state.density >= 1) sp.set("density", String(state.density));
   if (state.importedDates.length > 0) {
     sp.set("idates", state.importedDates.join(","));
   }

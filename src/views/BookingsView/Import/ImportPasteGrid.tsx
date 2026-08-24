@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 
 const EMPTY_PREVIEW_ROWS = 6;
 
@@ -19,19 +20,24 @@ export function parseClipboardMatrix(text: string): string[][] {
   });
 }
 
-/** Canonical ITM headers when pasting from email (one field per line). */
-const VERTICAL_ITM_HEADERS = [
-  "Ship",
-  "Port",
-  "Arrival",
-  "Departure",
-  "Vendor Name",
-  "Call Type",
-] as const;
+const VERTICAL_ITM_HEADER_ALIASES: Record<string, string> = {
+  ship: "Ship",
+  port: "Port",
+  arrival: "Arrival",
+  departure: "Departure",
+  // Still detect these so vertical email paste keeps block width;
+  // normalizePasteMatrix drops them from the grid.
+  "vendor name": "Vendor Name",
+  "call type": "Call Type",
+  position: "Posición",
+  posición: "Posición",
+  posicion: "Posición",
+  "position code": "Posición",
+  berth: "Posición",
+  pos: "Posición",
+};
 
-const VERTICAL_ITM_HEADER_KEYS = new Set(
-  VERTICAL_ITM_HEADERS.map((h) => h.toLowerCase()),
-);
+const VERTICAL_ITM_HEADER_KEYS = new Set(Object.keys(VERTICAL_ITM_HEADER_ALIASES));
 
 /**
  * Email / Outlook often copies ITM tables as one cell per line:
@@ -52,9 +58,7 @@ export function reshapeVerticalItmLines(lines: string[]): string[][] | null {
   for (const line of trimmed) {
     const key = line.toLowerCase();
     if (!VERTICAL_ITM_HEADER_KEYS.has(key)) break;
-    const canonical =
-      VERTICAL_ITM_HEADERS.find((h) => h.toLowerCase() === key) ?? line;
-    headers.push(canonical);
+    headers.push(VERTICAL_ITM_HEADER_ALIASES[key] ?? line);
     headerCount += 1;
   }
 
@@ -91,33 +95,123 @@ function rowLooksLikeHeader(row: string[], expected: string[]): boolean {
   const expectedLower = expected.map((c) => c.toLowerCase());
   if (expectedLower.some((h) => lower.includes(h))) return true;
   const first = lower[0] ?? "";
-  if (/^(ship|port|fecha|fechas|date|arrival|barco)/.test(first)) return true;
+  if (/^(ship|port|fecha|fechas|date|arrival|barco|position|posici[oó]n)/.test(first)) return true;
+  // Classic ITM paste often starts with Vendor Name when Ship…Departure were skipped.
+  if (lower.includes("vendor name") || lower.includes("call type")) return true;
   return false;
 }
 
+/** Map a pasted header cell to a paste-grid column label (or null to drop). */
+function mapPasteHeaderToColumn(
+  raw: string,
+  fallbackColumns: string[],
+): string | null {
+  const key = raw.trim().toLowerCase();
+  if (!key) return null;
+  // Drop legacy ITM columns from the paste grid.
+  if (
+    key === "vendor name" ||
+    key === "call type" ||
+    key === "vendor" ||
+    key === "calltype"
+  ) {
+    return null;
+  }
+  const aliases: Record<string, string> = {
+    ship: "Ship",
+    barco: "Ship",
+    port: "Port",
+    puerto: "Port",
+    arrival: "Arrival",
+    llegada: "Arrival",
+    departure: "Departure",
+    salida: "Departure",
+    position: "Posición",
+    posición: "Posición",
+    posicion: "Posición",
+    "position code": "Posición",
+    berth: "Posición",
+    pos: "Posición",
+  };
+  const mapped = aliases[key];
+  if (mapped && fallbackColumns.includes(mapped)) return mapped;
+  // Exact match against expected columns (case-insensitive).
+  const exact = fallbackColumns.find((c) => c.toLowerCase() === key);
+  return exact ?? null;
+}
+
+/**
+ * Normalize clipboard matrix onto the paste grid columns.
+ * Always keeps `fallbackColumns` order (Ship…Posición); drops Vendor Name /
+ * Call Type; fills empty Posición when the sheet had no position column.
+ */
 export function normalizePasteMatrix(
   matrix: string[][],
   fallbackColumns: string[],
 ): { headers: string[]; rows: string[][] } {
+  const headers = [...fallbackColumns];
   if (!matrix.length) {
-    return { headers: fallbackColumns, rows: [] };
+    return { headers, rows: [] };
   }
+
   const first = matrix[0];
-  if (rowLooksLikeHeader(first, fallbackColumns)) {
-    return { headers: first.map((c) => c || "—"), rows: matrix.slice(1) };
+  const hasHeader = rowLooksLikeHeader(first, fallbackColumns);
+  const sourceHeaders = hasHeader ? first : null;
+  const body = hasHeader ? matrix.slice(1) : matrix;
+  const sourceIndexByTarget: number[] = headers.map(() => -1);
+
+  if (sourceHeaders) {
+    sourceHeaders.forEach((cell, sourceIdx) => {
+      const target = mapPasteHeaderToColumn(cell, headers);
+      if (!target) return;
+      const targetIdx = headers.indexOf(target);
+      if (targetIdx >= 0 && sourceIndexByTarget[targetIdx] < 0) {
+        sourceIndexByTarget[targetIdx] = sourceIdx;
+      }
+    });
   }
-  const width = Math.max(fallbackColumns.length, ...matrix.map((r) => r.length));
-  const headers =
-    fallbackColumns.length >= width
-      ? fallbackColumns.slice(0, width)
-      : [
-          ...fallbackColumns,
-          ...Array.from(
-            { length: width - fallbackColumns.length },
-            (_, i) => `Col ${fallbackColumns.length + i + 1}`,
-          ),
-        ];
-  return { headers, rows: matrix };
+
+  const mappedCount = sourceIndexByTarget.filter((i) => i >= 0).length;
+  if (mappedCount === 0) {
+    // No usable headers: classic ITM row is Ship Port Arrival Departure
+    // [Vendor Name] [Call Type] [Position?].
+    const maxW = Math.max(0, ...body.map((r) => r.length));
+    sourceIndexByTarget[0] = maxW > 0 ? 0 : -1;
+    sourceIndexByTarget[1] = maxW > 1 ? 1 : -1;
+    sourceIndexByTarget[2] = maxW > 2 ? 2 : -1;
+    sourceIndexByTarget[3] = maxW > 3 ? 3 : -1;
+    if (maxW >= 7) {
+      // … Vendor Call Position
+      sourceIndexByTarget[4] = 6;
+    } else if (maxW === 5) {
+      // Ship… + Position (or trailing vendor — prefer Position for our grid)
+      sourceIndexByTarget[4] = 4;
+    }
+    // maxW === 6 → Vendor/Call only after Departure; leave Posición empty
+  }
+
+  const rows = body
+    .map((row) =>
+      headers.map((_, targetIdx) => {
+        const src = sourceIndexByTarget[targetIdx];
+        return src >= 0 ? (row[src] ?? "").trim() : "";
+      }),
+    )
+    .filter((row) => row.some((cell) => cell !== ""));
+
+  return { headers, rows };
+}
+
+/**
+ * Keep only the allowed bulk-booking paste columns.
+ * Extra ITM fields (Vendor Name, Call Type, etc.) are discarded before preview.
+ */
+export function canonicalizeBulkBookingPaste(text: string): string {
+  const allowed = [...BULK_BOOKING_PASTE_COLUMNS];
+  const matrix = parseClipboardMatrix(text);
+  const next = normalizePasteMatrix(matrix, allowed);
+  if (!next.rows.length) return "";
+  return matrixToTsv(next.headers, next.rows);
 }
 
 function emptyRows(columnCount: number, count = EMPTY_PREVIEW_ROWS): string[][] {
@@ -169,8 +263,9 @@ export default function ImportPasteGrid({
     const matrix = parseClipboardMatrix(text);
     if (!matrix.length) return;
 
-    // Empty table + looks like a full sheet → replace whole matrix (headers included).
-    if (!hasData && rowLooksLikeHeader(matrix[0], columns)) {
+    // Empty table + multi-column paste → always project onto grid columns
+    // (keeps Posición; drops Vendor Name / Call Type).
+    if (!hasData && (rowLooksLikeHeader(matrix[0], columns) || matrix[0].length >= 4)) {
       const next = normalizePasteMatrix(matrix, columns);
       onMatrixChange(next.headers, next.rows);
       return;

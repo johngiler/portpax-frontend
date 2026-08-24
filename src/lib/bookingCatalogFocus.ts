@@ -32,6 +32,8 @@ export type BookingCalendarFocus = CatalogConflictFocus & {
   vesselId?: number;
   shippingLineId?: number;
   positionId?: number;
+  /** Imported discrete dates — soft-focus (neighbors on other days stay muted). */
+  callDates?: string[];
 };
 
 /** Soft focus for vessel / shipping-line filters (neighbors stay visible). */
@@ -133,6 +135,10 @@ export function bookingMatchesCalendarFocus(
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
   if (positionId > 0 && booking.position !== positionId) return false;
+  if (focus.callDates && focus.callDates.length > 0) {
+    const allow = new Set(focus.callDates);
+    if (!allow.has(booking.call_date)) return false;
+  }
   return true;
 }
 
@@ -143,6 +149,7 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
       (focus.vesselId && focus.vesselId > 0) ||
       (focus.shippingLineId && focus.shippingLineId > 0) ||
       (focus.positionId && focus.positionId > 0) ||
+      (focus.callDates && focus.callDates.length > 0) ||
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
       focus.conflict_type,

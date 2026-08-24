@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
@@ -23,6 +23,8 @@ type BulkBookingImportModalProps = {
   rows: BulkImportPreviewRow[];
   fileName: string;
   importSource?: "file" | "paste";
+  /** Paste flow only: return to cell paste modal with prior content. */
+  onBackToPaste?: () => void;
   onClose: () => void;
   onCreated: (result: {
     batchId: number;
@@ -36,6 +38,7 @@ export default function BulkBookingImportModal({
   rows: initialRows,
   fileName,
   importSource = "file",
+  onBackToPaste,
   onClose,
   onCreated,
 }: BulkBookingImportModalProps) {
@@ -321,7 +324,20 @@ export default function BulkBookingImportModal({
       title="Carga de reservas masiva"
       panelClassName="w-[min(98vw,120rem)] max-w-[min(98vw,120rem)]"
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex w-full flex-wrap items-center gap-3">
+          {importSource === "paste" && onBackToPaste ? (
+            <button
+              type="button"
+              disabled={tableBusy}
+              onClick={onBackToPaste}
+              className="mr-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200/80 bg-white px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              Regresar
+            </button>
+          ) : (
+            <span className="mr-auto" aria-hidden />
+          )}
           <button
             type="button"
             disabled={tableBusy}

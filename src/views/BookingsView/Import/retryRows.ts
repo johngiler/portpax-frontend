@@ -1,5 +1,6 @@
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
+import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 
 const MONTHS = [
   "Jan",
@@ -33,16 +34,14 @@ export function formatItmDateTime(
 export function buildItmTsvFromRetryRows(
   rows: Array<ImportBatchRetryRow | BulkImportPreviewRow>,
 ): string {
-  const header =
-    "Ship\tPort\tArrival\tDeparture\tVendor Name\tCall Type";
+  const header = "Ship\tPort\tArrival\tDeparture\tPosición";
   const lines = rows.map((row) =>
     [
       row.ship || row.vessel_name || "",
       row.port_raw || row.port_name || "",
       formatItmDateTime(row.call_date, row.eta),
       formatItmDateTime(row.call_date, row.etd),
-      row.vendor_name || "",
-      row.call_type || "Standard",
+      row.position_code || "",
     ].join("\t"),
   );
   return [header, ...lines].join("\n");
@@ -87,14 +86,7 @@ export async function copyImportRowsTsv(
   await navigator.clipboard.writeText(text);
 }
 
-const ITM_PASTE_HEADERS = [
-  "Ship",
-  "Port",
-  "Arrival",
-  "Departure",
-  "Vendor Name",
-  "Call Type",
-];
+const ITM_PASTE_HEADERS = [...BULK_BOOKING_PASTE_COLUMNS];
 
 /** Matrix for ImportPasteModal prefill from pending batch rows. */
 export function retryRowsToPasteMatrix(
@@ -107,8 +99,7 @@ export function retryRowsToPasteMatrix(
       row.port_raw || row.port_name || "",
       formatItmDateTime(row.call_date, row.eta),
       formatItmDateTime(row.call_date, row.etd),
-      row.vendor_name || "",
-      row.call_type || "Standard",
+      row.position_code || "",
     ]),
   };
 }

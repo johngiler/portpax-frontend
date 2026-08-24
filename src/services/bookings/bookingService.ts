@@ -54,6 +54,8 @@ export type FetchBookingsParams = {
   statuses?: BookingStatusFilterValue[];
   call_date_from?: string;
   call_date_to?: string;
+  /** Discrete ISO dates (imported list); intersects with from/to when both set. */
+  call_dates?: string[];
   ordering?: string;
   pageSize?: number;
   /** true = only conflicted; false = only clean; omit = all */
@@ -82,6 +84,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (statusCsv) query.set("status", statusCsv);
   if (params.call_date_from) query.set("call_date_from", params.call_date_from);
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);
+  if (params.call_dates && params.call_dates.length > 0) {
+    query.set("call_dates", params.call_dates.join(","));
+  }
   if (params.ordering) query.set("ordering", params.ordering);
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   if (params.has_conflict === true) query.set("has_conflict", "true");
@@ -359,7 +364,12 @@ export async function fetchAvailabilityReport(params: {
     params.occupied_only === true ||
     params.has_conflict !== undefined ||
     Boolean(params.conflict_severity) ||
-    Boolean(params.conflict_type);
+    Boolean(params.conflict_type) ||
+    Boolean(params.shipping_line) ||
+    Boolean(params.vessel) ||
+    Boolean(params.position) ||
+    Boolean(params.statuses?.length) ||
+    Boolean(params.status);
   if (paged) {
     if (params.page != null) query.set("page", String(params.page));
     if (params.page_size != null) {

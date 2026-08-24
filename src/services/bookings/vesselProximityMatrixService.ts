@@ -69,6 +69,8 @@ export type FetchVesselProximityMatrixParams = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  /** Discrete ISO dates (imported list). */
+  call_dates?: string[];
   page?: number;
   page_size?: number;
 };
@@ -93,6 +95,9 @@ export async function fetchVesselProximityMatrix(
   }
   if (params.conflict_type) {
     query.set("conflict_type", params.conflict_type);
+  }
+  if (params.call_dates && params.call_dates.length > 0) {
+    query.set("call_dates", params.call_dates.join(","));
   }
   if (params.page != null && params.page >= 1) {
     query.set("page", String(params.page));

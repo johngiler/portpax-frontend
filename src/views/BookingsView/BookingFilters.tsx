@@ -178,17 +178,36 @@ export default function BookingFilters({
         : getTimeRange("hoy")
       : getTimeRange(datePreset, customDateFrom, customDateTo);
 
+  const isAvailabilityTab = tab === "availability";
+  const isAvailabilityGaps = isAvailabilityTab && heatMode === "availability";
+  const isOccupancyHeat = isAvailabilityTab && heatMode === "occupancy";
+
+  // Disponibilidad (huecos): Criterio + Puerto + fechas.
+  // Ocupación: Buscar + Criterio + densidad + puerto + posición (+ foco).
   const showVessel =
-    tab === "list" || tab === "calendar" || tab === "availability" || tab === "proximity";
-  const showSearch = tab === "list" || tab === "calendar" || tab === "availability";
-  const searchCatalogOnly = tab === "calendar" || tab === "availability";
+    tab === "list" ||
+    tab === "calendar" ||
+    tab === "proximity" ||
+    isOccupancyHeat;
+  const showSearch = tab === "list" || tab === "calendar" || isOccupancyHeat;
+  const searchCatalogOnly = tab === "calendar" || isOccupancyHeat;
   const showDates = tab === "list" || tab === "availability" || tab === "proximity";
   const showCalendarMode = tab === "calendar";
-  const showHeatMode = tab === "availability";
+  const showHeatMode = isAvailabilityTab;
   const showPosition =
-    tab === "list" || tab === "calendar" || tab === "availability";
+    tab === "list" || tab === "calendar" || isOccupancyHeat;
   const showPort = tab !== "proximity";
-  const showLine = true;
+  const showLine =
+    tab === "list" ||
+    tab === "calendar" ||
+    tab === "proximity" ||
+    isOccupancyHeat;
+  const showStatus = !isAvailabilityGaps;
+  const showConflict =
+    tab === "list" ||
+    tab === "proximity" ||
+    tab === "calendar" ||
+    isOccupancyHeat;
 
   const loadPortOptions = useCallback(async (input: string) => {
     const res = await fetchPorts({
@@ -231,267 +250,309 @@ export default function BookingFilters({
     [shippingLineFilter],
   );
 
-  return (
+  const searchField = showSearch ? (
+    <FilterSuggestField
+      label="Buscar"
+      name="booking_search"
+      value={search}
+      onChange={onSearchChange}
+      loadSuggestions={
+        searchCatalogOnly ? suggestBookingsPortVessel : suggestBookings
+      }
+      placeholder={
+        searchCatalogOnly
+          ? "Puerto, barco…"
+          : "Código de reserva, puerto, barco…"
+      }
+      onPick={(suggestion) => {
+        if (
+          !searchCatalogOnly &&
+          suggestion.filterEntity === "booking" &&
+          suggestion.applyValue
+        ) {
+          onBookingCodePick?.(suggestion.applyValue);
+          onSearchChange("");
+          return;
+        }
+        if (suggestion.filterEntity === "port" && suggestion.entityId) {
+          onPortFilterChange(suggestion.entityId);
+          onSearchChange("");
+          return;
+        }
+        if (
+          !searchCatalogOnly &&
+          suggestion.filterEntity === "shipping_line" &&
+          suggestion.entityId
+        ) {
+          onShippingLineFilterChange(suggestion.entityId);
+          onVesselFilterChange(0);
+          onSearchChange("");
+          return;
+        }
+        if (
+          suggestion.filterEntity === "vessel" &&
+          suggestion.entityId &&
+          suggestion.shippingLineId
+        ) {
+          onShippingLineFilterChange(suggestion.shippingLineId);
+          onVesselFilterChange(suggestion.entityId);
+          onSearchChange("");
+        }
+      }}
+    />
+  ) : null;
+
+  const heatModeField = showHeatMode ? (
+    <FormFieldSelect<AvailabilityHeatModeQuery>
+      label="Criterio"
+      name="booking_availability_heat"
+      value={heatMode}
+      onChange={(mode) => {
+        // Keep transversal filters (port, vessel, dates, …) across criteria;
+        // gaps vs occupancy only changes what the chart consumes.
+        onHeatModeChange(mode);
+      }}
+      options={HEAT_MODE_OPTIONS}
+      compact
+    />
+  ) : null;
+
+  const densityField =
+    showHeatMode && heatMode === "occupancy" ? (
+      <FormFieldSelect<number>
+        label="Barcos por día"
+        name="booking_occupancy_density"
+        value={density}
+        emptyValue={0}
+        optionLabel="Todos"
+        onChange={onDensityChange}
+        options={DENSITY_OPTIONS}
+        compact
+      />
+    ) : null;
+
+  const calendarFields = showCalendarMode ? (
     <>
-      {showSearch ? (
-        <FilterSuggestField
-          label="Buscar"
-          name="booking_search"
-          value={search}
-          onChange={onSearchChange}
-          loadSuggestions={
-            searchCatalogOnly ? suggestBookingsPortVessel : suggestBookings
-          }
-          placeholder={
-            searchCatalogOnly
-              ? "Puerto, barco…"
-              : "Código de reserva, puerto, barco…"
-          }
-          onPick={(suggestion) => {
-            if (
-              !searchCatalogOnly &&
-              suggestion.filterEntity === "booking" &&
-              suggestion.applyValue
-            ) {
-              onBookingCodePick?.(suggestion.applyValue);
-              onSearchChange("");
-              return;
-            }
-            if (suggestion.filterEntity === "port" && suggestion.entityId) {
-              onPortFilterChange(suggestion.entityId);
-              onSearchChange("");
-              return;
-            }
-            if (
-              !searchCatalogOnly &&
-              suggestion.filterEntity === "shipping_line" &&
-              suggestion.entityId
-            ) {
-              onShippingLineFilterChange(suggestion.entityId);
-              onVesselFilterChange(0);
-              onSearchChange("");
-              return;
-            }
-            if (
-              suggestion.filterEntity === "vessel" &&
-              suggestion.entityId &&
-              suggestion.shippingLineId
-            ) {
-              onShippingLineFilterChange(suggestion.shippingLineId);
-              onVesselFilterChange(suggestion.entityId);
-              onSearchChange("");
-            }
-          }}
-        />
-      ) : null}
-
-      {showHeatMode ? (
-        <FormFieldSelect<AvailabilityHeatModeQuery>
-          label="Criterio"
-          name="booking_availability_heat"
-          value={heatMode}
-          onChange={(mode) => {
-            onHeatModeChange(mode);
-            if (mode !== "occupancy") onDensityChange(0);
-          }}
-          options={HEAT_MODE_OPTIONS}
-          compact
-        />
-      ) : null}
-
-      {showHeatMode && heatMode === "occupancy" ? (
+      <FormFieldSelect<CalendarViewModeQuery>
+        label="Vista calendario"
+        name="booking_calendar_mode"
+        value={calendarMode}
+        onChange={onCalendarModeChange}
+        options={MODE_OPTIONS}
+        compact
+      />
+      <FormFieldSelect<number>
+        label="Año"
+        name="booking_calendar_year"
+        value={calendarYear}
+        onChange={onCalendarYearChange}
+        options={YEAR_OPTIONS}
+        compact
+      />
+      {calendarMode !== "annual" ? (
         <FormFieldSelect<number>
-          label="Barcos por día"
-          name="booking_occupancy_density"
-          value={density}
-          emptyValue={0}
-          optionLabel="Todos"
-          onChange={onDensityChange}
-          options={DENSITY_OPTIONS}
+          label="Mes"
+          name="booking_calendar_month"
+          value={calendarMonthIndex}
+          onChange={onCalendarMonthChange}
+          options={MONTH_OPTIONS}
           compact
         />
-      ) : null}
-
-      {showCalendarMode ? (
-        <>
-          <FormFieldSelect<CalendarViewModeQuery>
-            label="Vista calendario"
-            name="booking_calendar_mode"
-            value={calendarMode}
-            onChange={onCalendarModeChange}
-            options={MODE_OPTIONS}
-            compact
-          />
-          <FormFieldSelect<number>
-            label="Año"
-            name="booking_calendar_year"
-            value={calendarYear}
-            onChange={onCalendarYearChange}
-            options={YEAR_OPTIONS}
-            compact
-          />
-          {calendarMode !== "annual" ? (
-            <FormFieldSelect<number>
-              label="Mes"
-              name="booking_calendar_month"
-              value={calendarMonthIndex}
-              onChange={onCalendarMonthChange}
-              options={MONTH_OPTIONS}
-              compact
-            />
-          ) : (
-            <FormFieldSelect<CalendarSeasonQuery>
-              label="Temporada"
-              name="booking_calendar_season"
-              value={calendarSeason}
-              onChange={onCalendarSeasonChange}
-              options={SEASON_OPTIONS}
-              compact
-            />
-          )}
-        </>
-      ) : null}
-
-      {showPort ? (
-        <FormFieldSelect<number>
-          label="Puerto"
-          name="booking_port_filter"
-          value={portFilter}
-          onChange={onPortFilterChange}
-          options={portOptions}
-          loadOptions={loadPortOptions}
-          compact
-          showLogo
-          logoKind="port"
-          required={false}
-          optionLabel="Todos los puertos"
-          emptyValue={0}
-        />
-      ) : null}
-
-      {showPosition ? (
-        <FormFieldSelect<number>
-          label="Posición"
-          name="booking_position_filter"
-          value={positionFilter}
-          onChange={onPositionFilterChange}
-          options={positionOptions}
-          optionLabel={
-            portFilter > 0
-              ? "Todas las posiciones"
-              : "Elige un puerto primero"
-          }
-          emptyValue={0}
-          compact
-          disabled={portFilter <= 0}
-        />
-      ) : null}
-
-      {showLine ? (
-        <FormFieldSelect<number>
-          label="Naviera"
-          name="booking_line_filter"
-          value={shippingLineFilter}
-          onChange={(lineId) => {
-            onShippingLineFilterChange(lineId);
-            onVesselFilterChange(0);
-          }}
-          options={shippingLineOptions}
-          loadOptions={loadLineOptions}
-          optionLabel="Todas las navieras"
-          emptyValue={0}
-          compact
-          showLogo
-          logoKind="shipping_line"
-        />
-      ) : null}
-
-      {showVessel ? (
-        <FormFieldSelect<number>
-          label="Barco"
-          name="booking_vessel_filter"
-          value={vesselFilter}
-          onChange={onVesselFilterChange}
-          options={vesselOptions}
-          loadOptions={
-            shippingLineFilter > 0 ? loadVesselOptions : undefined
-          }
-          optionLabel={
-            tab === "proximity"
-              ? "Selecciona un barco"
-              : shippingLineFilter > 0
-                ? "Todos los barcos"
-                : "Elige una naviera primero"
-          }
-          emptyValue={0}
-          compact
-          showLogo
-          logoKind="vessel"
-          disabled={shippingLineFilter <= 0}
-        />
-      ) : null}
-
-      <>
-        <FormFieldMultiSelect<BookingStatusFilterValue>
-          label="Estado"
-          name="booking_status_filter"
-          value={status}
-          onChange={onStatusChange}
-          options={STATUS_OPTIONS}
-          placeholder="Todos los estados"
-          compact
-          labelEnd={
-            <BookingStatusGuideToggle
-              accordion={false}
-              onToggle={() => setStatusGuideOpen(true)}
-            />
-          }
-        />
-        <BookingStatusGuideModal
-          open={statusGuideOpen}
-          onClose={() => setStatusGuideOpen(false)}
-          includeFilterExtras
-        />
-      </>
-
-      {(tab === "list" ||
-        tab === "proximity" ||
-        tab === "availability" ||
-        tab === "calendar") && (
-        <FormFieldSelect<ConflictFilterValue>
-          label="Conflicto"
-          name="booking_conflict_filter"
-          value={conflictFilter}
-          onChange={onConflictFilterChange}
-          options={CONFLICT_OPTIONS}
-          optionLabel="Todos"
-          emptyValue=""
+      ) : (
+        <FormFieldSelect<CalendarSeasonQuery>
+          label="Temporada"
+          name="booking_calendar_season"
+          value={calendarSeason}
+          onChange={onCalendarSeasonChange}
+          options={SEASON_OPTIONS}
           compact
         />
       )}
+    </>
+  ) : null;
 
-      {showDates ? (
-        <BookingsDateFilters
-          datePreset={datePreset}
-          customDateFrom={customDateFrom}
-          customDateTo={customDateTo}
-          timeRange={timeRange}
-          showAllRangeHint={tab === "availability" || tab === "proximity"}
-          importedDatesCount={
-            tab === "availability" ? importedDatesCount : 0
-          }
-          onDatePresetChange={onDatePresetChange}
-          onCustomDateFromChange={onCustomDateFromChange}
-          onCustomDateToChange={onCustomDateToChange}
-        />
-      ) : null}
+  const portField = showPort ? (
+    <FormFieldSelect<number>
+      label="Puerto"
+      name="booking_port_filter"
+      value={portFilter}
+      onChange={onPortFilterChange}
+      options={portOptions}
+      loadOptions={loadPortOptions}
+      compact
+      showLogo
+      logoKind="port"
+      required={false}
+      optionLabel="Todos los puertos"
+      emptyValue={0}
+    />
+  ) : null;
 
-      <FilterActions
-        onApply={onApply}
-        onClear={onClear}
-        canClear={canClear}
-        canApply={canApply}
+  const positionField = showPosition ? (
+    <FormFieldSelect<number>
+      label="Posición"
+      name="booking_position_filter"
+      value={positionFilter}
+      onChange={onPositionFilterChange}
+      options={positionOptions}
+      optionLabel={
+        portFilter > 0 ? "Todas las posiciones" : "Elige un puerto primero"
+      }
+      emptyValue={0}
+      compact
+      disabled={portFilter <= 0}
+    />
+  ) : null;
+
+  const lineField = showLine ? (
+    <FormFieldSelect<number>
+      label="Naviera"
+      name="booking_line_filter"
+      value={shippingLineFilter}
+      onChange={(lineId) => {
+        onShippingLineFilterChange(lineId);
+        onVesselFilterChange(0);
+      }}
+      options={shippingLineOptions}
+      loadOptions={loadLineOptions}
+      optionLabel="Todas las navieras"
+      emptyValue={0}
+      compact
+      showLogo
+      logoKind="shipping_line"
+    />
+  ) : null;
+
+  const vesselField = showVessel ? (
+    <FormFieldSelect<number>
+      label="Barco"
+      name="booking_vessel_filter"
+      value={vesselFilter}
+      onChange={onVesselFilterChange}
+      options={vesselOptions}
+      loadOptions={shippingLineFilter > 0 ? loadVesselOptions : undefined}
+      optionLabel={
+        tab === "proximity"
+          ? "Selecciona un barco"
+          : shippingLineFilter > 0
+            ? "Todos los barcos"
+            : "Elige una naviera primero"
+      }
+      emptyValue={0}
+      compact
+      showLogo
+      logoKind="vessel"
+      disabled={shippingLineFilter <= 0}
+    />
+  ) : null;
+
+  const statusField = showStatus ? (
+    <>
+      <FormFieldMultiSelect<BookingStatusFilterValue>
+        label="Estado"
+        name="booking_status_filter"
+        value={status}
+        onChange={onStatusChange}
+        options={STATUS_OPTIONS}
+        placeholder="Todos los estados"
+        compact
+        labelEnd={
+          <BookingStatusGuideToggle
+            accordion={false}
+            onToggle={() => setStatusGuideOpen(true)}
+          />
+        }
       />
+      <BookingStatusGuideModal
+        open={statusGuideOpen}
+        onClose={() => setStatusGuideOpen(false)}
+        includeFilterExtras
+      />
+    </>
+  ) : null;
+
+  const conflictField = showConflict ? (
+    <FormFieldSelect<ConflictFilterValue>
+      label="Conflicto"
+      name="booking_conflict_filter"
+      value={conflictFilter}
+      onChange={onConflictFilterChange}
+      options={CONFLICT_OPTIONS}
+      optionLabel="Todos"
+      emptyValue=""
+      compact
+    />
+  ) : null;
+
+  const datesField = showDates ? (
+    <BookingsDateFilters
+      datePreset={datePreset}
+      customDateFrom={customDateFrom}
+      customDateTo={customDateTo}
+      timeRange={timeRange}
+      showAllRangeHint={tab === "availability" || tab === "proximity"}
+      importedDatesCount={
+        tab === "availability" ||
+        tab === "list" ||
+        tab === "proximity"
+          ? importedDatesCount
+          : 0
+      }
+      onDatePresetChange={onDatePresetChange}
+      onCustomDateFromChange={onCustomDateFromChange}
+      onCustomDateToChange={onCustomDateToChange}
+    />
+  ) : null;
+
+  const importedDatesNotice =
+    !showDates && importedDatesCount > 0 ? (
+      <p className="text-[11px] leading-snug text-[var(--admin-accent)]">
+        Se filtraron {importedDatesCount} fecha
+        {importedDatesCount === 1 ? "" : "s"} desde la importación
+      </p>
+    ) : null;
+
+  const actions = (
+    <FilterActions
+      onApply={onApply}
+      onClear={onClear}
+      canClear={canClear}
+      canApply={canApply}
+    />
+  );
+
+  // Availability tab: Criterio → Puerto → Posición → Barcos/día → Buscar → …
+  if (isAvailabilityTab) {
+    return (
+      <>
+        {heatModeField}
+        {portField}
+        {positionField}
+        {densityField}
+        {searchField}
+        {lineField}
+        {vesselField}
+        {statusField}
+        {conflictField}
+        {datesField}
+        {actions}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {searchField}
+      {calendarFields}
+      {portField}
+      {positionField}
+      {lineField}
+      {vesselField}
+      {statusField}
+      {conflictField}
+      {datesField}
+      {importedDatesNotice}
+      {actions}
     </>
   );
 }

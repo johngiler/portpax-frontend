@@ -10,7 +10,7 @@ const TABS: {
 }[] = [
   { id: "list", label: "Lista", icon: CalendarDays },
   { id: "calendar", label: "Calendario", icon: CalendarRange },
-  { id: "availability", label: "Disponibilidad puerto", icon: LayoutGrid },
+  { id: "availability", label: "Disponibilidad/Ocupación puerto", icon: LayoutGrid },
   { id: "proximity", label: "Proximidad barco/puerto", icon: Ship },
 ];
 

@@ -18,12 +18,21 @@ export type ImportFormatGuide = {
   footer?: string;
 };
 
+/** Mass booking paste grid columns (Excel file may still include extra ITM fields). */
+export const BULK_BOOKING_PASTE_COLUMNS = [
+  "Ship",
+  "Port",
+  "Arrival",
+  "Departure",
+  "Posición",
+] as const;
+
 /** Mass booking ITM columns (Excel / paste). */
 export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
   title: "Formatos aceptados — reservas masivas",
   summary:
-    "Encabezados Ship, Port, Arrival, Departure (y opcionales). Excel: una fila por reserva (tab o ;). Correo/Outlook: también un campo por línea (cabeceras y luego bloques de valores).",
+    "Encabezados Ship, Port, Arrival, Departure. Posición es opcional. Excel: una fila por reserva (tab o ;). Correo/Outlook: también un campo por línea (cabeceras y luego bloques de valores).",
   rows: [
     {
       field: "Ship",
@@ -51,20 +60,15 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
       notes: "Mismos formatos que Arrival. Define el día de escala (call_date).",
     },
     {
-      field: "Vendor Name",
+      field: "Posición",
       required: false,
-      accepted: "Texto libre / naviera",
-      notes: "Opcional. Ayuda a identificar la línea si el barco es ambiguo.",
-    },
-    {
-      field: "Call Type",
-      required: false,
-      accepted: "Texto libre",
-      notes: "Opcional. Se conserva como referencia en la fila importada.",
+      accepted: "Código corto o completo (P1, E2…)",
+      notes:
+        "Opcional. Si se resuelve en el puerto, prevalece. Si falta o no se encuentra, se usa la posición sugerida.",
     },
   ],
   footer:
-    "Normalización: espacios múltiples → uno; puertos sin acentos; años de 2 dígitos → 20xx. Filas sin Ship ni Port se omiten. Pegado vertical del correo se reordena automáticamente a columnas.",
+    "Solo se usan Ship, Port, Arrival, Departure y Posición. Cualquier otra columna del pegado (Vendor Name, Call Type, etc.) se descarta. Posición vacía o no encontrada → se sugiere en el siguiente paso. Filas sin Ship ni Port se omiten.",
 };
 
 /** Availability date list (Excel / paste). */

@@ -7,6 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
+import { useFirstMatchingCallDate } from "@/hooks/swr/useFirstMatchingCallDate";
 import {
   useVesselProximityInfinite,
   type VesselProximityListFilters,
@@ -17,6 +18,7 @@ import {
   BOOKINGS_FILTERED_EMPTY_DESCRIPTION,
   BOOKINGS_FILTERED_EMPTY_TITLE,
 } from "./bookingsEmptyCopy";
+import FilteredResultsFromHint from "./FilteredResultsFromHint";
 import ProximityMatrixCallCard from "./ProximityMatrixCallCard";
 
 type BookingsVesselProximityPanelProps = {
@@ -30,6 +32,7 @@ type BookingsVesselProximityPanelProps = {
     VesselProximityListFilters,
     "has_conflict" | "conflict_severity" | "conflict_type"
   >;
+  callDates?: string[] | null;
   returnTo: string;
   onClearFilters?: () => void;
 };
@@ -42,6 +45,7 @@ export default function BookingsVesselProximityPanel({
   portId,
   statuses,
   conflictFilters = {},
+  callDates = null,
   returnTo,
   onClearFilters,
 }: BookingsVesselProximityPanelProps) {
@@ -53,8 +57,9 @@ export default function BookingsVesselProximityPanel({
       port: portId > 0 ? portId : undefined,
       statuses: statuses.length > 0 ? statuses : undefined,
       ...conflictFilters,
+      call_dates: callDates?.length ? callDates : undefined,
     }),
-    [portId, statuses, conflictFilters],
+    [portId, statuses, conflictFilters, callDates],
   );
 
   const {
@@ -72,6 +77,24 @@ export default function BookingsVesselProximityPanel({
     dateTo,
     filtersReady && Boolean(dateFrom && dateTo),
     listFilters,
+  );
+
+  const proximityEmpty =
+    filtersReady &&
+    !isLoading &&
+    Boolean(dateFrom && dateTo) &&
+    (!data || (data.cells.length === 0 && !hasMore));
+
+  const { firstDate: proximityFirstDate } = useFirstMatchingCallDate(
+    {
+      vessel: vesselId > 0 ? vesselId : undefined,
+      shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
+      port: portId > 0 ? portId : undefined,
+      statuses: statuses.length > 0 ? statuses : undefined,
+      ...conflictFilters,
+      call_dates: callDates?.length ? callDates : undefined,
+    },
+    proximityEmpty,
   );
 
   const cellMap = useMemo(() => {
@@ -158,13 +181,20 @@ export default function BookingsVesselProximityPanel({
         title="Proximidad barco / puerto"
         description={`${vesselLabel} · ${rangeLabel}`}
       >
-        <EmptyState
-          icon={Ship}
-          filtered
-          title={BOOKINGS_FILTERED_EMPTY_TITLE}
-          description={BOOKINGS_FILTERED_EMPTY_DESCRIPTION}
-          onClearFilters={onClearFilters}
-        />
+        {proximityFirstDate ? (
+          <FilteredResultsFromHint
+            firstDate={proximityFirstDate}
+            className="mb-4"
+          />
+        ) : (
+          <EmptyState
+            icon={Ship}
+            filtered
+            title={BOOKINGS_FILTERED_EMPTY_TITLE}
+            description={BOOKINGS_FILTERED_EMPTY_DESCRIPTION}
+            onClearFilters={onClearFilters}
+          />
+        )}
       </ViewSection>
     );
   }

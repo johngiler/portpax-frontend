@@ -10,7 +10,10 @@ import {
   getImportFormatGuide,
   type ImportFormatGuide,
 } from "@/lib/importFormatGuides";
-import ImportPasteGrid, { matrixToTsv } from "./ImportPasteGrid";
+import ImportPasteGrid, {
+  canonicalizeBulkBookingPaste,
+  matrixToTsv,
+} from "./ImportPasteGrid";
 
 type ImportPasteModalProps = {
   open: boolean;
@@ -75,7 +78,13 @@ export default function ImportPasteModal({
   function submit() {
     if (!hasContent || disabled) return;
     const dataRows = rows.filter((row) => row.some((cell) => cell.trim() !== ""));
-    onApply(matrixToTsv(headers.length ? headers : columns, dataRows));
+    let text = matrixToTsv(headers.length ? headers : columns, dataRows);
+    // Bulk bookings: strip any columns outside the allowed paste set.
+    if (formatGuideId === "bulk_bookings") {
+      text = canonicalizeBulkBookingPaste(text);
+      if (!text.trim()) return;
+    }
+    onApply(text);
   }
 
   return (

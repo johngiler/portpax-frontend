@@ -24,6 +24,7 @@ type OperationalSectionProps = {
   positionId: number;
   search: string;
   conflictFilters?: CalendarConflictFilters;
+  callDates?: string[] | null;
   weekAnchor: string;
   onWeekAnchorChange: (iso: string) => void;
   year: number;
@@ -46,6 +47,7 @@ export default function OperationalSection({
   positionId,
   search,
   conflictFilters = {},
+  callDates = null,
   weekAnchor,
   onWeekAnchorChange,
   year,
@@ -63,6 +65,7 @@ export default function OperationalSection({
     statuses.length > 0 ||
     Boolean(search.trim()) ||
     portId > 0 ||
+    Boolean(callDates?.length) ||
     conflictFilters.has_conflict !== undefined ||
     Boolean(conflictFilters.conflict_severity) ||
     Boolean(conflictFilters.conflict_type);
@@ -79,6 +82,7 @@ export default function OperationalSection({
       positionId={positionId}
       search={search}
       conflictFilters={conflictFilters}
+      callDates={callDates}
       hasFilters={hasFilters}
       onClearFilters={onClearFilters}
       weekAnchor={weekAnchor}
