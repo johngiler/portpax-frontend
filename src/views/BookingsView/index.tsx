@@ -755,7 +755,7 @@ export default function BookingsView() {
   // Banner = filters that affect the *current* view response.
   // Stashed focus (vessel/conflict/…) stays in state on gaps but does not count here.
   const hasActiveFilters = gapsViewActive
-    ? (tab !== "proximity" && appliedPortFilter > 0) ||
+    ? appliedPortFilter > 0 ||
       appliedDatePreset !== "all" ||
       Boolean(availabilityDateAllowlist?.length)
     : appliedStatusFilter.length > 0 ||
