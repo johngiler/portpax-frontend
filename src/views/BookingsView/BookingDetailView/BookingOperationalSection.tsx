@@ -144,28 +144,50 @@ export default function BookingOperationalSection({
 
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
   // LTA / CL / LTD already sit on the LTA track — horizon soft-fails are noise here.
-  const ltaTrack = booking.status === "lta" || booking.status === "cl" || booking.status === "ltd";
+  const ltaTrack =
+    booking.status === "lta" ||
+    booking.status === "cl" ||
+    booking.status === "ltd";
+  const ltaSoftFailCodes = new Set([
+    "lta_beyond_horizon",
+    "lta_horizon_denied",
+    "lta_policy_denied",
+  ]);
   const liveWarnings = (selectedSuggestion?.warnings ?? []).filter((warning) => {
     if (!ltaTrack) return true;
-    return (
-      warning.code !== "lta_beyond_horizon" &&
-      warning.code !== "lta_horizon_denied" &&
-      warning.code !== "lta_policy_denied"
-    );
+    return !ltaSoftFailCodes.has(warning.code);
   });
-  const snapshotIssues: BookingValidationIssue[] = (
-    booking.conflict_snapshot ?? []
-  ).map((item) => ({
-    level: item.level ?? "warning",
-    code: item.code,
-    message: item.message,
-    severity: issueSeverity(item),
-    detail: item.detail,
-  }));
   const liveNormalized = liveWarnings.map((warning) => ({
     ...warning,
     severity: issueSeverity(warning),
   }));
+  const liveHasLtaMatch = liveNormalized.some(
+    (item) => item.code === "lta_agreement_match",
+  );
+  const liveSuggestLoaded = selectedSuggestion != null;
+  const snapshotIssues: BookingValidationIssue[] = (
+    booking.conflict_snapshot ?? []
+  )
+    .map((item) => ({
+      level: item.level ?? "warning",
+      code: item.code,
+      message: item.message,
+      severity: issueSeverity(item),
+      detail: item.detail,
+    }))
+    .filter((item) => {
+      if (!ltaSoftFailCodes.has(item.code)) return true;
+      // Same rule as live: hide soft-fails on LTA-track statuses.
+      if (ltaTrack) return false;
+      // Live match supersedes a stale “fuera de horizonte” snapshot.
+      if (liveHasLtaMatch) return false;
+      // When suggest already ran for this position, live is source of truth
+      // for LTA soft-fails (drop stale snapshot codes live no longer emits).
+      if (liveSuggestLoaded) {
+        return liveNormalized.some((live) => live.code === item.code);
+      }
+      return true;
+    });
   // Live suggestions win per code; keep snapshot codes missing from live
   // (e.g. schedule rules if suggest was called without ETA).
   const sameSavedPosition = positionId === (booking.position ?? 0);
