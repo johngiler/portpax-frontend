@@ -5,6 +5,7 @@ import {
   auditEntityHint,
   auditFieldChangeLines,
 } from "@/lib/auditChangeLines";
+import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { BookingAuditEntry } from "@/types/booking";
 
 type BookingAuditSectionProps = {
@@ -87,7 +88,7 @@ export default function BookingAuditSection({ entries }: BookingAuditSectionProp
             dateStyle: "medium",
             timeStyle: "short",
           });
-          const who = entry.user_display?.trim() || "Sistema";
+          const who = formatAuditActorDisplay(entry.user_display);
           const label = actionLabel(entry.action);
           const summary = entry.summary?.trim() || "";
           const showSummary = Boolean(summary && !titlesMatch(summary, entry.action));

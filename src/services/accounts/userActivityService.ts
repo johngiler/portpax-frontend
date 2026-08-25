@@ -34,6 +34,7 @@ export async function fetchUserActivity(params: {
   is_active?: "" | "true" | "false";
   date_from?: string;
   date_to?: string;
+  actor?: string;
 }): Promise<UserActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -43,8 +44,20 @@ export async function fetchUserActivity(params: {
   if (params.is_active) sp.set("is_active", params.is_active);
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
+  if (params.actor?.trim()) sp.set("actor", params.actor.trim());
   const qs = sp.toString();
   return apiFetch<UserActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export type UserActivityActor = { id: number; label: string };
+
+export async function fetchUserActivityActors(): Promise<{
+  results: UserActivityActor[];
+  has_system: boolean;
+}> {
+  return apiFetch<{ results: UserActivityActor[]; has_system: boolean }>(
+    `${BASE}activity-actors/`,
   );
 }

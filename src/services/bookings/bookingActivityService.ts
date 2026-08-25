@@ -99,6 +99,8 @@ export async function fetchBookingActivity(params: {
   kind?: BookingActivityKind;
   date_from?: string;
   date_to?: string;
+  /** User id, or "system" for events without a human actor. */
+  actor?: string;
 }): Promise<BookingActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -106,9 +108,24 @@ export async function fetchBookingActivity(params: {
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind);
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
+  if (params.actor?.trim()) sp.set("actor", params.actor.trim());
   const qs = sp.toString();
   return apiFetch<BookingActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export type BookingActivityActor = {
+  id: number;
+  label: string;
+};
+
+export async function fetchBookingActivityActors(): Promise<{
+  results: BookingActivityActor[];
+  has_system: boolean;
+}> {
+  return apiFetch<{ results: BookingActivityActor[]; has_system: boolean }>(
+    `${BASE}activity-actors/`,
   );
 }
 

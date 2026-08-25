@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
+import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { UserActivityItem } from "@/services/accounts/userActivityService";
 import { USER_ROLE_OPTIONS } from "@/types/accounts";
 
@@ -223,12 +224,13 @@ export default function UsersHistoryFeed({
                 ) : null}
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-100 pt-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                  {item.actor_display ? (
-                    <span className="inline-flex items-center gap-1">
-                      <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      Por <span className="font-medium text-zinc-700 dark:text-zinc-200">{item.actor_display}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    Por{" "}
+                    <span className="font-medium text-zinc-700 dark:text-zinc-200">
+                      {formatAuditActorDisplay(item.actor_display)}
                     </span>
-                  ) : null}
+                  </span>
                   <span>{when}</span>
                 </div>
               </div>

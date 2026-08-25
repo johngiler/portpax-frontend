@@ -14,6 +14,7 @@ type LtaHistoryPanelProps = {
   kind: LtaActivityKind;
   dateFrom: string;
   dateTo: string;
+  actor?: string;
   enabled?: boolean;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
@@ -23,6 +24,7 @@ export default function LtaHistoryPanel({
   kind,
   dateFrom,
   dateTo,
+  actor = "",
   enabled = true,
   hasActiveFilters = false,
   onClearFilters,
@@ -40,6 +42,7 @@ export default function LtaHistoryPanel({
       kind,
       dateFrom,
       dateTo,
+      actor,
       pageSize: PAGE_SIZE,
     },
     enabled,

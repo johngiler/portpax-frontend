@@ -8,6 +8,7 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
   BOOKING_DETAIL_LINK_PROPS,
@@ -172,7 +173,7 @@ export default function ImportBatchDetailModal({
           </div>
 
           <p className="text-xs text-zinc-500">
-            {detail.user_display ? `${detail.user_display} · ` : null}
+            {formatAuditActorDisplay(detail.user_display)} ·{" "}
             {new Date(detail.created_at).toLocaleString("es-MX")}
           </p>
 

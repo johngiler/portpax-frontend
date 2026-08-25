@@ -86,17 +86,27 @@ export const swrKeys = {
   bookingActivityInfinite: (paramsKey: string) =>
     ["bookings", "activity", "infinite", paramsKey] as const,
 
+  bookingActivityActors: ["bookings", "activity", "actors"] as const,
+
   userActivityInfinite: (paramsKey: string) =>
     ["users", "activity", "infinite", paramsKey] as const,
+
+  userActivityActors: ["users", "activity", "actors"] as const,
 
   ltaActivityInfinite: (paramsKey: string) =>
     ["lta-agreements", "activity", "infinite", paramsKey] as const,
 
+  ltaActivityActors: ["lta-agreements", "activity", "actors"] as const,
+
   portActivityInfinite: (paramsKey: string) =>
     ["ports", "activity", "infinite", paramsKey] as const,
 
+  portActivityActors: ["ports", "activity", "actors"] as const,
+
   shippingLineActivityInfinite: (paramsKey: string) =>
     ["shipping-lines", "activity", "infinite", paramsKey] as const,
+
+  shippingLineActivityActors: ["shipping-lines", "activity", "actors"] as const,
 };
 
 export type SwrKey = readonly unknown[];

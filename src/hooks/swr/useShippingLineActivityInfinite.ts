@@ -13,6 +13,7 @@ export type ShippingLineActivityFilterParams = {
   kind?: ShippingLineActivityKind;
   dateFrom?: string;
   dateTo?: string;
+  actor?: string;
   pageSize?: number;
 };
 
@@ -21,6 +22,7 @@ function activityParamsKey(params: ShippingLineActivityFilterParams): string {
     params.kind ?? "all",
     params.dateFrom ?? "",
     params.dateTo ?? "",
+    params.actor ?? "",
     params.pageSize ?? 20,
   ].join("|");
 }
@@ -34,6 +36,7 @@ export function useShippingLineActivityInfinite(
   const kind = params.kind ?? "all";
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
+  const actor = params.actor?.trim() || undefined;
 
   const getKey = useCallback(
     (
@@ -63,6 +66,7 @@ export function useShippingLineActivityInfinite(
         kind,
         date_from: dateFrom,
         date_to: dateTo,
+        actor,
       });
     });
 

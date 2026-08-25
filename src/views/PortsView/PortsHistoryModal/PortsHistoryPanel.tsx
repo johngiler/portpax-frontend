@@ -14,6 +14,7 @@ type PortsHistoryPanelProps = {
   kind: PortActivityKind;
   dateFrom: string;
   dateTo: string;
+  actor?: string;
   enabled?: boolean;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
@@ -23,6 +24,7 @@ export default function PortsHistoryPanel({
   kind,
   dateFrom,
   dateTo,
+  actor = "",
   enabled = true,
   hasActiveFilters = false,
   onClearFilters,
@@ -36,7 +38,7 @@ export default function PortsHistoryPanel({
     error,
     loadMore,
   } = usePortActivityInfinite(
-    { kind, dateFrom, dateTo, pageSize: PAGE_SIZE },
+    { kind, dateFrom, dateTo, actor, pageSize: PAGE_SIZE },
     enabled,
   );
 

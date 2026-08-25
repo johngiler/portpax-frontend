@@ -31,6 +31,7 @@ export async function fetchShippingLineActivity(params: {
   kind?: ShippingLineActivityKind;
   date_from?: string;
   date_to?: string;
+  actor?: string;
 }): Promise<ShippingLineActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -38,8 +39,21 @@ export async function fetchShippingLineActivity(params: {
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind);
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
+  if (params.actor?.trim()) sp.set("actor", params.actor.trim());
   const qs = sp.toString();
   return apiFetch<ShippingLineActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,
   );
+}
+
+export type ShippingLineActivityActor = { id: number; label: string };
+
+export async function fetchShippingLineActivityActors(): Promise<{
+  results: ShippingLineActivityActor[];
+  has_system: boolean;
+}> {
+  return apiFetch<{
+    results: ShippingLineActivityActor[];
+    has_system: boolean;
+  }>(`${BASE}activity-actors/`);
 }

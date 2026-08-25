@@ -14,6 +14,7 @@ import {
   auditEntityHint,
   auditFieldChangeLines,
 } from "@/lib/auditChangeLines";
+import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
   BOOKING_DETAIL_LINK_PROPS,
@@ -302,15 +303,13 @@ export default function HistoryFeed({
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  {item.user_display ? (
-                    <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1">
                       <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       Por{" "}
                       <span className="font-medium text-zinc-700 dark:text-zinc-200">
-                        {item.user_display}
+                        {formatAuditActorDisplay(item.user_display)}
                       </span>
                     </span>
-                  ) : null}
                   <span>{when}</span>
                 </div>
                 {interactive ? (

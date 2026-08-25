@@ -13,6 +13,8 @@ export type BookingActivityFilterParams = {
   kind?: BookingActivityKind;
   dateFrom?: string;
   dateTo?: string;
+  /** User id as string, or "system". Empty = all. */
+  actor?: string;
   pageSize?: number;
 };
 
@@ -21,6 +23,7 @@ function activityParamsKey(params: BookingActivityFilterParams): string {
     params.kind ?? "all",
     params.dateFrom ?? "",
     params.dateTo ?? "",
+    params.actor ?? "",
     params.pageSize ?? 20,
   ].join("|");
 }
@@ -34,6 +37,7 @@ export function useBookingActivityInfinite(
   const kind = params.kind ?? "all";
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
+  const actor = params.actor?.trim() || undefined;
 
   const getKey = useCallback(
     (
@@ -63,6 +67,7 @@ export function useBookingActivityInfinite(
         kind,
         date_from: dateFrom,
         date_to: dateTo,
+        actor,
       });
     });
 

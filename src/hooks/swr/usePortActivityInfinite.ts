@@ -13,6 +13,7 @@ export type PortActivityFilterParams = {
   kind?: PortActivityKind;
   dateFrom?: string;
   dateTo?: string;
+  actor?: string;
   pageSize?: number;
 };
 
@@ -21,6 +22,7 @@ function activityParamsKey(params: PortActivityFilterParams): string {
     params.kind ?? "all",
     params.dateFrom ?? "",
     params.dateTo ?? "",
+    params.actor ?? "",
     params.pageSize ?? 20,
   ].join("|");
 }
@@ -34,6 +36,7 @@ export function usePortActivityInfinite(
   const kind = params.kind ?? "all";
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
+  const actor = params.actor?.trim() || undefined;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: PortActivityResponse | null) => {
@@ -57,6 +60,7 @@ export function usePortActivityInfinite(
         kind,
         date_from: dateFrom,
         date_to: dateTo,
+        actor,
       });
     });
 
