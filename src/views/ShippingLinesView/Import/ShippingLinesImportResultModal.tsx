@@ -14,7 +14,9 @@ type ShippingLinesImportResultModalProps = {
 };
 
 function kindLabel(kind: ShippingLineImportItem["kind"]): string {
-  return kind === "shipping_line" ? "Naviera" : "Barco";
+  if (kind === "group") return "Grupo";
+  if (kind === "shipping_line") return "Naviera";
+  return "Barco";
 }
 
 function ResultList({
@@ -130,7 +132,10 @@ export default function ShippingLinesImportResultModal({
           aria-hidden
         />
         <p>
-          Navieras: {result.shipping_lines.updated_count} actualizadas,{" "}
+          Grupos: {result.groups?.updated_count ?? 0} actualizados,{" "}
+          {result.groups?.created_count ?? 0} creados,{" "}
+          {result.groups?.invalid_count ?? 0} inválidos. Navieras:{" "}
+          {result.shipping_lines.updated_count} actualizadas,{" "}
           {result.shipping_lines.created_count} creadas,{" "}
           {result.shipping_lines.invalid_count} inválidas. Barcos:{" "}
           {result.vessels.updated_count} actualizados,{" "}

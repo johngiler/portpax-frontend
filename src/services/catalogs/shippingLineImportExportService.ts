@@ -6,7 +6,10 @@ import {
 
 const BASE = "api/catalogs/shipping-lines/";
 
-export type ShippingLineImportEntityKind = "shipping_line" | "vessel";
+export type ShippingLineImportEntityKind =
+  | "group"
+  | "shipping_line"
+  | "vessel";
 
 export type ShippingLineImportItem = {
   kind: ShippingLineImportEntityKind;
@@ -32,6 +35,7 @@ export type ShippingLineImportResult = {
   updated_count: number;
   created_count: number;
   invalid_count: number;
+  groups: ShippingLineImportBucket;
   shipping_lines: ShippingLineImportBucket;
   vessels: ShippingLineImportBucket;
   created: ShippingLineImportItem[];

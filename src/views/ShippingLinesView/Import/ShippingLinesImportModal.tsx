@@ -35,13 +35,13 @@ export default function ShippingLinesImportModal({
       }
     >
       <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
-        Excel exportado con hojas Navieras y Barcos. Con{" "}
+        Excel exportado con hojas Grupos, Navieras y Barcos. Con{" "}
         <span className="font-medium text-zinc-800 dark:text-zinc-100">id</span>{" "}
         se actualiza; sin id se crea.
       </p>
       <ImportOptionDropCard
-        title="Navieras y barcos"
-        description="Usa el .xlsx descargado desde Exportar. Logos y fechas de sistema no se modifican."
+        title="Grupos, navieras y barcos"
+        description="Usa el .xlsx descargado desde Exportar."
         icon={FileSpreadsheet}
         disabled={disabled}
         onFile={(file) => {

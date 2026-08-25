@@ -23,7 +23,9 @@ export async function revalidatePortsLists(): Promise<void> {
 
 export async function revalidateShippingLinesLists(): Promise<void> {
   await mutate(
-    (key) => Array.isArray(key) && key[0] === "shipping-lines",
+    (key) =>
+      Array.isArray(key) &&
+      (key[0] === "shipping-lines" || key[0] === "shipping-line-groups"),
     undefined,
     { revalidate: true },
   );
