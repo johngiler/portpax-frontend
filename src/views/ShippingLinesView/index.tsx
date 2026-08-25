@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Anchor, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
@@ -15,15 +15,28 @@ import { useShippingLineGroupsCatalog } from "@/hooks/swr/useCatalogs";
 import { useShippingLinesInfinite } from "@/hooks/swr/useShippingLinesInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { setDataActivityHandler } from "@/lib/dataActivityStore";
+import {
+  setDataExportHandler,
+  type DataExportFormat,
+} from "@/lib/dataExportStore";
+import { setDataImportHandler } from "@/lib/dataImportStore";
 import { suggestShippingLines } from "@/lib/filterSuggestions";
 import { canWriteApp } from "@/lib/navAccess";
 import { revalidateShippingLinesLists } from "@/lib/swr/mutateHelpers";
+import {
+  exportShippingLinesCatalog,
+  importShippingLinesCatalog,
+  type ShippingLineImportResult,
+} from "@/services/catalogs/shippingLineImportExportService";
 import { createShippingLine } from "@/services/catalogs/shippingLineService";
 import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
 import ShippingLineCard from "./ShippingLineCard";
 import ShippingLineFormModal from "./ShippingLineFormModal";
 import ShippingLinesEmptyState from "./ShippingLinesEmptyState";
 import ShippingLinesHistoryModal from "./ShippingLinesHistoryModal";
+import ShippingLinesImportLoadingModal from "./Import/ShippingLinesImportLoadingModal";
+import ShippingLinesImportModal from "./Import/ShippingLinesImportModal";
+import ShippingLinesImportResultModal from "./Import/ShippingLinesImportResultModal";
 import ShippingLinesViewSkeleton from "./ShippingLinesViewSkeleton";
 
 const BATCH_SIZE = 12;
@@ -39,6 +52,12 @@ export default function ShippingLinesView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [importOptionsOpen, setImportOptionsOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importFileName, setImportFileName] = useState<string | undefined>();
+  const [importResult, setImportResult] =
+    useState<ShippingLineImportResult | null>(null);
+  const [importResultOpen, setImportResultOpen] = useState(false);
 
   const { groups } = useShippingLineGroupsCatalog();
   const groupOptions = useMemo(
@@ -72,7 +91,63 @@ export default function ShippingLinesView() {
     return () => setDataActivityHandler(null);
   }, []);
 
-  async function handleSave({ payload, logoFile, removeLogo }: ShippingLineFormSubmitPayload) {
+  const handleExport = useCallback(
+    async (format: DataExportFormat) => {
+      try {
+        setViewError(null);
+        await exportShippingLinesCatalog({
+          search: appliedSearch,
+          group: appliedGroupFilter > 0 ? appliedGroupFilter : undefined,
+          exportFormat: format,
+        });
+      } catch (err) {
+        setViewError(getApiErrorMessage(err, "No se pudo exportar."));
+      }
+    },
+    [appliedSearch, appliedGroupFilter],
+  );
+
+  useEffect(() => {
+    setDataExportHandler(handleExport);
+    return () => setDataExportHandler(null);
+  }, [handleExport]);
+
+  useEffect(() => {
+    if (!canWrite) {
+      setDataImportHandler(null);
+      return;
+    }
+    setDataImportHandler(() => {
+      setImportOptionsOpen(true);
+    });
+    return () => setDataImportHandler(null);
+  }, [canWrite]);
+
+  async function handleImportFile(file: File) {
+    setImportLoading(true);
+    setImportFileName(file.name);
+    setViewError(null);
+    try {
+      const result = await importShippingLinesCatalog(file);
+      setImportResult(result);
+      setImportResultOpen(true);
+      await revalidateShippingLinesLists();
+      await refresh();
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(err, "No se pudo importar el catálogo de navieras."),
+      );
+    } finally {
+      setImportLoading(false);
+      setImportFileName(undefined);
+    }
+  }
+
+  async function handleSave({
+    payload,
+    logoFile,
+    removeLogo,
+  }: ShippingLineFormSubmitPayload) {
     setSaving(true);
     try {
       await createShippingLine(payload, { logoFile, removeLogo });
@@ -196,6 +271,26 @@ export default function ShippingLinesView() {
       <ShippingLinesHistoryModal
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
+      />
+
+      <ShippingLinesImportModal
+        open={importOptionsOpen}
+        onClose={() => !importLoading && setImportOptionsOpen(false)}
+        disabled={importLoading}
+        onImportFile={(file) => {
+          void handleImportFile(file);
+        }}
+      />
+
+      <ShippingLinesImportLoadingModal
+        open={importLoading}
+        fileName={importFileName}
+      />
+
+      <ShippingLinesImportResultModal
+        open={importResultOpen}
+        result={importResult}
+        onClose={() => setImportResultOpen(false)}
       />
     </>
   );
