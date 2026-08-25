@@ -145,7 +145,7 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
 
       <DetailSection
         title="Política y vigencia"
-        description="Ventana LTA del acuerdo (bloques: actual + 3 open + zona LTA)."
+        description="Ventana LTA del acuerdo (bloques: 2 actual + 3 open + zona LTA)."
       >
         <DetailField label="Política de ventana">{policyLabel}</DetailField>
         <DetailField label="Profundidad LTA (bloques)">

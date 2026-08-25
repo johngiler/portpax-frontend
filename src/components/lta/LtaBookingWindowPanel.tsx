@@ -6,7 +6,7 @@ import {
   agreementBookableBlockIndices,
   blockOverlapsAgreement,
   buildSeasonalWindowsSnapshot,
-  OPEN_BLOCKS_AFTER_CURRENT,
+  firstLtaBlockIndex,
   type BookingWindowZone,
   type SeasonBlock,
   ZONE_LABEL,
@@ -30,6 +30,10 @@ const ZONE_STRIPE: Record<BookingWindowZone, string> = {
   beyond: "border-t-zinc-300 bg-zinc-50/60 dark:border-t-zinc-600 dark:bg-zinc-900/40",
 };
 
+/** Current-period block whose end date is already past (e.g. previous season). */
+const CURRENT_ELAPSED_STRIPE =
+  "border-t-amber-200/70 bg-amber-50/25 text-zinc-500 opacity-55 dark:border-t-amber-800/50 dark:bg-amber-950/15 dark:opacity-50";
+
 const ZONE_DOT: Record<BookingWindowZone, string> = {
   current: "bg-amber-400",
   general: "bg-emerald-400",
@@ -39,6 +43,10 @@ const ZONE_DOT: Record<BookingWindowZone, string> = {
 
 function formatBlockRange(block: SeasonBlock): string {
   return `${formatIsoDateLabel(block.date_from, "short")} – ${formatIsoDateLabel(block.date_to, "short")}`;
+}
+
+function isElapsedCurrentBlock(block: SeasonBlock, referenceDate: string): boolean {
+  return block.zone === "current" && block.date_to < referenceDate;
 }
 
 export default function LtaBookingWindowPanel({
@@ -71,7 +79,8 @@ export default function LtaBookingWindowPanel({
 
   function handleSelectLtaBlock(block: SeasonBlock) {
     if (!onDepthChange || block.zone !== "lta_covered") return;
-    const slot = block.index - OPEN_BLOCKS_AFTER_CURRENT;
+    const firstLta = firstLtaBlockIndex();
+    const slot = block.index - firstLta + 1;
     if (slot < 1) return;
     onDepthChange(Math.min(ltaBlocks.length, Math.max(1, slot)));
   }
@@ -104,19 +113,28 @@ export default function LtaBookingWindowPanel({
         className={
           compact
             ? "flex gap-2 overflow-x-auto pb-1"
-            : "grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8"
+            : "grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9"
         }
       >
         {snapshot.blocks.map((block) => {
           const inVigencia = blockOverlapsAgreement(block, validFrom, validUntil);
           const reservable = bookable.has(block.index) && inVigencia;
           const muted = validFrom || validUntil ? !inVigencia : false;
+          const elapsedCurrent = isElapsedCurrentBlock(
+            block,
+            snapshot.reference_date,
+          );
           const isLtaZone = block.zone === "lta_covered";
-          const ltaSlot = block.index - OPEN_BLOCKS_AFTER_CURRENT;
+          const firstLta = firstLtaBlockIndex();
+          const ltaSlot = block.index - firstLta + 1;
           const inSelectedDepth = isLtaZone && ltaSlot >= 1 && ltaSlot <= ltaDepthBlocks;
           const canSelect = selectable && isLtaZone;
 
-          const className = `${compact ? "min-w-[7.5rem] shrink-0" : ""} rounded-lg border border-zinc-200/80 border-t-[3px] px-2.5 py-2 transition dark:border-zinc-700 ${ZONE_STRIPE[block.zone]} ${
+          const stripe = elapsedCurrent
+            ? CURRENT_ELAPSED_STRIPE
+            : ZONE_STRIPE[block.zone];
+
+          const className = `${compact ? "min-w-[7.5rem] shrink-0" : ""} rounded-lg border border-zinc-200/80 border-t-[3px] px-2.5 py-2 transition dark:border-zinc-700 ${stripe} ${
             muted ? "opacity-35" : ""
           } ${inSelectedDepth ? "ring-2 ring-[var(--admin-accent)]/45 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950" : ""} ${
             canSelect
@@ -130,6 +148,7 @@ export default function LtaBookingWindowPanel({
             <>
               <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 {ZONE_LABEL[block.zone]}
+                {elapsedCurrent ? " · pasado" : ""}
               </p>
               <p className="mt-0.5 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                 {block.label}

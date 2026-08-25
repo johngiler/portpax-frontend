@@ -72,7 +72,7 @@ export default function LtaBookingPolicyGuideTable({
         </tbody>
       </table>
       <p className="border-t border-[var(--admin-border)]/70 px-3 py-2 text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-        El período actual y open booking (bloques B0–B3) siguen abiertos al
+        El período actual (2 bloques) y open booking (3 bloques) siguen abiertos al
         mercado. La política solo restringe cómo se usan los bloques de zona
         LTA según la profundidad elegida en el mapa.
       </p>

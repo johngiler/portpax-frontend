@@ -1,11 +1,16 @@
 /**
  * Rolling 6-month blocks for the LTA agreement form timeline.
  * Mirrors backend apps/bookings/services/lta/windows.py (client-side preview).
+ *
+ * Current period = 2 blocks (today's season + the previous one).
+ * Then 3 open-booking blocks, then LTA zone.
  */
 
 import { localTodayIso, parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import type { LtaBookingPolicy } from "@/types/lta";
 
+/** Período actual: today's block + one block backwards. */
+export const CURRENT_BLOCKS = 2;
 export const OPEN_BLOCKS_AFTER_CURRENT = 3;
 export const DEFAULT_LTA_BLOCKS = 4;
 
@@ -30,6 +35,7 @@ export type SeasonalWindowsSnapshot = {
   general_to: string;
   lta_from: string;
   lta_to: string;
+  current_blocks: number;
   open_blocks: number;
   blocks: SeasonBlock[];
 };
@@ -81,30 +87,68 @@ function nextBlock(
   };
 }
 
+function previousBlock(
+  season: SeasonKind,
+  blockStartIso: string,
+): { season: SeasonKind; from: string; to: string } {
+  const { year } = parseIsoDate(blockStartIso);
+  if (season === "winter") {
+    return {
+      season: "summer",
+      from: dateFromParts(year, 4, 1),
+      to: dateFromParts(year, 9, 31),
+    };
+  }
+  return {
+    season: "winter",
+    from: dateFromParts(year - 1, 10, 1),
+    to: dateFromParts(year, 3, 30),
+  };
+}
+
+function windowStartBlock(todayIso: string): {
+  season: SeasonKind;
+  from: string;
+  to: string;
+} {
+  let { season, from, to } = blockContaining(todayIso);
+  for (let i = 0; i < Math.max(0, CURRENT_BLOCKS - 1); i += 1) {
+    ({ season, from, to } = previousBlock(season, from));
+  }
+  return { season, from, to };
+}
+
 function seasonBlockLabel(season: SeasonKind, blockStartIso: string): string {
   const { year } = parseIsoDate(blockStartIso);
   if (season === "summer") return `Summer ${year}`;
   return `Winter ${year}/${year + 1}`;
 }
 
+export function firstLtaBlockIndex(
+  openBlocks = OPEN_BLOCKS_AFTER_CURRENT,
+): number {
+  return CURRENT_BLOCKS + openBlocks;
+}
+
 function zoneForBlockIndex(
   index: number,
   ltaBlocks = DEFAULT_LTA_BLOCKS,
+  openBlocks = OPEN_BLOCKS_AFTER_CURRENT,
 ): BookingWindowZone {
   if (index < 0) return "current";
-  if (index === 0) return "current";
-  if (index <= OPEN_BLOCKS_AFTER_CURRENT) return "general";
-  if (index <= OPEN_BLOCKS_AFTER_CURRENT + ltaBlocks) return "lta_covered";
+  if (index < CURRENT_BLOCKS) return "current";
+  if (index < CURRENT_BLOCKS + openBlocks) return "general";
+  if (index < CURRENT_BLOCKS + openBlocks + ltaBlocks) return "lta_covered";
   return "beyond";
 }
 
 function listSeasonBlocks(
   todayIso?: string,
-  count = OPEN_BLOCKS_AFTER_CURRENT + DEFAULT_LTA_BLOCKS + 1,
+  count = CURRENT_BLOCKS + OPEN_BLOCKS_AFTER_CURRENT + DEFAULT_LTA_BLOCKS,
   ltaBlocks = DEFAULT_LTA_BLOCKS,
 ): SeasonBlock[] {
   const today = todayIso ?? localTodayIso();
-  let { season, from, to } = blockContaining(today);
+  let { season, from, to } = windowStartBlock(today);
   const blocks: SeasonBlock[] = [];
   for (let idx = 0; idx < count; idx += 1) {
     blocks.push({
@@ -123,18 +167,20 @@ function listSeasonBlocks(
 export function buildSeasonalWindowsSnapshot(todayIso?: string): SeasonalWindowsSnapshot {
   const today = todayIso ?? localTodayIso();
   const blocks = listSeasonBlocks(today);
-  const openLast = blocks[OPEN_BLOCKS_AFTER_CURRENT];
-  const ltaFirst = blocks[OPEN_BLOCKS_AFTER_CURRENT + 1];
-  const ltaLast = blocks[OPEN_BLOCKS_AFTER_CURRENT + DEFAULT_LTA_BLOCKS];
-  const current = blocks[0];
+  const currentLast = blocks[CURRENT_BLOCKS - 1];
+  const openLast = blocks[CURRENT_BLOCKS + OPEN_BLOCKS_AFTER_CURRENT - 1];
+  const ltaFirst = blocks[CURRENT_BLOCKS + OPEN_BLOCKS_AFTER_CURRENT];
+  const ltaLast =
+    blocks[CURRENT_BLOCKS + OPEN_BLOCKS_AFTER_CURRENT + DEFAULT_LTA_BLOCKS - 1];
   return {
     reference_date: today,
-    current_from: current.date_from,
-    current_to: current.date_to,
-    general_from: blocks[1].date_from,
+    current_from: blocks[0].date_from,
+    current_to: currentLast.date_to,
+    general_from: blocks[CURRENT_BLOCKS].date_from,
     general_to: openLast.date_to,
     lta_from: ltaFirst.date_from,
     lta_to: ltaLast.date_to,
+    current_blocks: CURRENT_BLOCKS,
     open_blocks: OPEN_BLOCKS_AFTER_CURRENT,
     blocks,
   };
