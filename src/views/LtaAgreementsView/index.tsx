@@ -107,15 +107,25 @@ export default function LtaAgreementsView() {
 
   async function handleSave({ payload, options }: LtaFormSubmitData) {
     setSaving(true);
+    setViewError(null);
+    setViewSuccess(null);
     try {
       if (modalMode === "edit" && editing) {
         await updateLongTermAgreement(editing.id, payload, options);
+        setViewSuccess(
+          "Acuerdo actualizado. La re-sincronización de reservas corre en segundo plano.",
+        );
       } else {
         await createLongTermAgreement(payload, options);
+        setViewSuccess(
+          "Acuerdo creado. La vinculación de reservas corre en segundo plano.",
+        );
       }
       setModalOpen(false);
       await revalidateLtaAgreements();
       await mutate();
+    } catch (err) {
+      setViewError(getApiErrorMessage(err, "No se pudo guardar el acuerdo."));
     } finally {
       setSaving(false);
     }
@@ -126,6 +136,9 @@ export default function LtaAgreementsView() {
     setViewSuccess(null);
     try {
       await deleteLongTermAgreement(row.id);
+      setViewSuccess(
+        "Eliminación en cola. La desvinculación de reservas corre en segundo plano.",
+      );
       await revalidateLtaAgreements();
       await mutate();
     } catch (err) {

@@ -139,10 +139,11 @@ export async function deleteLongTermAgreement(id: number): Promise<void> {
 }
 
 export type LinkLtaBookingsResult = {
-  linked: number;
-  skipped: number;
+  linked?: number;
+  skipped?: number;
   agreement_code?: string;
   detail?: string;
+  task_id?: string;
 };
 
 export async function linkLongTermAgreementBookings(

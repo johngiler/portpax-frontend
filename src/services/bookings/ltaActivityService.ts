@@ -12,7 +12,9 @@ export type LtaActivityItem = {
   agreement_code: string;
   agreement_name: string;
   port_code: string | null;
+  port_name: string | null;
   shipping_line_code: string | null;
+  shipping_line_name: string | null;
   changes: Record<string, unknown>;
   entity: Record<string, unknown> | null;
 };

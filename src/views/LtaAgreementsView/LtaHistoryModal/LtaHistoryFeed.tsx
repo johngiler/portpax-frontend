@@ -12,6 +12,7 @@ import {
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { LtaActivityItem } from "@/services/bookings/ltaActivityService";
+import { resolveLtaAsyncJobChip } from "./ltaAsyncJobChip";
 
 type LtaHistoryFeedProps = {
   items: LtaActivityItem[];
@@ -35,12 +36,44 @@ function actionLabel(action: string): string {
 }
 
 function agreementTitle(item: LtaActivityItem): string {
-  const code = item.agreement_code?.trim();
   const name = item.agreement_name?.trim();
-  if (code && name && name.toLowerCase() !== code.toLowerCase()) {
-    return `${code} · ${name}`;
+  if (name) return name;
+  const code = item.agreement_code?.trim();
+  return code || "Acuerdo LTA";
+}
+
+function agreementTitleAttr(item: LtaActivityItem): string | undefined {
+  const name = item.agreement_name?.trim();
+  const code = item.agreement_code?.trim();
+  if (name && code && name.toLowerCase() !== code.toLowerCase()) {
+    return code;
   }
-  return code || name || "Acuerdo LTA";
+  return undefined;
+}
+
+function contextMeta(item: LtaActivityItem): {
+  label: string;
+  title?: string;
+} | null {
+  const port =
+    item.port_name?.trim() ||
+    (typeof item.entity?.port_name === "string"
+      ? item.entity.port_name.trim()
+      : "") ||
+    "";
+  const line =
+    item.shipping_line_name?.trim() ||
+    (typeof item.entity?.shipping_line_name === "string"
+      ? item.entity.shipping_line_name.trim()
+      : "") ||
+    "";
+  const parts = [port, line].filter(Boolean);
+  if (!parts.length) return null;
+  const codeParts = [item.port_code, item.shipping_line_code].filter(Boolean);
+  return {
+    label: parts.join(" · "),
+    title: codeParts.length ? codeParts.join(" · ") : undefined,
+  };
 }
 
 function headline(item: LtaActivityItem): string {
@@ -172,9 +205,8 @@ export default function LtaHistoryFeed({
           dateStyle: "medium",
           timeStyle: "short",
         });
-        const metaParts = [item.port_code, item.shipping_line_code].filter(
-          Boolean,
-        );
+        const meta = contextMeta(item);
+        const codeHint = agreementTitleAttr(item);
 
         return (
           <li
@@ -194,13 +226,38 @@ export default function LtaHistoryFeed({
                   >
                     {actionLabel(item.action)}
                   </span>
+                  {(() => {
+                    const jobChip = resolveLtaAsyncJobChip(
+                      item.changes && typeof item.changes === "object"
+                        ? (item.changes as Record<string, unknown>)
+                        : null,
+                    );
+                    if (!jobChip) return null;
+                    const jobClass =
+                      jobChip.tone === "failed"
+                        ? "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                        : jobChip.tone === "queued"
+                          ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                          : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
+                    return (
+                      <span
+                        title={jobChip.tooltip}
+                        className={`inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${jobClass}`}
+                      >
+                        {jobChip.label}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <p className="mt-1.5 flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  <span>{headline(item)}</span>
-                  {metaParts.length > 0 ? (
-                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                      {metaParts.join(" · ")}
+                  <span title={codeHint}>{headline(item)}</span>
+                  {meta ? (
+                    <span
+                      title={meta.title}
+                      className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                    >
+                      {meta.label}
                     </span>
                   ) : null}
                 </p>

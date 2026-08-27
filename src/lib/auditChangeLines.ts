@@ -64,6 +64,11 @@ const FIELD_LABELS: Record<string, string> = {
   skipped: "Omitidas",
   linked_bookings: "Reservas vinculadas",
   unlinked_bookings: "Reservas desvinculadas",
+  kept: "Sin cambio",
+  job_status: "Estado del proceso",
+  job_kind: "Tipo de proceso",
+  error: "Error",
+  task_id: "Task Celery",
   booking_policy: "Política de ventana",
   lta_depth_blocks: "Profundidad LTA",
   reserve_foreign_slots: "Reserva de slot",
@@ -86,6 +91,21 @@ const META_KEYS = new Set([
   "created",
   "deleted",
   "agreement_code",
+  "task_id",
+  // Shown as friendly badge + tooltip in LtaHistoryFeed
+  "job_status",
+  "job_kind",
+  // Labels live on the id change payload (from_labels / from_name)
+  "vessel_labels",
+  "position_labels",
+  "port_labels",
+  "role_label",
+]);
+
+const LABELED_ID_LIST_FIELDS = new Set([
+  "position_ids",
+  "vessel_ids",
+  "port_ids",
 ]);
 
 function formatWeekdaysValue(value: unknown): string {
@@ -97,14 +117,19 @@ function formatWeekdaysValue(value: unknown): string {
 }
 
 function formatBookingStatus(value: unknown): string {
-  if (typeof value !== "string") return formatValue(value);
-  const label = BOOKING_STATUS_LABELS[value as BookingStatus];
-  return label ?? value;
+  if (typeof value === "string") {
+    const label = BOOKING_STATUS_LABELS[value as BookingStatus];
+    return label ?? value;
+  }
+  return formatValue(value);
 }
 
 function formatNamedSide(rec: Record<string, unknown>, side: "from" | "to"): string {
   const nameKey = side === "from" ? "from_name" : "to_name";
   const codeKey = side === "from" ? "from_code" : "to_code";
+  const labelKey = side === "from" ? "from_label" : "to_label";
+  const label = rec[labelKey];
+  if (typeof label === "string" && label.trim()) return label;
   const name = rec[nameKey];
   const code = rec[codeKey];
   if (typeof name === "string" && name.trim()) return name;
@@ -123,10 +148,44 @@ function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): 
   return String(raw);
 }
 
+function formatLabelList(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "—";
+  return value
+    .map((item) => {
+      if (item == null || item === "") return null;
+      if (typeof item === "string" || typeof item === "number") return String(item);
+      if (typeof item === "object") {
+        const rec = item as Record<string, unknown>;
+        if (typeof rec.name === "string" && rec.name.trim()) return rec.name;
+        if (typeof rec.code === "string" && rec.code.trim()) return rec.code;
+        if (typeof rec.label === "string" && rec.label.trim()) return rec.label;
+      }
+      return String(item);
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+function formatLabeledIdListChange(rec: Record<string, unknown>): string {
+  const fromLabels = rec.from_labels ?? rec.old_labels;
+  const toLabels = rec.to_labels ?? rec.new_labels;
+  const from =
+    Array.isArray(fromLabels) && fromLabels.length
+      ? formatLabelList(fromLabels)
+      : formatLabelList(rec.from ?? rec.old);
+  const to =
+    Array.isArray(toLabels) && toLabels.length
+      ? formatLabelList(toLabels)
+      : formatLabelList(rec.to ?? rec.new);
+  return `${from} → ${to}`;
+}
+
 const NAMED_ID_FIELDS = new Set([
   "port_id",
   "shipping_line_id",
   "vessel_id",
+  "long_term_agreement_id",
+  "group_id",
 ]);
 
 const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real"]);
@@ -148,6 +207,22 @@ function formatConflictList(value: unknown): string {
 }
 
 function formatValue(value: unknown, key?: string): string {
+  if (key === "job_status" && typeof value === "string") {
+    const labels: Record<string, string> = {
+      queued: "En segundo plano",
+      success: "Completado",
+      failed: "Falló",
+    };
+    return labels[value] ?? value;
+  }
+  if (key === "job_kind" && typeof value === "string") {
+    const labels: Record<string, string> = {
+      link: "Enlace con reservas",
+      resync: "Re-sincronización de vínculos",
+      destroy: "Eliminación del acuerdo",
+    };
+    return labels[value] ?? value;
+  }
   if (
     key === "conflicts" ||
     key === "resolved_conflicts" ||
@@ -167,11 +242,28 @@ function formatValue(value: unknown, key?: string): string {
     }
     return formatWeekdaysValue(value);
   }
+  if (key && LABELED_ID_LIST_FIELDS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return formatLabeledIdListChange(rec);
+      }
+    }
+    return formatLabelList(value);
+  }
   if (key === "position_id") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
       if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
         return `${formatPositionSide(rec, "from")} → ${formatPositionSide(rec, "to")}`;
+      }
+    }
+  }
+  if (key === "role") {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return `${formatNamedSide(rec, "from")} → ${formatNamedSide(rec, "to")}`;
       }
     }
   }
@@ -210,7 +302,7 @@ function formatValue(value: unknown, key?: string): string {
   }
   if (value == null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Sí" : "No";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (Array.isArray(value)) return formatLabelList(value);
   if (typeof value === "object") {
     const rec = value as Record<string, unknown>;
     if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
