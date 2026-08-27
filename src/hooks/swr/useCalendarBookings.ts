@@ -14,7 +14,8 @@ import {
 
 export type CalendarBookingsParams = {
   mode: CalendarViewModeQuery;
-  portId: number;
+  /** Empty = all accessible ports. */
+  portIds: number[];
   from: string;
   to: string;
   year: number;
@@ -25,7 +26,7 @@ export type CalendarBookingsParams = {
 function calendarParamsKey(p: CalendarBookingsParams): string {
   return [
     p.mode,
-    p.portId,
+    p.portIds.join(","),
     p.search.trim(),
     p.from,
     p.to,
@@ -46,7 +47,7 @@ async function fetchCalendarPayload(
   // Soft-focus filters (status, vessel, line, conflict, position) stay on the
   // client so neighbors remain visible in the grids.
   const common = {
-    port: params.portId > 0 ? params.portId : undefined,
+    ports: params.portIds.length > 0 ? params.portIds : undefined,
     search: params.search.trim() || undefined,
     ordering: "call_date" as const,
     pageSize: 500,
@@ -81,15 +82,24 @@ async function fetchCalendarPayload(
   }
 
   let positions: Position[] = [];
-  if (params.portId > 0) {
+  if (params.portIds.length === 1) {
     const positionsResponse = await fetchPositions({
-      port: params.portId,
+      port: params.portIds[0],
       pageSize: 100,
     });
     positions = positionsResponse.results.filter((p) => p.is_active);
-  } else {
+  } else if (params.portIds.length === 0) {
     const positionsResponse = await fetchPositions({ pageSize: 200 });
     positions = positionsResponse.results.filter((p) => p.is_active);
+  } else {
+    const responses = await Promise.all(
+      params.portIds.map((port) =>
+        fetchPositions({ port, pageSize: 100 }),
+      ),
+    );
+    positions = responses.flatMap((res) =>
+      res.results.filter((p) => p.is_active),
+    );
   }
 
   return { bookings, previousYearBookings, positions };

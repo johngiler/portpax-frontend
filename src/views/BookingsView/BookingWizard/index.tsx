@@ -26,7 +26,10 @@ import {
   BOOKING_WIZARD_STEPS,
   type BookingWizardForm,
   type BookingWizardStepId,
+  type WizardDateEntry,
   emptyBookingWizardForm,
+  emptyDateEntry,
+  syncDateEntries,
 } from "./wizardTypes";
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -196,13 +199,25 @@ export default function BookingWizard() {
     const prefill = parsePrefill(searchParams);
     if (!prefill.portId) return;
     prefillDoneRef.current = true;
-    setForm((prev) => ({
-      ...prev,
-      portId: prefill.portId,
-      callDates: prefill.callDate ? [prefill.callDate] : prev.callDates,
-      preferredPositionId: prefill.positionId,
-      preferredPositionLabel: prefill.positionLabel,
-    }));
+    setForm((prev) => {
+      const callDates = prefill.callDate
+        ? [prefill.callDate]
+        : prev.callDates;
+      const dateEntries = syncDateEntries(callDates, prev.dateEntries);
+      if (prefill.callDate && prefill.positionId) {
+        dateEntries[prefill.callDate] = {
+          ...(dateEntries[prefill.callDate] ?? emptyDateEntry()),
+          positionId: prefill.positionId,
+          positionLabel: prefill.positionLabel,
+        };
+      }
+      return {
+        ...prev,
+        portId: prefill.portId,
+        callDates,
+        dateEntries,
+      };
+    });
     setStep("line");
   }, [searchParams]);
 
@@ -254,9 +269,37 @@ export default function BookingWizard() {
     setForm((prev) => ({
       ...prev,
       portId,
-      preferredPositionId: null,
-      preferredPositionLabel: "",
+      dateEntries: Object.fromEntries(
+        Object.entries(prev.dateEntries).map(([iso, entry]) => [
+          iso,
+          { ...entry, positionId: null, positionLabel: "" },
+        ]),
+      ),
     }));
+  }
+
+  function handleCallDatesChange(dates: string[]) {
+    setForm((prev) => ({
+      ...prev,
+      callDates: dates,
+      dateEntries: syncDateEntries(dates, prev.dateEntries),
+    }));
+  }
+
+  function handleDateEntryChange(
+    iso: string,
+    patch: Partial<WizardDateEntry>,
+  ) {
+    setForm((prev) => {
+      const current = prev.dateEntries[iso] ?? emptyDateEntry();
+      return {
+        ...prev,
+        dateEntries: {
+          ...prev.dateEntries,
+          [iso]: { ...current, ...patch },
+        },
+      };
+    });
   }
 
   function selectLine(lineId: number, matchedVesselId?: number | null) {
@@ -265,6 +308,12 @@ export default function BookingWizard() {
       shippingLineId: lineId,
       vesselId: matchedVesselId ?? null,
       callDates: prev.callDates,
+      dateEntries: Object.fromEntries(
+        Object.entries(prev.dateEntries).map(([iso, entry]) => [
+          iso,
+          { ...entry, positionId: null, positionLabel: "" },
+        ]),
+      ),
     }));
   }
 
@@ -272,6 +321,12 @@ export default function BookingWizard() {
     setForm((prev) => ({
       ...prev,
       vesselId,
+      dateEntries: Object.fromEntries(
+        Object.entries(prev.dateEntries).map(([iso, entry]) => [
+          iso,
+          { ...entry, positionId: null, positionLabel: "" },
+        ]),
+      ),
     }));
   }
 
@@ -293,13 +348,19 @@ export default function BookingWizard() {
         port: form.portId,
         shipping_line: form.shippingLineId,
         vessel: form.vesselId,
-        call_dates: form.callDates,
         notes: form.notes,
-        eta: form.eta || null,
-        etd: form.etd || null,
-        planned_pax: form.plannedPax === "" ? null : Number(form.plannedPax),
-        position: form.preferredPositionId,
-        status: form.status,
+        entries: form.callDates.map((iso) => {
+          const entry = form.dateEntries[iso] ?? emptyDateEntry();
+          return {
+            call_date: iso,
+            eta: entry.eta || null,
+            etd: entry.etd || null,
+            planned_pax:
+              entry.plannedPax === "" ? null : Number(entry.plannedPax),
+            position: entry.positionId,
+            status: entry.status,
+          };
+        }),
       });
       setCreatedBookings(created);
     } catch (err) {
@@ -338,7 +399,6 @@ export default function BookingWizard() {
         line={selectedLine}
         vessel={selectedVessel}
         dateCount={form.callDates.length}
-        positionLabel={form.preferredPositionLabel || null}
         errorBanner={
           viewError ? (
             <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
@@ -410,24 +470,7 @@ export default function BookingWizard() {
                 portId={form.portId}
                 vesselId={form.vesselId}
                 selectedDates={form.callDates}
-                onChange={(d) => setForm((p) => ({ ...p, callDates: d }))}
-                eta={form.eta}
-                etd={form.etd}
-                plannedPax={form.plannedPax}
-                onEtaChange={(eta) => setForm((p) => ({ ...p, eta }))}
-                onEtdChange={(etd) => setForm((p) => ({ ...p, etd }))}
-                onPlannedPaxChange={(plannedPax) =>
-                  setForm((p) => ({ ...p, plannedPax }))
-                }
-                preferredPositionId={form.preferredPositionId}
-                preferredPositionLabel={form.preferredPositionLabel}
-                onPreferredPositionChange={(id, label) =>
-                  setForm((p) => ({
-                    ...p,
-                    preferredPositionId: id,
-                    preferredPositionLabel: label,
-                  }))
-                }
+                onChange={handleCallDatesChange}
                 onLoadingChange={handleDatesLoadingChange}
               />
             )}
@@ -437,15 +480,10 @@ export default function BookingWizard() {
                 line={selectedLine}
                 vessel={selectedVessel}
                 callDates={form.callDates}
+                dateEntries={form.dateEntries}
+                onDateEntryChange={handleDateEntryChange}
                 notes={form.notes}
                 onNotesChange={(notes) => setForm((p) => ({ ...p, notes }))}
-                status={form.status}
-                onStatusChange={(status) => setForm((p) => ({ ...p, status }))}
-                eta={form.eta}
-                etd={form.etd}
-                plannedPax={form.plannedPax}
-                preferredPositionId={form.preferredPositionId}
-                preferredPositionLabel={form.preferredPositionLabel}
                 onBlockingChange={handleReviewBlockingChange}
               />
             )}

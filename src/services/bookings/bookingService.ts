@@ -45,6 +45,8 @@ export type FetchBookingsParams = {
   page?: number;
   search?: string;
   port?: number;
+  /** Multi-port filter (CSV on `port` query param). Wins over `port` when set. */
+  ports?: number[];
   position?: number;
   shipping_line?: number;
   vessel?: number;
@@ -70,7 +72,11 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
-  if (params.port) query.set("port", String(params.port));
+  if (params.ports && params.ports.length > 0) {
+    query.set("port", params.ports.join(","));
+  } else if (params.port) {
+    query.set("port", String(params.port));
+  }
   if (params.position) query.set("position", String(params.position));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));

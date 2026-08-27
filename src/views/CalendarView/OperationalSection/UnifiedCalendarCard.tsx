@@ -41,8 +41,8 @@ type CalendarConflictFilters = {
 type UnifiedCalendarCardProps = {
   mode: CalendarViewModeQuery;
   onModeChange: (mode: CalendarViewModeQuery) => void;
-  /** 0 = all ports in one card. */
-  portId: number;
+  /** Empty = all ports in one card. */
+  portIds: number[];
   portLabel: string;
   shippingLineId: number;
   vesselId: number;
@@ -67,7 +67,7 @@ type UnifiedCalendarCardProps = {
 export default function UnifiedCalendarCard({
   mode,
   onModeChange,
-  portId,
+  portIds,
   portLabel,
   shippingLineId,
   vesselId,
@@ -87,7 +87,7 @@ export default function UnifiedCalendarCard({
   season,
   onSeasonChange,
 }: UnifiedCalendarCardProps) {
-  const multiPort = portId <= 0;
+  const multiPort = portIds.length !== 1;
 
   const range = useMemo(() => {
     if (mode === "weekly") {
@@ -101,7 +101,7 @@ export default function UnifiedCalendarCard({
   const { bookings, previousYearBookings, positions, isLoading, error } =
     useCalendarBookings({
       mode,
-      portId,
+      portIds,
       search,
       from: range.from,
       to: range.to,
@@ -141,7 +141,7 @@ export default function UnifiedCalendarCard({
 
   const firstMatchProbe = useMemo(
     () => ({
-      port: portId > 0 ? portId : undefined,
+      ports: portIds.length > 0 ? portIds : undefined,
       shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
       vessel: vesselId > 0 ? vesselId : undefined,
       position: !multiPort && positionId > 0 ? positionId : undefined,
@@ -152,7 +152,7 @@ export default function UnifiedCalendarCard({
       call_dates: callDates?.length ? callDates : undefined,
     }),
     [
-      portId,
+      portIds,
       shippingLineId,
       vesselId,
       multiPort,

@@ -352,6 +352,7 @@ export default function BookingsList({
                     loaM={booking.vessel_loa_m}
                     eta={booking.eta}
                     etd={booking.etd}
+                    plannedPax={booking.planned_pax}
                     positionLabel={positionLabel}
                     highlightLoa={highlights.highlight_loa}
                     loaHighlightSeverity={highlights.loa_severity}

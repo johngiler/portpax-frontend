@@ -149,11 +149,23 @@ export type PositionSuggestion = {
   warnings: BookingValidationIssue[];
 };
 
+export type BookingBatchEntryPayload = {
+  call_date: string;
+  eta?: string | null;
+  etd?: string | null;
+  planned_pax?: number | null;
+  position?: number | null;
+  status?: "h" | "co" | "cl" | "lta" | "ltd" | null;
+};
+
 export type BookingBatchPayload = {
   port: number;
   shipping_line: number;
   vessel: number;
-  call_dates: string[];
+  /** Shared-batch fallback when `entries` is omitted. */
+  call_dates?: string[];
+  /** Per-date schedule / PAX / position / status (wizard Confirmar). */
+  entries?: BookingBatchEntryPayload[];
   notes?: string;
   eta?: string | null;
   etd?: string | null;

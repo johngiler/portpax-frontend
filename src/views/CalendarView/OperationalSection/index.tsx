@@ -15,8 +15,8 @@ type CalendarConflictFilters = {
 type OperationalSectionProps = {
   mode: CalendarViewModeQuery;
   onModeChange: (mode: CalendarViewModeQuery) => void;
-  /** 0 = all ports in one unified card. */
-  portId: number;
+  /** Empty = all ports in one unified card. */
+  portIds: number[];
   portLabel: string;
   shippingLineId: number;
   vesselId: number;
@@ -39,7 +39,7 @@ type OperationalSectionProps = {
 export default function OperationalSection({
   mode,
   onModeChange,
-  portId,
+  portIds,
   portLabel,
   shippingLineId,
   vesselId,
@@ -64,7 +64,7 @@ export default function OperationalSection({
     positionId > 0 ||
     statuses.length > 0 ||
     Boolean(search.trim()) ||
-    portId > 0 ||
+    portIds.length > 0 ||
     Boolean(callDates?.length) ||
     conflictFilters.has_conflict !== undefined ||
     Boolean(conflictFilters.conflict_severity) ||
@@ -74,7 +74,7 @@ export default function OperationalSection({
     <UnifiedCalendarCard
       mode={mode}
       onModeChange={onModeChange}
-      portId={portId}
+      portIds={portIds}
       portLabel={portLabel}
       shippingLineId={shippingLineId}
       vesselId={vesselId}

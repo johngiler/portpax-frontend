@@ -55,8 +55,8 @@ export type BookingsWorkspaceFilters = {
   /** Empty = all statuses. */
   status: BookingStatusFilterValue[];
   search: string;
-  /** Single shared port (0 = all ports for list/calendar). */
-  port: number;
+  /** Empty = all ports. One or more for lista / calendario / disponibilidad. */
+  ports: number[];
   line: number;
   vessel: number;
   datePreset: BookingsDatePresetQuery;
@@ -176,18 +176,18 @@ export function parseBookingsWorkspaceFilters(
     sp.get("conflict") ?? sp.get("has_conflict"),
   );
 
-  // Legacy /calendar?ports=1,2 → first port
-  const portsCsv = sp.get("ports");
-  const portFromCsv = portsCsv
-    ?.split(",")
+  // `ports=1,2` preferred; legacy `port=1` still accepted.
+  const portsCsv = sp.get("ports") || sp.get("port");
+  const ports = (portsCsv ?? "")
+    .split(",")
     .map((p) => parseIntId(p.trim()))
-    .find((id) => id > 0);
+    .filter((id) => id > 0);
 
   return {
     tab,
     status: parseBookingStatusFilters(statusRaw),
     search: sp.get("q")?.trim() ?? "",
-    port: parseIntId(sp.get("port")) || portFromCsv || 0,
+    ports,
     line: parseIntId(sp.get("line")),
     vessel: parseIntId(sp.get("vessel")),
     datePreset: isDatePreset(dateRaw) ? dateRaw : "all",
@@ -225,7 +225,7 @@ export function buildBookingsWorkspaceQuery(
   const statusCsv = serializeBookingStatusFilters(state.status);
   if (statusCsv) sp.set("status", statusCsv);
   if (state.search) sp.set("q", state.search);
-  if (state.port > 0) sp.set("port", String(state.port));
+  if (state.ports.length > 0) sp.set("ports", state.ports.join(","));
   if (state.line > 0) sp.set("line", String(state.line));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
   if (

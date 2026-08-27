@@ -16,31 +16,55 @@ export const WIZARD_GRID_PAGE_SIZE = 15;
 
 export type BookingWizardStepId = (typeof BOOKING_WIZARD_STEPS)[number]["id"];
 
+export type WizardDateEntry = {
+  eta: string;
+  etd: string;
+  plannedPax: string;
+  positionId: number | null;
+  positionLabel: string;
+  status: WizardCreateStatus;
+};
+
 export type BookingWizardForm = {
   portId: number | null;
   shippingLineId: number | null;
   vesselId: number | null;
   callDates: string[];
+  /** Per-call schedule / PAX / position / status (edited on Confirmar). */
+  dateEntries: Record<string, WizardDateEntry>;
   notes: string;
-  status: WizardCreateStatus;
-  eta: string;
-  etd: string;
-  plannedPax: string;
-  /** Preferred pier from availability click; optional. */
-  preferredPositionId: number | null;
-  preferredPositionLabel: string;
 };
+
+export function emptyDateEntry(
+  status: WizardCreateStatus = "h",
+): WizardDateEntry {
+  return {
+    eta: "",
+    etd: "",
+    plannedPax: "",
+    positionId: null,
+    positionLabel: "",
+    status,
+  };
+}
+
+/** Keep entries aligned with selected dates; preserve edits for kept dates. */
+export function syncDateEntries(
+  dates: string[],
+  prev: Record<string, WizardDateEntry>,
+): Record<string, WizardDateEntry> {
+  const next: Record<string, WizardDateEntry> = {};
+  for (const d of dates) {
+    next[d] = prev[d] ?? emptyDateEntry();
+  }
+  return next;
+}
 
 export const emptyBookingWizardForm = (): BookingWizardForm => ({
   portId: null,
   shippingLineId: null,
   vesselId: null,
   callDates: [],
+  dateEntries: {},
   notes: "",
-  status: "h",
-  eta: "",
-  etd: "",
-  plannedPax: "",
-  preferredPositionId: null,
-  preferredPositionLabel: "",
 });

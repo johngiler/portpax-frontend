@@ -15,7 +15,6 @@ import type {
   CalendarViewModeQuery,
   ConflictFilterValue,
 } from "@/lib/viewFilterQuery";
-import { fetchPorts } from "@/services/catalogs/portService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
@@ -83,7 +82,8 @@ type BookingFiltersProps = {
   status: BookingStatusFilterValue[];
   conflictFilter: ConflictFilterValue;
   search: string;
-  portFilter: number;
+  /** Empty = all ports. */
+  portFilter: number[];
   shippingLineFilter: number;
   vesselFilter: number;
   datePreset: BookingsDatePreset;
@@ -105,7 +105,7 @@ type BookingFiltersProps = {
   onStatusChange: (status: BookingStatusFilterValue[]) => void;
   onConflictFilterChange: (value: ConflictFilterValue) => void;
   onSearchChange: (search: string) => void;
-  onPortFilterChange: (portId: number) => void;
+  onPortFilterChange: (portIds: number[]) => void;
   onShippingLineFilterChange: (lineId: number) => void;
   onVesselFilterChange: (vesselId: number) => void;
   onDatePresetChange: (preset: BookingsDatePreset) => void;
@@ -183,7 +183,7 @@ export default function BookingFilters({
   const isOccupancyHeat = isAvailabilityTab && heatMode === "occupancy";
 
   // Disponibilidad (huecos): Criterio + Puerto + fechas.
-  // Ocupación: Buscar + Criterio + densidad + puerto + posición (+ foco).
+  // Ocupación: Criterio → Buscar → Puerto → Posición → densidad → foco.
   const showVessel =
     tab === "list" ||
     tab === "calendar" ||
@@ -208,18 +208,6 @@ export default function BookingFilters({
     tab === "proximity" ||
     tab === "calendar" ||
     isOccupancyHeat;
-
-  const loadPortOptions = useCallback(async (input: string) => {
-    const res = await fetchPorts({
-      search: input.trim() || undefined,
-      pageSize: 30,
-    });
-    return res.results.map((p) => ({
-      value: p.id,
-      label: p.name,
-      logoUrl: p.logo,
-    }));
-  }, []);
 
   const loadLineOptions = useCallback(async (input: string) => {
     const res = await fetchShippingLines({
@@ -275,7 +263,7 @@ export default function BookingFilters({
           return;
         }
         if (suggestion.filterEntity === "port" && suggestion.entityId) {
-          onPortFilterChange(suggestion.entityId);
+          onPortFilterChange([suggestion.entityId]);
           onSearchChange("");
           return;
         }
@@ -371,20 +359,19 @@ export default function BookingFilters({
     </>
   ) : null;
 
+  const singlePortSelected = portFilter.length === 1;
+
   const portField = showPort ? (
-    <FormFieldSelect<number>
+    <FormFieldMultiSelect<number>
       label="Puerto"
       name="booking_port_filter"
       value={portFilter}
       onChange={onPortFilterChange}
       options={portOptions}
-      loadOptions={loadPortOptions}
+      placeholder="Todos los puertos"
       compact
       showLogo
       logoKind="port"
-      required={false}
-      optionLabel="Todos los puertos"
-      emptyValue={0}
     />
   ) : null;
 
@@ -396,11 +383,13 @@ export default function BookingFilters({
       onChange={onPositionFilterChange}
       options={positionOptions}
       optionLabel={
-        portFilter > 0 ? "Todas las posiciones" : "Elige un puerto primero"
+        singlePortSelected
+          ? "Todas las posiciones"
+          : "Elige un solo puerto primero"
       }
       emptyValue={0}
       compact
-      disabled={portFilter <= 0}
+      disabled={!singlePortSelected}
     />
   ) : null;
 
@@ -521,15 +510,15 @@ export default function BookingFilters({
     />
   );
 
-  // Availability tab: Criterio → Puerto → Posición → Barcos/día → Buscar → …
+  // Availability tab: Criterio → Buscar (ocupación) → Puerto → Posición → …
   if (isAvailabilityTab) {
     return (
       <>
         {heatModeField}
+        {searchField}
         {portField}
         {positionField}
         {densityField}
-        {searchField}
         {lineField}
         {vesselField}
         {statusField}

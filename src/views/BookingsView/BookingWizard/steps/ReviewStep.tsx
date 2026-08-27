@@ -6,20 +6,20 @@ import {
   Anchor,
   CalendarDays,
   ChevronDown,
-  Clock3,
   Hash,
-  LayoutGrid,
   MapPin,
   Ship,
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
-import { FormFieldSelect } from "@/components/ui/FormField";
+import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
-import { formatTimeShort } from "@/lib/bookingDisplay";
+import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
+import { issueSeverity } from "@/lib/bookingConflictSeverity";
 import {
-  previewAssignedPositions,
+  suggestBookingPositions,
   validateBookings,
 } from "@/services/bookings/bookingService";
 import type {
@@ -31,8 +31,7 @@ import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import type { Port } from "@/types/catalog";
 import { portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
-import { issueSeverity } from "@/lib/bookingConflictSeverity";
-import type { WizardCreateStatus } from "../wizardTypes";
+import type { WizardCreateStatus, WizardDateEntry } from "../wizardTypes";
 
 /** Align with backend `LTA_SOFT_FAIL_CODES` — do not hard-block create. */
 const LTA_SOFT_FAIL_CODES = new Set([
@@ -45,7 +44,6 @@ const LTA_SOFT_FAIL_CODES = new Set([
 function splitOperationalIssues(result: BookingValidationResult): {
   errors: BookingValidationIssue[];
   warnings: BookingValidationIssue[];
-  blocked: boolean;
 } {
   const soft: BookingValidationIssue[] = [];
   for (const issue of result.errors) {
@@ -68,7 +66,6 @@ function splitOperationalIssues(result: BookingValidationResult): {
   return {
     errors: [],
     warnings: [...result.warnings, ...soft],
-    blocked: false,
   };
 }
 
@@ -85,15 +82,10 @@ type ReviewStepProps = {
   line: ShippingLine | null;
   vessel: Vessel | null;
   callDates: string[];
+  dateEntries: Record<string, WizardDateEntry>;
+  onDateEntryChange: (iso: string, patch: Partial<WizardDateEntry>) => void;
   notes: string;
   onNotesChange: (notes: string) => void;
-  status: WizardCreateStatus;
-  onStatusChange: (status: WizardCreateStatus) => void;
-  eta: string;
-  etd: string;
-  plannedPax: string;
-  preferredPositionId?: number | null;
-  preferredPositionLabel?: string;
   /** Reports blocking validation (errors) so Create can be disabled. */
   onBlockingChange?: (blocked: boolean) => void;
 };
@@ -122,29 +114,232 @@ function SummaryItem({ icon: Icon, label, children }: SummaryItemProps) {
   );
 }
 
+type DateRowEditorsProps = {
+  iso: string;
+  index: number;
+  port: Port | null;
+  line: ShippingLine | null;
+  vessel: Vessel | null;
+  entry: WizardDateEntry;
+  onChange: (patch: Partial<WizardDateEntry>) => void;
+};
+
+/** Dense cell: kill FormField vertical rhythm; header labels live in thead. */
+const cellFieldClass = "[&>div]:mb-0 [&_label]:sr-only";
+
+function DateRowEditors({
+  iso,
+  index,
+  port,
+  line,
+  vessel,
+  entry,
+  onChange,
+}: DateRowEditorsProps) {
+  const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (!port || !vessel) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSuggestions(true);
+    suggestBookingPositions({
+      port: port.id,
+      vessel: vessel.id,
+      call_date: iso,
+      eta: entry.eta || null,
+      etd: entry.etd || null,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        setSuggestions(data.positions);
+        if (entry.positionId == null) {
+          const recommended =
+            data.positions.find((p) => p.recommended) ?? data.positions[0];
+          if (recommended) {
+            onChange({
+              positionId: recommended.id,
+              positionLabel: recommended.code,
+            });
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggestions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Seed / refresh on schedule; ignore positionId churn from auto-pick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [port, vessel, iso, entry.eta, entry.etd]);
+
+  const positionOptions = suggestions.map((position) => {
+    const tags: string[] = [];
+    if (position.recommended) tags.push("sugerida");
+    if (position.occupied) tags.push("ocupada");
+    const suffix = tags.length > 0 ? ` · ${tags.join(", ")}` : "";
+    return {
+      value: position.id,
+      label: `${position.code}${suffix}`,
+    };
+  });
+
+  if (
+    entry.positionId != null &&
+    entry.positionLabel &&
+    !positionOptions.some((o) => o.value === entry.positionId)
+  ) {
+    positionOptions.unshift({
+      value: entry.positionId,
+      label: entry.positionLabel,
+    });
+  }
+
+  const selectedSuggestion = suggestions.find((p) => p.id === entry.positionId);
+  const occupancyHint = positionOccupancyHint(selectedSuggestion);
+  const codePreview =
+    port && line && vessel
+      ? previewBookingCode(port.code, line.code, vessel.name, iso)
+      : null;
+  const showHint = Boolean(
+    occupancyHint ||
+      (selectedSuggestion?.occupied && selectedSuggestion.occupant),
+  );
+
+  function handlePositionChange(nextId: number) {
+    if (nextId <= 0) {
+      onChange({ positionId: null, positionLabel: "" });
+      return;
+    }
+    const match = suggestions.find((p) => p.id === nextId);
+    onChange({
+      positionId: nextId,
+      positionLabel: match?.code ?? (entry.positionLabel || String(nextId)),
+    });
+  }
+
+  return (
+    <>
+      <tr className="border-t border-zinc-200/80 align-middle dark:border-zinc-800">
+        <td className="px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--admin-accent)]/10 text-[11px] font-bold tabular-nums text-[var(--admin-accent)]">
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                {formatIsoDateLabel(iso)}
+              </p>
+              {codePreview ? (
+                <p
+                  className="mt-0.5 truncate text-[10px] font-medium text-zinc-400"
+                  title={codePreview}
+                >
+                  {codePreview}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </td>
+        <td className={`w-[5.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <FormField
+            label="ETA"
+            name={`wizard_eta_${iso}`}
+            type="time"
+            value={entry.eta}
+            onChange={(v) => onChange({ eta: String(v) })}
+            compact
+          />
+        </td>
+        <td className={`w-[5.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <FormField
+            label="ETD"
+            name={`wizard_etd_${iso}`}
+            type="time"
+            value={entry.etd}
+            onChange={(v) => onChange({ etd: String(v) })}
+            compact
+          />
+        </td>
+        <td className={`w-[5.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <FormField
+            label="PAX proyectado"
+            name={`wizard_planned_pax_${iso}`}
+            type="number"
+            min={0}
+            value={entry.plannedPax}
+            onChange={(v) => onChange({ plannedPax: String(v) })}
+            compact
+          />
+        </td>
+        <td className={`min-w-[9.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <FormFieldSelect<number>
+            label="Posición"
+            name={`wizard_position_${iso}`}
+            value={entry.positionId ?? 0}
+            onChange={handlePositionChange}
+            options={positionOptions}
+            optionLabel={
+              loadingSuggestions ? "Cargando…" : "Auto"
+            }
+            emptyValue={0}
+            compact
+            disabled={loadingSuggestions}
+          />
+        </td>
+        <td className={`min-w-[10.5rem] px-1.5 py-2 pr-3 ${cellFieldClass}`}>
+          <FormFieldSelect<WizardCreateStatus>
+            label="Estado"
+            name={`wizard_status_${iso}`}
+            value={entry.status}
+            required
+            options={CREATE_STATUS_OPTIONS}
+            onChange={(status) => onChange({ status })}
+            compact
+          />
+        </td>
+      </tr>
+      {showHint ? (
+        <tr className="bg-zinc-50/50 dark:bg-zinc-950/30">
+          <td colSpan={6} className="px-3 pb-2.5 pt-0">
+            <PositionOccupancyHint
+              message={occupancyHint}
+              occupant={
+                selectedSuggestion?.occupied
+                  ? selectedSuggestion.occupant
+                  : null
+              }
+              positionCode={selectedSuggestion?.code ?? entry.positionLabel}
+              callDate={iso}
+            />
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
 export default function ReviewStep({
   port,
   line,
   vessel,
   callDates,
+  dateEntries,
+  onDateEntryChange,
   notes,
   onNotesChange,
-  status,
-  onStatusChange,
-  eta,
-  etd,
-  plannedPax,
-  preferredPositionId = null,
-  preferredPositionLabel = "",
   onBlockingChange,
 }: ReviewStepProps) {
   const [validation, setValidation] = useState<BookingValidationResult | null>(
     null,
   );
-  const [positionsByDate, setPositionsByDate] = useState<
-    Record<string, PositionSuggestion | null>
-  >({});
-  const [loadingPositions, setLoadingPositions] = useState(false);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -154,22 +349,41 @@ export default function ReviewStep({
     }
     onBlockingChange?.(true);
     let cancelled = false;
-    validateBookings({
-      port: port.id,
-      vessel: vessel.id,
-      call_dates: callDates,
-      position: preferredPositionId,
-      eta: eta || null,
-      etd: etd || null,
-    })
-      .then((result) => {
+
+    Promise.all(
+      callDates.map((iso) => {
+        const entry = dateEntries[iso];
+        return validateBookings({
+          port: port.id,
+          vessel: vessel.id,
+          call_dates: [iso],
+          position: entry?.positionId ?? null,
+          eta: entry?.eta || null,
+          etd: entry?.etd || null,
+        });
+      }),
+    )
+      .then((results) => {
         if (cancelled) return;
-        const split = splitOperationalIssues(result);
+        const mergedWarnings: BookingValidationIssue[] = [];
+        const mergedErrors: BookingValidationIssue[] = [];
+        const byDate: BookingValidationResult["by_date"] = {};
+        results.forEach((result, index) => {
+          const iso = callDates[index];
+          const split = splitOperationalIssues(result);
+          mergedWarnings.push(...split.warnings);
+          mergedErrors.push(...split.errors);
+          byDate[iso] = {
+            valid: true,
+            errors: split.errors,
+            warnings: split.warnings,
+          };
+        });
         setValidation({
-          ...result,
           valid: true,
-          errors: split.errors,
-          warnings: split.warnings,
+          errors: mergedErrors,
+          warnings: mergedWarnings,
+          by_date: byDate,
         });
         onBlockingChange?.(false);
       })
@@ -178,39 +392,11 @@ export default function ReviewStep({
         setValidation(null);
         onBlockingChange?.(true);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [port, vessel, callDates, eta, etd, preferredPositionId, onBlockingChange]);
-
-  useEffect(() => {
-    if (!port || !vessel || callDates.length === 0) {
-      setPositionsByDate({});
-      return;
-    }
-    setLoadingPositions(true);
-    previewAssignedPositions({
-      port: port.id,
-      vessel: vessel.id,
-      call_dates: callDates,
-    })
-      .then(setPositionsByDate)
-      .catch(() => setPositionsByDate({}))
-      .finally(() => setLoadingPositions(false));
-  }, [port, vessel, callDates]);
-
-  const displayLabel =
-    preferredPositionLabel ||
-    (preferredPositionId != null
-      ? Object.values(positionsByDate).find((p) => p?.id === preferredPositionId)
-          ?.code
-      : null) ||
-    null;
-
-  const etaEtdLabel =
-    eta || etd
-      ? `${formatTimeShort(eta || null)}–${formatTimeShort(etd || null)}`
-      : null;
+  }, [port, vessel, callDates, dateEntries, onBlockingChange]);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -317,11 +503,6 @@ export default function ReviewStep({
               </ul>
             </details>
           )}
-          {plannedPax ? (
-            <p className="mt-1 text-xs font-normal text-zinc-500">
-              PAX {plannedPax}
-            </p>
-          ) : null}
         </SummaryItem>
       </div>
 
@@ -342,96 +523,44 @@ export default function ReviewStep({
             strokeWidth={2}
           />
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            Resumen de escalas
+            Detalle por escala
           </h3>
         </div>
-        <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-          Fecha, horario, posición y código por escala (puerto · naviera · barco
-          · fecha)
-        </p>
-        <div className="overflow-x-auto overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-700">
-          <div className="min-w-[36rem]">
-            <div className="grid grid-cols-[minmax(0,1.4fr)_auto_auto_minmax(0,1.2fr)] gap-x-4 border-b border-zinc-200/80 bg-zinc-50/80 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950/50">
-              <span>Fecha de escala</span>
-              <span>ETA–ETD</span>
-              <span>Posición</span>
-              <span>Código</span>
-            </div>
-            <ul className="divide-y divide-zinc-200/80 dark:divide-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-700">
+          <table className="w-full min-w-[44rem] border-collapse text-left">
+            <thead>
+              <tr className="bg-zinc-50/90 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-950/50">
+                <th className="px-3 py-2.5 font-semibold">Fecha</th>
+                <th className="px-1.5 py-2.5 font-semibold">ETA</th>
+                <th className="px-1.5 py-2.5 font-semibold">ETD</th>
+                <th className="px-1.5 py-2.5 font-semibold">PAX</th>
+                <th className="px-1.5 py-2.5 font-semibold">Posición</th>
+                <th className="px-1.5 py-2.5 pr-3 font-semibold">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
               {callDates.map((iso, index) => {
-                const assigned = positionsByDate[iso];
-                const rowLabel =
-                  displayLabel ||
-                  (loadingPositions ? null : assigned?.code) ||
-                  null;
+                const entry = dateEntries[iso];
+                if (!entry) return null;
                 return (
-                  <li
+                  <DateRowEditors
                     key={iso}
-                    className="grid grid-cols-[minmax(0,1.4fr)_auto_auto_minmax(0,1.2fr)] items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--admin-accent)]/[0.04]"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {formatIsoDateLabel(iso)}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-zinc-400">
-                        Escala {index + 1}
-                      </p>
-                    </div>
-                    <div className="min-w-[5.5rem] text-center">
-                      {etaEtdLabel ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-semibold tabular-nums text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                          <Clock3 className="h-3 w-3 shrink-0 opacity-70" />
-                          {etaEtdLabel}
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium text-zinc-400">
-                          —
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-[4.5rem] text-center">
-                      {rowLabel ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                          <LayoutGrid className="h-3 w-3" strokeWidth={2} />
-                          {rowLabel}
-                        </span>
-                      ) : loadingPositions ? (
-                        <span className="text-xs text-zinc-400">…</span>
-                      ) : (
-                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                          Sin posición
-                        </span>
-                      )}
-                    </div>
-                    <code className="truncate rounded-lg bg-[var(--admin-accent)]/8 px-2.5 py-1 text-[11px] font-semibold tracking-tight text-[var(--admin-accent)] sm:text-xs">
-                      {port && line && vessel
-                        ? previewBookingCode(
-                            port.code,
-                            line.code,
-                            vessel.name,
-                            iso,
-                          )
-                        : iso}
-                    </code>
-                  </li>
+                    iso={iso}
+                    index={index}
+                    port={port}
+                    line={line}
+                    vessel={vessel}
+                    entry={entry}
+                    onChange={(patch) => onDateEntryChange(iso, patch)}
+                  />
                 );
               })}
-            </ul>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div className="space-y-4 border-t border-zinc-200/80 bg-zinc-50/40 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30">
-        <div className="max-w-md">
-          <FormFieldSelect<WizardCreateStatus>
-            label="Estado"
-            name="wizard_status"
-            value={status}
-            required
-            options={CREATE_STATUS_OPTIONS}
-            onChange={onStatusChange}
-          />
-        </div>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200">
             Notas internas (opcional)

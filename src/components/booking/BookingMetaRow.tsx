@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, MapPinned, Ruler } from "lucide-react";
+import { Clock3, MapPinned, Ruler, Users } from "lucide-react";
 import { formatLoa, formatTimeShort } from "@/lib/bookingDisplay";
 import { conflictFieldHighlightClassName } from "@/lib/bookingConflictStyle";
 import type { BookingConflictSeverity } from "@/types/booking";
@@ -9,6 +9,7 @@ type BookingMetaRowProps = {
   loaM?: string | null;
   eta?: string | null;
   etd?: string | null;
+  plannedPax?: number | null;
   positionLabel: string;
   /** Dense chips (calendar). */
   compact?: boolean;
@@ -27,12 +28,13 @@ type BookingMetaRowProps = {
 };
 
 /**
- * LOA · ETA–ETD · position with icons (list cards + calendar chips).
+ * LOA · ETA–ETD · PAX · position with icons (list cards + calendar chips).
  */
 export default function BookingMetaRow({
   loaM,
   eta,
   etd,
+  plannedPax = null,
   positionLabel,
   compact = false,
   tone = "muted",
@@ -52,6 +54,8 @@ export default function BookingMetaRow({
     tone === "onColor"
       ? "text-white/90"
       : "text-zinc-500 dark:text-zinc-400";
+  const paxLabel =
+    plannedPax != null ? plannedPax.toLocaleString("es-MX") : "—";
 
   return (
     <ul
@@ -87,6 +91,10 @@ export default function BookingMetaRow({
         <span className="truncate font-medium">
           {formatTimeShort(eta)}–{formatTimeShort(etd)}
         </span>
+      </li>
+      <li className="inline-flex min-w-0 items-center gap-1" title="PAX proyectado">
+        <Users className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
+        <span className="truncate font-medium">{paxLabel}</span>
       </li>
       <li
         className={[

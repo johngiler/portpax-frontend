@@ -14,9 +14,10 @@ import {
 type PortDisplayState = "loading" | "visible" | "empty" | "error";
 
 type BookingsAvailabilityPanelProps = {
-  /** 0 = all ports (one section per port). */
-  portId: number;
-  portIds: number[];
+  /** Selected ports; empty = all ports (one section per port). */
+  selectedPortIds: number[];
+  /** Full catalog of active port ids (fallback when none selected). */
+  allPortIds: number[];
   dateFrom: string;
   dateTo: string;
   dateAllowlist?: string[] | null;
@@ -31,8 +32,8 @@ type BookingsAvailabilityPanelProps = {
 };
 
 export default function BookingsAvailabilityPanel({
-  portId,
-  portIds,
+  selectedPortIds,
+  allPortIds,
   dateFrom,
   dateTo,
   dateAllowlist = null,
@@ -45,9 +46,11 @@ export default function BookingsAvailabilityPanel({
   onStartDateChange,
 }: BookingsAvailabilityPanelProps) {
   const targetIds = useMemo(() => {
-    if (portId > 0) return [portId];
-    return portIds.filter((id) => id > 0);
-  }, [portId, portIds]);
+    if (selectedPortIds.length > 0) {
+      return selectedPortIds.filter((id) => id > 0);
+    }
+    return allPortIds.filter((id) => id > 0);
+  }, [selectedPortIds, allPortIds]);
 
   const [portStates, setPortStates] = useState<Record<number, PortDisplayState>>(
     {},
@@ -91,7 +94,7 @@ export default function BookingsAvailabilityPanel({
     Boolean(filters.conflict_type) ||
     density > 0 ||
     Boolean(dateAllowlist?.length) ||
-    portId > 0 ||
+    selectedPortIds.length > 0 ||
     heatMode === "occupancy";
 
   if (targetIds.length === 0) {

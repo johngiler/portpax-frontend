@@ -103,6 +103,13 @@ import {
 
 const BATCH_SIZE = 20;
 
+function sameNumberList(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort((x, y) => x - y);
+  const sb = [...b].sort((x, y) => x - y);
+  return sa.every((v, i) => v === sb[i]);
+}
+
 function defaultCustomFrom(): string {
   const d = new Date();
   return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
@@ -187,8 +194,8 @@ export default function BookingsView() {
     useState<ConflictFilterValue>("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [portFilter, setPortFilter] = useState(0);
-  const [appliedPortFilter, setAppliedPortFilter] = useState(0);
+  const [portFilter, setPortFilter] = useState<number[]>([]);
+  const [appliedPortFilter, setAppliedPortFilter] = useState<number[]>([]);
   const [shippingLineFilter, setShippingLineFilter] = useState(0);
   const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
   const [vesselFilter, setVesselFilter] = useState(0);
@@ -279,7 +286,7 @@ export default function BookingsView() {
       tab,
       status: appliedStatusFilter,
       search: appliedSearch,
-      port: appliedPortFilter,
+      ports: appliedPortFilter,
       line: appliedShippingLineFilter,
       vessel: appliedVesselFilter,
       datePreset: appliedDatePreset,
@@ -323,10 +330,9 @@ export default function BookingsView() {
       (parsed.line <= 0 || parsed.vessel <= 0)
         ? "list"
         : parsed.tab;
-    const port =
-      parsed.port > 0 && portOptions.some((p) => p.value === parsed.port)
-        ? parsed.port
-        : 0;
+    const ports = parsed.ports.filter((id) =>
+      portOptions.some((p) => p.value === id),
+    );
 
     setTab(tab);
     setStatusFilter(parsed.status);
@@ -335,8 +341,8 @@ export default function BookingsView() {
     setAppliedConflictFilter(parsed.conflict);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
-    setPortFilter(port);
-    setAppliedPortFilter(port);
+    setPortFilter(ports);
+    setAppliedPortFilter(ports);
     setShippingLineFilter(parsed.line);
     setAppliedShippingLineFilter(parsed.line);
     setVesselFilter(parsed.vessel);
@@ -351,8 +357,9 @@ export default function BookingsView() {
     setAppliedCalendarMode(parsed.mode);
     setCalendarSeason(parsed.season);
     setAppliedCalendarSeason(parsed.season);
-    setPositionFilter(parsed.position);
-    setAppliedPositionFilter(parsed.position);
+    const nextPosition = ports.length === 1 ? parsed.position : 0;
+    setPositionFilter(nextPosition);
+    setAppliedPositionFilter(nextPosition);
     setHeatMode(parsed.heat);
     setAppliedHeatMode(parsed.heat);
     setDensity(parsed.density);
@@ -368,14 +375,17 @@ export default function BookingsView() {
   }, [portsReady, searchParams, portOptions, navDefaults]);
 
   useEffect(() => {
-    if (portFilter <= 0) {
+    if (portFilter.length !== 1) {
       setPositionOptions([]);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetchPositions({ port: portFilter, pageSize: 100 });
+        const res = await fetchPositions({
+          port: portFilter[0],
+          pageSize: 100,
+        });
         if (cancelled) return;
         setPositionOptions(
           res.results
@@ -404,12 +414,14 @@ export default function BookingsView() {
       search: appliedSearch,
       statuses: appliedStatusFilter,
       ...conflictFilterToApiParams(appliedConflictFilter),
-      port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+      ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
       position:
-        appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+        appliedPortFilter.length === 1 && appliedPositionFilter > 0
+          ? appliedPositionFilter
+          : undefined,
       call_date_from: dateRange.call_date_from,
       call_date_to: dateRange.call_date_to,
       call_dates: availabilityDateAllowlist?.length
@@ -522,12 +534,14 @@ export default function BookingsView() {
   const listProbeFilters = useMemo(
     () => ({
       search: appliedSearch || undefined,
-      port: appliedPortFilter > 0 ? appliedPortFilter : undefined,
+      ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
       position:
-        appliedPositionFilter > 0 ? appliedPositionFilter : undefined,
+        appliedPortFilter.length === 1 && appliedPositionFilter > 0
+          ? appliedPositionFilter
+          : undefined,
       statuses:
         appliedStatusFilter.length > 0 ? appliedStatusFilter : undefined,
       ...conflictFilterToApiParams(appliedConflictFilter),
@@ -549,7 +563,7 @@ export default function BookingsView() {
 
   const listHasSidebarFilters =
     Boolean(appliedSearch) ||
-    appliedPortFilter > 0 ||
+    appliedPortFilter.length > 0 ||
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
     appliedPositionFilter > 0 ||
@@ -594,6 +608,11 @@ export default function BookingsView() {
       setSearch("");
     }
     const nextSearch = tab === "list" ? search.trim() : "";
+    const nextPosition =
+      portFilter.length === 1 ? positionFilter : 0;
+    if (nextPosition !== positionFilter) {
+      setPositionFilter(nextPosition);
+    }
     setAppliedPortFilter(portFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
     setAppliedVesselFilter(vesselFilter);
@@ -601,7 +620,7 @@ export default function BookingsView() {
     setAppliedCustomDateFrom(customDateFrom);
     setAppliedCustomDateTo(customDateTo);
     setAppliedCalendarMode(calendarMode);
-    setAppliedPositionFilter(positionFilter);
+    setAppliedPositionFilter(nextPosition);
     setAppliedYear(year);
     setAppliedMonthIndex(monthIndex);
     setAppliedCalendarSeason(calendarSeason);
@@ -617,7 +636,7 @@ export default function BookingsView() {
       workspaceState({
         status: statusFilter,
         search: nextSearch,
-        port: portFilter,
+        ports: portFilter,
         line: shippingLineFilter,
         vessel: vesselFilter,
         datePreset,
@@ -625,7 +644,7 @@ export default function BookingsView() {
         customTo: customDateTo,
         mode: calendarMode,
         season: calendarSeason,
-        position: positionFilter,
+        position: nextPosition,
         year,
         month: monthIndex,
         week: nextWeek,
@@ -667,7 +686,7 @@ export default function BookingsView() {
   }
 
   function handleClearFilters() {
-    const port = 0;
+    const ports: number[] = [];
     const from = defaultCustomFrom();
     const to = defaultCustomTo();
     const week = todayIso();
@@ -680,8 +699,8 @@ export default function BookingsView() {
     setAppliedConflictFilter(clearedConflict);
     setSearch("");
     setAppliedSearch("");
-    setPortFilter(port);
-    setAppliedPortFilter(port);
+    setPortFilter(ports);
+    setAppliedPortFilter(ports);
     setShippingLineFilter(0);
     setAppliedShippingLineFilter(0);
     setVesselFilter(0);
@@ -712,7 +731,7 @@ export default function BookingsView() {
       tab,
       status: [],
       search: "",
-      port,
+      ports,
       line: 0,
       vessel: 0,
       datePreset: "all",
@@ -755,7 +774,7 @@ export default function BookingsView() {
   // Banner = filters that affect the *current* view response.
   // Stashed focus (vessel/conflict/…) stays in state on gaps but does not count here.
   const hasActiveFilters = gapsViewActive
-    ? appliedPortFilter > 0 ||
+    ? appliedPortFilter.length > 0 ||
       appliedDatePreset !== "all" ||
       Boolean(availabilityDateAllowlist?.length)
     : appliedStatusFilter.length > 0 ||
@@ -765,7 +784,7 @@ export default function BookingsView() {
         tab === "availability") &&
         appliedConflictFilter !== "") ||
       (tab === "list" && appliedSearch !== "") ||
-      (tab !== "proximity" && appliedPortFilter > 0) ||
+      (tab !== "proximity" && appliedPortFilter.length > 0) ||
       appliedShippingLineFilter > 0 ||
       appliedVesselFilter > 0 ||
       (tab !== "proximity" && appliedPositionFilter > 0) ||
@@ -785,7 +804,8 @@ export default function BookingsView() {
       tab === "availability") &&
       (conflictFilter !== "" || appliedConflictFilter !== "")) ||
     (tab === "list" && (search.trim() !== "" || appliedSearch !== "")) ||
-    (tab !== "proximity" && (portFilter > 0 || appliedPortFilter > 0)) ||
+    (tab !== "proximity" &&
+      (portFilter.length > 0 || appliedPortFilter.length > 0)) ||
     shippingLineFilter > 0 ||
     appliedShippingLineFilter > 0 ||
     vesselFilter > 0 ||
@@ -810,7 +830,7 @@ export default function BookingsView() {
       tab === "availability") &&
       conflictFilter !== appliedConflictFilter) ||
     (tab === "list" && search.trim() !== appliedSearch) ||
-    (tab !== "proximity" && portFilter !== appliedPortFilter) ||
+    (tab !== "proximity" && !sameNumberList(portFilter, appliedPortFilter)) ||
     shippingLineFilter !== appliedShippingLineFilter ||
     vesselFilter !== appliedVesselFilter ||
     datePreset !== appliedDatePreset ||
@@ -833,7 +853,7 @@ export default function BookingsView() {
             exportFormat: format,
             search: listParams.search,
             statuses: listParams.statuses,
-            port: listParams.port,
+            ports: listParams.ports,
             position: listParams.position,
             shipping_line:
               appliedShippingLineFilter > 0
@@ -848,15 +868,17 @@ export default function BookingsView() {
           return;
         }
         if (tab === "availability") {
-          if (appliedPortFilter <= 0) {
-            setViewError("Selecciona un puerto para exportar disponibilidad.");
+          if (appliedPortFilter.length !== 1) {
+            setViewError(
+              "Selecciona un solo puerto para exportar disponibilidad.",
+            );
             return;
           }
           await exportStructuredReport({
             report_type: "availability",
             date_from: availabilityRange.from,
             date_to: availabilityRange.to,
-            port: appliedPortFilter,
+            port: appliedPortFilter[0],
             shipping_line:
               appliedShippingLineFilter > 0
                 ? appliedShippingLineFilter
@@ -890,8 +912,8 @@ export default function BookingsView() {
           to = b.to;
         }
         const exportPorts =
-          appliedPortFilter > 0
-            ? [appliedPortFilter]
+          appliedPortFilter.length > 0
+            ? appliedPortFilter
             : portOptions.map((p) => p.value);
         if (exportPorts.length === 0) {
           setViewError("No hay puertos para exportar el calendario.");
@@ -1116,9 +1138,11 @@ export default function BookingsView() {
     return buildBookingsActiveFilterChips({
       tab,
       portLabel:
-        appliedPortFilter > 0
-          ? (portsById.get(appliedPortFilter) ?? null)
-          : null,
+        appliedPortFilter.length === 0
+          ? null
+          : appliedPortFilter.length === 1
+            ? (portsById.get(appliedPortFilter[0]) ?? null)
+            : `${portsById.get(appliedPortFilter[0]) ?? "Puerto"} +${appliedPortFilter.length - 1}`,
       positionLabel: positionLabel ?? null,
       lineLabel: lineLabel ?? null,
       vesselLabel: vesselLabel ?? null,
@@ -1163,9 +1187,11 @@ export default function BookingsView() {
           : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
 
   const calendarPortLabel =
-    appliedPortFilter > 0
-      ? (portsById.get(appliedPortFilter) ?? "Puerto")
-      : "Todos los puertos";
+    appliedPortFilter.length === 0
+      ? "Todos los puertos"
+      : appliedPortFilter.length === 1
+        ? (portsById.get(appliedPortFilter[0]) ?? "Puerto")
+        : `${appliedPortFilter.length} puertos`;
 
   return (
     <>
@@ -1307,9 +1333,11 @@ export default function BookingsView() {
           onStatusChange={setStatusFilter}
           onConflictFilterChange={setConflictFilter}
           onSearchChange={setSearch}
-          onPortFilterChange={(id) => {
-            setPortFilter(id);
-            setPositionFilter(0);
+          onPortFilterChange={(ids) => {
+            setPortFilter(ids);
+            if (ids.length !== 1) {
+              setPositionFilter(0);
+            }
           }}
           onShippingLineFilterChange={setShippingLineFilter}
           onVesselFilterChange={setVesselFilter}
@@ -1447,7 +1475,7 @@ export default function BookingsView() {
             setAppliedCalendarMode(next);
             syncToUrl(workspaceState({ mode: next }));
           }}
-          portId={appliedPortFilter}
+          portIds={appliedPortFilter}
           portLabel={calendarPortLabel}
           shippingLineId={appliedShippingLineFilter}
           vesselId={appliedVesselFilter}
@@ -1485,8 +1513,8 @@ export default function BookingsView() {
 
       {tab === "availability" ? (
         <BookingsAvailabilityPanel
-          portId={appliedPortFilter}
-          portIds={allPortIds}
+          selectedPortIds={appliedPortFilter}
+          allPortIds={allPortIds}
           dateFrom={availabilityRange.from}
           dateTo={availabilityRange.to}
           dateAllowlist={availabilityDateAllowlist}
@@ -1504,6 +1532,7 @@ export default function BookingsView() {
                       ? appliedVesselFilter
                       : undefined,
                   position:
+                    appliedPortFilter.length === 1 &&
                     appliedPositionFilter > 0
                       ? appliedPositionFilter
                       : undefined,
