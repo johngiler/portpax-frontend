@@ -1,6 +1,11 @@
 /** Friendly chip copy for LTA Celery job audits (link / resync / destroy). */
 
-export type LtaAsyncJobKind = "link" | "resync" | "destroy";
+export type LtaAsyncJobKind =
+  | "link"
+  | "resync"
+  | "destroy"
+  | "generate"
+  | "regenerate";
 export type LtaAsyncJobStatus = "queued" | "success" | "failed";
 
 export type LtaAsyncJobChip = {
@@ -64,6 +69,40 @@ const CHIP_BY_KIND: Record<
         "No se pudo completar la eliminación. El acuerdo puede seguir existiendo hasta reintentar.",
     },
   },
+  generate: {
+    queued: {
+      label: "Generando reservas LTA",
+      tooltip:
+        "Creando reservas en estado LTA para las fechas de la zona LTA × cada posición (primer barco del acuerdo).",
+    },
+    success: {
+      label: "Reservas LTA generadas",
+      tooltip:
+        "Se crearon las reservas faltantes en estado LTA según las reglas del acuerdo.",
+    },
+    failed: {
+      label: "Error al generar",
+      tooltip:
+        "No se pudieron generar las reservas. Revisa barcos/posiciones o el detalle del error.",
+    },
+  },
+  regenerate: {
+    queued: {
+      label: "Regenerando LTA",
+      tooltip:
+        "Re-sincronizando vínculos y creando las reservas LTA que faltan en la zona del acuerdo.",
+    },
+    success: {
+      label: "LTA regenerado",
+      tooltip:
+        "Se actualizaron los vínculos y se materializaron los huecos del acuerdo.",
+    },
+    failed: {
+      label: "Error al regenerar",
+      tooltip:
+        "No se pudo regenerar. Revisa el historial o vuelve a intentar.",
+    },
+  },
 };
 
 const FALLBACK_BY_STATUS: Record<
@@ -92,7 +131,13 @@ function asJobStatus(value: unknown): LtaAsyncJobStatus | null {
 }
 
 function asJobKind(value: unknown): LtaAsyncJobKind | null {
-  if (value === "link" || value === "resync" || value === "destroy") {
+  if (
+    value === "link" ||
+    value === "resync" ||
+    value === "destroy" ||
+    value === "generate" ||
+    value === "regenerate"
+  ) {
     return value;
   }
   return null;

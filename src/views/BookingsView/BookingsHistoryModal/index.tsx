@@ -19,7 +19,10 @@ import BookingsHistoryPanel from "../BookingsHistoryPanel";
 const HISTORY_KIND_OPTIONS: { value: BookingActivityKind; label: string }[] = [
   { value: "all", label: "Todas" },
   { value: "single", label: "Única" },
-  { value: "bulk", label: "Masiva" },
+  { value: "mass_import", label: "Importación masiva" },
+  { value: "wizard", label: "Wizard" },
+  { value: "berthing_import", label: "BERTHING PAPERS" },
+  { value: "lta_generate", label: "Generación LTA" },
 ];
 
 type BookingsHistoryModalProps = {

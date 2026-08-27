@@ -27,6 +27,8 @@ export type LongTermAgreement = {
   valid_from: string | null;
   valid_until: string | null;
   is_active: boolean;
+  /** True after the first successful Generar / Regenerar. */
+  bookings_generated: boolean;
   notes: string;
   /** Bookings with this agreement FK (match / link result). */
   linked_bookings_count: number;

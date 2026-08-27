@@ -1,6 +1,13 @@
 import { apiFetch } from "@/services/apiClient";
 
-export type BookingActivityKind = "all" | "single" | "bulk";
+export type BookingActivityKind =
+  | "all"
+  | "single"
+  | "bulk"
+  | "wizard"
+  | "mass_import"
+  | "berthing_import"
+  | "lta_generate";
 
 export type BookingActivityItem = {
   kind: "single" | "bulk";

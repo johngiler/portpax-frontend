@@ -30,6 +30,8 @@ function actionLabel(action: string): string {
       return "Eliminación";
     case "link_bookings":
       return "Vinculación";
+    case "generate_bookings":
+      return "Generación";
     default:
       return action;
   }
@@ -78,6 +80,11 @@ function contextMeta(item: LtaActivityItem): {
 
 function headline(item: LtaActivityItem): string {
   const who = agreementTitle(item);
+  const changes =
+    item.changes && typeof item.changes === "object"
+      ? (item.changes as Record<string, unknown>)
+      : null;
+
   switch (item.action) {
     case "created":
       return `Creó ${who}`;
@@ -87,6 +94,29 @@ function headline(item: LtaActivityItem): string {
       return `Eliminó ${who}`;
     case "link_bookings":
       return `Vinculó reservas a ${who}`;
+    case "generate_bookings": {
+      const kind =
+        typeof changes?.job_kind === "string" ? changes.job_kind : "";
+      const created =
+        typeof changes?.created === "number" ? changes.created : null;
+      const skipped =
+        typeof changes?.skipped === "number" ? changes.skipped : null;
+      const linked =
+        typeof changes?.linked === "number" ? changes.linked : null;
+      const unlinked =
+        typeof changes?.unlinked === "number" ? changes.unlinked : null;
+      const parts: string[] = [];
+      if (created != null) parts.push(`${created} creadas`);
+      if (skipped != null) parts.push(`${skipped} ya existían`);
+      if (linked != null) parts.push(`${linked} vinculadas`);
+      if (unlinked != null) parts.push(`${unlinked} desvinculadas`);
+      const counts = parts.length ? `: ${parts.join(", ")}` : "";
+      if (kind === "regenerate") return `Regeneró reservas de ${who}${counts}`;
+      if (kind === "generate" || created != null || skipped != null) {
+        return `Generó reservas de ${who}${counts}`;
+      }
+      return item.summary?.trim() || `Generación en cola · ${who}`;
+    }
     default:
       return item.summary || who;
   }
@@ -95,7 +125,7 @@ function headline(item: LtaActivityItem): string {
 function ActionIcon({ action }: { action: string }) {
   const className =
     "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl";
-  if (action === "link_bookings") {
+  if (action === "link_bookings" || action === "generate_bookings") {
     return (
       <div
         className={`${className} bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200`}
@@ -182,7 +212,7 @@ export default function LtaHistoryFeed({
         <p className="mt-1 text-xs text-zinc-500">
           {hasActiveFilters
             ? "Prueba limpiar los filtros del historial."
-            : "Las altas, cambios, bajas y vinculaciones de reservas aparecerán aquí."}
+            : "Las altas, cambios, bajas, vinculaciones y generaciones de reservas aparecerán aquí."}
         </p>
         {hasActiveFilters && onClearFilters ? (
           <button

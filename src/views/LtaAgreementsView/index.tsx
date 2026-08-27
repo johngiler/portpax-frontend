@@ -34,6 +34,8 @@ import { revalidateLtaAgreements } from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
   deleteLongTermAgreement,
+  generateLongTermAgreementBookings,
+  regenerateLongTermAgreementBookings,
   updateLongTermAgreement,
 } from "@/services/bookings/ltaService";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
@@ -63,6 +65,7 @@ export default function LtaAgreementsView() {
   const [editing, setEditing] = useState<LongTermAgreement | null>(null);
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [generateBusyId, setGenerateBusyId] = useState<number | null>(null);
 
   const { ports } = useActivePortsCatalog(canBrowse);
   const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
@@ -143,6 +146,38 @@ export default function LtaAgreementsView() {
       await mutate();
     } catch (err) {
       setViewError(getApiErrorMessage(err, "No se pudo eliminar el acuerdo."));
+    }
+  }
+
+  async function handleGenerate(row: LongTermAgreement, regenerate: boolean) {
+    setViewError(null);
+    setViewSuccess(null);
+    setGenerateBusyId(row.id);
+    try {
+      if (regenerate) {
+        await regenerateLongTermAgreementBookings(row.id);
+        setViewSuccess(
+          "Regeneración en cola. La sincronización y creación de reservas corre en segundo plano.",
+        );
+      } else {
+        await generateLongTermAgreementBookings(row.id);
+        setViewSuccess(
+          "Generación en cola. Las reservas LTA se crean en segundo plano.",
+        );
+      }
+      await revalidateLtaAgreements();
+      await mutate();
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(
+          err,
+          regenerate
+            ? "No se pudo encolar la regeneración."
+            : "No se pudo encolar la generación.",
+        ),
+      );
+    } finally {
+      setGenerateBusyId(null);
     }
   }
 
@@ -256,7 +291,22 @@ export default function LtaAgreementsView() {
                         setExpandedId(open ? row.id : null)
                       }
                       expandContent={
-                        <LtaRowDetail agreement={row} active={isExpanded} />
+                        <LtaRowDetail
+                          agreement={row}
+                          active={isExpanded}
+                          canWrite={canWrite}
+                          generateBusy={generateBusyId === row.id}
+                          onGenerate={
+                            canWrite
+                              ? () => void handleGenerate(row, false)
+                              : undefined
+                          }
+                          onRegenerate={
+                            canWrite
+                              ? () => void handleGenerate(row, true)
+                              : undefined
+                          }
+                        />
                       }
                     >
                       <MainTableTd>

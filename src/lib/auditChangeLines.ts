@@ -29,6 +29,7 @@ const FIELD_LABELS: Record<string, string> = {
   actual_pax: "PAX real",
   actual_crew: "Tripulación",
   long_term_agreement: "Acuerdo LTA",
+  source: "Origen",
   override_reason: "Motivo override",
   acknowledge_combined_red: "Ack. eslora combinada",
   has_conflict: "En conflicto",
@@ -61,10 +62,15 @@ const FIELD_LABELS: Record<string, string> = {
   notes: "Notas",
   has_contract: "Contrato",
   linked: "Vinculadas",
-  skipped: "Omitidas",
+  unlinked: "Desvinculadas",
+  skipped: "Ya existían",
+  created: "Creadas",
+  candidates: "Candidatas",
+  dates: "Fechas",
+  vessel_name: "Barco",
+  kept: "Sin cambio",
   linked_bookings: "Reservas vinculadas",
   unlinked_bookings: "Reservas desvinculadas",
-  kept: "Sin cambio",
   job_status: "Estado del proceso",
   job_kind: "Tipo de proceso",
   error: "Error",
@@ -207,6 +213,18 @@ function formatConflictList(value: unknown): string {
 }
 
 function formatValue(value: unknown, key?: string): string {
+  if (key === "source" && typeof value === "string") {
+    const labels: Record<string, string> = {
+      wizard: "Wizard",
+      mass_import: "Importación masiva",
+      import_file: "Importación masiva",
+      import_paste: "Importación masiva",
+      berthing_import: "BERTHING PAPERS",
+      lta_generate: "Generación LTA",
+      lta_regenerate: "Regeneración LTA",
+    };
+    return labels[value] ?? value;
+  }
   if (key === "job_status" && typeof value === "string") {
     const labels: Record<string, string> = {
       queued: "En segundo plano",
@@ -220,6 +238,8 @@ function formatValue(value: unknown, key?: string): string {
       link: "Enlace con reservas",
       resync: "Re-sincronización de vínculos",
       destroy: "Eliminación del acuerdo",
+      generate: "Generación de reservas",
+      regenerate: "Regeneración de reservas",
     };
     return labels[value] ?? value;
   }
@@ -332,7 +352,14 @@ export function auditFieldChangeLines(
   if (!changes || typeof changes !== "object") return [];
   const lines: AuditChangeLine[] = [];
   for (const [key, value] of Object.entries(changes)) {
-    if (META_KEYS.has(key)) continue;
+    // Snapshot blobs stay hidden; numeric `created` from generate jobs is shown.
+    if (key === "created" || key === "deleted") {
+      if (value != null && typeof value === "object" && !Array.isArray(value)) {
+        continue;
+      }
+    } else if (META_KEYS.has(key)) {
+      continue;
+    }
     const label = FIELD_LABELS[key] ?? key;
     lines.push({ field: key, label, text: formatValue(value, key) });
   }

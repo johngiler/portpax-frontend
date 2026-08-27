@@ -1,9 +1,9 @@
 import { apiFetch } from "@/services/apiClient";
 
-export type LtaActivityKind = "all" | "crud" | "link";
+export type LtaActivityKind = "all" | "crud" | "link" | "generate";
 
 export type LtaActivityItem = {
-  kind: "crud" | "link";
+  kind: "crud" | "link" | "generate";
   action: string;
   occurred_at: string;
   actor_display: string | null;

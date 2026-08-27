@@ -19,6 +19,7 @@ const KIND_OPTIONS: { value: LtaActivityKind; label: string }[] = [
   { value: "all", label: "Todas" },
   { value: "crud", label: "CRUD" },
   { value: "link", label: "Vinculación" },
+  { value: "generate", label: "Generación" },
 ];
 
 type LtaHistoryModalProps = {

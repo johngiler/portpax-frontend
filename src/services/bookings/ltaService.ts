@@ -153,3 +153,26 @@ export async function linkLongTermAgreementBookings(
     method: "POST",
   });
 }
+
+export type GenerateLtaBookingsResult = {
+  detail?: string;
+  task_id?: string;
+  agreement_code?: string;
+};
+
+export async function generateLongTermAgreementBookings(
+  id: number,
+): Promise<GenerateLtaBookingsResult> {
+  return apiFetch<GenerateLtaBookingsResult>(`${BASE}${id}/generate-bookings/`, {
+    method: "POST",
+  });
+}
+
+export async function regenerateLongTermAgreementBookings(
+  id: number,
+): Promise<GenerateLtaBookingsResult> {
+  return apiFetch<GenerateLtaBookingsResult>(
+    `${BASE}${id}/regenerate-bookings/`,
+    { method: "POST" },
+  );
+}

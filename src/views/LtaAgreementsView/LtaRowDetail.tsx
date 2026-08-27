@@ -1,5 +1,6 @@
 "use client";
 
+import DefaultButton from "@/components/buttons/DefaultButton";
 import LtaBookingWindowPanel from "@/components/lta/LtaBookingWindowPanel";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import {
@@ -12,6 +13,10 @@ import LtaLinkedBookings from "./LtaLinkedBookings";
 type LtaRowDetailProps = {
   agreement: LongTermAgreement;
   active: boolean;
+  canWrite?: boolean;
+  generateBusy?: boolean;
+  onGenerate?: () => void;
+  onRegenerate?: () => void;
 };
 
 function DetailSection({
@@ -70,12 +75,20 @@ function formatDate(value: string | null): string {
   return formatIsoDateLabel(value, "long");
 }
 
-export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
+export default function LtaRowDetail({
+  agreement,
+  active,
+  canWrite = false,
+  generateBusy = false,
+  onGenerate,
+  onRegenerate,
+}: LtaRowDetailProps) {
   const vesselsLabel = agreement.all_vessels
     ? "Todos los barcos de la naviera"
     : agreement.vessel_names.length
       ? agreement.vessel_names.join(", ")
       : "—";
+  const hasGenerated = Boolean(agreement.bookings_generated);
 
   const positionsLabel = agreement.position_codes.length
     ? agreement.position_codes.join(", ")
@@ -170,6 +183,34 @@ export default function LtaRowDetail({ agreement, active }: LtaRowDetailProps) {
           ltaDepthBlocks={agreement.lta_depth_blocks}
         />
       </DetailSection>
+
+      {canWrite ? (
+        <DetailSection
+          title="Reservas del acuerdo"
+          description="Genera escalas LTA en la zona del contrato (primer barco × cada posición)."
+          columns={1}
+        >
+          <div className="flex flex-wrap gap-3">
+            {!hasGenerated ? (
+              <DefaultButton
+                type="button"
+                disabled={generateBusy || !onGenerate}
+                onClick={onGenerate}
+              >
+                {generateBusy ? "En cola…" : "Generar"}
+              </DefaultButton>
+            ) : (
+              <DefaultButton
+                type="button"
+                disabled={generateBusy || !onRegenerate}
+                onClick={onRegenerate}
+              >
+                {generateBusy ? "En cola…" : "Regenerar"}
+              </DefaultButton>
+            )}
+          </div>
+        </DetailSection>
+      ) : null}
 
       <DetailSection title="Contrato" description="Compromiso comercial y adjunto." columns={1}>
         <DetailField label="Mínimo de PAX">
