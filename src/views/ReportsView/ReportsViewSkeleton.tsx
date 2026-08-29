@@ -2,7 +2,7 @@
 
 import { BarChart3 } from "lucide-react";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import Skeleton from "@/components/ui/Skeleton";
+import { ReportMatrixContentSkeleton } from "./ReportsContentSkeleton";
 
 export default function ReportsViewSkeleton() {
   return (
@@ -10,14 +10,9 @@ export default function ReportsViewSkeleton() {
       <ViewPageHeader
         icon={BarChart3}
         title="Reportes"
-        description="Totales, WEEK, panorama por naviera y cumplimiento REAL (sin proyección ni garantías)."
+        description="Matrices operativas de calls y PAX por puerto y naviera."
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Skeleton className="h-28 rounded-2xl" />
-        <Skeleton className="h-28 rounded-2xl" />
-        <Skeleton className="h-28 rounded-2xl" />
-      </div>
-      <Skeleton className="h-80 rounded-2xl" />
+      <ReportMatrixContentSkeleton />
     </>
   );
 }

@@ -70,6 +70,9 @@ export const swrKeys = {
   report: (reportType: string, paramsKey: string) =>
     ["report", reportType, paramsKey] as const,
 
+  reportInfinite: (reportType: string, paramsKey: string) =>
+    ["report", "infinite", reportType, paramsKey] as const,
+
   calendarBookings: (paramsKey: string) =>
     ["calendar", "bookings", paramsKey] as const,
 

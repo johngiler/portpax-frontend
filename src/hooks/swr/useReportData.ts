@@ -1,26 +1,26 @@
 "use client";
 
-import useSWR from "swr";
+import { useCallback, useMemo } from "react";
+import useSWRInfinite from "swr/infinite";
 import { swrKeys } from "@/lib/swr/keys";
 import {
-  fetchBookingTotalsReport,
-  fetchCarrierPanoramaReport,
-  fetchCumplimientoRealReport,
-  fetchMovementsReport,
-  type BookingTotalsReport,
-  type CarrierPanoramaReport,
-  type CumplimientoRealReport,
-  type MovementsReport,
+  fetchPortCarrierMatrixReport,
+  fetchPortsTotalsMatrixReport,
+  fetchPortTrendsReport,
+  REPORT_MATRIX_SECTION_PAGE_SIZE,
+  REPORT_TRENDS_LINE_PAGE_SIZE,
+  type PortCarrierMatrixReport,
+  type PortsTotalsMatrixReport,
+  type PortTrendsReport,
 } from "@/services/bookings/bookingService";
 
-export type ReportTab = "totals" | "movements" | "panorama" | "cumplimiento";
+export type ReportTab = "ports_totals" | "port_carrier" | "port_trends";
 
 export type ReportFilters = {
   tab: ReportTab;
   dateFrom: string;
   dateTo: string;
   portFilter: number;
-  lineFilter: number;
   withoutLta: boolean;
 };
 
@@ -30,70 +30,143 @@ function reportParamsKey(filters: ReportFilters): string {
     filters.dateFrom,
     filters.dateTo,
     filters.portFilter,
-    filters.lineFilter,
     filters.withoutLta ? 1 : 0,
   ].join("|");
 }
 
 export type ReportPayload =
-  | { tab: "totals"; data: BookingTotalsReport }
-  | { tab: "movements"; data: MovementsReport }
-  | { tab: "panorama"; data: CarrierPanoramaReport }
-  | { tab: "cumplimiento"; data: CumplimientoRealReport };
+  | { tab: "ports_totals"; data: PortsTotalsMatrixReport }
+  | { tab: "port_carrier"; data: PortCarrierMatrixReport }
+  | { tab: "port_trends"; data: PortTrendsReport };
 
-async function fetchReport(filters: ReportFilters): Promise<ReportPayload> {
-  const port = filters.portFilter > 0 ? filters.portFilter : undefined;
-  const line = filters.lineFilter > 0 ? filters.lineFilter : undefined;
+type ReportPage =
+  | PortsTotalsMatrixReport
+  | PortCarrierMatrixReport
+  | PortTrendsReport;
 
-  if (filters.tab === "movements") {
-    const data = await fetchMovementsReport({
-      date_from: filters.dateFrom,
-      date_to: filters.dateTo,
-      port,
-    });
-    return { tab: "movements", data };
-  }
-  if (filters.tab === "panorama") {
-    if (!filters.lineFilter) {
-      throw new Error("Selecciona una naviera para el panorama.");
-    }
-    const data = await fetchCarrierPanoramaReport({
-      date_from: filters.dateFrom,
-      date_to: filters.dateTo,
-      shipping_line: filters.lineFilter,
-    });
-    return { tab: "panorama", data };
-  }
-  if (filters.tab === "cumplimiento") {
-    const data = await fetchCumplimientoRealReport({
-      date_from: filters.dateFrom,
-      date_to: filters.dateTo,
-      port,
-    });
-    return { tab: "cumplimiento", data };
-  }
-  const data = await fetchBookingTotalsReport({
-    date_from: filters.dateFrom,
-    date_to: filters.dateTo,
-    port,
-    shipping_line: line,
-    without_lta: filters.withoutLta,
-  });
-  return { tab: "totals", data };
+function reportFetchEnabled(filters: ReportFilters, ready: boolean): boolean {
+  if (!ready) return false;
+  if (filters.tab === "ports_totals") return true;
+  return filters.portFilter > 0;
 }
 
-export function useReportData(filters: ReportFilters, enabled = true) {
-  const key = reportParamsKey(filters);
-  const { data, error, isLoading, isValidating, mutate } = useSWR(
-    enabled ? swrKeys.report(filters.tab, key) : null,
-    () => fetchReport(filters),
+async function fetchReportPage(
+  filters: ReportFilters,
+  page: number,
+): Promise<ReportPage> {
+  const base = {
+    date_from: filters.dateFrom,
+    date_to: filters.dateTo,
+    without_lta: filters.withoutLta,
+    page,
+  };
+
+  if (filters.tab === "ports_totals") {
+    return fetchPortsTotalsMatrixReport({
+      ...base,
+      page_size: REPORT_MATRIX_SECTION_PAGE_SIZE,
+    });
+  }
+  if (filters.tab === "port_carrier") {
+    return fetchPortCarrierMatrixReport({
+      ...base,
+      port: filters.portFilter,
+      page_size: REPORT_MATRIX_SECTION_PAGE_SIZE,
+    });
+  }
+  return fetchPortTrendsReport({
+    ...base,
+    port: filters.portFilter,
+    page_size: REPORT_TRENDS_LINE_PAGE_SIZE,
+  });
+}
+
+function mergeReportPages(pages: ReportPage[]): ReportPayload | null {
+  if (!pages.length) return null;
+  const head = pages[0];
+  if (head.kind === "ports_totals") {
+    return {
+      tab: "ports_totals",
+      data: {
+        ...head,
+        sections: pages.flatMap((page) =>
+          page.kind === "ports_totals" ? page.sections : [],
+        ),
+      },
+    };
+  }
+  if (head.kind === "port_carrier") {
+    return {
+      tab: "port_carrier",
+      data: {
+        ...head,
+        sections: pages.flatMap((page) =>
+          page.kind === "port_carrier" ? page.sections : [],
+        ),
+      },
+    };
+  }
+  return {
+    tab: "port_trends",
+    data: {
+      ...head,
+      lines: pages.flatMap((page) =>
+        page.kind === "port_trends" ? page.lines : [],
+      ),
+    },
+  };
+}
+
+export function useReportInfinite(filters: ReportFilters, ready = true) {
+  const paramsKey = reportParamsKey(filters);
+  const enabled = reportFetchEnabled(filters, ready);
+
+  const getKey = useCallback(
+    (pageIndex: number, previousPageData: ReportPage | null) => {
+      if (!enabled) return null;
+      if (previousPageData && !previousPageData.has_more) return null;
+      return [...swrKeys.reportInfinite(filters.tab, paramsKey), pageIndex + 1] as const;
+    },
+    [enabled, filters.tab, paramsKey],
   );
 
+  const { data, error, isLoading, isValidating, size, setSize, mutate } =
+    useSWRInfinite(getKey, (key) => {
+      const page = key[key.length - 1] as number;
+      return fetchReportPage(filters, page);
+    });
+
+  const payload = useMemo(() => mergeReportPages(data ?? []), [data]);
+
+  const lastPage = data?.[data.length - 1];
+  const totalCount = lastPage?.total_count ?? 0;
+  const loadedCount =
+    payload?.tab === "port_trends"
+      ? payload.data.lines.length
+      : payload?.tab === "ports_totals" || payload?.tab === "port_carrier"
+        ? payload.data.sections.length
+        : 0;
+  const hasMore = Boolean(lastPage?.has_more);
+  const loadingMore = isValidating && size > 1 && hasMore;
+
+  const loadMore = useCallback(() => {
+    if (!enabled || loadingMore || !hasMore || isLoading) return;
+    void setSize(size + 1);
+  }, [enabled, hasMore, isLoading, loadingMore, setSize, size]);
+
   return {
-    payload: data ?? null,
-    isLoading: isLoading && !data,
+    payload,
+    totalCount,
+    loadedCount,
+    hasMore,
+    isLoading: enabled && isLoading && !data?.length,
     isValidating,
+    loadingMore,
     error,
+    loadMore,
     mutate,
   };
 }
+
+/** @deprecated Use useReportInfinite */
+export const useReportData = useReportInfinite;

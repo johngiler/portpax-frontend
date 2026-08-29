@@ -1,8 +1,4 @@
-export type ReportGuideId =
-  | "totals"
-  | "movements"
-  | "panorama"
-  | "cumplimiento";
+export type ReportGuideId = "ports_totals" | "port_carrier" | "port_trends";
 
 export type ReportGuideRow = {
   id: ReportGuideId;
@@ -11,37 +7,26 @@ export type ReportGuideRow = {
   notes: string;
 };
 
-/**
- * Guide copy for operational reports currently in PortPax MVP
- * (bookings data only — no proyección / garantías).
- */
 export const REPORT_GUIDE: ReportGuideRow[] = [
   {
-    id: "totals",
-    name: "Booking Totals",
+    id: "ports_totals",
+    name: "Totals puertos",
     description:
-      "Resumen operativo del período: totales de calls/PAX y desglose por estado, puerto o naviera según los filtros.",
-    notes: "Opcional: excluir LTA / CL / LTD. Exporta CSV o Excel.",
+      "Matriz año × mes de calls y PAX por puerto (vista consolidada multi-puerto).",
+    notes: "Exporta Excel con estilo ITM. Opción sin LTA / CL / LTD.",
   },
   {
-    id: "movements",
-    name: "WEEK / Movimientos",
+    id: "port_carrier",
+    name: "Totals por puerto",
     description:
-      "Movimientos del período (confirmaciones y cancelaciones) y matrices tipo WEEK usadas en el seguimiento semanal de booking.",
-    notes: "Solo exporta Excel (libro multi-hoja). El rango por defecto es la última semana.",
+      "Misma matriz para un puerto, desglosada por naviera (RCI, NCL, MSC…).",
+    notes: "Requiere puerto. Exporta Excel.",
   },
   {
-    id: "panorama",
-    name: "Panorama por naviera",
+    id: "port_trends",
+    name: "Trends por puerto",
     description:
-      "Vista consolidada de una naviera: calls y PAX por puerto y año en el rango elegido.",
-    notes: "Requiere seleccionar una naviera. Exporta CSV o Excel.",
-  },
-  {
-    id: "cumplimiento",
-    name: "Cumplimiento REAL",
-    description:
-      "Cierre operativo vs plan: PAX real (desembarcados) frente a lo planificado, con % de cumplimiento sobre calls cerrados en Real.",
-    notes: "Sin proyección ni garantías contractuales. Exporta CSV o Excel.",
+      "SHIPS y PAX por naviera y año, más % de crecimiento interanual de PAX.",
+    notes: "Requiere puerto. Growth en verde/rojo. Solo Excel.",
   },
 ];

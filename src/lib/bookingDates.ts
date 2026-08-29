@@ -17,6 +17,14 @@ export function parseIsoDate(value: string): { year: number; monthIndex: number;
   return { year: y, monthIndex: m - 1, day: d };
 }
 
+/** Add calendar years to an ISO date (same month/day; clamps invalid leap days). */
+export function addYearsToIsoDate(iso: string, years: number): string {
+  const { year, monthIndex, day } = parseIsoDate(iso);
+  const targetYear = year + years;
+  const lastDay = new Date(targetYear, monthIndex + 1, 0).getDate();
+  return toIsoDate(targetYear, monthIndex, Math.min(day, lastDay));
+}
+
 /** Display ISO YYYY-MM-DD as dd/mm/aaaa. */
 export function formatIsoAsDmy(iso: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";

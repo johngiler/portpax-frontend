@@ -9,6 +9,8 @@ type ViewSectionProps = {
   /** Primary action aligned with the section header (e.g. SectionAddButton). */
   actions?: ReactNode;
   className?: string;
+  /** Override default body padding (`p-5 sm:p-6`). */
+  bodyClassName?: string;
 };
 
 /** Content section with icon, title, and description. */
@@ -19,6 +21,7 @@ export default function ViewSection({
   children,
   actions,
   className = "",
+  bodyClassName = "p-5 sm:p-6",
 }: ViewSectionProps) {
   return (
     <section
@@ -43,7 +46,7 @@ export default function ViewSection({
           {actions ? <div className="shrink-0 self-end sm:self-start">{actions}</div> : null}
         </div>
       </div>
-      <div className="p-5 sm:p-6">{children}</div>
+      <div className={bodyClassName}>{children}</div>
     </section>
   );
 }

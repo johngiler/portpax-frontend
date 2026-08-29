@@ -32,6 +32,7 @@ const CHIP_ICONS: Record<ActiveFilterChipIcon, LucideIcon> = {
   heat: LayoutGrid,
   density: Ship,
   calendar: CalendarRange,
+  lta: Tag,
 };
 
 type ViewFilteredBannerProps = {

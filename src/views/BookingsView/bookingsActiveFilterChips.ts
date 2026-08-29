@@ -37,7 +37,8 @@ export type ActiveFilterChipIcon =
   | "dates"
   | "heat"
   | "density"
-  | "calendar";
+  | "calendar"
+  | "lta";
 
 export type ActiveFilterChip = {
   id: string;

@@ -160,140 +160,80 @@ export async function exportCalendarReport(
   triggerBrowserDownload(blob, filename || `calendario.${params.exportFormat}`);
 }
 
-export type BookingTotalsReport = {
+export type StructuredReportType =
+  | "availability"
+  | "ports_totals_matrix"
+  | "port_carrier_matrix"
+  | "port_trends";
+
+export type MatrixYearRow = {
+  year: number | "total";
+  months: number[];
+  total: number;
+  is_total?: boolean;
+};
+
+export type MatrixSection = {
+  label: string;
+  calls: MatrixYearRow[];
+  pax: MatrixYearRow[];
+  is_total?: boolean;
+  logo?: string | null;
+  logo_kind?: "port" | "shipping_line";
+};
+
+export type ReportPagination = {
+  page: number;
+  page_size: number;
+  total_count: number;
+  has_more: boolean;
+};
+
+export type PortsTotalsMatrixReport = {
+  kind: "ports_totals";
+  title: string;
   date_from: string;
   date_to: string;
   without_lta: boolean;
-  total_calls: number;
-  planned_pax: number;
-  actual_pax: number;
-  by_status: Record<string, number>;
-  by_month: Array<{
-    year: number;
-    month: number;
-    calls: number;
-    planned_pax: number;
-    actual_pax: number;
-  }>;
-  by_port: Array<{
-    port_id: number;
-    code: string;
-    name: string;
-    logo: string | null;
-    calls: number;
-    planned_pax: number;
-  }>;
-  by_shipping_line: Array<{
-    shipping_line_id: number;
-    code: string;
-    name: string;
-    logo: string | null;
-    calls: number;
-    planned_pax: number;
-  }>;
-};
-
-export type MovementsReport = {
-  date_from: string;
-  date_to: string;
-  confirmations_count: number;
-  cancellations_count: number;
-  confirmations: Array<{
-    id: number;
-    at: string;
-    from_status: string | null;
-    to_status: string;
-    booking_code: string;
-    call_date: string;
-    port_code: string;
-    shipping_line_name: string;
-    vessel_name: string;
-    user: string | null;
-  }>;
-  cancellations: Array<{
-    id: number;
-    at: string;
-    from_status: string | null;
-    to_status: string;
-    booking_code: string;
-    call_date: string;
-    port_code: string;
-    shipping_line_name: string;
-    vessel_name: string;
-    user: string | null;
-  }>;
-  by_shipping_line: Array<{
-    name: string;
-    confirmations: number;
-    cancellations: number;
-  }>;
-};
-
-export async function fetchBookingTotalsReport(params: {
-  date_from: string;
-  date_to: string;
-  port?: number;
-  shipping_line?: number;
-  without_lta?: boolean;
-}): Promise<BookingTotalsReport> {
-  const query = new URLSearchParams();
-  query.set("date_from", params.date_from);
-  query.set("date_to", params.date_to);
-  if (params.port) query.set("port", String(params.port));
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
-  if (params.without_lta) query.set("without_lta", "true");
-  return apiFetch<BookingTotalsReport>(`${BASE}report-totals/?${query.toString()}`);
-}
-
-export async function fetchMovementsReport(params: {
-  date_from: string;
-  date_to: string;
-  port?: number;
-}): Promise<MovementsReport> {
-  const query = new URLSearchParams();
-  query.set("date_from", params.date_from);
-  query.set("date_to", params.date_to);
-  if (params.port) query.set("port", String(params.port));
-  return apiFetch<MovementsReport>(`${BASE}report-movements/?${query.toString()}`);
-}
-
-export type CarrierPanoramaReport = {
-  shipping_line: { id: number; code: string; name: string };
-  date_from: string;
-  date_to: string;
+  month_labels: string[];
   years: number[];
-  ports: Array<{
-    port_id: number;
-    code: string;
-    name: string;
-    by_year: Array<{ year: number; calls: number; pax: number }>;
-    total_calls: number;
-    total_pax: number;
-  }>;
+  sections: MatrixSection[];
   note: string;
-};
+} & ReportPagination;
 
-export type CumplimientoRealReport = {
+export type PortCarrierMatrixReport = {
+  kind: "port_carrier";
+  title: string;
+  port: { id: number; code: string; name: string; logo?: string | null };
   date_from: string;
   date_to: string;
+  without_lta: boolean;
+  month_labels: string[];
   years: number[];
-  year_totals: Array<{ year: number; pax: number }>;
-  grand_total_pax: number;
+  sections: MatrixSection[];
+  note: string;
+} & ReportPagination;
+
+export type PortTrendsReport = {
+  kind: "port_trends";
+  title: string;
+  port: { id: number; code: string; name: string; logo?: string | null };
+  date_from: string;
+  date_to: string;
+  without_lta: boolean;
+  years: number[];
   lines: Array<{
     shipping_line_id: number;
     code: string;
     name: string;
-    by_year: Array<{ year: number; pax: number; share_pct: number }>;
+    logo?: string | null;
+    by_year: Array<{ year: number; ships: number; pax: number }>;
+    growth: Array<{ year: number; pct: number | null }>;
+    total_ships: number;
     total_pax: number;
   }>;
   note: string;
-};
-
-export type StructuredReportType =
-  | "availability"
-  | "week"
-  | "carrier_panorama"
-  | "cumplimiento_real";
+} & ReportPagination;
 
 export type AvailabilityReport = {
   port_id: number;
@@ -387,31 +327,70 @@ export async function fetchAvailabilityReport(params: {
   );
 }
 
-export async function fetchCarrierPanoramaReport(params: {
+export const REPORT_MATRIX_SECTION_PAGE_SIZE = 2;
+export const REPORT_TRENDS_LINE_PAGE_SIZE = 10;
+
+export async function fetchPortsTotalsMatrixReport(params: {
   date_from: string;
   date_to: string;
-  shipping_line: number;
-}): Promise<CarrierPanoramaReport> {
+  without_lta?: boolean;
+  page?: number;
+  page_size?: number;
+}): Promise<PortsTotalsMatrixReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
-  query.set("shipping_line", String(params.shipping_line));
-  return apiFetch<CarrierPanoramaReport>(
-    `${BASE}report-carrier-panorama/?${query.toString()}`,
+  if (params.without_lta) query.set("without_lta", "true");
+  if (params.page != null) query.set("page", String(params.page));
+  if (params.page_size != null) {
+    query.set("page_size", String(params.page_size));
+  }
+  return apiFetch<PortsTotalsMatrixReport>(
+    `${BASE}report-ports-totals-matrix/?${query.toString()}`,
   );
 }
 
-export async function fetchCumplimientoRealReport(params: {
+export async function fetchPortCarrierMatrixReport(params: {
   date_from: string;
   date_to: string;
-  port?: number;
-}): Promise<CumplimientoRealReport> {
+  port: number;
+  without_lta?: boolean;
+  page?: number;
+  page_size?: number;
+}): Promise<PortCarrierMatrixReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
-  if (params.port) query.set("port", String(params.port));
-  return apiFetch<CumplimientoRealReport>(
-    `${BASE}report-cumplimiento-real/?${query.toString()}`,
+  query.set("port", String(params.port));
+  if (params.without_lta) query.set("without_lta", "true");
+  if (params.page != null) query.set("page", String(params.page));
+  if (params.page_size != null) {
+    query.set("page_size", String(params.page_size));
+  }
+  return apiFetch<PortCarrierMatrixReport>(
+    `${BASE}report-port-carrier-matrix/?${query.toString()}`,
+  );
+}
+
+export async function fetchPortTrendsReport(params: {
+  date_from: string;
+  date_to: string;
+  port: number;
+  without_lta?: boolean;
+  page?: number;
+  page_size?: number;
+}): Promise<PortTrendsReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  query.set("port", String(params.port));
+  if (params.without_lta) query.set("without_lta", "true");
+  if (params.page != null) query.set("page", String(params.page));
+  if (params.page_size != null) {
+    query.set("page_size", String(params.page_size));
+  }
+  return apiFetch<PortTrendsReport>(
+    `${BASE}report-port-trends/?${query.toString()}`,
   );
 }
 
@@ -425,6 +404,7 @@ export async function exportStructuredReport(params: {
   position?: number;
   status?: string;
   statuses?: string[];
+  without_lta?: boolean;
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
@@ -437,6 +417,7 @@ export async function exportStructuredReport(params: {
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
+  if (params.without_lta) query.set("without_lta", "true");
   const statusCsv =
     params.statuses && params.statuses.length > 0
       ? params.statuses.join(",")
