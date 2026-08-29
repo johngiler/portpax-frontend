@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useRef, type ReactNode, type RefObject } from "react";
 import ViewSection from "@/components/layout/ViewSection";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
@@ -15,15 +15,18 @@ import { TrendingUp } from "lucide-react";
 import type { PortTrendsReport } from "@/services/bookings/bookingService";
 import ReportsEmptyState from "./ReportsEmptyState";
 
-type Props = {
-  data: PortTrendsReport;
-  hasActiveFilters: boolean;
-  onClearFilters?: () => void;
+type PaginationProps = {
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
   loadedCount: number;
   totalCount: number;
+};
+
+type Props = PaginationProps & {
+  data: PortTrendsReport;
+  hasActiveFilters: boolean;
+  onClearFilters?: () => void;
 };
 
 function PortContextHeader({ port }: { port: PortTrendsReport["port"] }) {
@@ -43,6 +46,38 @@ function PortContextHeader({ port }: { port: PortTrendsReport["port"] }) {
   );
 }
 
+type TrendsPaginatedPanelProps = PaginationProps & {
+  scrollRootRef: RefObject<HTMLDivElement | null>;
+  children: ReactNode;
+};
+
+function TrendsPaginatedPanel({
+  scrollRootRef,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  loadedCount,
+  totalCount,
+  children,
+}: TrendsPaginatedPanelProps) {
+  return (
+    <div ref={scrollRootRef} className={reportMatrix.scrollPanel}>
+      <div className={reportMatrix.scroll}>{children}</div>
+      <InfiniteScrollFooter
+        hasMore={hasMore}
+        loading={loadingMore}
+        onLoadMore={onLoadMore}
+        loadedCount={loadedCount}
+        totalCount={totalCount}
+        itemLabel="navieras"
+        scrollRootRef={scrollRootRef}
+        rootMargin="120px 0px"
+        className="mt-0 border-t border-zinc-200/80 py-3 dark:border-zinc-800"
+      />
+    </div>
+  );
+}
+
 export default function PortTrendsSection({
   data,
   hasActiveFilters,
@@ -53,6 +88,17 @@ export default function PortTrendsSection({
   loadedCount,
   totalCount,
 }: Props) {
+  const trendsScrollRef = useRef<HTMLDivElement>(null);
+  const growthScrollRef = useRef<HTMLDivElement>(null);
+
+  const pagination: PaginationProps = {
+    hasMore,
+    loadingMore,
+    onLoadMore,
+    loadedCount,
+    totalCount,
+  };
+
   if (totalCount === 0) {
     return (
       <ReportsEmptyState
@@ -81,7 +127,10 @@ export default function PortTrendsSection({
               <div className="border-b border-zinc-200/70 bg-zinc-50/50 px-4 py-2.5 text-sm font-semibold text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100">
                 Trends por naviera
               </div>
-              <div className={reportMatrix.scroll}>
+              <TrendsPaginatedPanel
+                scrollRootRef={trendsScrollRef}
+                {...pagination}
+              >
                 <table className={reportMatrix.table}>
                   <thead>
                     <tr>
@@ -160,7 +209,7 @@ export default function PortTrendsSection({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TrendsPaginatedPanel>
             </div>
           </div>
         </div>
@@ -176,7 +225,10 @@ export default function PortTrendsSection({
           <PortContextHeader port={data.port} />
           <div className={reportMatrix.sectionGroupBody}>
             <div className={reportMatrix.shellNested}>
-              <div className={reportMatrix.scroll}>
+              <TrendsPaginatedPanel
+                scrollRootRef={growthScrollRef}
+                {...pagination}
+              >
                 <table className={reportMatrix.table}>
                   <thead>
                     <tr>
@@ -227,20 +279,11 @@ export default function PortTrendsSection({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TrendsPaginatedPanel>
             </div>
           </div>
         </div>
       </ViewSection>
-
-      <InfiniteScrollFooter
-        hasMore={hasMore}
-        loading={loadingMore}
-        onLoadMore={onLoadMore}
-        loadedCount={loadedCount}
-        totalCount={totalCount}
-        itemLabel="navieras"
-      />
     </div>
   );
 }

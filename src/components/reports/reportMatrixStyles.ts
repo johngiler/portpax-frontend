@@ -2,6 +2,8 @@ export const reportMatrix = {
   shell:
     "flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/30",
   scroll: "overflow-x-auto",
+  /** Vertical + horizontal scroll for paginated report tables. */
+  scrollPanel: "max-h-[min(36rem,70vh)] overflow-auto",
   table: "min-w-full border-collapse text-xs sm:text-sm",
   sectionBanner:
     "rounded-lg border border-zinc-200/80 bg-zinc-50/90 px-3 py-2 text-xs font-semibold tracking-tight text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-100",
