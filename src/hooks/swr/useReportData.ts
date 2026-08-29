@@ -94,8 +94,8 @@ function reportPayloadMatchesFilters(
   ) {
     return false;
   }
-  if (filters.tab === "port_carrier" || filters.tab === "port_trends") {
-    return data.port.id === filters.portFilter;
+  if (payload.tab === "port_carrier" || payload.tab === "port_trends") {
+    return payload.data.port.id === filters.portFilter;
   }
   return true;
 }
