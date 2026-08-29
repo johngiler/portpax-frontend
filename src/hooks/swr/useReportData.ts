@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import { swrKeys } from "@/lib/swr/keys";
 import {
@@ -81,6 +81,25 @@ async function fetchReportPage(
   });
 }
 
+function reportPayloadMatchesFilters(
+  payload: ReportPayload | null,
+  filters: ReportFilters,
+): payload is ReportPayload {
+  if (!payload || payload.tab !== filters.tab) return false;
+  const { data } = payload;
+  if (
+    data.date_from !== filters.dateFrom ||
+    data.date_to !== filters.dateTo ||
+    data.without_lta !== filters.withoutLta
+  ) {
+    return false;
+  }
+  if (filters.tab === "port_carrier" || filters.tab === "port_trends") {
+    return data.port.id === filters.portFilter;
+  }
+  return true;
+}
+
 function mergeReportPages(pages: ReportPage[]): ReportPayload | null {
   if (!pages.length) return null;
   const head = pages[0];
@@ -131,35 +150,48 @@ export function useReportInfinite(filters: ReportFilters, ready = true) {
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } =
-    useSWRInfinite(getKey, (key) => {
-      const page = key[key.length - 1] as number;
-      return fetchReportPage(filters, page);
-    });
+    useSWRInfinite(
+      getKey,
+      (key) => {
+        const page = key[key.length - 1] as number;
+        return fetchReportPage(filters, page);
+      },
+      { keepPreviousData: false },
+    );
 
-  const payload = useMemo(() => mergeReportPages(data ?? []), [data]);
+  useEffect(() => {
+    void setSize(1);
+  }, [paramsKey, setSize]);
+
+  const rawPayload = useMemo(() => mergeReportPages(data ?? []), [data]);
+  const payload = reportPayloadMatchesFilters(rawPayload, filters)
+    ? rawPayload
+    : null;
 
   const lastPage = data?.[data.length - 1];
-  const totalCount = lastPage?.total_count ?? 0;
+  const totalCount = payload ? (lastPage?.total_count ?? 0) : 0;
   const loadedCount =
     payload?.tab === "port_trends"
       ? payload.data.lines.length
       : payload?.tab === "ports_totals" || payload?.tab === "port_carrier"
         ? payload.data.sections.length
         : 0;
-  const hasMore = Boolean(lastPage?.has_more);
-  const loadingMore = isValidating && size > 1 && hasMore;
+  const hasMore = Boolean(payload && lastPage?.has_more);
+  const loadingMore = Boolean(payload) && isValidating && size > 1 && hasMore;
+  const isFilterLoading =
+    enabled && !loadingMore && !payload && (isLoading || isValidating);
 
   const loadMore = useCallback(() => {
-    if (!enabled || loadingMore || !hasMore || isLoading) return;
+    if (!enabled || loadingMore || !hasMore || isFilterLoading) return;
     void setSize(size + 1);
-  }, [enabled, hasMore, isLoading, loadingMore, setSize, size]);
+  }, [enabled, hasMore, isFilterLoading, loadingMore, setSize, size]);
 
   return {
     payload,
     totalCount,
     loadedCount,
     hasMore,
-    isLoading: enabled && isLoading && !data?.length,
+    isLoading: isFilterLoading,
     isValidating,
     loadingMore,
     error,
