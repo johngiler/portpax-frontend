@@ -1,3 +1,5 @@
+import type { EntityAuditEntry } from "@/types/audit";
+
 export type PortOperationalStatus =
   | "operational"
   | "in_development"
@@ -167,6 +169,7 @@ export type PortDetail = Port & {
   bollards: PortBollard[];
   fenders: PortFender[];
   images: PortImage[];
+  audit_entries: EntityAuditEntry[];
 };
 
 export function formatCoord(value: string | null): string {

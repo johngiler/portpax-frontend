@@ -14,6 +14,7 @@ export type LtaActivityFilterParams = {
   dateFrom?: string;
   dateTo?: string;
   actor?: string;
+  agreementId?: number;
   pageSize?: number;
 };
 
@@ -23,6 +24,7 @@ function activityParamsKey(params: LtaActivityFilterParams): string {
     params.dateFrom ?? "",
     params.dateTo ?? "",
     params.actor ?? "",
+    params.agreementId ?? 0,
     params.pageSize ?? 20,
   ].join("|");
 }
@@ -37,6 +39,8 @@ export function useLtaActivityInfinite(
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
   const actor = params.actor?.trim() || undefined;
+  const agreementId =
+    params.agreementId && params.agreementId > 0 ? params.agreementId : undefined;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: LtaActivityResponse | null) => {
@@ -61,6 +65,7 @@ export function useLtaActivityInfinite(
         date_from: dateFrom,
         date_to: dateTo,
         actor,
+        agreement_id: agreementId,
       });
     });
 

@@ -11,6 +11,7 @@ export type BookingActivityKind =
 
 export type BookingActivityItem = {
   kind: "single" | "bulk";
+  audit_id?: number | null;
   action: string;
   occurred_at: string;
   user_display: string | null;
@@ -108,6 +109,7 @@ export async function fetchBookingActivity(params: {
   date_to?: string;
   /** User id, or "system" for events without a human actor. */
   actor?: string;
+  booking_id?: number;
 }): Promise<BookingActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -116,6 +118,7 @@ export async function fetchBookingActivity(params: {
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
   if (params.actor?.trim()) sp.set("actor", params.actor.trim());
+  if (params.booking_id) sp.set("booking_id", String(params.booking_id));
   const qs = sp.toString();
   return apiFetch<BookingActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,

@@ -18,6 +18,7 @@ import ShippingLineDetailHero from "./ShippingLineDetailHero";
 import ShippingLineDetailSkeleton from "./ShippingLineDetailSkeleton";
 import ShippingLineDetailsSection from "./ShippingLineDetailsSection";
 import ShippingLineVesselsSection from "./ShippingLineVesselsSection";
+import ShippingLineDetailAuditSection from "./ShippingLineDetailAuditSection";
 
 export default function ShippingLineDetailView() {
   const router = useRouter();
@@ -106,6 +107,8 @@ export default function ShippingLineDetailView() {
       <div className="mt-6 space-y-6">
         <ShippingLineDetailsSection line={line} />
         <ShippingLineVesselsSection line={line} onChange={loadLine} canWrite={canWrite} />
+
+        <ShippingLineDetailAuditSection shippingLineId={line.id} />
       </div>
 
       {canWrite ? (

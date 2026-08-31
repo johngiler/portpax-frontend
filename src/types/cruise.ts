@@ -1,3 +1,5 @@
+import type { EntityAuditEntry } from "@/types/audit";
+
 export type ShippingLineGroup = {
   id: number;
   code: string;
@@ -28,6 +30,7 @@ export type ShippingLine = {
 
 export type ShippingLineDetail = ShippingLine & {
   vessels: Vessel[];
+  audit_entries: EntityAuditEntry[];
 };
 
 export type ShippingLinePayload = {

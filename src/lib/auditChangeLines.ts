@@ -10,6 +10,25 @@ const PORT_STATUS_LABELS: Record<string, string> = {
   planned_extension: "Ampliación proyectada",
 };
 
+const POSITION_TYPE_LABELS: Record<string, string> = {
+  pier: "Muelle",
+  anchorage: "Fondeo",
+};
+
+const BOLLARD_TYPE_LABELS: Record<string, string> = {
+  standard: "Estándar",
+  t_head: "T-head",
+  quick_release: "Quick release",
+  single_bitt: "Single bitt",
+  other: "Otro",
+};
+
+const CHOICE_LABELS_BY_FIELD: Record<string, Record<string, string>> = {
+  status: PORT_STATUS_LABELS,
+  position_type: POSITION_TYPE_LABELS,
+  bollard_type: BOLLARD_TYPE_LABELS,
+};
+
 const FIELD_LABELS: Record<string, string> = {
   username: "Usuario",
   email: "Correo",
@@ -89,6 +108,55 @@ const FIELD_LABELS: Record<string, string> = {
   has_logo: "Logo",
   group_id: "Grupo",
   group_name: "Grupo",
+  berth_id: "Muelle",
+  berth_code: "Muelle",
+  position_type: "Tipo",
+  short_code: "Posición",
+  max_loa_m: "Eslora máx.",
+  min_loa_m: "Eslora mín.",
+  max_beam_m: "Manga máx.",
+  min_draft_m: "Calado mín.",
+  min_eta: "ETA mín.",
+  bollard_type: "Tipo de bita",
+  capacity_t: "Capacidad (t)",
+  quantity: "Cantidad",
+  label: "Etiqueta",
+  fender_type: "Tipo de defensa",
+  bollard_allocations: "Bitas asignadas",
+  fender_allocations: "Defensas asignadas",
+  length_m: "Largo",
+  width_m: "Ancho",
+  walkway_length_m: "Largo pasarela",
+  walkway_width_m: "Ancho pasarela",
+  effective_from: "Vigente desde",
+  effective_until: "Vigente hasta",
+  sort_order: "Orden",
+  is_cover: "Portada",
+  has_image: "Imagen",
+  caption: "Leyenda",
+  outer_position_id: "Posición exterior",
+  inner_position_id: "Posición interior",
+  position_a_id: "Posición A",
+  position_b_id: "Posición B",
+  enforce_eta: "Validar ETA",
+  enforce_etd: "Validar ETD",
+  separation_m: "Separación (m)",
+  yellow_from_m: "Amarillo desde (m)",
+  red_from_m: "Rojo desde (m)",
+  ship_code: "Código de barco",
+  vessel_class: "Clase",
+  gross_tonnage: "Tonelaje bruto",
+  pax_capacity: "PAX",
+  crew_capacity: "Tripulación",
+  loa_m: "Eslora",
+  beam_m: "Manga",
+  draft_m: "Calado",
+  flag: "Bandera",
+  year_built: "Año",
+  segment: "Segmento",
+  size_category: "Categoría",
+  mooring_line_count: "Líneas de amarre",
+  bollard_swl_t: "SWL bitas (t)",
 };
 
 const META_KEYS = new Set([
@@ -128,6 +196,63 @@ function formatBookingStatus(value: unknown): string {
     return label ?? value;
   }
   return formatValue(value);
+}
+
+function formatCatalogStatus(value: unknown): string {
+  if (typeof value === "string") {
+    if (PORT_STATUS_LABELS[value]) return PORT_STATUS_LABELS[value];
+    return formatBookingStatus(value);
+  }
+  return formatValue(value);
+}
+
+function formatChoiceValue(value: unknown, key?: string): string {
+  if (typeof value === "string" && key && CHOICE_LABELS_BY_FIELD[key]?.[value]) {
+    return CHOICE_LABELS_BY_FIELD[key][value];
+  }
+  if (key === "status") return formatCatalogStatus(value);
+  return formatValue(value, key);
+}
+
+function formatChoiceChange(
+  rec: Record<string, unknown>,
+  key?: string,
+): string {
+  const labels = key ? CHOICE_LABELS_BY_FIELD[key] : undefined;
+  const fromLabel = rec.from_label ?? rec.old_label;
+  const toLabel = rec.to_label ?? rec.new_label;
+  const fromRaw = rec.from ?? rec.old;
+  const toRaw = rec.to ?? rec.new;
+  const from =
+    typeof fromLabel === "string" && fromLabel.trim()
+      ? fromLabel
+      : typeof fromRaw === "string" && labels?.[fromRaw]
+        ? labels[fromRaw]
+        : formatChoiceValue(fromRaw, key);
+  const to =
+    typeof toLabel === "string" && toLabel.trim()
+      ? toLabel
+      : typeof toRaw === "string" && labels?.[toRaw]
+        ? labels[toRaw]
+        : formatChoiceValue(toRaw, key);
+  return `${from} → ${to}`;
+}
+
+function formatAllocations(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "—";
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return String(item);
+      const rec = item as Record<string, unknown>;
+      if (rec.capacity_t != null) {
+        return `${rec.quantity ?? 1}×${rec.capacity_t} t`;
+      }
+      if (typeof rec.fender_type === "string") {
+        return `${rec.quantity ?? 1}×${rec.fender_type}`;
+      }
+      return formatLabelList([item]);
+    })
+    .join(", ");
 }
 
 function formatNamedSide(rec: Record<string, unknown>, side: "from" | "to"): string {
@@ -192,9 +317,27 @@ const NAMED_ID_FIELDS = new Set([
   "vessel_id",
   "long_term_agreement_id",
   "group_id",
+  "berth_id",
+  "outer_position_id",
+  "inner_position_id",
+  "position_a_id",
+  "position_b_id",
 ]);
 
-const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real"]);
+const CODE_FK_FIELDS = new Set([
+  "position_id",
+  "berth_id",
+  "outer_position_id",
+  "inner_position_id",
+  "position_a_id",
+  "position_b_id",
+]);
+
+const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real", "min_eta"]);
+
+const ALLOCATION_FIELDS = new Set(["bollard_allocations", "fender_allocations"]);
+
+const CHOICE_FIELDS = new Set(["status", "position_type", "bollard_type"]);
 
 function formatConflictList(value: unknown): string {
   if (!Array.isArray(value) || value.length === 0) return "—";
@@ -271,6 +414,34 @@ function formatValue(value: unknown, key?: string): string {
     }
     return formatLabelList(value);
   }
+  if (key && ALLOCATION_FIELDS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        const from = rec.from ?? rec.old;
+        const to = rec.to ?? rec.new;
+        return `${formatAllocations(from)} → ${formatAllocations(to)}`;
+      }
+    }
+    return formatAllocations(value);
+  }
+  if (key && CHOICE_FIELDS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return formatChoiceChange(rec, key);
+      }
+    }
+    return formatChoiceValue(value, key);
+  }
+  if (key && CODE_FK_FIELDS.has(key)) {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        return `${formatPositionSide(rec, "from")} → ${formatPositionSide(rec, "to")}`;
+      }
+    }
+  }
   if (key === "position_id") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
@@ -299,15 +470,10 @@ function formatValue(value: unknown, key?: string): string {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
       if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
-        const from = rec.from ?? rec.old;
-        const to = rec.to ?? rec.new;
-        return `${formatBookingStatus(from)} → ${formatBookingStatus(to)}`;
+        return formatChoiceChange(rec, "status");
       }
     }
-    if (typeof value === "string") {
-      if (PORT_STATUS_LABELS[value]) return PORT_STATUS_LABELS[value];
-      return formatBookingStatus(value);
-    }
+    return formatCatalogStatus(value);
   }
   if (key && TIME_FIELD_KEYS.has(key)) {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
@@ -397,6 +563,10 @@ export function auditEntityHint(
   if (rec.port_code || rec.port_name) {
     parts.push(String(rec.port_code || rec.port_name));
   }
+  if (rec.shipping_line_name || rec.shipping_line_code) {
+    parts.push(String(rec.shipping_line_name || rec.shipping_line_code));
+  }
+  if (rec.berth_code) parts.push(`Muelle ${rec.berth_code}`);
   if (rec.vessel_name) parts.push(String(rec.vessel_name));
   if (rec.call_date) parts.push(String(rec.call_date));
   if (rec.position_code) parts.push(`Pos. ${rec.position_code}`);

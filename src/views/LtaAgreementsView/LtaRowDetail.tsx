@@ -8,6 +8,7 @@ import {
   formatLtaWeekdays,
   type LongTermAgreement,
 } from "@/types/lta";
+import LtaDetailAuditSection from "./LtaDetailAuditSection";
 import LtaLinkedBookings from "./LtaLinkedBookings";
 
 type LtaRowDetailProps = {
@@ -238,6 +239,8 @@ export default function LtaRowDetail({
       </DetailSection>
 
       <LtaLinkedBookings agreementId={agreement.id} active={active} />
+
+      <LtaDetailAuditSection agreementId={agreement.id} active={active} />
     </div>
   );
 }

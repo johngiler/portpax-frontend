@@ -4,6 +4,7 @@ export type PortActivityKind = "all" | "crud";
 
 export type PortActivityItem = {
   kind: "crud";
+  audit_id?: number | null;
   action: string;
   occurred_at: string;
   actor_display: string | null;
@@ -31,6 +32,7 @@ export async function fetchPortActivity(params: {
   date_from?: string;
   date_to?: string;
   actor?: string;
+  port_id?: number;
 }): Promise<PortActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -39,6 +41,7 @@ export async function fetchPortActivity(params: {
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
   if (params.actor?.trim()) sp.set("actor", params.actor.trim());
+  if (params.port_id) sp.set("port_id", String(params.port_id));
   const qs = sp.toString();
   return apiFetch<PortActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,

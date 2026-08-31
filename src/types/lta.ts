@@ -1,3 +1,5 @@
+import type { EntityAuditEntry } from "@/types/audit";
+
 export type LtaBookingPolicy = "standard" | "rci_staggered";
 
 export type LongTermAgreement = {
@@ -36,6 +38,10 @@ export type LongTermAgreement = {
   contract_file_name: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type LongTermAgreementDetail = LongTermAgreement & {
+  audit_entries: EntityAuditEntry[];
 };
 
 export type LongTermAgreementPayload = {

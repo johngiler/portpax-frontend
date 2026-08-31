@@ -4,15 +4,19 @@ import { useMemo } from "react";
 import EntityAuditHistorySection, {
   DETAIL_AUDIT_PAGE_SIZE,
 } from "@/components/audit/EntityAuditHistorySection";
-import { useBookingActivityInfinite } from "@/hooks/swr/useBookingActivityInfinite";
-import { bookingAuditActionLabel } from "@/lib/auditActionLabels";
-import { bookingActivityToRow } from "@/lib/auditHistoryRows";
+import { useLtaActivityInfinite } from "@/hooks/swr/useLtaActivityInfinite";
+import { ltaAuditActionLabel } from "@/lib/auditActionLabels";
+import { ltaActivityToRow } from "@/lib/auditHistoryRows";
 
-type BookingAuditSectionProps = {
-  bookingId: number;
+type LtaDetailAuditSectionProps = {
+  agreementId: number;
+  active?: boolean;
 };
 
-export default function BookingAuditSection({ bookingId }: BookingAuditSectionProps) {
+export default function LtaDetailAuditSection({
+  agreementId,
+  active = true,
+}: LtaDetailAuditSectionProps) {
   const {
     items,
     totalCount,
@@ -20,24 +24,23 @@ export default function BookingAuditSection({ bookingId }: BookingAuditSectionPr
     isLoading,
     loadingMore,
     loadMore,
-  } = useBookingActivityInfinite(
+  } = useLtaActivityInfinite(
     {
-      kind: "single",
-      bookingId,
+      agreementId,
       pageSize: DETAIL_AUDIT_PAGE_SIZE,
     },
-    bookingId > 0,
+    active && agreementId > 0,
   );
 
   const rows = useMemo(
-    () => items.map((item, index) => bookingActivityToRow(item, index)),
+    () => items.map((item, index) => ltaActivityToRow(item, index)),
     [items],
   );
 
   return (
     <EntityAuditHistorySection
       rows={rows}
-      resolveActionLabel={bookingAuditActionLabel}
+      resolveActionLabel={ltaAuditActionLabel}
       isLoading={isLoading}
       hasMore={hasMore}
       loadingMore={loadingMore}

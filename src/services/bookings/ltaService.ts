@@ -1,6 +1,7 @@
 import { apiFetch, type ApiListResponse } from "@/services/apiClient";
 import type {
   LongTermAgreement,
+  LongTermAgreementDetail,
   LongTermAgreementPayload,
   LongTermAgreementSaveOptions,
 } from "@/types/lta";
@@ -99,6 +100,12 @@ export async function fetchLongTermAgreements(
   if (params.is_active != null) query.set("is_active", String(params.is_active));
   const qs = query.toString();
   return apiFetch<ApiListResponse<LongTermAgreement>>(`${BASE}${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchLongTermAgreement(
+  id: number,
+): Promise<LongTermAgreementDetail> {
+  return apiFetch<LongTermAgreementDetail>(`${BASE}${id}/`);
 }
 
 export async function createLongTermAgreement(

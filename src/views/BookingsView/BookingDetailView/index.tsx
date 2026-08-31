@@ -94,7 +94,7 @@ export default function BookingDetailView() {
         onError={setViewError}
         canWrite={canWrite}
       />
-      <BookingAuditSection entries={booking.audit_entries} />
+      <BookingAuditSection bookingId={booking.id} />
     </div>
   );
 }

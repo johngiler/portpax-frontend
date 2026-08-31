@@ -4,15 +4,17 @@ import { useMemo } from "react";
 import EntityAuditHistorySection, {
   DETAIL_AUDIT_PAGE_SIZE,
 } from "@/components/audit/EntityAuditHistorySection";
-import { useBookingActivityInfinite } from "@/hooks/swr/useBookingActivityInfinite";
-import { bookingAuditActionLabel } from "@/lib/auditActionLabels";
-import { bookingActivityToRow } from "@/lib/auditHistoryRows";
+import { usePortActivityInfinite } from "@/hooks/swr/usePortActivityInfinite";
+import { catalogAuditActionLabel } from "@/lib/auditActionLabels";
+import { portActivityToRow } from "@/lib/auditHistoryRows";
 
-type BookingAuditSectionProps = {
-  bookingId: number;
+type PortDetailAuditSectionProps = {
+  portId: number;
 };
 
-export default function BookingAuditSection({ bookingId }: BookingAuditSectionProps) {
+export default function PortDetailAuditSection({
+  portId,
+}: PortDetailAuditSectionProps) {
   const {
     items,
     totalCount,
@@ -20,24 +22,23 @@ export default function BookingAuditSection({ bookingId }: BookingAuditSectionPr
     isLoading,
     loadingMore,
     loadMore,
-  } = useBookingActivityInfinite(
+  } = usePortActivityInfinite(
     {
-      kind: "single",
-      bookingId,
+      portId,
       pageSize: DETAIL_AUDIT_PAGE_SIZE,
     },
-    bookingId > 0,
+    portId > 0,
   );
 
   const rows = useMemo(
-    () => items.map((item, index) => bookingActivityToRow(item, index)),
+    () => items.map((item, index) => portActivityToRow(item, index)),
     [items],
   );
 
   return (
     <EntityAuditHistorySection
       rows={rows}
-      resolveActionLabel={bookingAuditActionLabel}
+      resolveActionLabel={catalogAuditActionLabel}
       isLoading={isLoading}
       hasMore={hasMore}
       loadingMore={loadingMore}

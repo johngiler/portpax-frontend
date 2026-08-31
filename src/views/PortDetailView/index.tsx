@@ -23,6 +23,7 @@ import PortDetailsSection from "./PortDetailsSection";
 import PortGallerySection from "./PortGallerySection";
 import PortBerthingRulesSection from "./PortBerthingRulesSection";
 import PortPositionsSection from "./PortPositionsSection";
+import PortDetailAuditSection from "./PortDetailAuditSection";
 
 export default function PortDetailView() {
   const router = useRouter();
@@ -155,6 +156,8 @@ export default function PortDetailView() {
       <PortPositionsSection port={port} onChange={loadPort} canWrite={canWrite} />
 
       <PortBerthingRulesSection port={port} canWrite={canWrite} />
+
+      <PortDetailAuditSection portId={port.id} />
       </div>
 
       {canWrite ? (
