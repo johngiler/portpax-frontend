@@ -5,6 +5,7 @@ export type UserActivityKind = "all" | "crud" | "login";
 
 export type UserActivityItem = {
   kind: "crud" | "login";
+  audit_id?: number;
   action: string;
   occurred_at: string;
   actor_display: string | null;
@@ -35,6 +36,7 @@ export async function fetchUserActivity(params: {
   date_from?: string;
   date_to?: string;
   actor?: string;
+  user_id?: number;
 }): Promise<UserActivityResponse> {
   const sp = new URLSearchParams();
   if (params.page) sp.set("page", String(params.page));
@@ -45,6 +47,9 @@ export async function fetchUserActivity(params: {
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
   if (params.actor?.trim()) sp.set("actor", params.actor.trim());
+  if (params.user_id && params.user_id > 0) {
+    sp.set("user_id", String(params.user_id));
+  }
   const qs = sp.toString();
   return apiFetch<UserActivityResponse>(
     `${BASE}activity/${qs ? `?${qs}` : ""}`,

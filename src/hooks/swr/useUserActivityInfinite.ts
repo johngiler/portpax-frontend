@@ -17,6 +17,7 @@ export type UserActivityFilterParams = {
   dateFrom?: string;
   dateTo?: string;
   actor?: string;
+  userId?: number;
   pageSize?: number;
 };
 
@@ -28,6 +29,7 @@ function activityParamsKey(params: UserActivityFilterParams): string {
     params.dateFrom ?? "",
     params.dateTo ?? "",
     params.actor ?? "",
+    params.userId ?? 0,
     params.pageSize ?? 20,
   ].join("|");
 }
@@ -44,6 +46,7 @@ export function useUserActivityInfinite(
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
   const actor = params.actor?.trim() || undefined;
+  const userId = params.userId && params.userId > 0 ? params.userId : undefined;
 
   const getKey = useCallback(
     (pageIndex: number, previousPageData: UserActivityResponse | null) => {
@@ -70,6 +73,7 @@ export function useUserActivityInfinite(
         date_from: dateFrom,
         date_to: dateTo,
         actor,
+        user_id: userId,
       });
     });
 

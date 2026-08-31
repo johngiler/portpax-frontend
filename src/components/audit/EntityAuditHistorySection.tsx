@@ -22,6 +22,7 @@ type EntityAuditHistorySectionProps = {
   loadedCount: number;
   totalCount: number;
   itemLabel?: string;
+  className?: string;
 };
 
 function titlesMatch(summary: string, label: string, action: string): boolean {
@@ -65,7 +66,7 @@ function ChangeChip({ label, text }: { label: string; text: string }) {
 
 function AuditHistorySkeleton() {
   return (
-    <div className="mt-4 space-y-3">
+    <div className="mt-5 space-y-4">
       {Array.from({ length: 3 }).map((_, index) => (
         <div
           key={index}
@@ -90,11 +91,14 @@ export default function EntityAuditHistorySection({
   loadedCount,
   totalCount,
   itemLabel = "movimientos",
+  className = "",
 }: EntityAuditHistorySectionProps) {
   if (!isLoading && rows.length === 0) return null;
 
   return (
-    <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
+    <section
+      className={`rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80 ${className}`.trim()}
+    >
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
         Historial
       </h2>
@@ -103,7 +107,7 @@ export default function EntityAuditHistorySection({
         <AuditHistorySkeleton />
       ) : (
         <>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-5 space-y-4">
             {rows.map((entry) => {
               const fieldLines = auditFieldChangeLines(entry.changes);
               const whereHint = auditEntityHint(entry.changes);

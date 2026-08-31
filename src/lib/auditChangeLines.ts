@@ -450,6 +450,19 @@ function formatValue(value: unknown, key?: string): string {
       }
     }
   }
+  if (key === "is_active") {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        const from = rec.from ?? rec.old;
+        const to = rec.to ?? rec.new;
+        const fmt = (v: unknown) =>
+          typeof v === "boolean" ? (v ? "Activo" : "Inactivo") : formatValue(v, key);
+        return `${fmt(from)} → ${fmt(to)}`;
+      }
+    }
+    if (typeof value === "boolean") return value ? "Activo" : "Inactivo";
+  }
   if (key === "role") {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
       const rec = value as Record<string, unknown>;
@@ -563,6 +576,8 @@ export function auditEntityHint(
   if (rec.port_code || rec.port_name) {
     parts.push(String(rec.port_code || rec.port_name));
   }
+  if (rec.display) parts.push(String(rec.display));
+  if (rec.username) parts.push(`@${rec.username}`);
   if (rec.shipping_line_name || rec.shipping_line_code) {
     parts.push(String(rec.shipping_line_name || rec.shipping_line_code));
   }

@@ -38,6 +38,21 @@ export function catalogAuditActionLabel(action: string): string {
   }
 }
 
+export function userAuditActionLabel(action: string): string {
+  switch (action) {
+    case "created":
+      return "Creación";
+    case "updated":
+      return "Actualización";
+    case "deleted":
+      return "Eliminación";
+    case "login":
+      return "Inicio de sesión";
+    default:
+      return action;
+  }
+}
+
 export function ltaAuditActionLabel(action: string): string {
   switch (action) {
     case "created":
