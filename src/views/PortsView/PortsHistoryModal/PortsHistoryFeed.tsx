@@ -8,8 +8,10 @@ import {
   MapPinX,
   User,
 } from "lucide-react";
+import { catalogAuditActionLabel } from "@/lib/auditActionLabels";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
+import { portActivityHeadline } from "@/lib/auditHistoryRows";
 import type { PortActivityItem } from "@/services/catalogs/portActivityService";
 
 type PortsHistoryFeedProps = {
@@ -27,30 +29,7 @@ function actionLabel(action: string): string {
     case "deleted":
       return "Eliminación";
     default:
-      return action;
-  }
-}
-
-function portTitle(item: PortActivityItem): string {
-  const code = item.port_code?.trim();
-  const name = item.port_name?.trim();
-  if (code && name && name.toLowerCase() !== code.toLowerCase()) {
-    return `${name} · ${code}`;
-  }
-  return name || code || "Puerto";
-}
-
-function headline(item: PortActivityItem): string {
-  const who = portTitle(item);
-  switch (item.action) {
-    case "created":
-      return `Creó ${who}`;
-    case "updated":
-      return `Modificó ${who}`;
-    case "deleted":
-      return `Eliminó ${who}`;
-    default:
-      return item.summary || who;
+      return catalogAuditActionLabel(action);
   }
 }
 
@@ -174,7 +153,7 @@ export default function PortsHistoryFeed({
                 </div>
 
                 <p className="mt-1.5 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {headline(item)}
+                  {portActivityHeadline(item)}
                 </p>
 
                 {fieldLines.length > 0 ? (

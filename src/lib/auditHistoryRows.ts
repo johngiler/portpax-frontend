@@ -5,6 +5,51 @@ import type { ShippingLineActivityItem } from "@/services/catalogs/shippingLineA
 import type { UserActivityItem } from "@/services/accounts/userActivityService";
 import type { AuditHistoryRow } from "@/types/audit";
 
+const PORT_CHILD_ACTION_RE =
+  /^(?:position|berth|bollard|fender|port_image|berth_image|position_image|nesting_rule|loa_recalc_rule)_(?:created|updated|deleted)$/;
+
+export function portActivityPortTitle(item: Pick<PortActivityItem, "port_code" | "port_name">): string {
+  const code = item.port_code?.trim();
+  const name = item.port_name?.trim();
+  if (code && name && name.toLowerCase() !== code.toLowerCase()) {
+    return `${name} · ${code}`;
+  }
+  return name || code || "Puerto";
+}
+
+function summaryIncludesPort(summary: string, portTitle: string): boolean {
+  const haystack = summary.toLowerCase();
+  return portTitle
+    .split("·")
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean)
+    .some((part) => haystack.includes(part));
+}
+
+export function portActivityHeadline(item: PortActivityItem): string {
+  const portTitle = portActivityPortTitle(item);
+  switch (item.action) {
+    case "created":
+      return `Creó ${portTitle}`;
+    case "updated":
+      return `Modificó ${portTitle}`;
+    case "deleted":
+      return `Eliminó ${portTitle}`;
+    default: {
+      const summary = item.summary?.trim();
+      if (!summary) return portTitle;
+      if (
+        PORT_CHILD_ACTION_RE.test(item.action) &&
+        portTitle !== "Puerto" &&
+        !summaryIncludesPort(summary, portTitle)
+      ) {
+        return `${summary} · ${portTitle}`;
+      }
+      return summary;
+    }
+  }
+}
+
 export function bookingActivityToRow(
   item: BookingActivityItem,
   index: number,
@@ -32,7 +77,7 @@ export function portActivityToRow(
         ? `audit-${item.audit_id}`
         : `port-${item.port_id}-${item.occurred_at}-${index}`,
     action: item.action,
-    summary: item.summary,
+    summary: portActivityHeadline(item),
     changes: item.changes,
     actorDisplay: item.actor_display,
     occurredAt: item.occurred_at,

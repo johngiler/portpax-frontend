@@ -32,6 +32,7 @@ import { createShippingLine } from "@/services/catalogs/shippingLineService";
 import type { ShippingLineFormSubmitPayload } from "./ShippingLineFormModal";
 import ShippingLineCard from "./ShippingLineCard";
 import ShippingLineFormModal from "./ShippingLineFormModal";
+import ShippingLineGroupsModal from "./ShippingLineGroupsModal";
 import ShippingLinesEmptyState from "./ShippingLinesEmptyState";
 import ShippingLinesHistoryModal from "./ShippingLinesHistoryModal";
 import ShippingLinesImportLoadingModal from "./Import/ShippingLinesImportLoadingModal";
@@ -50,6 +51,7 @@ export default function ShippingLinesView() {
   const [appliedGroupFilter, setAppliedGroupFilter] = useState(0);
   const [viewError, setViewError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [groupsModalOpen, setGroupsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [importOptionsOpen, setImportOptionsOpen] = useState(false);
@@ -220,12 +222,21 @@ export default function ShippingLinesView() {
         description="Selecciona una naviera para ver su ficha y la flota de barcos asociada."
         actions={
           canWrite ? (
-            <DefaultButton type="button" onClick={() => setModalOpen(true)}>
-              <span className="inline-flex items-center gap-2">
-                <Plus className="h-4 w-4" strokeWidth={2} />
-                Nueva naviera
-              </span>
-            </DefaultButton>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setGroupsModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Grupos
+              </button>
+              <DefaultButton type="button" onClick={() => setModalOpen(true)}>
+                <span className="inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" strokeWidth={2} />
+                  Nueva naviera
+                </span>
+              </DefaultButton>
+            </div>
           ) : undefined
         }
       />
@@ -266,6 +277,11 @@ export default function ShippingLinesView() {
         saving={saving}
         onClose={() => !saving && setModalOpen(false)}
         onSubmit={handleSave}
+      />
+
+      <ShippingLineGroupsModal
+        open={groupsModalOpen}
+        onClose={() => setGroupsModalOpen(false)}
       />
 
       <ShippingLinesHistoryModal
