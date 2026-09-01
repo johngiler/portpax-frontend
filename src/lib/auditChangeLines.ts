@@ -82,6 +82,7 @@ const FIELD_LABELS: Record<string, string> = {
   has_contract: "Contrato",
   linked: "Vinculadas",
   unlinked: "Desvinculadas",
+  no_match: "Sin match",
   skipped: "Ya existían",
   created: "Creadas",
   candidates: "Candidatas",
@@ -529,6 +530,8 @@ export function auditFieldChangeLines(
   changes: Record<string, unknown> | null | undefined,
 ): AuditChangeLine[] {
   if (!changes || typeof changes !== "object") return [];
+  const jobKind =
+    typeof changes.job_kind === "string" ? changes.job_kind : undefined;
   const lines: AuditChangeLine[] = [];
   for (const [key, value] of Object.entries(changes)) {
     // Snapshot blobs stay hidden; numeric `created` from generate jobs is shown.
@@ -539,7 +542,11 @@ export function auditFieldChangeLines(
     } else if (META_KEYS.has(key)) {
       continue;
     }
-    const label = FIELD_LABELS[key] ?? key;
+    let label = FIELD_LABELS[key] ?? key;
+    // Legacy link audits stored no-match count as `skipped`.
+    if (key === "skipped" && jobKind === "link") {
+      label = FIELD_LABELS.no_match ?? "Sin match";
+    }
     lines.push({ field: key, label, text: formatValue(value, key) });
   }
   return lines;

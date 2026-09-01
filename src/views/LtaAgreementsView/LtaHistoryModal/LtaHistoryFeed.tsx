@@ -92,8 +92,21 @@ function headline(item: LtaActivityItem): string {
       return `Modificó ${who}`;
     case "deleted":
       return `Eliminó ${who}`;
-    case "link_bookings":
-      return `Vinculó reservas a ${who}`;
+    case "link_bookings": {
+      const linked =
+        typeof changes?.linked === "number" ? changes.linked : null;
+      const noMatch =
+        typeof changes?.no_match === "number"
+          ? changes.no_match
+          : typeof changes?.skipped === "number" && changes?.job_kind === "link"
+            ? changes.skipped
+            : null;
+      const parts: string[] = [];
+      if (linked != null) parts.push(`${linked} vinculadas`);
+      if (noMatch != null) parts.push(`${noMatch} sin match`);
+      const counts = parts.length ? `: ${parts.join(", ")}` : "";
+      return item.summary?.trim() || `Vinculó reservas a ${who}${counts}`;
+    }
     case "generate_bookings": {
       const kind =
         typeof changes?.job_kind === "string" ? changes.job_kind : "";
