@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bell,
   LogOut,
   Menu,
   Moon,
@@ -20,40 +19,16 @@ import GlobalSearch from "@/components/search/GlobalSearch";
 import { userRoleLabel } from "@/types/accounts";
 import { userDisplayName } from "@/types/auth";
 import { roleHomePath } from "@/lib/navAccess";
+import NotificationDropdown from "./NotificationDropdown";
 import PortPaxLogo from "./PortPaxLogo";
 
 const iconBtnClass =
   "relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
-const NOTIFICATIONS_DUMMY = [
-  {
-    id: "1",
-    title: "Nueva escala asignada",
-    body: "Muelle 2 — Caribbean Princess, 14:00",
-    time: "Hace 5 min",
-    unread: true,
-  },
-  {
-    id: "2",
-    title: "Barco llegó a puerto",
-    body: "Port of Roatán — Harmony of the Seas",
-    time: "Hace 1 h",
-    unread: true,
-  },
-  {
-    id: "3",
-    title: "Actualización de tarifas",
-    body: "Se aplicaron los nuevos precios de muellaje",
-    time: "Ayer",
-    unread: false,
-  },
-];
-
 export default function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<"notifications" | "user" | null>(null);
-  const notificationCount = NOTIFICATIONS_DUMMY.filter((n) => n.unread).length;
 
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
@@ -128,69 +103,11 @@ export default function Header() {
             <Moon className="h-5 w-5" strokeWidth={1.5} />
           )}
         </button>
-        <DropdownMenu
+        <NotificationDropdown
           open={openMenu === "notifications"}
+          onToggle={() => toggle("notifications")}
           onClose={closeAll}
-          width="min-w-[20rem] max-w-[22rem]"
-          trigger={
-            <button
-              type="button"
-              className={iconBtnClass}
-              aria-label="Notificaciones"
-              title="Notificaciones"
-              onClick={() => toggle("notifications")}
-            >
-              <Bell className="h-5 w-5" strokeWidth={1.5} />
-              {notificationCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--admin-accent)] px-1 text-[10px] font-bold leading-none text-white">
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </span>
-              )}
-            </button>
-          }
-        >
-          <div className="dropdown-panel overflow-hidden">
-            <div className="border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-700/70">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                Notificaciones
-              </h3>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                {notificationCount} sin leer
-              </p>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {NOTIFICATIONS_DUMMY.map((n) => (
-                <button
-                  key={n.id}
-                  type="button"
-                  className="flex w-full cursor-pointer flex-col gap-0.5 border-b border-zinc-100 px-4 py-3 text-left transition-colors hover:bg-[var(--admin-accent)]/10 dark:border-zinc-800 dark:hover:bg-[var(--admin-accent)]/15"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span
-                      className={`text-sm font-medium ${n.unread ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400"}`}
-                    >
-                      {n.title}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
-                      {n.time}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {n.body}
-                  </p>
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-zinc-200/80 p-2 dark:border-zinc-700/70">
-              <button
-                type="button"
-                className="w-full cursor-pointer rounded-lg border border-[var(--admin-fuchsia)]/40 bg-[var(--admin-fuchsia)]/10 py-2.5 text-center text-sm font-semibold text-[var(--admin-fuchsia)] transition-colors hover:bg-[var(--admin-fuchsia)]/20 dark:border-[var(--admin-fuchsia)]/50 dark:bg-[var(--admin-fuchsia)]/15 dark:hover:bg-[var(--admin-fuchsia)]/25"
-              >
-                Ver todas
-              </button>
-            </div>
-          </div>
-        </DropdownMenu>
+        />
 
         <div
           className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5"

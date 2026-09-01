@@ -10,6 +10,8 @@ type DropdownMenuProps = {
   /** Ancho mínimo del panel */
   width?: string;
   align?: "left" | "right";
+  /** Classes on the floating panel wrapper (e.g. dropdown-panel). */
+  panelClassName?: string;
 };
 
 export default function DropdownMenu({
@@ -19,6 +21,7 @@ export default function DropdownMenu({
   children,
   width = "min-w-[theme(spacing.80)]",
   align = "right",
+  panelClassName = "",
 }: DropdownMenuProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +40,7 @@ export default function DropdownMenu({
       {trigger}
       {open && (
         <div
-          className={`dropdown-panel-enter absolute top-full z-[200] mt-2 ${width} ${align === "right" ? "right-0" : "left-0"}`}
+          className={`dropdown-panel-enter absolute top-full z-[200] mt-2 ${width} ${align === "right" ? "right-0" : "left-0"} ${panelClassName}`.trim()}
           role="menu"
         >
           {children}

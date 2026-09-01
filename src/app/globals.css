@@ -273,6 +273,22 @@ html.dark .dropdown-panel {
   border-color: var(--admin-border);
 }
 
+/* Opaque dropdown (e.g. notifications — no bleed-through from page behind). */
+.dropdown-panel.dropdown-panel--solid {
+  background: var(--admin-surface);
+  backdrop-filter: none;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-card-shadow-hover);
+}
+html.dark .dropdown-panel.dropdown-panel--solid {
+  background: var(--admin-surface);
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .dropdown-panel.dropdown-panel--solid {
+    background: var(--admin-surface);
+  }
+}
+
 @keyframes dropdown-panel-enter {
   from {
     opacity: 0;

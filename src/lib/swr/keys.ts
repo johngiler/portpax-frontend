@@ -3,6 +3,11 @@
 export const swrKeys = {
   navCounts: ["nav-counts"] as const,
 
+  notificationUnreadCount: ["notifications", "unread-count"] as const,
+
+  notificationsInfinite: (pageSize: number) =>
+    ["notifications", "infinite", pageSize] as const,
+
   portsPage: (page: number, search: string, pageSize: number) =>
     ["ports", "page", page, search, pageSize] as const,
 

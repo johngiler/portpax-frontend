@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import ActivityHistoryModal from "@/components/ui/ActivityHistoryModal";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
@@ -21,7 +21,9 @@ type BookingsHistoryModalProps = {
   open: boolean;
   onClose: () => void;
   initialBatchId?: number | null;
+  initialTypeFilter?: BookingActivityFilterValue;
   onInitialBatchConsumed?: () => void;
+  onInitialTypeFilterConsumed?: () => void;
   onReprocessRows?: (payload: {
     rows: ImportBatchRetryRow[];
     label: string;
@@ -33,13 +35,21 @@ export default function BookingsHistoryModal({
   open,
   onClose,
   initialBatchId = null,
+  initialTypeFilter = "",
   onInitialBatchConsumed,
+  onInitialTypeFilterConsumed,
   onReprocessRows,
 }: BookingsHistoryModalProps) {
   const [typeFilter, setTypeFilter] = useState<BookingActivityFilterValue>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
+
+  useEffect(() => {
+    if (!open || !initialTypeFilter) return;
+    setTypeFilter(initialTypeFilter);
+    onInitialTypeFilterConsumed?.();
+  }, [open, initialTypeFilter, onInitialTypeFilterConsumed]);
 
   const { data: actorsData } = useSWR(
     open ? swrKeys.bookingActivityActors : null,

@@ -76,3 +76,11 @@ export async function revalidateDashboard(): Promise<void> {
     { revalidate: true },
   );
 }
+
+export async function revalidateNotifications(): Promise<void> {
+  await mutate(
+    (key) => Array.isArray(key) && key[0] === "notifications",
+    undefined,
+    { revalidate: true },
+  );
+}

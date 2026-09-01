@@ -20,6 +20,8 @@ import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
 import { useFirstMatchingCallDate } from "@/hooks/swr/useFirstMatchingCallDate";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
+import type { BookingActivityFilterValue } from "@/lib/bookingActivityTaxonomy";
+import { parseHistoryTypeParam } from "@/lib/notificationNavigation";
 import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 import { canWriteApp } from "@/lib/navAccess";
 import type {
@@ -250,6 +252,8 @@ export default function BookingsView() {
   /** Raw TSV kept so paste-source import can return to the paste modal. */
   const [bulkImportPasteText, setBulkImportPasteText] = useState("");
   const [historyBatchId, setHistoryBatchId] = useState<number | null>(null);
+  const [historyTypeFilter, setHistoryTypeFilter] =
+    useState<BookingActivityFilterValue>("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [reprocessPasteOpen, setReprocessPasteOpen] = useState(false);
   const [reprocessPasteHeaders, setReprocessPasteHeaders] = useState<string[]>(
@@ -960,6 +964,28 @@ export default function BookingsView() {
   }, [handleExport]);
 
   useEffect(() => {
+    if (searchParams.get("openHistory") !== "1") return;
+
+    setHistoryOpen(true);
+
+    const batchRaw = searchParams.get("historyBatch");
+    if (batchRaw) {
+      const parsed = Number(batchRaw);
+      if (Number.isFinite(parsed)) setHistoryBatchId(parsed);
+    }
+
+    const parsedType = parseHistoryTypeParam(searchParams.get("historyType"));
+    if (parsedType) setHistoryTypeFilter(parsedType);
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("openHistory");
+    next.delete("historyBatch");
+    next.delete("historyType");
+    const qs = next.toString();
+    router.replace(qs ? `/bookings?${qs}` : "/bookings", { scroll: false });
+  }, [searchParams, router]);
+
+  useEffect(() => {
     setDataActivityHandler(() => {
       setHistoryOpen(true);
     });
@@ -1299,7 +1325,9 @@ export default function BookingsView() {
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         initialBatchId={historyBatchId}
+        initialTypeFilter={historyTypeFilter}
         onInitialBatchConsumed={() => setHistoryBatchId(null)}
+        onInitialTypeFilterConsumed={() => setHistoryTypeFilter("")}
         onReprocessRows={(payload) => {
           void handleReprocessImportRows(payload);
         }}
