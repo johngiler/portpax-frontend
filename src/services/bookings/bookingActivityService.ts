@@ -1,5 +1,6 @@
 import { apiFetch } from "@/services/apiClient";
 
+/** @deprecated Legacy single-axis filter — prefer operation + origin. */
 export type BookingActivityKind =
   | "all"
   | "single"
@@ -8,6 +9,19 @@ export type BookingActivityKind =
   | "mass_import"
   | "berthing_import"
   | "lta_generate";
+
+export type BookingActivityOperation = "all" | "create" | "update" | "delete";
+
+export type BookingActivityOrigin =
+  | "all"
+  | "wizard"
+  | "mass_import"
+  | "lta_generate"
+  | "berthing_import"
+  | "booking_update"
+  | "mass_update"
+  | "lta_agreement"
+  | "lta_link";
 
 export type BookingActivityItem = {
   kind: "single" | "bulk";
@@ -104,7 +118,10 @@ const BASE = "api/bookings/";
 export async function fetchBookingActivity(params: {
   page?: number;
   page_size?: number;
+  /** @deprecated Use operation + origin. */
   kind?: BookingActivityKind;
+  operation?: BookingActivityOperation;
+  origin?: BookingActivityOrigin;
   date_from?: string;
   date_to?: string;
   /** User id, or "system" for events without a human actor. */
@@ -115,6 +132,12 @@ export async function fetchBookingActivity(params: {
   if (params.page) sp.set("page", String(params.page));
   if (params.page_size) sp.set("page_size", String(params.page_size));
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind);
+  if (params.operation && params.operation !== "all") {
+    sp.set("operation", params.operation);
+  }
+  if (params.origin && params.origin !== "all") {
+    sp.set("origin", params.origin);
+  }
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
   if (params.actor?.trim()) sp.set("actor", params.actor.trim());

@@ -5,13 +5,13 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { useLtaActivityInfinite } from "@/hooks/swr/useLtaActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import type { LtaActivityKind } from "@/services/bookings/ltaActivityService";
+import type { LtaActivityFilterValue } from "@/lib/ltaActivityTaxonomy";
 import LtaHistoryFeed from "./LtaHistoryFeed";
 
 const PAGE_SIZE = 20;
 
 type LtaHistoryPanelProps = {
-  kind: LtaActivityKind;
+  typeFilter: LtaActivityFilterValue;
   dateFrom: string;
   dateTo: string;
   actor?: string;
@@ -21,7 +21,7 @@ type LtaHistoryPanelProps = {
 };
 
 export default function LtaHistoryPanel({
-  kind,
+  typeFilter,
   dateFrom,
   dateTo,
   actor = "",
@@ -39,7 +39,7 @@ export default function LtaHistoryPanel({
     loadMore,
   } = useLtaActivityInfinite(
     {
-      kind,
+      typeFilter,
       dateFrom,
       dateTo,
       actor,

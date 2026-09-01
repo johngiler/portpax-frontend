@@ -7,6 +7,7 @@ import {
   Ship,
   User,
 } from "lucide-react";
+import { catalogActivityBadge } from "@/lib/catalogActivityTaxonomy";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { ShippingLineActivityItem } from "@/services/catalogs/shippingLineActivityService";
@@ -18,16 +19,7 @@ type ShippingLinesHistoryFeedProps = {
 };
 
 function actionLabel(action: string): string {
-  switch (action) {
-    case "created":
-      return "Creación";
-    case "updated":
-      return "Actualización";
-    case "deleted":
-      return "Eliminación";
-    default:
-      return action;
-  }
+  return catalogActivityBadge(action);
 }
 
 function lineTitle(item: ShippingLineActivityItem): string {

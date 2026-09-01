@@ -1,7 +1,15 @@
 import { apiFetch } from "@/services/apiClient";
 import type { UserRole } from "@/types/accounts";
 
+/** @deprecated Legacy kind param. */
 export type UserActivityKind = "all" | "crud" | "login";
+
+export type UserActivityOperation =
+  | "all"
+  | "create"
+  | "update"
+  | "delete"
+  | "login";
 
 export type UserActivityItem = {
   kind: "crud" | "login";
@@ -30,7 +38,9 @@ const BASE = "api/accounts/users/";
 export async function fetchUserActivity(params: {
   page?: number;
   page_size?: number;
+  /** @deprecated Use operation. */
   kind?: UserActivityKind;
+  operation?: UserActivityOperation;
   role?: UserRole | "";
   is_active?: "" | "true" | "false";
   date_from?: string;
@@ -42,6 +52,9 @@ export async function fetchUserActivity(params: {
   if (params.page) sp.set("page", String(params.page));
   if (params.page_size) sp.set("page_size", String(params.page_size));
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind);
+  if (params.operation && params.operation !== "all") {
+    sp.set("operation", params.operation);
+  }
   if (params.role) sp.set("role", params.role);
   if (params.is_active) sp.set("is_active", params.is_active);
   if (params.date_from) sp.set("date_from", params.date_from);

@@ -10,16 +10,11 @@ import {
 } from "@/lib/auditActor";
 import { swrKeys } from "@/lib/swr/keys";
 import {
-  fetchUserActivityActors,
-  type UserActivityKind,
-} from "@/services/accounts/userActivityService";
+  USER_ACTIVITY_TYPE_OPTIONS,
+  type UserActivityFilterValue,
+} from "@/lib/userActivityTaxonomy";
+import { fetchUserActivityActors } from "@/services/accounts/userActivityService";
 import UsersHistoryPanel from "./UsersHistoryPanel";
-
-const KIND_OPTIONS: { value: UserActivityKind; label: string }[] = [
-  { value: "all", label: "Todas" },
-  { value: "crud", label: "CRUD" },
-  { value: "login", label: "Inicios de sesión" },
-];
 
 type UsersHistoryModalProps = {
   open: boolean;
@@ -30,7 +25,7 @@ export default function UsersHistoryModal({
   open,
   onClose,
 }: UsersHistoryModalProps) {
-  const [kind, setKind] = useState<UserActivityKind>("all");
+  const [typeFilter, setTypeFilter] = useState<UserActivityFilterValue>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
@@ -51,15 +46,15 @@ export default function UsersHistoryModal({
 
   const hasActiveFilters = useMemo(
     () =>
-      kind !== "all" ||
+      Boolean(typeFilter) ||
       Boolean(dateFrom) ||
       Boolean(dateTo) ||
       Boolean(actor),
-    [kind, dateFrom, dateTo, actor],
+    [typeFilter, dateFrom, dateTo, actor],
   );
 
   function clearFilters() {
-    setKind("all");
+    setTypeFilter("");
     setDateFrom("");
     setDateTo("");
     setActor(HISTORY_ACTOR_ALL);
@@ -72,12 +67,14 @@ export default function UsersHistoryModal({
       title="Historial de movimientos de usuarios"
       toolbar={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FormFieldSelect<UserActivityKind>
+          <FormFieldSelect<UserActivityFilterValue>
             label="Tipo"
-            name="user_history_kind"
-            value={kind}
-            onChange={setKind}
-            options={KIND_OPTIONS}
+            name="user_history_type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={USER_ACTIVITY_TYPE_OPTIONS}
+            optionLabel="Todas"
+            emptyValue=""
             compact
           />
           <FormFieldSelect<string>
@@ -111,7 +108,7 @@ export default function UsersHistoryModal({
     >
       {open ? (
         <UsersHistoryPanel
-          kind={kind}
+          typeFilter={typeFilter}
           dateFrom={dateFrom}
           dateTo={dateTo}
           actor={actor}

@@ -10,6 +10,10 @@ export function bookingAuditActionLabel(action: string): string {
       return "Cambio de estado";
     case "lta_linked":
       return "Vinculación LTA";
+    case "lta_unlinked":
+      return "Desvinculación LTA";
+    case "deleted":
+      return "Eliminación";
     case "conflict_detected":
       return "Conflicto detectado";
     case "conflict_resolved":

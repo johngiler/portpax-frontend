@@ -22,7 +22,6 @@ export default function BookingAuditSection({ bookingId }: BookingAuditSectionPr
     loadMore,
   } = useBookingActivityInfinite(
     {
-      kind: "single",
       bookingId,
       pageSize: DETAIL_AUDIT_PAGE_SIZE,
     },

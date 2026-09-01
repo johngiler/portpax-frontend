@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
+import { userActivityBadge } from "@/lib/userActivityTaxonomy";
 import type { UserActivityItem } from "@/services/accounts/userActivityService";
 import { USER_ROLE_OPTIONS } from "@/types/accounts";
 
@@ -21,18 +22,7 @@ type UsersHistoryFeedProps = {
 };
 
 function actionLabel(action: string): string {
-  switch (action) {
-    case "created":
-      return "Creación";
-    case "updated":
-      return "Actualización";
-    case "deleted":
-      return "Eliminación";
-    case "login":
-      return "Inicio de sesión";
-    default:
-      return action;
-  }
+  return userActivityBadge(action);
 }
 
 function roleLabel(role: string | null): string {

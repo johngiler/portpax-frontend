@@ -8,22 +8,14 @@ import {
   HISTORY_ACTOR_ALL,
   historyActorSelectOptions,
 } from "@/lib/auditActor";
-import { swrKeys } from "@/lib/swr/keys";
 import {
-  fetchBookingActivityActors,
-  type BookingActivityKind,
-  type ImportBatchRetryRow,
-} from "@/services/bookings/bookingActivityService";
+  BOOKING_ACTIVITY_TYPE_OPTIONS,
+  type BookingActivityFilterValue,
+} from "@/lib/bookingActivityTaxonomy";
+import { swrKeys } from "@/lib/swr/keys";
+import { fetchBookingActivityActors } from "@/services/bookings/bookingActivityService";
+import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import BookingsHistoryPanel from "../BookingsHistoryPanel";
-
-const HISTORY_KIND_OPTIONS: { value: BookingActivityKind; label: string }[] = [
-  { value: "all", label: "Todas" },
-  { value: "single", label: "Única" },
-  { value: "mass_import", label: "Importación masiva" },
-  { value: "wizard", label: "Wizard" },
-  { value: "berthing_import", label: "BERTHING PAPERS" },
-  { value: "lta_generate", label: "Generación LTA" },
-];
 
 type BookingsHistoryModalProps = {
   open: boolean;
@@ -44,7 +36,7 @@ export default function BookingsHistoryModal({
   onInitialBatchConsumed,
   onReprocessRows,
 }: BookingsHistoryModalProps) {
-  const [kind, setKind] = useState<BookingActivityKind>("all");
+  const [typeFilter, setTypeFilter] = useState<BookingActivityFilterValue>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
@@ -65,15 +57,15 @@ export default function BookingsHistoryModal({
 
   const hasActiveFilters = useMemo(
     () =>
-      kind !== "all" ||
+      Boolean(typeFilter) ||
       Boolean(dateFrom) ||
       Boolean(dateTo) ||
       Boolean(actor),
-    [kind, dateFrom, dateTo, actor],
+    [typeFilter, dateFrom, dateTo, actor],
   );
 
   function clearFilters() {
-    setKind("all");
+    setTypeFilter("");
     setDateFrom("");
     setDateTo("");
     setActor(HISTORY_ACTOR_ALL);
@@ -86,12 +78,14 @@ export default function BookingsHistoryModal({
       title="Historial de movimientos de reservas"
       toolbar={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FormFieldSelect<BookingActivityKind>
+          <FormFieldSelect<BookingActivityFilterValue>
             label="Tipo"
-            name="history_kind"
-            value={kind}
-            onChange={setKind}
-            options={HISTORY_KIND_OPTIONS}
+            name="history_type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={BOOKING_ACTIVITY_TYPE_OPTIONS}
+            optionLabel="Todas"
+            emptyValue=""
             compact
           />
           <FormFieldSelect<string>
@@ -125,7 +119,7 @@ export default function BookingsHistoryModal({
     >
       {open ? (
         <BookingsHistoryPanel
-          kind={kind}
+          typeFilter={typeFilter}
           dateFrom={dateFrom}
           dateTo={dateTo}
           actor={actor}

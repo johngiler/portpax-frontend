@@ -2,16 +2,19 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import {
+  userActivityFilterToApiParams,
+  type UserActivityFilterValue,
+} from "@/lib/userActivityTaxonomy";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchUserActivity,
-  type UserActivityKind,
   type UserActivityResponse,
 } from "@/services/accounts/userActivityService";
 import type { UserRole } from "@/types/accounts";
 
 export type UserActivityFilterParams = {
-  kind?: UserActivityKind;
+  typeFilter?: UserActivityFilterValue;
   role?: UserRole | "";
   isActive?: "" | "true" | "false";
   dateFrom?: string;
@@ -23,7 +26,7 @@ export type UserActivityFilterParams = {
 
 function activityParamsKey(params: UserActivityFilterParams): string {
   return [
-    params.kind ?? "all",
+    params.typeFilter ?? "",
     params.role ?? "",
     params.isActive ?? "",
     params.dateFrom ?? "",
@@ -40,7 +43,11 @@ export function useUserActivityInfinite(
 ) {
   const paramsKey = activityParamsKey(params);
   const pageSize = params.pageSize ?? 20;
-  const kind = params.kind ?? "all";
+  const typeFilter = params.typeFilter ?? "";
+  const apiFilters = useMemo(
+    () => userActivityFilterToApiParams(typeFilter),
+    [typeFilter],
+  );
   const role = params.role || undefined;
   const isActive = params.isActive || undefined;
   const dateFrom = params.dateFrom?.trim() || undefined;
@@ -67,7 +74,7 @@ export function useUserActivityInfinite(
       return fetchUserActivity({
         page,
         page_size: pageSize,
-        kind,
+        ...apiFilters,
         role,
         is_active: isActive,
         date_from: dateFrom,

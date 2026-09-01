@@ -2,15 +2,18 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import {
+  catalogActivityFilterToApiParams,
+  type CatalogActivityFilterValue,
+} from "@/lib/catalogActivityTaxonomy";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchPortActivity,
-  type PortActivityKind,
   type PortActivityResponse,
 } from "@/services/catalogs/portActivityService";
 
 export type PortActivityFilterParams = {
-  kind?: PortActivityKind;
+  typeFilter?: CatalogActivityFilterValue;
   dateFrom?: string;
   dateTo?: string;
   actor?: string;
@@ -20,7 +23,7 @@ export type PortActivityFilterParams = {
 
 function activityParamsKey(params: PortActivityFilterParams): string {
   return [
-    params.kind ?? "all",
+    params.typeFilter ?? "",
     params.dateFrom ?? "",
     params.dateTo ?? "",
     params.actor ?? "",
@@ -35,7 +38,11 @@ export function usePortActivityInfinite(
 ) {
   const paramsKey = activityParamsKey(params);
   const pageSize = params.pageSize ?? 20;
-  const kind = params.kind ?? "all";
+  const typeFilter = params.typeFilter ?? "";
+  const apiFilters = useMemo(
+    () => catalogActivityFilterToApiParams(typeFilter),
+    [typeFilter],
+  );
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
   const actor = params.actor?.trim() || undefined;
@@ -60,7 +67,7 @@ export function usePortActivityInfinite(
       return fetchPortActivity({
         page,
         page_size: pageSize,
-        kind,
+        ...apiFilters,
         date_from: dateFrom,
         date_to: dateTo,
         actor,

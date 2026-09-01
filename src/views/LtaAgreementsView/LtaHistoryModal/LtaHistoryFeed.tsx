@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
+import { ltaActivityBadges } from "@/lib/ltaActivityTaxonomy";
 import type { LtaActivityItem } from "@/services/bookings/ltaActivityService";
 import { resolveLtaAsyncJobChip } from "./ltaAsyncJobChip";
 
@@ -20,21 +21,17 @@ type LtaHistoryFeedProps = {
   onClearFilters?: () => void;
 };
 
-function actionLabel(action: string): string {
-  switch (action) {
-    case "created":
-      return "Creación";
-    case "updated":
-      return "Actualización";
-    case "deleted":
-      return "Eliminación";
-    case "link_bookings":
-      return "Vinculación";
-    case "generate_bookings":
-      return "Generación";
-    default:
-      return action;
+function actionTone(item: LtaActivityItem): string {
+  if (item.action === "deleted") {
+    return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200";
   }
+  if (item.action === "link_bookings") {
+    return "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200";
+  }
+  if (item.action === "generate_bookings") {
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
+  }
+  return "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200";
 }
 
 function agreementTitle(item: LtaActivityItem): string {
@@ -250,6 +247,7 @@ export default function LtaHistoryFeed({
         });
         const meta = contextMeta(item);
         const codeHint = agreementTitleAttr(item);
+        const badges = ltaActivityBadges(item);
 
         return (
           <li
@@ -261,14 +259,15 @@ export default function LtaHistoryFeed({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
-                      item.kind === "link"
-                        ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200"
-                        : "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
-                    }`}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${actionTone(item)}`}
                   >
-                    {actionLabel(item.action)}
+                    {badges.operation}
                   </span>
+                  {badges.origin ? (
+                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                      {badges.origin}
+                    </span>
+                  ) : null}
                   {(() => {
                     const jobChip = resolveLtaAsyncJobChip(
                       item.changes && typeof item.changes === "object"

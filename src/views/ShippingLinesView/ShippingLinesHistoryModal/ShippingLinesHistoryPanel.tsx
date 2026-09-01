@@ -5,13 +5,13 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { useShippingLineActivityInfinite } from "@/hooks/swr/useShippingLineActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import type { ShippingLineActivityKind } from "@/services/catalogs/shippingLineActivityService";
+import type { CatalogActivityFilterValue } from "@/lib/catalogActivityTaxonomy";
 import ShippingLinesHistoryFeed from "./ShippingLinesHistoryFeed";
 
 const PAGE_SIZE = 20;
 
 type ShippingLinesHistoryPanelProps = {
-  kind: ShippingLineActivityKind;
+  typeFilter: CatalogActivityFilterValue;
   dateFrom: string;
   dateTo: string;
   actor?: string;
@@ -21,7 +21,7 @@ type ShippingLinesHistoryPanelProps = {
 };
 
 export default function ShippingLinesHistoryPanel({
-  kind,
+  typeFilter,
   dateFrom,
   dateTo,
   actor = "",
@@ -38,7 +38,7 @@ export default function ShippingLinesHistoryPanel({
     error,
     loadMore,
   } = useShippingLineActivityInfinite(
-    { kind, dateFrom, dateTo, actor, pageSize: PAGE_SIZE },
+    { typeFilter, dateFrom, dateTo, actor, pageSize: PAGE_SIZE },
     enabled,
   );
 

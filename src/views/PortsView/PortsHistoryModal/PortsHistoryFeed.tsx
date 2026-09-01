@@ -8,7 +8,7 @@ import {
   MapPinX,
   User,
 } from "lucide-react";
-import { catalogAuditActionLabel } from "@/lib/auditActionLabels";
+import { catalogActivityBadge } from "@/lib/catalogActivityTaxonomy";
 import { auditFieldChangeLines } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { portActivityHeadline } from "@/lib/auditHistoryRows";
@@ -21,16 +21,7 @@ type PortsHistoryFeedProps = {
 };
 
 function actionLabel(action: string): string {
-  switch (action) {
-    case "created":
-      return "Creación";
-    case "updated":
-      return "Actualización";
-    case "deleted":
-      return "Eliminación";
-    default:
-      return catalogAuditActionLabel(action);
-  }
+  return catalogActivityBadge(action);
 }
 
 function ActionIcon({ action }: { action: string }) {

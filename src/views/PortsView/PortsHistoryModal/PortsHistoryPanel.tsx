@@ -5,13 +5,13 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { usePortActivityInfinite } from "@/hooks/swr/usePortActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import type { PortActivityKind } from "@/services/catalogs/portActivityService";
+import type { CatalogActivityFilterValue } from "@/lib/catalogActivityTaxonomy";
 import PortsHistoryFeed from "./PortsHistoryFeed";
 
 const PAGE_SIZE = 20;
 
 type PortsHistoryPanelProps = {
-  kind: PortActivityKind;
+  typeFilter: CatalogActivityFilterValue;
   dateFrom: string;
   dateTo: string;
   actor?: string;
@@ -21,7 +21,7 @@ type PortsHistoryPanelProps = {
 };
 
 export default function PortsHistoryPanel({
-  kind,
+  typeFilter,
   dateFrom,
   dateTo,
   actor = "",
@@ -38,7 +38,7 @@ export default function PortsHistoryPanel({
     error,
     loadMore,
   } = usePortActivityInfinite(
-    { kind, dateFrom, dateTo, actor, pageSize: PAGE_SIZE },
+    { typeFilter, dateFrom, dateTo, actor, pageSize: PAGE_SIZE },
     enabled,
   );
 

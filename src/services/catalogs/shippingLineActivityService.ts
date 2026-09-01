@@ -1,6 +1,13 @@
 import { apiFetch } from "@/services/apiClient";
 
+/** @deprecated Legacy kind param. */
 export type ShippingLineActivityKind = "all" | "crud";
+
+export type ShippingLineActivityOperation =
+  | "all"
+  | "create"
+  | "update"
+  | "delete";
 
 export type ShippingLineActivityItem = {
   kind: "crud";
@@ -29,7 +36,9 @@ const BASE = "api/catalogs/shipping-lines/";
 export async function fetchShippingLineActivity(params: {
   page?: number;
   page_size?: number;
+  /** @deprecated Use operation. */
   kind?: ShippingLineActivityKind;
+  operation?: ShippingLineActivityOperation;
   date_from?: string;
   date_to?: string;
   actor?: string;
@@ -39,6 +48,9 @@ export async function fetchShippingLineActivity(params: {
   if (params.page) sp.set("page", String(params.page));
   if (params.page_size) sp.set("page_size", String(params.page_size));
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind);
+  if (params.operation && params.operation !== "all") {
+    sp.set("operation", params.operation);
+  }
   if (params.date_from) sp.set("date_from", params.date_from);
   if (params.date_to) sp.set("date_to", params.date_to);
   if (params.actor?.trim()) sp.set("actor", params.actor.trim());

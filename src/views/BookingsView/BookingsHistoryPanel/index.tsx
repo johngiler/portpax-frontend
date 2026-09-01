@@ -5,9 +5,9 @@ import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useBookingActivityInfinite } from "@/hooks/swr/useBookingActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import type { BookingActivityFilterValue } from "@/lib/bookingActivityTaxonomy";
 import {
   fetchImportBatchDetail,
-  type BookingActivityKind,
   type ImportBatchDetail,
   type ImportBatchRetryRow,
 } from "@/services/bookings/bookingActivityService";
@@ -18,7 +18,7 @@ import ImportBatchDetailModal from "./ImportBatchDetailModal";
 const PAGE_SIZE = 20;
 
 type BookingsHistoryPanelProps = {
-  kind: BookingActivityKind;
+  typeFilter: BookingActivityFilterValue;
   dateFrom: string;
   dateTo: string;
   actor?: string;
@@ -37,7 +37,7 @@ type BookingsHistoryPanelProps = {
 };
 
 export default function BookingsHistoryPanel({
-  kind,
+  typeFilter,
   dateFrom,
   dateTo,
   actor = "",
@@ -59,7 +59,7 @@ export default function BookingsHistoryPanel({
     refresh,
   } = useBookingActivityInfinite(
     {
-      kind,
+      typeFilter,
       dateFrom,
       dateTo,
       actor,

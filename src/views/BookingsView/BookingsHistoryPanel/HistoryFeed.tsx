@@ -14,6 +14,7 @@ import {
   auditEntityHint,
   auditFieldChangeLines,
 } from "@/lib/auditChangeLines";
+import { bookingActivityBadges } from "@/lib/bookingActivityTaxonomy";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
@@ -28,31 +29,6 @@ type HistoryFeedProps = {
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
 };
-
-function actionLabel(action: string): string {
-  switch (action) {
-    case "created":
-      return "Creación";
-    case "operational_update":
-      return "Actualización operativa";
-    case "identity_update":
-      return "Actualización de escala";
-    case "status_change":
-      return "Cambio de estado";
-    case "lta_linked":
-      return "Vinculación LTA";
-    case "bulk_create":
-      return "Importación";
-    case "conflict_detected":
-      return "Conflicto detectado";
-    case "conflict_resolved":
-      return "Conflicto resuelto";
-    case "conflict_updated":
-      return "Conflicto actualizado";
-    default:
-      return action;
-  }
-}
 
 function headline(item: BookingActivityItem): string {
   if (item.kind === "bulk") {
@@ -71,6 +47,10 @@ function headline(item: BookingActivityItem): string {
       return item.summary || "Cambió el estado";
     case "lta_linked":
       return item.summary || "Vinculó acuerdo LTA";
+    case "lta_unlinked":
+      return item.summary || "Desvinculó acuerdo LTA";
+    case "deleted":
+      return item.summary || "Eliminó la reserva";
     case "conflict_detected":
       return item.summary || "Marcó conflictos operativos";
     case "conflict_resolved":
@@ -238,20 +218,29 @@ export default function HistoryFeed({
             : ""
         }`;
 
+        const badges = bookingActivityBadges(item);
+        const operationTone =
+          badges.operation === "Eliminación"
+            ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
+            : isBulk
+              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+              : "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200";
+
         const body = (
           <div className="flex items-start gap-3">
             <ActionIcon kind={item.kind} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
-                    isBulk
-                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                      : "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
-                  }`}
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${operationTone}`}
                 >
-                  {actionLabel(item.action)}
+                  {badges.operation}
                 </span>
+                {badges.origin ? (
+                  <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    {badges.origin}
+                  </span>
+                ) : null}
               </div>
 
               <p className="mt-1.5 flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">

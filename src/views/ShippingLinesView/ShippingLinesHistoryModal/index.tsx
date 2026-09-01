@@ -8,17 +8,13 @@ import {
   HISTORY_ACTOR_ALL,
   historyActorSelectOptions,
 } from "@/lib/auditActor";
-import { swrKeys } from "@/lib/swr/keys";
 import {
-  fetchShippingLineActivityActors,
-  type ShippingLineActivityKind,
-} from "@/services/catalogs/shippingLineActivityService";
+  CATALOG_ACTIVITY_TYPE_OPTIONS,
+  type CatalogActivityFilterValue,
+} from "@/lib/catalogActivityTaxonomy";
+import { swrKeys } from "@/lib/swr/keys";
+import { fetchShippingLineActivityActors } from "@/services/catalogs/shippingLineActivityService";
 import ShippingLinesHistoryPanel from "./ShippingLinesHistoryPanel";
-
-const KIND_OPTIONS: { value: ShippingLineActivityKind; label: string }[] = [
-  { value: "all", label: "Todas" },
-  { value: "crud", label: "CRUD" },
-];
 
 type ShippingLinesHistoryModalProps = {
   open: boolean;
@@ -29,7 +25,7 @@ export default function ShippingLinesHistoryModal({
   open,
   onClose,
 }: ShippingLinesHistoryModalProps) {
-  const [kind, setKind] = useState<ShippingLineActivityKind>("all");
+  const [typeFilter, setTypeFilter] = useState<CatalogActivityFilterValue>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
@@ -50,15 +46,15 @@ export default function ShippingLinesHistoryModal({
 
   const hasActiveFilters = useMemo(
     () =>
-      kind !== "all" ||
+      Boolean(typeFilter) ||
       Boolean(dateFrom) ||
       Boolean(dateTo) ||
       Boolean(actor),
-    [kind, dateFrom, dateTo, actor],
+    [typeFilter, dateFrom, dateTo, actor],
   );
 
   function clearFilters() {
-    setKind("all");
+    setTypeFilter("");
     setDateFrom("");
     setDateTo("");
     setActor(HISTORY_ACTOR_ALL);
@@ -71,12 +67,14 @@ export default function ShippingLinesHistoryModal({
       title="Historial de movimientos de navieras"
       toolbar={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FormFieldSelect<ShippingLineActivityKind>
+          <FormFieldSelect<CatalogActivityFilterValue>
             label="Tipo"
-            name="line_history_kind"
-            value={kind}
-            onChange={setKind}
-            options={KIND_OPTIONS}
+            name="line_history_type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={CATALOG_ACTIVITY_TYPE_OPTIONS}
+            optionLabel="Todas"
+            emptyValue=""
             compact
           />
           <FormFieldSelect<string>
@@ -110,7 +108,7 @@ export default function ShippingLinesHistoryModal({
     >
       {open ? (
         <ShippingLinesHistoryPanel
-          kind={kind}
+          typeFilter={typeFilter}
           dateFrom={dateFrom}
           dateTo={dateTo}
           actor={actor}

@@ -5,13 +5,13 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import { useUserActivityInfinite } from "@/hooks/swr/useUserActivityInfinite";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import type { UserActivityKind } from "@/services/accounts/userActivityService";
+import type { UserActivityFilterValue } from "@/lib/userActivityTaxonomy";
 import UsersHistoryFeed from "./UsersHistoryFeed";
 
 const PAGE_SIZE = 20;
 
 type UsersHistoryPanelProps = {
-  kind: UserActivityKind;
+  typeFilter: UserActivityFilterValue;
   dateFrom: string;
   dateTo: string;
   actor?: string;
@@ -21,7 +21,7 @@ type UsersHistoryPanelProps = {
 };
 
 export default function UsersHistoryPanel({
-  kind,
+  typeFilter,
   dateFrom,
   dateTo,
   actor = "",
@@ -39,7 +39,7 @@ export default function UsersHistoryPanel({
     loadMore,
   } = useUserActivityInfinite(
     {
-      kind,
+      typeFilter,
       dateFrom,
       dateTo,
       actor,

@@ -8,19 +8,13 @@ import {
   HISTORY_ACTOR_ALL,
   historyActorSelectOptions,
 } from "@/lib/auditActor";
-import { swrKeys } from "@/lib/swr/keys";
 import {
-  fetchLtaActivityActors,
-  type LtaActivityKind,
-} from "@/services/bookings/ltaActivityService";
+  LTA_ACTIVITY_TYPE_OPTIONS,
+  type LtaActivityFilterValue,
+} from "@/lib/ltaActivityTaxonomy";
+import { swrKeys } from "@/lib/swr/keys";
+import { fetchLtaActivityActors } from "@/services/bookings/ltaActivityService";
 import LtaHistoryPanel from "./LtaHistoryPanel";
-
-const KIND_OPTIONS: { value: LtaActivityKind; label: string }[] = [
-  { value: "all", label: "Todas" },
-  { value: "crud", label: "CRUD" },
-  { value: "link", label: "Vinculación" },
-  { value: "generate", label: "Generación" },
-];
 
 type LtaHistoryModalProps = {
   open: boolean;
@@ -31,7 +25,7 @@ export default function LtaHistoryModal({
   open,
   onClose,
 }: LtaHistoryModalProps) {
-  const [kind, setKind] = useState<LtaActivityKind>("all");
+  const [typeFilter, setTypeFilter] = useState<LtaActivityFilterValue>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
@@ -52,15 +46,15 @@ export default function LtaHistoryModal({
 
   const hasActiveFilters = useMemo(
     () =>
-      kind !== "all" ||
+      Boolean(typeFilter) ||
       Boolean(dateFrom) ||
       Boolean(dateTo) ||
       Boolean(actor),
-    [kind, dateFrom, dateTo, actor],
+    [typeFilter, dateFrom, dateTo, actor],
   );
 
   function clearFilters() {
-    setKind("all");
+    setTypeFilter("");
     setDateFrom("");
     setDateTo("");
     setActor(HISTORY_ACTOR_ALL);
@@ -73,12 +67,14 @@ export default function LtaHistoryModal({
       title="Historial de movimientos de acuerdos"
       toolbar={
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <FormFieldSelect<LtaActivityKind>
+          <FormFieldSelect<LtaActivityFilterValue>
             label="Tipo"
-            name="lta_history_kind"
-            value={kind}
-            onChange={setKind}
-            options={KIND_OPTIONS}
+            name="lta_history_type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={LTA_ACTIVITY_TYPE_OPTIONS}
+            optionLabel="Todas"
+            emptyValue=""
             compact
           />
           <FormFieldSelect<string>
@@ -112,7 +108,7 @@ export default function LtaHistoryModal({
     >
       {open ? (
         <LtaHistoryPanel
-          kind={kind}
+          typeFilter={typeFilter}
           dateFrom={dateFrom}
           dateTo={dateTo}
           actor={actor}

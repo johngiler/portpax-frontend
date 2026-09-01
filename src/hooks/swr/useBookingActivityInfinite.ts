@@ -2,15 +2,18 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import {
+  bookingActivityFilterToApiParams,
+  type BookingActivityFilterValue,
+} from "@/lib/bookingActivityTaxonomy";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchBookingActivity,
-  type BookingActivityKind,
   type BookingActivityResponse,
 } from "@/services/bookings/bookingActivityService";
 
 export type BookingActivityFilterParams = {
-  kind?: BookingActivityKind;
+  typeFilter?: BookingActivityFilterValue;
   dateFrom?: string;
   dateTo?: string;
   /** User id as string, or "system". Empty = all. */
@@ -21,7 +24,7 @@ export type BookingActivityFilterParams = {
 
 function activityParamsKey(params: BookingActivityFilterParams): string {
   return [
-    params.kind ?? "all",
+    params.typeFilter ?? "",
     params.dateFrom ?? "",
     params.dateTo ?? "",
     params.actor ?? "",
@@ -36,7 +39,11 @@ export function useBookingActivityInfinite(
 ) {
   const paramsKey = activityParamsKey(params);
   const pageSize = params.pageSize ?? 20;
-  const kind = params.kind ?? "all";
+  const typeFilter = params.typeFilter ?? "";
+  const apiFilters = useMemo(
+    () => bookingActivityFilterToApiParams(typeFilter),
+    [typeFilter],
+  );
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
   const actor = params.actor?.trim() || undefined;
@@ -67,11 +74,11 @@ export function useBookingActivityInfinite(
       return fetchBookingActivity({
         page,
         page_size: pageSize,
-        kind,
         date_from: dateFrom,
         date_to: dateTo,
         actor,
         booking_id: bookingId,
+        ...(bookingId ? {} : apiFilters),
       });
     });
 

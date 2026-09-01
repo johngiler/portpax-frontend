@@ -2,15 +2,18 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import {
+  ltaActivityFilterToApiParams,
+  type LtaActivityFilterValue,
+} from "@/lib/ltaActivityTaxonomy";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchLtaActivity,
-  type LtaActivityKind,
   type LtaActivityResponse,
 } from "@/services/bookings/ltaActivityService";
 
 export type LtaActivityFilterParams = {
-  kind?: LtaActivityKind;
+  typeFilter?: LtaActivityFilterValue;
   dateFrom?: string;
   dateTo?: string;
   actor?: string;
@@ -20,7 +23,7 @@ export type LtaActivityFilterParams = {
 
 function activityParamsKey(params: LtaActivityFilterParams): string {
   return [
-    params.kind ?? "all",
+    params.typeFilter ?? "",
     params.dateFrom ?? "",
     params.dateTo ?? "",
     params.actor ?? "",
@@ -35,7 +38,11 @@ export function useLtaActivityInfinite(
 ) {
   const paramsKey = activityParamsKey(params);
   const pageSize = params.pageSize ?? 20;
-  const kind = params.kind ?? "all";
+  const typeFilter = params.typeFilter ?? "";
+  const apiFilters = useMemo(
+    () => ltaActivityFilterToApiParams(typeFilter),
+    [typeFilter],
+  );
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
   const actor = params.actor?.trim() || undefined;
@@ -61,11 +68,11 @@ export function useLtaActivityInfinite(
       return fetchLtaActivity({
         page,
         page_size: pageSize,
-        kind,
         date_from: dateFrom,
         date_to: dateTo,
         actor,
         agreement_id: agreementId,
+        ...(agreementId ? {} : apiFilters),
       });
     });
 
