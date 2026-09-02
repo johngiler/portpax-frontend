@@ -70,10 +70,6 @@ export default function BookingDetailView() {
 
   return (
     <div className="space-y-4">
-      {viewError && (
-        <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
-      )}
-
       <BookingDetailHero booking={booking} />
       <BookingDetailSummary
         booking={booking}
@@ -83,7 +79,6 @@ export default function BookingDetailView() {
       <BookingOperationalSection
         booking={booking}
         onUpdated={setBooking}
-        onError={setViewError}
         canWrite={canWrite}
         returnTo={returnTo}
       />
@@ -91,7 +86,6 @@ export default function BookingDetailView() {
         booking={booking}
         onUpdated={setBooking}
         onDeleted={() => router.push(returnTo ?? "/bookings")}
-        onError={setViewError}
         canWrite={canWrite}
       />
       <BookingAuditSection bookingId={booking.id} />

@@ -7,7 +7,8 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import Modal from "@/components/ui/Modal";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import NoticeAlert from "@/components/ui/NoticeAlert";
-import { FormField } from "@/components/ui/FormField";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import ModalFormError from "@/components/ui/ModalFormError";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
 import { BookingStatusGuideToggle } from "@/components/booking/BookingStatusGuideTable";
@@ -28,7 +29,6 @@ type BookingStatusActionsProps = {
   booking: Booking;
   onUpdated: (booking: Booking) => void;
   onDeleted: () => void;
-  onError: (message: string | null) => void;
   /** When false, hide write actions (viewer). */
   canWrite?: boolean;
 };
@@ -48,11 +48,13 @@ function apiErrorMentionsCode(err: unknown, code: string): boolean {
   return blob.includes(code);
 }
 
+const MISSING_ACTUAL_PAX =
+  "No se puede cerrar la escala: falta PAX real. Guárdalo en la sección operativa e inténtalo de nuevo.";
+
 export default function BookingStatusActions({
   booking,
   onUpdated,
   onDeleted,
-  onError,
   canWrite = true,
 }: BookingStatusActionsProps) {
   const { user } = useAuth();
@@ -61,27 +63,24 @@ export default function BookingStatusActions({
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
   const [cancelEvidence, setCancelEvidence] = useState<File | null>(null);
-  const [actualPax, setActualPax] = useState(
-    booking.actual_pax != null ? String(booking.actual_pax) : "",
-  );
-  const [etaReal, setEtaReal] = useState(booking.eta_real?.slice(0, 5) ?? "");
-  const [etdReal, setEtdReal] = useState(booking.etd_real?.slice(0, 5) ?? "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [ackCombinedRed, setAckCombinedRed] = useState(false);
   const [needsCombinedRedAck, setNeedsCombinedRedAck] = useState(false);
   const [statusGuideOpen, setStatusGuideOpen] = useState(false);
+  const [sectionError, setSectionError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const nextStatuses = canWrite ? bookingNextStatuses(booking.status) : [];
 
   async function handleDelete() {
     setDeleting(true);
-    onError(null);
+    setSectionError(null);
     try {
       await deleteBooking(booking.id);
       onDeleted();
     } catch (err) {
-      onError(getApiErrorMessage(err, "No se pudo eliminar la reserva."));
+      setSectionError(getApiErrorMessage(err, "No se pudo eliminar la reserva."));
     } finally {
       setDeleting(false);
     }
@@ -89,7 +88,8 @@ export default function BookingStatusActions({
 
   async function applySimpleStatus(status: BookingStatus) {
     setSaving(true);
-    onError(null);
+    setSectionError(null);
+    setModalError(null);
     try {
       const updated = await updateBooking(booking.id, {
         status,
@@ -104,44 +104,43 @@ export default function BookingStatusActions({
       if (status === "co" && apiErrorMentionsCode(err, "combined_loa_red")) {
         setNeedsCombinedRedAck(true);
         setPendingAction("co");
+        setModalError(formatValidationError(err));
+      } else if (status === "co" && pendingAction === "co") {
+        setModalError(formatValidationError(err));
+      } else {
+        setSectionError(formatValidationError(err));
       }
-      onError(formatValidationError(err));
     } finally {
       setSaving(false);
     }
   }
 
   async function applyCloseReal() {
-    const pax = Number(actualPax);
-    if (!Number.isFinite(pax) || pax < 0 || actualPax.trim() === "") {
-      onError("Ingresa el PAX real (desembarcados) para cerrar la escala.");
+    if (booking.actual_pax == null) {
+      setSectionError(MISSING_ACTUAL_PAX);
+      setPendingAction(null);
       return;
     }
     setSaving(true);
-    onError(null);
+    setSectionError(null);
     try {
-      const updated = await updateBooking(booking.id, {
-        status: "r",
-        actual_pax: pax,
-        eta_real: etaReal || null,
-        etd_real: etdReal || null,
-      });
+      const updated = await updateBooking(booking.id, { status: "r" });
       onUpdated(updated);
+      setPendingAction(null);
     } catch (err) {
-      onError(formatValidationError(err));
+      setSectionError(formatValidationError(err));
     } finally {
       setSaving(false);
-      setPendingAction(null);
     }
   }
 
   async function applyCancel() {
     if (!cancelReason) {
-      onError("Selecciona el motivo de cancelación.");
+      setModalError("Selecciona el motivo de cancelación.");
       return;
     }
     setSaving(true);
-    onError(null);
+    setModalError(null);
     try {
       const updated = await updateBooking(booking.id, {
         status: "c",
@@ -151,11 +150,11 @@ export default function BookingStatusActions({
       onUpdated(updated);
       setCancelReason("");
       setCancelEvidence(null);
+      setPendingAction(null);
     } catch (err) {
-      onError(formatValidationError(err));
+      setModalError(formatValidationError(err));
     } finally {
       setSaving(false);
-      setPendingAction(null);
     }
   }
 
@@ -179,6 +178,8 @@ export default function BookingStatusActions({
         </div>
         <BookingStatusBadge status={booking.status} className="shrink-0" />
       </div>
+
+      <FormErrorAlert message={sectionError} className="mt-4" />
 
       <BookingStatusGuideModal
         open={statusGuideOpen}
@@ -250,6 +251,7 @@ export default function BookingStatusActions({
               onClick={() => {
                 setAckCombinedRed(false);
                 setNeedsCombinedRedAck(false);
+                setModalError(null);
                 setPendingAction("co");
               }}
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -262,7 +264,14 @@ export default function BookingStatusActions({
             <button
               type="button"
               disabled={saving}
-              onClick={() => setPendingAction("r")}
+              onClick={() => {
+                if (booking.actual_pax == null) {
+                  setSectionError(MISSING_ACTUAL_PAX);
+                  return;
+                }
+                setSectionError(null);
+                setPendingAction("r");
+              }}
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[var(--admin-accent)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Flag className="h-4 w-4" strokeWidth={2} />
@@ -273,7 +282,10 @@ export default function BookingStatusActions({
             <button
               type="button"
               disabled={saving}
-              onClick={() => setPendingAction("c")}
+              onClick={() => {
+                setModalError(null);
+                setPendingAction("c");
+              }}
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400"
             >
               <XCircle className="h-4 w-4" strokeWidth={2} />
@@ -324,6 +336,7 @@ export default function BookingStatusActions({
           setPendingAction(null);
           setAckCombinedRed(false);
           setNeedsCombinedRedAck(false);
+          setModalError(null);
         }}
         title="Confirmar reserva"
         footer={
@@ -334,6 +347,7 @@ export default function BookingStatusActions({
                 setPendingAction(null);
                 setAckCombinedRed(false);
                 setNeedsCombinedRedAck(false);
+                setModalError(null);
               }}
               className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
             >
@@ -349,6 +363,7 @@ export default function BookingStatusActions({
           </div>
         }
       >
+        <ModalFormError message={modalError} />
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
           ¿Confirmar la escala de {booking.vessel_name} en {booking.port_name}? Se
           generará el PDF de confirmación (referencia: código de reserva{" "}
@@ -387,56 +402,14 @@ export default function BookingStatusActions({
         ) : null}
       </Modal>
 
-      <Modal
+      <ConfirmModal
         open={pendingAction === "r"}
         onClose={() => setPendingAction(null)}
+        onConfirm={() => applyCloseReal()}
         title="Cerrar escala (Real)"
-        footer={
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setPendingAction(null)}
-              className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
-            >
-              Volver
-            </button>
-            <DefaultButton type="button" onClick={applyCloseReal} disabled={saving}>
-              {saving ? "Cerrando…" : "Cerrar escala"}
-            </DefaultButton>
-          </div>
-        }
-      >
-        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
-          Registra los datos reales de la operación. El PAX real es el total absoluto
-          de pasajeros desembarcados (obligatorio).
-        </p>
-        <div className="space-y-3">
-          <FormField
-            label="PAX real (desembarcados)"
-            name="actual_pax_close"
-            type="number"
-            required
-            value={actualPax}
-            onChange={(v: string | number) => setActualPax(String(v))}
-          />
-          <FormField
-            label="ETA real"
-            name="eta_real_close"
-            type="text"
-            value={etaReal}
-            onChange={(v: string | number) => setEtaReal(String(v))}
-            placeholder="08:00"
-          />
-          <FormField
-            label="ETD real"
-            name="etd_real_close"
-            type="text"
-            value={etdReal}
-            onChange={(v: string | number) => setEtdReal(String(v))}
-            placeholder="18:00"
-          />
-        </div>
-      </Modal>
+        message={`¿Cerrar la escala de ${booking.vessel_name} como Real?`}
+        confirmLabel={saving ? "Cerrando…" : "Cerrar escala"}
+      />
 
       <Modal
         open={pendingAction === "c"}
@@ -444,6 +417,7 @@ export default function BookingStatusActions({
           setPendingAction(null);
           setCancelReason("");
           setCancelEvidence(null);
+          setModalError(null);
         }}
         title="Cancelar reserva"
         footer={
@@ -454,6 +428,7 @@ export default function BookingStatusActions({
                 setPendingAction(null);
                 setCancelReason("");
                 setCancelEvidence(null);
+                setModalError(null);
               }}
               className="cursor-pointer rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
             >
@@ -469,6 +444,7 @@ export default function BookingStatusActions({
           </div>
         }
       >
+        <ModalFormError message={modalError} />
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
           Selecciona el motivo y, si aplica, adjunta evidencia.
         </p>

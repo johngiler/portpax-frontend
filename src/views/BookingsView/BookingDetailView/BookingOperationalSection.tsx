@@ -7,8 +7,9 @@ import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
 import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
+import ArrivalManifestField from "./ArrivalManifestField";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { useAuth } from "@/contexts/AuthContext";
-import { useConfirm } from "@/contexts/ConfirmContext";
 import { ApiError } from "@/services/apiClient";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { paxPercent } from "@/lib/bookingPaxDisplay";
@@ -31,7 +32,6 @@ import { issueSeverity } from "@/lib/bookingConflictSeverity";
 type BookingOperationalSectionProps = {
   booking: Booking;
   onUpdated: (booking: Booking) => void;
-  onError: (message: string | null) => void;
   canWrite?: boolean;
   returnTo?: string | null;
 };
@@ -42,15 +42,24 @@ function apiErrorMentionsCode(err: unknown, code: string): boolean {
   return blob.includes(code);
 }
 
+/** Empty string ↔ null; otherwise numeric equality. */
+function sameOptionalNumber(
+  text: string,
+  value: number | null | undefined,
+): boolean {
+  if (text.trim() === "") return value == null;
+  const n = Number(text);
+  if (!Number.isFinite(n)) return false;
+  return value != null && n === value;
+}
+
 export default function BookingOperationalSection({
   booking,
   onUpdated,
-  onError,
   canWrite = true,
   returnTo = null,
 }: BookingOperationalSectionProps) {
   const { user } = useAuth();
-  const { requestConfirm } = useConfirm();
   const mayAuthorize = canAuthorizeExceptions(user?.role);
   const canSchedule = canWrite && canEditBookingSchedule(user?.role);
   const canPortOps = canWrite && canEditPortOperations(user?.role);
@@ -75,6 +84,7 @@ export default function BookingOperationalSection({
   const [saving, setSaving] = useState(false);
   const [ackCombinedRed, setAckCombinedRed] = useState(false);
   const [needsCombinedRedAck, setNeedsCombinedRedAck] = useState(false);
+  const [sectionError, setSectionError] = useState<string | null>(null);
 
   const cancelled = booking.status === "c";
   const scheduleReadOnly = !canSchedule || cancelled;
@@ -84,21 +94,8 @@ export default function BookingOperationalSection({
   const plannedPct = paxPercent(booking.planned_pax, capacity);
   const actualPct = paxPercent(
     actualPax === "" ? booking.actual_pax : Number(actualPax),
-    booking.planned_pax,
+    capacity,
   );
-
-  const missingPortOps: string[] = [];
-  if (canPortOps && !cancelled) {
-    if (actualPax.trim() === "" && booking.actual_pax == null) {
-      missingPortOps.push("PAX real (desembarcados)");
-    }
-    if (actualCrew.trim() === "" && booking.actual_crew == null) {
-      missingPortOps.push("Tripulación real");
-    }
-    if (!booking.arrival_manifest_url && !manifestFile) {
-      missingPortOps.push("Manifiesto adjunto");
-    }
-  }
 
   const loadSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -141,9 +138,26 @@ export default function BookingOperationalSection({
     return () => window.clearTimeout(timer);
   }, [cancelled, canSchedule, loadSuggestions]);
 
+  const scheduleDirty =
+    canSchedule &&
+    ((positionId > 0 ? positionId : null) !== (booking.position ?? null) ||
+      eta !== (booking.eta?.slice(0, 5) ?? "") ||
+      etd !== (booking.etd?.slice(0, 5) ?? "") ||
+      (needsCombinedRedAck && ackCombinedRed));
+
+  const portOpsDirty =
+    canPortOps &&
+    (manifestFile != null ||
+      operationNotes !== (booking.operation_notes ?? "") ||
+      etaReal !== (booking.eta_real?.slice(0, 5) ?? "") ||
+      etdReal !== (booking.etd_real?.slice(0, 5) ?? "") ||
+      !sameOptionalNumber(actualPax, booking.actual_pax) ||
+      !sameOptionalNumber(actualCrew, booking.actual_crew));
+
+  const hasChanges = Boolean(scheduleDirty || portOpsDirty);
   async function performSave() {
     setSaving(true);
-    onError(null);
+    setSectionError(null);
     try {
       const payload: Parameters<typeof updateBooking>[1] = {};
       if (canSchedule) {
@@ -169,27 +183,12 @@ export default function BookingOperationalSection({
       if (apiErrorMentionsCode(err, "combined_loa_red")) {
         setNeedsCombinedRedAck(true);
       }
-      onError(
+      setSectionError(
         getApiErrorMessage(err, "No se pudo guardar la información operativa."),
       );
     } finally {
       setSaving(false);
     }
-  }
-
-  function handleSave() {
-    if (canPortOps && missingPortOps.length > 0) {
-      requestConfirm({
-        title: "Datos de arribo incompletos",
-        message: `Faltan: ${missingPortOps.join(", ")}. ¿Guardar de todas formas?`,
-        confirmLabel: "Guardar",
-        onConfirm: () => {
-          void performSave();
-        },
-      });
-      return;
-    }
-    void performSave();
   }
 
   const positionOptions = suggestions.map((position) => {
@@ -267,6 +266,8 @@ export default function BookingOperationalSection({
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
         Operación y posición
       </h2>
+
+      <FormErrorAlert message={sectionError} className="mt-4" />
 
       <div className="mt-4 space-y-4">
         {showPosition ? (
@@ -353,7 +354,7 @@ export default function BookingOperationalSection({
             value={
               actualPax === "" ? booking.actual_pax : Number(actualPax)
             }
-            total={booking.planned_pax}
+            total={capacity}
             percent={actualPct}
             editable
             editText={actualPax}
@@ -362,7 +363,7 @@ export default function BookingOperationalSection({
             editName="booking_actual_pax"
             hint={
               actualPct != null
-                ? `Cumplimiento vs planificado: ${actualPct}%`
+                ? `Cumplimiento vs Cap. máx.: ${actualPct}%`
                 : null
             }
           />
@@ -377,37 +378,12 @@ export default function BookingOperationalSection({
           />
         </div>
 
-        <div>
-          <p className="mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-            Manifiesto
-          </p>
-          {booking.arrival_manifest_url ? (
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <a
-                href={booking.arrival_manifest_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-medium text-[var(--admin-accent)] hover:underline"
-              >
-                Ver manifiesto adjunto
-              </a>
-            </div>
-          ) : null}
-          {!portOpsReadOnly ? (
-            <input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp"
-              disabled={portOpsReadOnly}
-              onChange={(e) => setManifestFile(e.target.files?.[0] ?? null)}
-              className="block w-full cursor-pointer text-sm text-zinc-600 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--admin-accent)]/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[var(--admin-accent)]"
-            />
-          ) : null}
-          {manifestFile ? (
-            <p className="mt-1 text-xs text-zinc-500">
-              Nuevo archivo: {manifestFile.name}
-            </p>
-          ) : null}
-        </div>
+        <ArrivalManifestField
+          savedUrl={booking.arrival_manifest_url}
+          pendingFile={manifestFile}
+          onPendingChange={setManifestFile}
+          disabled={portOpsReadOnly}
+        />
       </div>
 
       <div className="mt-6">
@@ -462,7 +438,11 @@ export default function BookingOperationalSection({
 
       {showSave ? (
         <div className="mt-4">
-          <DefaultButton type="button" onClick={handleSave} disabled={saving}>
+          <DefaultButton
+            type="button"
+            onClick={() => void performSave()}
+            disabled={saving || !hasChanges}
+          >
             {saving ? "Guardando…" : "Guardar operación"}
           </DefaultButton>
         </div>
