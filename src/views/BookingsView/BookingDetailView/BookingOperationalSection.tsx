@@ -47,9 +47,6 @@ export default function BookingOperationalSection({
   const [positionId, setPositionId] = useState(booking.position ?? 0);
   const [eta, setEta] = useState(booking.eta?.slice(0, 5) ?? "");
   const [etd, setEtd] = useState(booking.etd?.slice(0, 5) ?? "");
-  const [plannedPax, setPlannedPax] = useState(
-    booking.planned_pax != null ? String(booking.planned_pax) : "",
-  );
   const [actualPax, setActualPax] = useState(
     booking.actual_pax != null ? String(booking.actual_pax) : "",
   );
@@ -88,7 +85,6 @@ export default function BookingOperationalSection({
     setPositionId(booking.position ?? 0);
     setEta(booking.eta?.slice(0, 5) ?? "");
     setEtd(booking.etd?.slice(0, 5) ?? "");
-    setPlannedPax(booking.planned_pax != null ? String(booking.planned_pax) : "");
     setActualPax(booking.actual_pax != null ? String(booking.actual_pax) : "");
     setActualCrew(booking.actual_crew != null ? String(booking.actual_crew) : "");
     setAckCombinedRed(false);
@@ -111,7 +107,6 @@ export default function BookingOperationalSection({
         position: positionId > 0 ? positionId : null,
         eta: eta || null,
         etd: etd || null,
-        planned_pax: plannedPax === "" ? null : Number(plannedPax),
         actual_pax: actualPax === "" ? null : Number(actualPax),
         actual_crew: actualCrew === "" ? null : Number(actualCrew),
         acknowledge_combined_red: ackCombinedRed || undefined,
@@ -259,9 +254,13 @@ export default function BookingOperationalSection({
           name="booking_planned_pax"
           type="number"
           min={0}
-          value={plannedPax}
-          onChange={(value) => setPlannedPax(String(value))}
-          disabled={readOnly}
+          value={
+            booking.vessel_pax_capacity != null
+              ? booking.vessel_pax_capacity
+              : ""
+          }
+          onChange={() => {}}
+          disabled
         />
         <FormField
           label="PAX real (desembarcados)"

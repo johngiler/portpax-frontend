@@ -47,6 +47,7 @@ export type BookingListItem = {
   eta: string | null;
   etd: string | null;
   planned_pax: number | null;
+  actual_pax: number | null;
   status: BookingStatus;
   status_display: string;
   confirmation_pdf_url: string | null;
@@ -64,6 +65,8 @@ export type Booking = BookingListItem & {
   vessel_logo: string | null;
   eta_real: string | null;
   etd_real: string | null;
+  /** Vessel catalog capacity — reference for “PAX planificado”. */
+  vessel_pax_capacity: number | null;
   actual_pax: number | null;
   actual_crew: number | null;
   notes: string;

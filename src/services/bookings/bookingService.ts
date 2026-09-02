@@ -39,6 +39,7 @@ export type AvailabilityBookingCall = {
   loa_m: string | null;
   eta: string | null;
   etd: string | null;
+  actual_pax: number | null;
 };
 
 export type FetchBookingsParams = {

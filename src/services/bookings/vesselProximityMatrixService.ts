@@ -30,6 +30,7 @@ export type VesselProximityMatrixCell = {
   loa_m: string | null;
   eta: string | null;
   etd: string | null;
+  actual_pax: number | null;
   position_code: string | null;
   conflict_chips: BookingConflictChip[];
   conflict_highlights: BookingConflictHighlights;

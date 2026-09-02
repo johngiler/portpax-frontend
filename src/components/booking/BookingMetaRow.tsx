@@ -9,7 +9,8 @@ type BookingMetaRowProps = {
   loaM?: string | null;
   eta?: string | null;
   etd?: string | null;
-  plannedPax?: number | null;
+  /** Disembarked / real PAX (not planned). */
+  actualPax?: number | null;
   positionLabel: string;
   /** Dense chips (calendar). */
   compact?: boolean;
@@ -34,7 +35,7 @@ export default function BookingMetaRow({
   loaM,
   eta,
   etd,
-  plannedPax = null,
+  actualPax = null,
   positionLabel,
   compact = false,
   tone = "muted",
@@ -55,7 +56,7 @@ export default function BookingMetaRow({
       ? "text-white/90"
       : "text-zinc-500 dark:text-zinc-400";
   const paxLabel =
-    plannedPax != null ? plannedPax.toLocaleString("es-MX") : "—";
+    actualPax != null ? actualPax.toLocaleString("es-MX") : "—";
 
   return (
     <ul
@@ -92,7 +93,7 @@ export default function BookingMetaRow({
           {formatTimeShort(eta)}–{formatTimeShort(etd)}
         </span>
       </li>
-      <li className="inline-flex min-w-0 items-center gap-1" title="PAX proyectado">
+      <li className="inline-flex min-w-0 items-center gap-1" title="PAX real">
         <Users className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
         <span className="truncate font-medium">{paxLabel}</span>
       </li>

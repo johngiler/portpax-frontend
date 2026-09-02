@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock3, Ruler } from "lucide-react";
+import { Clock3, Ruler, Users } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
@@ -95,7 +95,7 @@ export default function ProximityMatrixCallCard({
         </div>
       </div>
       <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           {cell.loa_m ? (
             <span
               className={[
@@ -114,6 +114,15 @@ export default function ProximityMatrixCallCard({
           ) : (
             <span />
           )}
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400"
+            title="PAX real"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {cell.actual_pax != null
+              ? cell.actual_pax.toLocaleString("es-MX")
+              : "—"}
+          </span>
           <p
             className={[
               "inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",

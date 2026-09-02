@@ -270,13 +270,26 @@ function DateRowEditors({
         </td>
         <td className={`w-[5.5rem] px-1.5 py-2 ${cellFieldClass}`}>
           <FormField
-            label="PAX proyectado"
-            name={`wizard_planned_pax_${iso}`}
+            label="PAX"
+            name={`wizard_pax_${iso}`}
             type="number"
             min={0}
             value={entry.plannedPax}
             onChange={(v) => onChange({ plannedPax: String(v) })}
             compact
+          />
+        </td>
+        <td className={`w-[6.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <FormField
+            label="PAX planificado"
+            name={`wizard_planned_pax_ref_${iso}`}
+            type="number"
+            value={
+              vessel?.pax_capacity != null ? vessel.pax_capacity : ""
+            }
+            onChange={() => {}}
+            compact
+            disabled
           />
         </td>
         <td className={`min-w-[9.5rem] px-1.5 py-2 ${cellFieldClass}`}>
@@ -308,7 +321,7 @@ function DateRowEditors({
       </tr>
       {showHint ? (
         <tr className="bg-zinc-50/50 dark:bg-zinc-950/30">
-          <td colSpan={6} className="px-3 pb-2.5 pt-0">
+          <td colSpan={7} className="px-3 pb-2.5 pt-0">
             <PositionOccupancyHint
               message={occupancyHint}
               occupant={
@@ -527,13 +540,14 @@ export default function ReviewStep({
           </h3>
         </div>
         <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-700">
-          <table className="w-full min-w-[44rem] border-collapse text-left">
+          <table className="w-full min-w-[50rem] border-collapse text-left">
             <thead>
               <tr className="bg-zinc-50/90 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-950/50">
                 <th className="px-3 py-2.5 font-semibold">Fecha</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETA</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETD</th>
                 <th className="px-1.5 py-2.5 font-semibold">PAX</th>
+                <th className="px-1.5 py-2.5 font-semibold">PAX planificado</th>
                 <th className="px-1.5 py-2.5 font-semibold">Posición</th>
                 <th className="px-1.5 py-2.5 pr-3 font-semibold">Estado</th>
               </tr>
