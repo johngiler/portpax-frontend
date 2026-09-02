@@ -5,10 +5,17 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import NoticeAlert from "@/components/ui/NoticeAlert";
+import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/services/apiClient";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
-import { canAuthorizeExceptions } from "@/lib/navAccess";
+import { paxPercent } from "@/lib/bookingPaxDisplay";
+import {
+  canAuthorizeExceptions,
+  canEditBookingSchedule,
+  canEditPortOperations,
+} from "@/lib/navAccess";
 import {
   suggestBookingPositions,
   updateBooking,
@@ -43,24 +50,53 @@ export default function BookingOperationalSection({
 }: BookingOperationalSectionProps) {
   const { user } = useAuth();
   const mayAuthorize = canAuthorizeExceptions(user?.role);
+  const canSchedule = canWrite && canEditBookingSchedule(user?.role);
+  const canPortOps = canWrite && canEditPortOperations(user?.role);
 
   const [positionId, setPositionId] = useState(booking.position ?? 0);
   const [eta, setEta] = useState(booking.eta?.slice(0, 5) ?? "");
   const [etd, setEtd] = useState(booking.etd?.slice(0, 5) ?? "");
+  const [etaReal, setEtaReal] = useState(booking.eta_real?.slice(0, 5) ?? "");
+  const [etdReal, setEtdReal] = useState(booking.etd_real?.slice(0, 5) ?? "");
   const [actualPax, setActualPax] = useState(
     booking.actual_pax != null ? String(booking.actual_pax) : "",
   );
   const [actualCrew, setActualCrew] = useState(
     booking.actual_crew != null ? String(booking.actual_crew) : "",
   );
+  const [operationNotes, setOperationNotes] = useState(
+    booking.operation_notes ?? "",
+  );
+  const [manifestFile, setManifestFile] = useState<File | null>(null);
   const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [ackCombinedRed, setAckCombinedRed] = useState(false);
   const [needsCombinedRedAck, setNeedsCombinedRedAck] = useState(false);
 
-  const readOnly = !canWrite || booking.status === "c";
-  const scheduleReadOnly = readOnly;
+  const cancelled = booking.status === "c";
+  const scheduleReadOnly = !canSchedule || cancelled;
+  const portOpsReadOnly = !canPortOps || cancelled;
+
+  const capacity = booking.vessel_pax_capacity;
+  const plannedPct = paxPercent(booking.planned_pax, capacity);
+  const actualPct = paxPercent(
+    actualPax === "" ? booking.actual_pax : Number(actualPax),
+    booking.planned_pax,
+  );
+
+  const missingPortOps: string[] = [];
+  if (canPortOps && !cancelled) {
+    if (actualPax.trim() === "" && booking.actual_pax == null) {
+      missingPortOps.push("PAX real (desembarcados)");
+    }
+    if (actualCrew.trim() === "" && booking.actual_crew == null) {
+      missingPortOps.push("Tripulación real");
+    }
+    if (!booking.arrival_manifest_url && !manifestFile) {
+      missingPortOps.push("Manifiesto adjunto");
+    }
+  }
 
   const loadSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -85,33 +121,46 @@ export default function BookingOperationalSection({
     setPositionId(booking.position ?? 0);
     setEta(booking.eta?.slice(0, 5) ?? "");
     setEtd(booking.etd?.slice(0, 5) ?? "");
+    setEtaReal(booking.eta_real?.slice(0, 5) ?? "");
+    setEtdReal(booking.etd_real?.slice(0, 5) ?? "");
     setActualPax(booking.actual_pax != null ? String(booking.actual_pax) : "");
     setActualCrew(booking.actual_crew != null ? String(booking.actual_crew) : "");
+    setOperationNotes(booking.operation_notes ?? "");
+    setManifestFile(null);
     setAckCombinedRed(false);
     setNeedsCombinedRedAck(false);
   }, [booking]);
 
   useEffect(() => {
-    if (booking.status === "c") return;
+    if (cancelled || !canSchedule) return;
     const timer = window.setTimeout(() => {
       void loadSuggestions();
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [booking.status, loadSuggestions]);
+  }, [cancelled, canSchedule, loadSuggestions]);
 
   async function handleSave() {
     setSaving(true);
     onError(null);
     try {
-      const updated = await updateBooking(booking.id, {
-        position: positionId > 0 ? positionId : null,
-        eta: eta || null,
-        etd: etd || null,
-        actual_pax: actualPax === "" ? null : Number(actualPax),
-        actual_crew: actualCrew === "" ? null : Number(actualCrew),
-        acknowledge_combined_red: ackCombinedRed || undefined,
-      });
+      const payload: Parameters<typeof updateBooking>[1] = {};
+      if (canSchedule) {
+        payload.position = positionId > 0 ? positionId : null;
+        payload.eta = eta || null;
+        payload.etd = etd || null;
+        payload.acknowledge_combined_red = ackCombinedRed || undefined;
+      }
+      if (canPortOps) {
+        payload.actual_pax = actualPax === "" ? null : Number(actualPax);
+        payload.actual_crew = actualCrew === "" ? null : Number(actualCrew);
+        payload.eta_real = etaReal || null;
+        payload.etd_real = etdReal || null;
+        payload.operation_notes = operationNotes;
+        if (manifestFile) payload.arrival_manifest = manifestFile;
+      }
+      const updated = await updateBooking(booking.id, payload);
       onUpdated(updated);
+      setManifestFile(null);
       setNeedsCombinedRedAck(false);
       setAckCombinedRed(false);
     } catch (err) {
@@ -138,7 +187,6 @@ export default function BookingOperationalSection({
   });
 
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
-  // LTA / CL / LTD already sit on the LTA track — horizon soft-fails are noise here.
   const ltaTrack =
     booking.status === "lta" ||
     booking.status === "cl" ||
@@ -172,19 +220,13 @@ export default function BookingOperationalSection({
     }))
     .filter((item) => {
       if (!ltaSoftFailCodes.has(item.code)) return true;
-      // Same rule as live: hide soft-fails on LTA-track statuses.
       if (ltaTrack) return false;
-      // Live match supersedes a stale “fuera de horizonte” snapshot.
       if (liveHasLtaMatch) return false;
-      // When suggest already ran for this position, live is source of truth
-      // for LTA soft-fails (drop stale snapshot codes live no longer emits).
       if (liveSuggestLoaded) {
         return liveNormalized.some((live) => live.code === item.code);
       }
       return true;
     });
-  // Live suggestions win per code; keep snapshot codes missing from live
-  // (e.g. schedule rules if suggest was called without ETA).
   const sameSavedPosition = positionId === (booking.position ?? 0);
   const displayIssues = (() => {
     const byCode = new Map<string, BookingValidationIssue>();
@@ -199,86 +241,183 @@ export default function BookingOperationalSection({
     return Array.from(byCode.values());
   })();
 
+  const showSave = (canSchedule || canPortOps) && !cancelled;
+  const showPosition =
+    canSchedule || positionOptions.length > 0 || booking.position;
+
   return (
     <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
         Operación y posición
       </h2>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        La posición se calcula al crear la reserva (LOA, calado y disponibilidad).
-        Puedes ajustarla manualmente si hace falta.
-      </p>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div>
-          <FormFieldSelect<number>
-            label="Reasignar posición"
-            name="booking_position"
-            value={positionId}
-            onChange={setPositionId}
-            options={positionOptions}
-            optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
-            emptyValue={0}
+      {missingPortOps.length > 0 ? (
+        <NoticeAlert
+          className="mt-4"
+          variant="warning"
+          messages={[
+            `Faltan datos de arribo: ${missingPortOps.join(", ")}.`,
+          ]}
+        />
+      ) : null}
+
+      <div className="mt-4 space-y-4">
+        {showPosition ? (
+          <div>
+            <FormFieldSelect<number>
+              label="Reasignar posición"
+              name="booking_position"
+              value={positionId}
+              onChange={setPositionId}
+              options={positionOptions}
+              optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
+              emptyValue={0}
+              disabled={scheduleReadOnly}
+            />
+            <PositionOccupancyHint
+              occupant={
+                selectedSuggestion?.occupied
+                  ? selectedSuggestion.occupant
+                  : null
+              }
+              positionCode={selectedSuggestion?.code}
+              callDate={booking.call_date}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="ETA"
+            name="booking_eta"
+            type="text"
+            value={eta}
+            onChange={(value) => setEta(String(value))}
+            placeholder="08:00"
             disabled={scheduleReadOnly}
           />
-          <PositionOccupancyHint
-            occupant={
-              selectedSuggestion?.occupied
-                ? selectedSuggestion.occupant
-                : null
-            }
-            positionCode={selectedSuggestion?.code}
-            callDate={booking.call_date}
+          <FormField
+            label="ETD"
+            name="booking_etd"
+            type="text"
+            value={etd}
+            onChange={(value) => setEtd(String(value))}
+            placeholder="18:00"
+            disabled={scheduleReadOnly}
           />
         </div>
-        <FormField
-          label="ETA"
-          name="booking_eta"
-          type="text"
-          value={eta}
-          onChange={(value) => setEta(String(value))}
-          placeholder="08:00"
-          disabled={scheduleReadOnly}
-        />
-        <FormField
-          label="ETD"
-          name="booking_etd"
-          type="text"
-          value={etd}
-          onChange={(value) => setEtd(String(value))}
-          placeholder="18:00"
-          disabled={scheduleReadOnly}
-        />
-        <FormField
-          label="PAX planificado"
-          name="booking_planned_pax"
-          type="number"
-          min={0}
-          value={
-            booking.vessel_pax_capacity != null
-              ? booking.vessel_pax_capacity
-              : ""
-          }
-          onChange={() => {}}
-          disabled
-        />
-        <FormField
-          label="PAX real (desembarcados)"
-          name="booking_actual_pax"
-          type="number"
-          min={0}
-          value={actualPax}
-          onChange={(value) => setActualPax(String(value))}
-          disabled={readOnly}
-        />
-        <FormField
-          label="Tripulación real (post-arribo)"
-          name="booking_actual_crew"
-          type="number"
-          min={0}
-          value={actualCrew}
-          onChange={(value) => setActualCrew(String(value))}
-          disabled={readOnly}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="ETA real"
+            name="booking_eta_real"
+            type="text"
+            value={etaReal}
+            onChange={(value) => setEtaReal(String(value))}
+            placeholder="08:00"
+            disabled={portOpsReadOnly}
+          />
+          <FormField
+            label="ETD real"
+            name="booking_etd_real"
+            type="text"
+            value={etdReal}
+            onChange={(value) => setEtdReal(String(value))}
+            placeholder="18:00"
+            disabled={portOpsReadOnly}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PaxCapacityMeter
+            label="Prom. PAX / Cap. máx."
+            value={booking.planned_pax}
+            total={capacity}
+            percent={plannedPct}
+            hint={
+              plannedPct != null
+                ? `Planificado vs capacidad: ${plannedPct}%`
+                : null
+            }
+          />
+          <PaxCapacityMeter
+            label="PAX real (desembarcados)"
+            value={
+              actualPax === "" ? booking.actual_pax : Number(actualPax)
+            }
+            total={booking.planned_pax}
+            percent={actualPct}
+            editable
+            editText={actualPax}
+            onEditChange={setActualPax}
+            editDisabled={portOpsReadOnly}
+            editName="booking_actual_pax"
+            hint={
+              actualPct != null
+                ? `Cumplimiento vs planificado: ${actualPct}%`
+                : null
+            }
+          />
+          <FormField
+            label="Tripulación real (post-arribo)"
+            name="booking_actual_crew"
+            type="number"
+            min={0}
+            value={actualCrew}
+            onChange={(value) => setActualCrew(String(value))}
+            disabled={portOpsReadOnly}
+          />
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            Manifiesto
+          </p>
+          {booking.arrival_manifest_url ? (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <a
+                href={booking.arrival_manifest_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-[var(--admin-accent)] hover:underline"
+              >
+                Ver manifiesto adjunto
+              </a>
+            </div>
+          ) : null}
+          {!portOpsReadOnly ? (
+            <input
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp"
+              disabled={portOpsReadOnly}
+              onChange={(e) => setManifestFile(e.target.files?.[0] ?? null)}
+              className="block w-full cursor-pointer text-sm text-zinc-600 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--admin-accent)]/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[var(--admin-accent)]"
+            />
+          ) : null}
+          {manifestFile ? (
+            <p className="mt-1 text-xs text-zinc-500">
+              Nuevo archivo: {manifestFile.name}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <label
+          htmlFor="booking_operation_notes"
+          className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200"
+        >
+          Notas de operación
+        </label>
+        <textarea
+          id="booking_operation_notes"
+          name="booking_operation_notes"
+          rows={3}
+          value={operationNotes}
+          onChange={(e) => setOperationNotes(e.target.value)}
+          disabled={portOpsReadOnly}
+          placeholder="Observaciones de arribo / muelle…"
+          className="w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-2.5 text-sm text-zinc-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100"
         />
       </div>
 
@@ -313,7 +452,7 @@ export default function BookingOperationalSection({
         />
       ) : null}
 
-      {canWrite && booking.status !== "c" ? (
+      {showSave ? (
         <div className="mt-4">
           <DefaultButton type="button" onClick={handleSave} disabled={saving}>
             {saving ? "Guardando…" : "Guardar operación"}

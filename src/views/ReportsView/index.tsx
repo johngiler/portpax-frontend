@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BarChart3 } from "lucide-react";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
@@ -25,6 +26,15 @@ import {
   defaultReportDateFrom,
   defaultReportDateTo,
 } from "./reportsFilterDefaults";
+import {
+  defaultReportsFilters,
+  parseReportsFilters,
+  REPORT_PAX_BASIS_OPTIONS,
+  serializeReportsFilters,
+  type ReportPaxBasis,
+  type ReportTab,
+  type ReportsWorkspaceFilters,
+} from "./reportsFilterQuery";
 import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
@@ -37,25 +47,40 @@ import {
 import {
   useReportInfinite,
   type ReportFilters,
-  type ReportTab,
 } from "@/hooks/swr/useReportData";
 import { useActivePortsCatalog } from "@/hooks/swr/useCatalogs";
 
+function toApplied(filters: ReportsWorkspaceFilters): ReportFilters {
+  return {
+    tab: filters.tab,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    portFilter: filters.port,
+    withoutLta: filters.withoutLta,
+    paxBasis: filters.paxBasis,
+  };
+}
+
 export default function ReportsView() {
-  const [tab, setTab] = useState<ReportTab>("ports_totals");
-  const [dateFrom, setDateFrom] = useState(defaultReportDateFrom);
-  const [dateTo, setDateTo] = useState(() =>
-    defaultReportDateTo(defaultReportDateFrom()),
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const initial = useMemo(
+    () => parseReportsFilters(searchParams),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once from URL
+    [],
   );
-  const [portFilter, setPortFilter] = useState(0);
-  const [withoutLta, setWithoutLta] = useState(false);
-  const [appliedFilters, setAppliedFilters] = useState<ReportFilters>({
-    tab: "ports_totals",
-    dateFrom: defaultReportDateFrom(),
-    dateTo: defaultReportDateTo(),
-    portFilter: 0,
-    withoutLta: false,
-  });
+
+  const [tab, setTab] = useState<ReportTab>(initial.tab);
+  const [dateFrom, setDateFrom] = useState(initial.dateFrom);
+  const [dateTo, setDateTo] = useState(initial.dateTo);
+  const [portFilter, setPortFilter] = useState(initial.port);
+  const [withoutLta, setWithoutLta] = useState(initial.withoutLta);
+  const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
+  const [appliedFilters, setAppliedFilters] = useState<ReportFilters>(() =>
+    toApplied(initial),
+  );
   const [error, setError] = useState<string | null>(null);
   const [reportGuideOpen, setReportGuideOpen] = useState(false);
 
@@ -87,6 +112,26 @@ export default function ReportsView() {
     }
   }, [reportError]);
 
+  const syncUrl = useCallback(
+    (filters: ReportsWorkspaceFilters) => {
+      const qs = serializeReportsFilters(filters).toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  const draftFilters = useMemo(
+    (): ReportsWorkspaceFilters => ({
+      tab,
+      dateFrom,
+      dateTo,
+      port: portFilter,
+      withoutLta,
+      paxBasis,
+    }),
+    [tab, dateFrom, dateTo, portFilter, withoutLta, paxBasis],
+  );
+
   const portOptions = useMemo(
     () => ports.map((p) => ({ value: p.id, label: p.name, logoUrl: p.logo })),
     [ports],
@@ -97,7 +142,13 @@ export default function ReportsView() {
     [ports],
   );
 
-  const hasActiveFilters = reportsHasActiveFilters(appliedFilters);
+  const hasActiveFilters = reportsHasActiveFilters({
+    portFilter: appliedFilters.portFilter,
+    dateFrom: appliedFilters.dateFrom,
+    dateTo: appliedFilters.dateTo,
+    withoutLta: appliedFilters.withoutLta,
+    paxBasis: appliedFilters.paxBasis,
+  });
 
   const activeFilterChips = useMemo(
     () =>
@@ -109,6 +160,7 @@ export default function ReportsView() {
         dateFrom: appliedFilters.dateFrom,
         dateTo: appliedFilters.dateTo,
         withoutLta: appliedFilters.withoutLta,
+        paxBasis: appliedFilters.paxBasis,
       }),
     [appliedFilters, portsById],
   );
@@ -137,41 +189,41 @@ export default function ReportsView() {
     dateFrom !== defaultDateFrom ||
     dateTo !== defaultDateTo ||
     portFilter > 0 ||
-    withoutLta;
+    withoutLta ||
+    paxBasis !== "planned";
 
   const canApplyFilters =
     dateFrom !== appliedFilters.dateFrom ||
     dateTo !== appliedFilters.dateTo ||
     portFilter !== appliedFilters.portFilter ||
     withoutLta !== appliedFilters.withoutLta ||
+    paxBasis !== appliedFilters.paxBasis ||
     tab !== appliedFilters.tab;
 
   function clearFilters() {
-    const cleanDateFrom = defaultReportDateFrom();
-    const cleanDateTo = defaultReportDateTo(cleanDateFrom);
-    setDateFrom(cleanDateFrom);
-    setDateTo(cleanDateTo);
+    const clean = defaultReportsFilters();
+    const next = { ...clean, tab };
+    setDateFrom(next.dateFrom);
+    setDateTo(next.dateTo);
     setPortFilter(0);
     setWithoutLta(false);
+    setPaxBasis("planned");
     setError(null);
-    setAppliedFilters({
-      tab,
-      dateFrom: cleanDateFrom,
-      dateTo: cleanDateTo,
-      portFilter: 0,
-      withoutLta: false,
-    });
+    const applied = toApplied(next);
+    setAppliedFilters(applied);
+    syncUrl(next);
   }
 
   function applyFilters() {
     setError(null);
-    setAppliedFilters({
-      tab,
-      dateFrom,
-      dateTo,
-      portFilter,
-      withoutLta,
-    });
+    const next = draftFilters;
+    setAppliedFilters(toApplied(next));
+    syncUrl(next);
+  }
+
+  function handleTabChange(value: ReportTab) {
+    setTab(value);
+    setError(null);
   }
 
   const handleExport = useCallback(
@@ -184,6 +236,7 @@ export default function ReportsView() {
           dateTo: appliedDateTo,
           portFilter: appliedPortFilter,
           withoutLta: appliedWithoutLta,
+          paxBasis: appliedPaxBasis,
         } = appliedFilters;
 
         if (appliedTab === "ports_totals") {
@@ -192,6 +245,7 @@ export default function ReportsView() {
             date_from: appliedDateFrom,
             date_to: appliedDateTo,
             without_lta: appliedWithoutLta,
+            pax_basis: appliedPaxBasis,
             exportFormat: "xlsx",
           });
           return;
@@ -207,6 +261,7 @@ export default function ReportsView() {
             date_to: appliedDateTo,
             port: appliedPortFilter,
             without_lta: appliedWithoutLta,
+            pax_basis: appliedPaxBasis,
             exportFormat: "xlsx",
           });
           return;
@@ -221,6 +276,7 @@ export default function ReportsView() {
           date_to: appliedDateTo,
           port: appliedPortFilter,
           without_lta: appliedWithoutLta,
+          pax_basis: appliedPaxBasis,
           exportFormat: "xlsx",
         });
       } catch (err) {
@@ -248,15 +304,7 @@ export default function ReportsView() {
           label="Reporte"
           name="report_tab"
           value={tab}
-          onChange={(value) => {
-            setTab(value);
-            const from = defaultReportDateFrom();
-            setDateFrom(from);
-            setDateTo(defaultReportDateTo(from));
-            setPortFilter(0);
-            setWithoutLta(false);
-            setError(null);
-          }}
+          onChange={handleTabChange}
           options={[
             { value: "ports_totals", label: "Totals puertos" },
             { value: "port_carrier", label: "Totals por puerto" },
@@ -290,6 +338,14 @@ export default function ReportsView() {
             logoKind="port"
           />
         ) : null}
+        <FormFieldSelect<ReportPaxBasis>
+          label="Base PAX"
+          name="report_pax_basis"
+          value={paxBasis}
+          onChange={setPaxBasis}
+          options={REPORT_PAX_BASIS_OPTIONS}
+          compact
+        />
         <FormField
           label="Desde"
           name="report_date_from"

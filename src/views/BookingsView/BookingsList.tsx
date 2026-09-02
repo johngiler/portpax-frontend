@@ -353,6 +353,7 @@ export default function BookingsList({
                     eta={booking.eta}
                     etd={booking.etd}
                     actualPax={booking.actual_pax}
+                    plannedPax={booking.planned_pax}
                     positionLabel={positionLabel}
                     highlightLoa={highlights.highlight_loa}
                     loaHighlightSeverity={highlights.loa_severity}

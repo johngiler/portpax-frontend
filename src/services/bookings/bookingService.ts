@@ -40,6 +40,7 @@ export type AvailabilityBookingCall = {
   eta: string | null;
   etd: string | null;
   actual_pax: number | null;
+  planned_pax: number | null;
 };
 
 export type FetchBookingsParams = {
@@ -196,6 +197,7 @@ export type PortsTotalsMatrixReport = {
   date_from: string;
   date_to: string;
   without_lta: boolean;
+  pax_basis?: "planned" | "capacity";
   month_labels: string[];
   years: number[];
   sections: MatrixSection[];
@@ -209,6 +211,7 @@ export type PortCarrierMatrixReport = {
   date_from: string;
   date_to: string;
   without_lta: boolean;
+  pax_basis?: "planned" | "capacity";
   month_labels: string[];
   years: number[];
   sections: MatrixSection[];
@@ -222,6 +225,7 @@ export type PortTrendsReport = {
   date_from: string;
   date_to: string;
   without_lta: boolean;
+  pax_basis?: "planned" | "capacity";
   years: number[];
   lines: Array<{
     shipping_line_id: number;
@@ -335,6 +339,7 @@ export async function fetchPortsTotalsMatrixReport(params: {
   date_from: string;
   date_to: string;
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   page?: number;
   page_size?: number;
 }): Promise<PortsTotalsMatrixReport> {
@@ -342,6 +347,9 @@ export async function fetchPortsTotalsMatrixReport(params: {
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
   if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {
     query.set("page_size", String(params.page_size));
@@ -356,6 +364,7 @@ export async function fetchPortCarrierMatrixReport(params: {
   date_to: string;
   port: number;
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   page?: number;
   page_size?: number;
 }): Promise<PortCarrierMatrixReport> {
@@ -364,6 +373,9 @@ export async function fetchPortCarrierMatrixReport(params: {
   query.set("date_to", params.date_to);
   query.set("port", String(params.port));
   if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {
     query.set("page_size", String(params.page_size));
@@ -378,6 +390,7 @@ export async function fetchPortTrendsReport(params: {
   date_to: string;
   port: number;
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   page?: number;
   page_size?: number;
 }): Promise<PortTrendsReport> {
@@ -386,6 +399,9 @@ export async function fetchPortTrendsReport(params: {
   query.set("date_to", params.date_to);
   query.set("port", String(params.port));
   if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {
     query.set("page_size", String(params.page_size));
@@ -406,6 +422,7 @@ export async function exportStructuredReport(params: {
   status?: string;
   statuses?: string[];
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
@@ -419,6 +436,9 @@ export async function exportStructuredReport(params: {
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
   if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   const statusCsv =
     params.statuses && params.statuses.length > 0
       ? params.statuses.join(",")
@@ -520,7 +540,9 @@ export async function previewAssignedPositions(params: {
 }
 
 export async function updateBooking(id: number, payload: BookingUpdatePayload): Promise<Booking> {
-  const hasFile = payload.cancellation_evidence instanceof File;
+  const hasFile =
+    payload.cancellation_evidence instanceof File ||
+    payload.arrival_manifest instanceof File;
 
   if (hasFile) {
     const form = new FormData();
@@ -531,6 +553,32 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
     if (payload.cancellation_evidence) {
       form.set("cancellation_evidence", payload.cancellation_evidence);
     }
+    if (payload.arrival_manifest) {
+      form.set("arrival_manifest", payload.arrival_manifest);
+    }
+    if (payload.actual_pax !== undefined && payload.actual_pax !== null) {
+      form.set("actual_pax", String(payload.actual_pax));
+    }
+    if (payload.actual_crew !== undefined && payload.actual_crew !== null) {
+      form.set("actual_crew", String(payload.actual_crew));
+    }
+    if (payload.eta_real !== undefined) {
+      form.set("eta_real", payload.eta_real ?? "");
+    }
+    if (payload.etd_real !== undefined) {
+      form.set("etd_real", payload.etd_real ?? "");
+    }
+    if (payload.notes !== undefined) {
+      form.set("notes", payload.notes);
+    }
+    if (payload.operation_notes !== undefined) {
+      form.set("operation_notes", payload.operation_notes);
+    }
+    if (payload.position !== undefined) {
+      form.set("position", payload.position == null ? "" : String(payload.position));
+    }
+    if (payload.eta !== undefined) form.set("eta", payload.eta ?? "");
+    if (payload.etd !== undefined) form.set("etd", payload.etd ?? "");
     return apiFetch<Booking>(`${BASE}${id}/`, { method: "PATCH", body: form });
   }
 
@@ -549,6 +597,9 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.vessel !== undefined) body.vessel = payload.vessel;
   if (payload.call_date !== undefined) body.call_date = payload.call_date;
   if (payload.notes !== undefined) body.notes = payload.notes;
+  if (payload.operation_notes !== undefined) {
+    body.operation_notes = payload.operation_notes;
+  }
   if (payload.cancellation_reason !== undefined) {
     body.cancellation_reason = payload.cancellation_reason;
   }
@@ -566,6 +617,26 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+export type PlannedPaxPreview = {
+  planned_pax: number | null;
+  capacity: number | null;
+  sample_count: number;
+  source: "average" | "capacity" | "none" | string;
+  pct_of_capacity: number | null;
+};
+
+export async function fetchPlannedPaxPreview(params: {
+  vessel: number;
+  excludeBooking?: number;
+}): Promise<PlannedPaxPreview> {
+  const query = new URLSearchParams();
+  query.set("vessel", String(params.vessel));
+  if (params.excludeBooking) {
+    query.set("exclude_booking", String(params.excludeBooking));
+  }
+  return apiFetch<PlannedPaxPreview>(`${BASE}planned-pax-preview/?${query}`);
 }
 
 export async function updateBookingStatus(id: number, status: BookingStatus): Promise<Booking> {

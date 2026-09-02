@@ -10,6 +10,7 @@ import {
   conflictChipTitle,
 } from "@/lib/conflictDisplayFromApi";
 import { formatTimeShort } from "@/lib/bookingDisplay";
+import { cardPaxTitle, formatCardPax } from "@/lib/bookingPaxDisplay";
 import {
   conflictCardClassName,
   conflictFieldHighlightClassName,
@@ -116,12 +117,10 @@ export default function ProximityMatrixCallCard({
           )}
           <span
             className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400"
-            title="PAX real"
+            title={cardPaxTitle(cell.actual_pax, cell.planned_pax)}
           >
             <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {cell.actual_pax != null
-              ? cell.actual_pax.toLocaleString("es-MX")
-              : "—"}
+            {formatCardPax(cell.actual_pax, cell.planned_pax)}
           </span>
           <p
             className={[

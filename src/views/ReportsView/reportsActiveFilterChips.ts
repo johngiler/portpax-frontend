@@ -1,12 +1,14 @@
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilterChips";
 import { isDefaultReportDateRange } from "./reportsFilterDefaults";
+import type { ReportPaxBasis } from "./reportsFilterQuery";
 
 export function buildReportsActiveFilterChips(input: {
   portLabel?: string | null;
   dateFrom: string;
   dateTo: string;
   withoutLta: boolean;
+  paxBasis: ReportPaxBasis;
 }): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
@@ -34,6 +36,14 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
+  if (input.paxBasis === "capacity") {
+    chips.push({
+      id: "pax-basis",
+      label: "PAX: Cap. máx.",
+      icon: "dates",
+    });
+  }
+
   return chips;
 }
 
@@ -42,10 +52,12 @@ export function reportsHasActiveFilters(input: {
   dateFrom: string;
   dateTo: string;
   withoutLta: boolean;
+  paxBasis: ReportPaxBasis;
 }): boolean {
   return (
     input.portFilter > 0 ||
     input.withoutLta ||
+    input.paxBasis !== "planned" ||
     !isDefaultReportDateRange(input.dateFrom, input.dateTo)
   );
 }

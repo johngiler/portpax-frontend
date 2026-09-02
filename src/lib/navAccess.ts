@@ -32,6 +32,16 @@ export function canAuthorizeExceptions(role: UserRole | null | undefined): boole
   return role === "admin" || role === "port_operator";
 }
 
+/** Position / planned ETA-ETD (not arrival manifesto fields). */
+export function canEditBookingSchedule(role: UserRole | null | undefined): boolean {
+  return role === "admin" || role === "booking_operator";
+}
+
+/** Actual PAX, crew, real times, operation notes, manifesto. */
+export function canEditPortOperations(role: UserRole | null | undefined): boolean {
+  return role === "admin" || role === "port_operator";
+}
+
 export function canBrowseCatalogs(role: UserRole | null | undefined): boolean {
   return role != null && (CATALOG_BROWSER_ROLES as readonly string[]).includes(role);
 }

@@ -65,11 +65,13 @@ export type Booking = BookingListItem & {
   vessel_logo: string | null;
   eta_real: string | null;
   etd_real: string | null;
-  /** Vessel catalog capacity — reference for “PAX planificado”. */
+  /** Vessel catalog capacity — max PAX reference. */
   vessel_pax_capacity: number | null;
   actual_pax: number | null;
   actual_crew: number | null;
   notes: string;
+  /** Port-operator arrival / berth notes (distinct from identity `notes`). */
+  operation_notes: string;
   has_conflict?: boolean;
   /** Highest severity in conflict_snapshot when has_conflict (red|yellow|green). */
   conflict_severity?: BookingConflictSeverity | null;
@@ -77,6 +79,8 @@ export type Booking = BookingListItem & {
   cancellation_reason: CancellationReason | "";
   cancellation_reason_display: string;
   cancellation_evidence_url: string | null;
+  confirmation_pdf_url: string | null;
+  arrival_manifest_url: string | null;
   long_term_agreement: number | null;
   long_term_agreement_code: string | null;
   audit_entries: BookingAuditEntry[];
@@ -194,6 +198,8 @@ export type BookingUpdatePayload = {
   vessel?: number;
   call_date?: string;
   notes?: string;
+  operation_notes?: string;
+  arrival_manifest?: File | null;
   cancellation_reason?: CancellationReason | null;
   cancellation_evidence?: File | null;
   port_operator_override?: boolean;

@@ -3,14 +3,17 @@
 import { Clock3, MapPinned, Ruler, Users } from "lucide-react";
 import { formatLoa, formatTimeShort } from "@/lib/bookingDisplay";
 import { conflictFieldHighlightClassName } from "@/lib/bookingConflictStyle";
+import { cardPaxTitle, formatCardPax } from "@/lib/bookingPaxDisplay";
 import type { BookingConflictSeverity } from "@/types/booking";
 
 type BookingMetaRowProps = {
   loaM?: string | null;
   eta?: string | null;
   etd?: string | null;
-  /** Disembarked / real PAX (not planned). */
+  /** Disembarked / real PAX when present. */
   actualPax?: number | null;
+  /** Fallback when actual is missing (average snapshot). */
+  plannedPax?: number | null;
   positionLabel: string;
   /** Dense chips (calendar). */
   compact?: boolean;
@@ -36,6 +39,7 @@ export default function BookingMetaRow({
   eta,
   etd,
   actualPax = null,
+  plannedPax = null,
   positionLabel,
   compact = false,
   tone = "muted",
@@ -55,8 +59,7 @@ export default function BookingMetaRow({
     tone === "onColor"
       ? "text-white/90"
       : "text-zinc-500 dark:text-zinc-400";
-  const paxLabel =
-    actualPax != null ? actualPax.toLocaleString("es-MX") : "—";
+  const paxLabel = formatCardPax(actualPax, plannedPax);
 
   return (
     <ul
@@ -93,7 +96,10 @@ export default function BookingMetaRow({
           {formatTimeShort(eta)}–{formatTimeShort(etd)}
         </span>
       </li>
-      <li className="inline-flex min-w-0 items-center gap-1" title="PAX real">
+      <li
+        className="inline-flex min-w-0 items-center gap-1"
+        title={cardPaxTitle(actualPax, plannedPax)}
+      >
         <Users className={`shrink-0 opacity-80 ${iconClass}`} aria-hidden />
         <span className="truncate font-medium">{paxLabel}</span>
       </li>

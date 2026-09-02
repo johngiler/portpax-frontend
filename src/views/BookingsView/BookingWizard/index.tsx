@@ -351,15 +351,10 @@ export default function BookingWizard() {
         notes: form.notes,
         entries: form.callDates.map((iso) => {
           const entry = form.dateEntries[iso] ?? emptyDateEntry();
-          const vesselCapacity = selectedVessel?.pax_capacity ?? null;
           return {
             call_date: iso,
             eta: entry.eta || null,
             etd: entry.etd || null,
-            planned_pax:
-              entry.plannedPax === ""
-                ? vesselCapacity
-                : Number(entry.plannedPax),
             position: entry.positionId,
             status: entry.status,
           };

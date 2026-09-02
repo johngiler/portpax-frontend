@@ -31,6 +31,7 @@ export type VesselProximityMatrixCell = {
   eta: string | null;
   etd: string | null;
   actual_pax: number | null;
+  planned_pax: number | null;
   position_code: string | null;
   conflict_chips: BookingConflictChip[];
   conflict_highlights: BookingConflictHighlights;

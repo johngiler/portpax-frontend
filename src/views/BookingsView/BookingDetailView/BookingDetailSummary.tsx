@@ -14,7 +14,9 @@ import {
 } from "@/hooks/swr/useCatalogs";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { canEditBookingSchedule } from "@/lib/navAccess";
 import { sanitizeReturnTo } from "@/lib/safeReturnTo";
+import { useAuth } from "@/contexts/AuthContext";
 import { updateBooking } from "@/services/bookings/bookingService";
 import { bookingDetailHref, type Booking } from "@/types/booking";
 import { portDisplayName } from "@/types/catalog";
@@ -55,6 +57,7 @@ export default function BookingDetailSummary({
   onUpdated,
 }: BookingDetailSummaryProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
 
@@ -74,6 +77,10 @@ export default function BookingDetailSummary({
   const { vessels, isLoading: vesselsLoading } = useActiveVesselsCatalog(lineId, editing);
 
   const groupId = booking.shipping_line_group;
+  const readOnly =
+    !canWrite ||
+    booking.status === "c" ||
+    !canEditBookingSchedule(user?.role);
 
   useEffect(() => {
     if (editing) return;
@@ -149,8 +156,6 @@ export default function BookingDetailSummary({
     }
     return opts;
   }, [vessels, vesselId, lineId, booking]);
-
-  const readOnly = !canWrite || booking.status === "c";
 
   function startEdit() {
     setFormError(null);

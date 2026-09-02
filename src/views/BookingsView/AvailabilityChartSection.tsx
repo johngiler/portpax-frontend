@@ -6,6 +6,7 @@ import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
+import { cardPaxTitle, formatCardPax } from "@/lib/bookingPaxDisplay";
 import { CalendarRange, CheckCircle2, Clock3, Ruler, Users } from "lucide-react";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import {
@@ -454,15 +455,19 @@ export default function AvailabilityChartSection({
                                     )}
                                     <span
                                       className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400"
-                                      title="PAX real"
+                                      title={cardPaxTitle(
+                                        call.actual_pax,
+                                        call.planned_pax,
+                                      )}
                                     >
                                       <Users
                                         className="h-3.5 w-3.5 shrink-0"
                                         aria-hidden
                                       />
-                                      {call.actual_pax != null
-                                        ? call.actual_pax.toLocaleString("es-MX")
-                                        : "—"}
+                                      {formatCardPax(
+                                        call.actual_pax,
+                                        call.planned_pax,
+                                      )}
                                     </span>
                                     <p
                                       className={[

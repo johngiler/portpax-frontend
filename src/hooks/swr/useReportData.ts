@@ -22,6 +22,7 @@ export type ReportFilters = {
   dateTo: string;
   portFilter: number;
   withoutLta: boolean;
+  paxBasis: "planned" | "capacity";
 };
 
 function reportParamsKey(filters: ReportFilters): string {
@@ -31,6 +32,7 @@ function reportParamsKey(filters: ReportFilters): string {
     filters.dateTo,
     filters.portFilter,
     filters.withoutLta ? 1 : 0,
+    filters.paxBasis,
   ].join("|");
 }
 
@@ -58,6 +60,7 @@ async function fetchReportPage(
     date_from: filters.dateFrom,
     date_to: filters.dateTo,
     without_lta: filters.withoutLta,
+    pax_basis: filters.paxBasis,
     page,
   };
 
@@ -90,7 +93,8 @@ function reportPayloadMatchesFilters(
   if (
     data.date_from !== filters.dateFrom ||
     data.date_to !== filters.dateTo ||
-    data.without_lta !== filters.withoutLta
+    data.without_lta !== filters.withoutLta ||
+    (data.pax_basis ?? "planned") !== filters.paxBasis
   ) {
     return false;
   }

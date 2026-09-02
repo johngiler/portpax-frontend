@@ -14,6 +14,7 @@ import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
+import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
 import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
@@ -21,6 +22,8 @@ import { issueSeverity } from "@/lib/bookingConflictSeverity";
 import {
   suggestBookingPositions,
   validateBookings,
+  fetchPlannedPaxPreview,
+  type PlannedPaxPreview,
 } from "@/services/bookings/bookingService";
 import type {
   BookingValidationIssue,
@@ -122,6 +125,7 @@ type DateRowEditorsProps = {
   vessel: Vessel | null;
   entry: WizardDateEntry;
   onChange: (patch: Partial<WizardDateEntry>) => void;
+  paxPreview: PlannedPaxPreview | null;
 };
 
 /** Dense cell: kill FormField vertical rhythm; header labels live in thead. */
@@ -135,6 +139,7 @@ function DateRowEditors({
   vessel,
   entry,
   onChange,
+  paxPreview,
 }: DateRowEditorsProps) {
   const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -268,28 +273,14 @@ function DateRowEditors({
             compact
           />
         </td>
-        <td className={`w-[5.5rem] px-1.5 py-2 ${cellFieldClass}`}>
-          <FormField
-            label="PAX"
-            name={`wizard_pax_${iso}`}
-            type="number"
-            min={0}
-            value={entry.plannedPax}
-            onChange={(v) => onChange({ plannedPax: String(v) })}
-            compact
-          />
-        </td>
-        <td className={`w-[6.5rem] px-1.5 py-2 ${cellFieldClass}`}>
-          <FormField
-            label="PAX planificado"
-            name={`wizard_planned_pax_ref_${iso}`}
-            type="number"
-            value={
-              vessel?.pax_capacity != null ? vessel.pax_capacity : ""
+        <td className={`w-[9.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+          <PaxCapacityMeter
+            value={paxPreview?.planned_pax ?? null}
+            total={
+              paxPreview?.capacity ?? vessel?.pax_capacity ?? null
             }
-            onChange={() => {}}
+            percent={paxPreview?.pct_of_capacity ?? null}
             compact
-            disabled
           />
         </td>
         <td className={`min-w-[9.5rem] px-1.5 py-2 ${cellFieldClass}`}>
@@ -321,7 +312,7 @@ function DateRowEditors({
       </tr>
       {showHint ? (
         <tr className="bg-zinc-50/50 dark:bg-zinc-950/30">
-          <td colSpan={7} className="px-3 pb-2.5 pt-0">
+          <td colSpan={6} className="px-3 pb-2.5 pt-0">
             <PositionOccupancyHint
               message={occupancyHint}
               occupant={
@@ -353,6 +344,33 @@ export default function ReviewStep({
   const [validation, setValidation] = useState<BookingValidationResult | null>(
     null,
   );
+  const [paxPreview, setPaxPreview] = useState<PlannedPaxPreview | null>(null);
+
+  useEffect(() => {
+    if (!vessel) {
+      setPaxPreview(null);
+      return;
+    }
+    let cancelled = false;
+    fetchPlannedPaxPreview({ vessel: vessel.id })
+      .then((data) => {
+        if (!cancelled) setPaxPreview(data);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPaxPreview({
+            planned_pax: vessel.pax_capacity,
+            capacity: vessel.pax_capacity,
+            sample_count: 0,
+            source: vessel.pax_capacity != null ? "capacity" : "none",
+            pct_of_capacity: vessel.pax_capacity != null ? 100 : null,
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vessel]);
 
   useEffect(() => {
     if (!port || !vessel || callDates.length === 0) {
@@ -540,14 +558,13 @@ export default function ReviewStep({
           </h3>
         </div>
         <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-700">
-          <table className="w-full min-w-[50rem] border-collapse text-left">
+          <table className="w-full min-w-[52rem] border-collapse text-left">
             <thead>
               <tr className="bg-zinc-50/90 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-950/50">
                 <th className="px-3 py-2.5 font-semibold">Fecha</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETA</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETD</th>
-                <th className="px-1.5 py-2.5 font-semibold">PAX</th>
-                <th className="px-1.5 py-2.5 font-semibold">PAX planificado</th>
+                <th className="px-1.5 py-2.5 font-semibold">Prom. PAX / Cap. máx.</th>
                 <th className="px-1.5 py-2.5 font-semibold">Posición</th>
                 <th className="px-1.5 py-2.5 pr-3 font-semibold">Estado</th>
               </tr>
@@ -565,6 +582,7 @@ export default function ReviewStep({
                     line={line}
                     vessel={vessel}
                     entry={entry}
+                    paxPreview={paxPreview}
                     onChange={(patch) => onDateEntryChange(iso, patch)}
                   />
                 );
