@@ -15,6 +15,7 @@ import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { formatIsoDateLabel, previewBookingCode } from "@/lib/bookingDates";
 import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
@@ -564,7 +565,12 @@ export default function ReviewStep({
                 <th className="px-3 py-2.5 font-semibold">Fecha</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETA</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETD</th>
-                <th className="px-1.5 py-2.5 font-semibold">Prom. PAX / Cap. máx.</th>
+                <th className="px-1.5 py-2.5 font-semibold">
+                  <span className="inline-flex items-center gap-1">
+                    Prom. PAX / Cap. máx.
+                    <PaxConceptsGuideButton />
+                  </span>
+                </th>
                 <th className="px-1.5 py-2.5 font-semibold">Posición</th>
                 <th className="px-1.5 py-2.5 pr-3 font-semibold">Estado</th>
               </tr>

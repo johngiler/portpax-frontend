@@ -39,6 +39,7 @@ import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
 import {
   ReportMatrixContentSkeleton,
@@ -345,6 +346,7 @@ export default function ReportsView() {
           onChange={setPaxBasis}
           options={REPORT_PAX_BASIS_OPTIONS}
           compact
+          labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
         />
         <FormField
           label="Desde"

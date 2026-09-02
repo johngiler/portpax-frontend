@@ -5,9 +5,10 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import NoticeAlert from "@/components/ui/NoticeAlert";
 import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import { ApiError } from "@/services/apiClient";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { paxPercent } from "@/lib/bookingPaxDisplay";
@@ -49,6 +50,7 @@ export default function BookingOperationalSection({
   returnTo = null,
 }: BookingOperationalSectionProps) {
   const { user } = useAuth();
+  const { requestConfirm } = useConfirm();
   const mayAuthorize = canAuthorizeExceptions(user?.role);
   const canSchedule = canWrite && canEditBookingSchedule(user?.role);
   const canPortOps = canWrite && canEditPortOperations(user?.role);
@@ -139,7 +141,7 @@ export default function BookingOperationalSection({
     return () => window.clearTimeout(timer);
   }, [cancelled, canSchedule, loadSuggestions]);
 
-  async function handleSave() {
+  async function performSave() {
     setSaving(true);
     onError(null);
     try {
@@ -173,6 +175,21 @@ export default function BookingOperationalSection({
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleSave() {
+    if (canPortOps && missingPortOps.length > 0) {
+      requestConfirm({
+        title: "Datos de arribo incompletos",
+        message: `Faltan: ${missingPortOps.join(", ")}. ¿Guardar de todas formas?`,
+        confirmLabel: "Guardar",
+        onConfirm: () => {
+          void performSave();
+        },
+      });
+      return;
+    }
+    void performSave();
   }
 
   const positionOptions = suggestions.map((position) => {
@@ -251,16 +268,6 @@ export default function BookingOperationalSection({
         Operación y posición
       </h2>
 
-      {missingPortOps.length > 0 ? (
-        <NoticeAlert
-          className="mt-4"
-          variant="warning"
-          messages={[
-            `Faltan datos de arribo: ${missingPortOps.join(", ")}.`,
-          ]}
-        />
-      ) : null}
-
       <div className="mt-4 space-y-4">
         {showPosition ? (
           <div>
@@ -331,6 +338,7 @@ export default function BookingOperationalSection({
         <div className="grid gap-4 sm:grid-cols-2">
           <PaxCapacityMeter
             label="Prom. PAX / Cap. máx."
+            labelEnd={<PaxConceptsGuideButton />}
             value={booking.planned_pax}
             total={capacity}
             percent={plannedPct}

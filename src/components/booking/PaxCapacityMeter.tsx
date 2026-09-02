@@ -1,8 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type PaxCapacityMeterProps = {
   /** Omit when a parent table/header already names the metric. */
   label?: string;
+  /** Optional control next to the label (e.g. info guide). */
+  labelEnd?: ReactNode;
   /** Left figure (promedio or PAX real). */
   value: number | null | undefined;
   /** Right figure (cap. máx. or planificado). */
@@ -30,6 +34,7 @@ function formatNum(n: number | null | undefined): string {
  */
 export default function PaxCapacityMeter({
   label,
+  labelEnd,
   value,
   total,
   percent,
@@ -71,15 +76,36 @@ export default function PaxCapacityMeter({
   return (
     <div className={className}>
       {label ? (
-        <span
-          className={
-            compact
-              ? "mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-200"
-              : "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200"
-          }
-        >
-          {label}
-        </span>
+        labelEnd ? (
+          <div
+            className={
+              compact
+                ? "mb-1 flex items-center justify-between gap-2"
+                : "mb-1.5 flex items-center justify-between gap-2"
+            }
+          >
+            <span
+              className={
+                compact
+                  ? "text-xs font-medium text-zinc-700 dark:text-zinc-200"
+                  : "text-sm font-medium text-zinc-700 dark:text-zinc-200"
+              }
+            >
+              {label}
+            </span>
+            {labelEnd}
+          </div>
+        ) : (
+          <span
+            className={
+              compact
+                ? "mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-200"
+                : "mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200"
+            }
+          >
+            {label}
+          </span>
+        )
       ) : null}
       <div
         className={[
