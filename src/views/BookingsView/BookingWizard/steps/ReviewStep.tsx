@@ -274,7 +274,7 @@ function DateRowEditors({
             compact
           />
         </td>
-        <td className={`w-[9.5rem] px-1.5 py-2 ${cellFieldClass}`}>
+        <td className={`w-[13rem] min-w-[13rem] px-1.5 py-2 ${cellFieldClass}`}>
           <PaxCapacityMeter
             value={paxPreview?.planned_pax ?? null}
             total={
@@ -559,14 +559,14 @@ export default function ReviewStep({
           </h3>
         </div>
         <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-700">
-          <table className="w-full min-w-[52rem] border-collapse text-left">
+          <table className="w-full min-w-[56rem] border-collapse text-left">
             <thead>
               <tr className="bg-zinc-50/90 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-950/50">
                 <th className="px-3 py-2.5 font-semibold">Fecha</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETA</th>
                 <th className="px-1.5 py-2.5 font-semibold">ETD</th>
-                <th className="px-1.5 py-2.5 font-semibold">
-                  <span className="inline-flex items-center gap-1">
+                <th className="w-[13rem] min-w-[13rem] px-1.5 py-2.5 font-semibold">
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     Prom. PAX / Cap. máx.
                     <PaxConceptsGuideButton />
                   </span>
