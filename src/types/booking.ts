@@ -387,6 +387,8 @@ export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
       return ["r", "c"];
     case "lta":
       return ["cl", "co", "r", "c"];
+    case "c":
+      return ["h"];
     default:
       return [];
   }

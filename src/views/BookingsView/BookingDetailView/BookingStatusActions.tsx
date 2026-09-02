@@ -185,6 +185,29 @@ export default function BookingStatusActions({
         onClose={() => setStatusGuideOpen(false)}
       />
 
+      {booking.status === "c" ? (
+        <div className="mt-4 space-y-3">
+          {booking.cancellation_reason_display ? (
+            <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
+              Motivo:{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                {booking.cancellation_reason_display}
+              </span>
+            </p>
+          ) : null}
+          {booking.cancellation_evidence_url ? (
+            <a
+              href={booking.cancellation_evidence_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
+            >
+              Ver evidencia de cancelación
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
       {nextStatuses.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {nextStatuses.includes("h") ? (
@@ -258,46 +281,25 @@ export default function BookingStatusActions({
             </button>
           ) : null}
         </div>
-      ) : booking.status === "c" ? (
-        <div className="mt-4 space-y-3">
-          {booking.cancellation_reason_display ? (
-            <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
-              Motivo:{" "}
-              <span className="font-medium text-zinc-800 dark:text-zinc-100">
-                {booking.cancellation_reason_display}
-              </span>
-            </p>
-          ) : null}
-          {booking.cancellation_evidence_url ? (
-            <a
-              href={booking.cancellation_evidence_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
-            >
-              Ver evidencia de cancelación
-            </a>
-          ) : null}
-          {canWrite ? (
-            <>
-              <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
-                Esta reserva está cancelada. Puedes eliminarla si ya no necesitas el registro.
-              </p>
-              <ConfirmDeleteButton
-                deleteLabel={booking.booking_code}
-                onDelete={handleDelete}
-                disabled={deleting}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400"
-                ariaLabel="Eliminar reserva cancelada"
-                title="Eliminar reserva"
-              >
-                <Trash2 className="h-4 w-4" strokeWidth={2} />
-                Eliminar reserva
-              </ConfirmDeleteButton>
-            </>
-          ) : null}
+      ) : null}
+
+      {booking.status === "c" && canWrite ? (
+        <div className="mt-4">
+          <ConfirmDeleteButton
+            deleteLabel={booking.booking_code}
+            onDelete={handleDelete}
+            disabled={deleting}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400"
+            ariaLabel="Eliminar reserva cancelada"
+            title="Eliminar reserva"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={2} />
+            Eliminar reserva
+          </ConfirmDeleteButton>
         </div>
-      ) : booking.status === "r" ? (
+      ) : null}
+
+      {nextStatuses.length === 0 && booking.status === "r" ? (
         <p className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
           Escala cerrada (Real). PAX real (desembarcados): {booking.actual_pax ?? "—"}.
         </p>
@@ -308,7 +310,11 @@ export default function BookingStatusActions({
         onClose={() => setPendingAction(null)}
         onConfirm={() => applySimpleStatus("h")}
         title="Poner en evaluación"
-        message={`¿Marcar la escala de ${booking.vessel_name} como en evaluación (Hold)?`}
+        message={
+          booking.status === "c"
+            ? `¿Revocar la cancelación y poner en evaluación (Hold) la escala de ${booking.vessel_name}?`
+            : `¿Marcar la escala de ${booking.vessel_name} como en evaluación (Hold)?`
+        }
         confirmLabel="Confirmar"
       />
 
