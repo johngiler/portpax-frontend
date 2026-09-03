@@ -1,6 +1,7 @@
 /** Format audit `changes` JSON for ops + audit history feeds. */
 
 import { formatLtaWeekdays } from "@/types/lta";
+import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
 
@@ -282,6 +283,34 @@ function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): 
   return String(raw);
 }
 
+function formatDateExceptionItem(item: unknown): string | null {
+  if (item == null || item === "") return null;
+  if (typeof item === "string") return formatIsoDateLabel(item.slice(0, 10), "short");
+  if (typeof item !== "object") return String(item);
+  const rec = item as Record<string, unknown>;
+  const kind = String(rec.kind || "").toLowerCase();
+  const dateText = (iso: unknown) => {
+    if (typeof iso !== "string" || iso.length < 10) return "—";
+    return formatIsoDateLabel(iso.slice(0, 10), "short");
+  };
+  if (kind === "include") return `Extra ${dateText(rec.date)}`;
+  if (kind === "skip") return `Omitida ${dateText(rec.date)}`;
+  if (kind === "reschedule") {
+    return `Reprogramada ${dateText(rec.from)} → ${dateText(rec.to)}`;
+  }
+  try {
+    return JSON.stringify(item);
+  } catch {
+    return null;
+  }
+}
+
+function formatDateExceptionList(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "—";
+  const parts = value.map(formatDateExceptionItem).filter(Boolean);
+  return parts.length ? parts.join("; ") : "—";
+}
+
 function formatLabelList(value: unknown): string {
   if (!Array.isArray(value) || value.length === 0) return "—";
   return value
@@ -293,6 +322,13 @@ function formatLabelList(value: unknown): string {
         if (typeof rec.name === "string" && rec.name.trim()) return rec.name;
         if (typeof rec.code === "string" && rec.code.trim()) return rec.code;
         if (typeof rec.label === "string" && rec.label.trim()) return rec.label;
+        const exceptionLine = formatDateExceptionItem(item);
+        if (exceptionLine) return exceptionLine;
+        try {
+          return JSON.stringify(item);
+        } catch {
+          return null;
+        }
       }
       return String(item);
     })
@@ -407,6 +443,17 @@ function formatValue(value: unknown, key?: string): string {
       }
     }
     return formatWeekdaysValue(value);
+  }
+  if (key === "date_exceptions") {
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec || "old" in rec || "new" in rec) {
+        const from = rec.from ?? rec.old;
+        const to = rec.to ?? rec.new;
+        return `${formatDateExceptionList(from)} → ${formatDateExceptionList(to)}`;
+      }
+    }
+    return formatDateExceptionList(value);
   }
   if (key && LABELED_ID_LIST_FIELDS.has(key)) {
     if (value != null && typeof value === "object" && !Array.isArray(value)) {
