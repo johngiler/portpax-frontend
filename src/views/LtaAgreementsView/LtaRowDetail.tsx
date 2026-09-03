@@ -1,6 +1,5 @@
 "use client";
 
-import DefaultButton from "@/components/buttons/DefaultButton";
 import LtaBookingWindowPanel from "@/components/lta/LtaBookingWindowPanel";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import {
@@ -18,6 +17,7 @@ type LtaRowDetailProps = {
   generateBusy?: boolean;
   onGenerate?: () => void;
   onRegenerate?: () => void;
+  onOpenExceptions?: () => void;
 };
 
 function DetailSection({
@@ -27,7 +27,7 @@ function DetailSection({
   children,
 }: {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   columns?: 1 | 2;
   children: React.ReactNode;
 }) {
@@ -38,12 +38,20 @@ function DetailSection({
           {title}
         </h3>
         {description ? (
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
+          typeof description === "string" ? (
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              {description}
+            </p>
+          ) : (
+            <div className="mt-1.5 min-w-0">{description}</div>
+          )
         ) : null}
       </div>
       <div
         className={
-          columns === 2 ? "grid gap-x-4 gap-y-3 sm:grid-cols-2" : "grid grid-cols-1 gap-y-3"
+          columns === 2
+            ? "grid gap-x-4 gap-y-3 sm:grid-cols-2"
+            : "grid grid-cols-1 gap-y-3"
         }
       >
         {children}
@@ -52,28 +60,28 @@ function DetailSection({
   );
 }
 
-function DetailField({
+function OverviewField({
   label,
   children,
-  span = 1,
 }: {
   label: string;
   children: React.ReactNode;
-  span?: 1 | 2;
 }) {
   return (
-    <div className={span === 2 ? "sm:col-span-2" : undefined}>
-      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-      <div className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+        {label}
+      </p>
+      <div className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
         {children}
       </div>
     </div>
   );
 }
 
-function formatDate(value: string | null): string {
+function formatDateShort(value: string | null): string {
   if (!value) return "—";
-  return formatIsoDateLabel(value, "long");
+  return formatIsoDateLabel(value, "short");
 }
 
 export default function LtaRowDetail({
@@ -83,21 +91,29 @@ export default function LtaRowDetail({
   generateBusy = false,
   onGenerate,
   onRegenerate,
+  onOpenExceptions,
 }: LtaRowDetailProps) {
   const vesselsLabel = agreement.all_vessels
     ? "Todos los barcos de la naviera"
     : agreement.vessel_names.length
       ? agreement.vessel_names.join(", ")
       : "—";
-  const hasGenerated = Boolean(agreement.bookings_generated);
 
   const positionsLabel = agreement.position_codes.length
     ? agreement.position_codes.join(", ")
     : "Todo el puerto";
 
   const policyLabel =
-    LTA_BOOKING_POLICY_OPTIONS.find((o) => o.value === agreement.booking_policy)?.label ??
-    agreement.booking_policy;
+    LTA_BOOKING_POLICY_OPTIONS.find((o) => o.value === agreement.booking_policy)
+      ?.label ?? agreement.booking_policy;
+
+  const depth = Math.max(1, Number(agreement.lta_depth_blocks) || 1);
+  const validityLabel = `${formatDateShort(agreement.valid_from)} → ${formatDateShort(agreement.valid_until)}`;
+  const cadenceLabel =
+    agreement.interval_days != null ? `Cada ${agreement.interval_days} d` : "—";
+  const anchorLabel = agreement.cadence_anchor
+    ? formatDateShort(agreement.cadence_anchor)
+    : "Sin ancla";
 
   return (
     <div className="w-full space-y-4 rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
@@ -121,56 +137,68 @@ export default function LtaRowDetail({
         </span>
       </div>
 
-      <DetailSection title="Puerto y naviera" description="Alcance geográfico y titular del acuerdo.">
-        <DetailField label="Puerto">
-          {agreement.port_name}
-          <span className="mt-0.5 block text-xs font-normal text-zinc-500">
-            {agreement.port_code}
-          </span>
-        </DetailField>
-        <DetailField label="Naviera">
-          {agreement.shipping_line_name}
-          <span className="mt-0.5 block text-xs font-normal text-zinc-500">
-            {agreement.shipping_line_code}
-          </span>
-        </DetailField>
-      </DetailSection>
+      <section className="rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950/30">
+        <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          Resumen del acuerdo
+        </h3>
 
-      <DetailSection
-        title="Slots operativos"
-        description="Barcos, posiciones y días cubiertos por el contrato."
-        columns={1}
-      >
-        <DetailField label="Barcos">{vesselsLabel}</DetailField>
-        <DetailField label="Posiciones">{positionsLabel}</DetailField>
-        <DetailField label="Días de la semana">
-          {formatLtaWeekdays(agreement.weekdays)}
-        </DetailField>
-      </DetailSection>
+        <div className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+          <OverviewField label="Fecha ancla">{anchorLabel}</OverviewField>
+          <OverviewField label="Vigencia">{validityLabel}</OverviewField>
+          <OverviewField label="Política de ventana">{policyLabel}</OverviewField>
+          <OverviewField label="Profundidad LTA">
+            {depth} {depth === 1 ? "bloque" : "bloques"}
+          </OverviewField>
+          <OverviewField label="Puerto">
+            {agreement.port_name}
+            <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+              {agreement.port_code}
+            </span>
+          </OverviewField>
+          <OverviewField label="Naviera">
+            {agreement.shipping_line_name}
+            <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+              {agreement.shipping_line_code}
+            </span>
+          </OverviewField>
+          <OverviewField label="Barcos">{vesselsLabel}</OverviewField>
+          <OverviewField label="Posiciones">{positionsLabel}</OverviewField>
+          <OverviewField label="Días de la semana">
+            {formatLtaWeekdays(agreement.weekdays)}
+          </OverviewField>
+          <OverviewField label="Cadencia">{cadenceLabel}</OverviewField>
+          <OverviewField label="Reserva de slot en zona LTA">
+            {agreement.reserve_foreign_slots ? "Sí" : "No"}
+          </OverviewField>
+          <OverviewField label="Mínimo de PAX">
+            {agreement.min_packs != null ? agreement.min_packs : "—"}
+          </OverviewField>
+          <OverviewField label="Archivo">
+            {agreement.contract_file_url ? (
+              <a
+                href={agreement.contract_file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--admin-accent)] hover:underline"
+              >
+                {agreement.contract_file_name || "Ver contrato"}
+              </a>
+            ) : (
+              <span className="font-normal text-zinc-400">Sin archivo</span>
+            )}
+          </OverviewField>
+        </div>
 
-      <DetailSection title="Cadencia" description="Ritmo de escalas acordado.">
-        <DetailField label="Cadencia (días)">
-          {agreement.interval_days != null ? agreement.interval_days : "—"}
-        </DetailField>
-        <DetailField label="Fecha ancla">
-          {agreement.cadence_anchor ? formatDate(agreement.cadence_anchor) : "—"}
-        </DetailField>
-      </DetailSection>
-
-      <DetailSection
-        title="Política y vigencia"
-        description="Ventana LTA del acuerdo (bloques: 2 actual + 3 open + zona LTA)."
-      >
-        <DetailField label="Política de ventana">{policyLabel}</DetailField>
-        <DetailField label="Profundidad LTA (bloques)">
-          {agreement.lta_depth_blocks}
-        </DetailField>
-        <DetailField label="Vigente desde">{formatDate(agreement.valid_from)}</DetailField>
-        <DetailField label="Vigente hasta">{formatDate(agreement.valid_until)}</DetailField>
-        <DetailField label="Reserva de slot en zona LTA" span={2}>
-          {agreement.reserve_foreign_slots ? "Sí" : "No"}
-        </DetailField>
-      </DetailSection>
+        {agreement.notes ? (
+          <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-800">
+            <OverviewField label="Notas">
+              <span className="whitespace-pre-wrap font-normal text-zinc-700 dark:text-zinc-200">
+                {agreement.notes}
+              </span>
+            </OverviewField>
+          </div>
+        ) : null}
+      </section>
 
       <DetailSection
         title="Mapa de bloques"
@@ -185,60 +213,15 @@ export default function LtaRowDetail({
         />
       </DetailSection>
 
-      {canWrite ? (
-        <DetailSection
-          title="Reservas del acuerdo"
-          description="Genera escalas LTA en la zona del contrato (primer barco × cada posición)."
-          columns={1}
-        >
-          <div className="flex flex-wrap gap-3">
-            {!hasGenerated ? (
-              <DefaultButton
-                type="button"
-                disabled={generateBusy || !onGenerate}
-                onClick={onGenerate}
-              >
-                {generateBusy ? "En cola…" : "Generar"}
-              </DefaultButton>
-            ) : (
-              <DefaultButton
-                type="button"
-                disabled={generateBusy || !onRegenerate}
-                onClick={onRegenerate}
-              >
-                {generateBusy ? "En cola…" : "Regenerar"}
-              </DefaultButton>
-            )}
-          </div>
-        </DetailSection>
-      ) : null}
-
-      <DetailSection title="Contrato" description="Compromiso comercial y adjunto." columns={1}>
-        <DetailField label="Mínimo de PAX">
-          {agreement.min_packs != null ? agreement.min_packs : "—"}
-        </DetailField>
-        <DetailField label="Archivo">
-          {agreement.contract_file_url ? (
-            <a
-              href={agreement.contract_file_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-[var(--admin-accent)] hover:underline"
-            >
-              {agreement.contract_file_name || "Ver contrato"}
-            </a>
-          ) : (
-            <span className="font-normal text-zinc-400">Sin archivo</span>
-          )}
-        </DetailField>
-        {agreement.notes ? (
-          <DetailField label="Notas">
-            <span className="whitespace-pre-wrap font-normal">{agreement.notes}</span>
-          </DetailField>
-        ) : null}
-      </DetailSection>
-
-      <LtaLinkedBookings agreementId={agreement.id} active={active} />
+      <LtaLinkedBookings
+        agreement={agreement}
+        active={active}
+        canWrite={canWrite}
+        generateBusy={generateBusy}
+        onGenerate={onGenerate}
+        onRegenerate={onRegenerate}
+        onOpenExceptions={onOpenExceptions}
+      />
 
       <LtaDetailAuditSection agreementId={agreement.id} active={active} />
     </div>

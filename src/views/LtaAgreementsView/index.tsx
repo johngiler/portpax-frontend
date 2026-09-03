@@ -30,7 +30,7 @@ import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { formatCompactCount } from "@/lib/formatCompactCount";
 import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
-import { revalidateLtaAgreements } from "@/lib/swr/mutateHelpers";
+import { revalidateLtaAgreements, revalidateLtaLinkedBookings } from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
   deleteLongTermAgreement,
@@ -40,6 +40,7 @@ import {
 } from "@/services/bookings/ltaService";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
 import LtaAgreementsViewSkeleton from "./LtaAgreementsViewSkeleton";
+import LtaDateExceptionsModal from "./LtaDateExceptionsModal";
 import LtaHistoryModal from "./LtaHistoryModal";
 import LtaRowDetail from "./LtaRowDetail";
 import type { LongTermAgreement } from "@/types/lta";
@@ -66,6 +67,8 @@ export default function LtaAgreementsView() {
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [generateBusyId, setGenerateBusyId] = useState<number | null>(null);
+  const [exceptionsAgreement, setExceptionsAgreement] =
+    useState<LongTermAgreement | null>(null);
 
   const { ports } = useActivePortsCatalog(canBrowse);
   const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
@@ -167,6 +170,15 @@ export default function LtaAgreementsView() {
       }
       await revalidateLtaAgreements();
       await mutate();
+      // Celery finishes after the HTTP 202 — refresh linked list a bit later.
+      window.setTimeout(() => {
+        void revalidateLtaLinkedBookings(row.id);
+        void revalidateLtaAgreements();
+      }, 2500);
+      window.setTimeout(() => {
+        void revalidateLtaLinkedBookings(row.id);
+        void revalidateLtaAgreements();
+      }, 8000);
     } catch (err) {
       setViewError(
         getApiErrorMessage(
@@ -306,6 +318,11 @@ export default function LtaAgreementsView() {
                               ? () => void handleGenerate(row, true)
                               : undefined
                           }
+                          onOpenExceptions={
+                            canWrite
+                              ? () => setExceptionsAgreement(row)
+                              : undefined
+                          }
                         />
                       }
                     >
@@ -400,6 +417,22 @@ export default function LtaAgreementsView() {
           saving={saving}
           onClose={() => !saving && setModalOpen(false)}
           onSubmit={handleSave}
+        />
+      ) : null}
+
+      {canWrite ? (
+        <LtaDateExceptionsModal
+          open={exceptionsAgreement != null}
+          agreement={exceptionsAgreement}
+          onClose={() => setExceptionsAgreement(null)}
+          onSaved={async () => {
+            setViewSuccess(
+              "Excepciones guardadas. La re-sincronización solo vincula reservas ya existentes; para crear las de fechas extra/omitidas usa Regenerar.",
+            );
+            setExceptionsAgreement(null);
+            await revalidateLtaAgreements();
+            await mutate();
+          }}
         />
       ) : null}
 

@@ -10,7 +10,7 @@ import {
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { AuditHistoryRow } from "@/types/audit";
 
-export const DETAIL_AUDIT_PAGE_SIZE = 12;
+export const DETAIL_AUDIT_PAGE_SIZE = 10;
 
 type EntityAuditHistorySectionProps = {
   rows: AuditHistoryRow[];

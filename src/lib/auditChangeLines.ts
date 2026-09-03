@@ -78,6 +78,7 @@ const FIELD_LABELS: Record<string, string> = {
   advance_months_max: "Anticipación máx.",
   interval_days: "Cadencia (días)",
   cadence_anchor: "Fecha ancla cadencia",
+  date_exceptions: "Excepciones de fecha",
   valid_from: "Vigencia desde",
   valid_until: "Vigencia hasta",
   has_contract: "Contrato",

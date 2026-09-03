@@ -66,7 +66,15 @@ export async function revalidateLtaAgreements(): Promise<void> {
 export async function revalidateLtaLinkedBookings(
   agreementId: number,
 ): Promise<void> {
-  await mutate(swrKeys.ltaLinkedBookings(agreementId));
+  await mutate(
+    (key) =>
+      Array.isArray(key) &&
+      key[0] === "lta-agreements" &&
+      key[1] === "bookings" &&
+      key[2] === agreementId,
+    undefined,
+    { revalidate: true },
+  );
 }
 
 export async function revalidateDashboard(): Promise<void> {

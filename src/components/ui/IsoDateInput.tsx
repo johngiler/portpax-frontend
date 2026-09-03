@@ -93,7 +93,18 @@ export default function IsoDateInput({
         disabled={disabled}
         required={required}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setText(raw);
+          const trimmed = raw.trim();
+          if (!trimmed) {
+            onChange("");
+            return;
+          }
+          // Enable parents as soon as dd/mm/yyyy is complete (while still focused).
+          const iso = parseDmyToIso(trimmed);
+          if (iso) onChange(iso);
+        }}
         onBlur={() => {
           commitText(text);
           onBlur?.();

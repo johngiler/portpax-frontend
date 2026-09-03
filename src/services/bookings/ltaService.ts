@@ -4,6 +4,7 @@ import type {
   LongTermAgreementDetail,
   LongTermAgreementPayload,
   LongTermAgreementSaveOptions,
+  LtaDatePreview,
 } from "@/types/lta";
 
 const BASE = "api/bookings/long-term-agreements/";
@@ -166,6 +167,12 @@ export type GenerateLtaBookingsResult = {
   task_id?: string;
   agreement_code?: string;
 };
+
+export async function fetchLtaDatePreview(
+  id: number,
+): Promise<LtaDatePreview> {
+  return apiFetch<LtaDatePreview>(`${BASE}${id}/date-preview/`);
+}
 
 export async function generateLongTermAgreementBookings(
   id: number,

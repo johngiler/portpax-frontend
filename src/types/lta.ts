@@ -2,6 +2,31 @@ import type { EntityAuditEntry } from "@/types/audit";
 
 export type LtaBookingPolicy = "standard" | "rci_staggered";
 
+export type LtaDateExceptionKind = "include" | "skip" | "reschedule";
+
+export type LtaDateException =
+  | { kind: "include"; date: string }
+  | { kind: "skip"; date: string }
+  | { kind: "reschedule"; from: string; to: string };
+
+export type LtaDatePreviewRow = {
+  iso: string;
+  from_iso: string | null;
+  source: "rule" | "include" | "skip" | "reschedule";
+  active: boolean;
+  in_zone: boolean;
+};
+
+export type LtaDatePreview = {
+  rule_dates: string[];
+  effective_dates: string[];
+  rule_count: number;
+  effective_count: number;
+  exception_count: number;
+  rows: LtaDatePreviewRow[];
+  date_exceptions: LtaDateException[];
+};
+
 export type LongTermAgreement = {
   id: number;
   code: string;
@@ -20,6 +45,7 @@ export type LongTermAgreement = {
   weekdays: number[];
   interval_days: number | null;
   cadence_anchor: string | null;
+  date_exceptions: LtaDateException[];
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
@@ -55,6 +81,7 @@ export type LongTermAgreementPayload = {
   weekdays: number[];
   interval_days: number | null;
   cadence_anchor: string | null;
+  date_exceptions?: LtaDateException[];
   min_packs: number | null;
   advance_months_min: number;
   advance_months_max: number;
