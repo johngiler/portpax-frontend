@@ -176,6 +176,7 @@ export default function EntityAuditHistorySection({
             loadedCount={loadedCount}
             totalCount={totalCount}
             itemLabel={itemLabel}
+            mode="button"
             className="mt-4 sm:mt-5"
           />
         </>

@@ -17,6 +17,11 @@ type InfiniteScrollFooterProps = {
   /** Nested scroll panel — loads only when scrolling inside this element. */
   scrollRootRef?: RefObject<Element | null>;
   rootMargin?: string;
+  /**
+   * `auto` — IntersectionObserver (default).
+   * `button` — explicit 「Cargar más」 (no prefetch when the panel opens).
+   */
+  mode?: "auto" | "button";
 };
 
 /**
@@ -34,12 +39,14 @@ export default function InfiniteScrollFooter({
   className = "",
   scrollRootRef,
   rootMargin,
+  mode = "auto",
 }: InfiniteScrollFooterProps) {
+  const useAuto = mode === "auto";
   const sentinelRef = useInfiniteScroll({
     hasMore,
     loading,
     onLoadMore,
-    disabled,
+    disabled: disabled || !useAuto,
     scrollRootRef,
     rootMargin,
   });
@@ -53,7 +60,7 @@ export default function InfiniteScrollFooter({
         className,
       ].join(" ")}
     >
-      {hasMore ? (
+      {hasMore && useAuto ? (
         <div
           ref={sentinelRef}
           className="flex min-h-12 w-full max-w-sm flex-col items-center justify-center gap-2"
@@ -68,6 +75,26 @@ export default function InfiniteScrollFooter({
             <span className="h-1 w-8 rounded-full bg-zinc-200/80 dark:bg-zinc-700/60" />
           )}
         </div>
+      ) : null}
+
+      {hasMore && !useAuto ? (
+        <button
+          type="button"
+          disabled={disabled || loading}
+          onClick={() => {
+            void onLoadMore();
+          }}
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Cargando…
+            </>
+          ) : (
+            "Cargar más"
+          )}
+        </button>
       ) : null}
 
       <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
