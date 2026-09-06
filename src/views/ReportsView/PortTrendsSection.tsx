@@ -115,7 +115,7 @@ export default function PortTrendsSection({
         title={data.title}
         description={
           data.without_lta
-            ? `${data.note} Excluye LTA / CL / LTD.`
+            ? `${data.note} Excluye LTA.`
             : data.note
         }
         bodyClassName={reportViewSectionBody}

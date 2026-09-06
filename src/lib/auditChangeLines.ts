@@ -271,16 +271,42 @@ function formatNamedSide(rec: Record<string, unknown>, side: "from" | "to"): str
   if (typeof code === "string" && code.trim()) return code;
   const raw = rec[side] ?? rec[side === "from" ? "old" : "new"];
   if (raw == null || raw === "") return "—";
+  // Never paint bare PKs / numeric FKs in history UI.
+  if (typeof raw === "number" || (typeof raw === "string" && /^\d+$/.test(raw))) {
+    return "—";
+  }
   return String(raw);
+}
+
+function shortPositionCode(code: string): string {
+  const text = code.trim();
+  if (!text) return "";
+  // Legacy audits may store full catalog code "{port}-{short}".
+  if (text.includes("-")) {
+    const short = text.split("-").slice(1).join("-");
+    return short || text;
+  }
+  return text;
 }
 
 function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): string {
   const codeKey = side === "from" ? "from_code" : "to_code";
+  const nameKey = side === "from" ? "from_name" : "to_name";
   const code = rec[codeKey];
-  if (typeof code === "string" && code.trim()) return code;
+  if (typeof code === "string" && code.trim()) {
+    return shortPositionCode(code) || "—";
+  }
+  const name = rec[nameKey];
+  if (typeof name === "string" && name.trim()) {
+    return shortPositionCode(name) || name.trim();
+  }
   const raw = rec[side] ?? rec[side === "from" ? "old" : "new"];
   if (raw == null || raw === "") return "—";
-  return String(raw);
+  // Never paint bare PKs / numeric FKs in history UI.
+  if (typeof raw === "number" || (typeof raw === "string" && /^\d+$/.test(raw))) {
+    return "—";
+  }
+  return shortPositionCode(String(raw)) || String(raw);
 }
 
 function formatDateExceptionItem(item: unknown): string | null {

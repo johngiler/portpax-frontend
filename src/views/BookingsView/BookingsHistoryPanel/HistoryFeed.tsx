@@ -25,13 +25,22 @@ import type { BookingActivityItem } from "@/services/bookings/bookingActivitySer
 
 type HistoryFeedProps = {
   items: BookingActivityItem[];
-  onOpenBatch: (batchId: number) => void;
+  onOpenBatch: (batchId: number, batchType?: string | null) => void;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
 };
 
 function headline(item: BookingActivityItem): string {
   if (item.kind === "bulk") {
+    if (item.batch_type === "mass_update") {
+      return item.label?.trim() || "Actualización masiva";
+    }
+    if (item.batch_type === "lta_generate") {
+      return item.label?.trim() || "Creación LTA";
+    }
+    if (item.batch_type === "lta_agreement") {
+      return item.label?.trim() || "Actualización LTA";
+    }
     return item.label?.trim() || "Importación masiva";
   }
   switch (item.action) {
@@ -259,23 +268,85 @@ export default function HistoryFeed({
               ) : null}
 
               {isBulk ? (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <CountChip
-                    label="Creadas"
-                    value={item.created_count ?? 0}
-                    tone="ok"
-                  />
-                  <CountChip
-                    label="Fallidas"
-                    value={item.failed_count ?? 0}
-                    tone="err"
-                  />
-                  <CountChip
-                    label="No creadas"
-                    value={item.not_created_count ?? 0}
-                    tone="warn"
-                  />
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {item.batch_type === "mass_update" ? (
+                      <>
+                        <CountChip
+                          label="Actualizadas"
+                          value={item.updated_count ?? 0}
+                          tone="ok"
+                        />
+                        <CountChip
+                          label="Fallidas"
+                          value={item.failed_count ?? 0}
+                          tone="err"
+                        />
+                        <CountChip
+                          label="Campos"
+                          value={item.changed_fields?.length ?? 0}
+                          tone="warn"
+                        />
+                      </>
+                    ) : item.batch_type === "lta_agreement" ? (
+                      <>
+                        <CountChip
+                          label="Vinculadas"
+                          value={item.linked_count ?? 0}
+                          tone="ok"
+                        />
+                        <CountChip
+                          label="Desvinculadas"
+                          value={item.unlinked_count ?? 0}
+                          tone="warn"
+                        />
+                        <CountChip
+                          label="Fallidas"
+                          value={item.failed_count ?? 0}
+                          tone="err"
+                        />
+                      </>
+                    ) : item.batch_type === "lta_generate" ? (
+                      <>
+                        <CountChip
+                          label="Creadas"
+                          value={item.created_count ?? 0}
+                          tone="ok"
+                        />
+                        <CountChip
+                          label="Fallidas"
+                          value={item.failed_count ?? 0}
+                          tone="err"
+                        />
+                        <div className="rounded-lg border border-transparent px-2.5 py-1.5" />
+                      </>
+                    ) : (
+                      <>
+                        <CountChip
+                          label="Creadas"
+                          value={item.created_count ?? 0}
+                          tone="ok"
+                        />
+                        <CountChip
+                          label="Fallidas"
+                          value={item.failed_count ?? 0}
+                          tone="err"
+                        />
+                        <CountChip
+                          label="No creadas"
+                          value={item.not_created_count ?? 0}
+                          tone="warn"
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
+              ) : null}
+
+              {item.tag_name ? (
+                <p className="mt-2 inline-flex max-w-full truncate rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+                  Tag · {item.tag_name}
+                </p>
               ) : null}
 
               {fieldLines.length > 0 ? (
@@ -318,7 +389,7 @@ export default function HistoryFeed({
             <li key={key}>
               <button
                 type="button"
-                onClick={() => onOpenBatch(item.batch_id!)}
+                onClick={() => onOpenBatch(item.batch_id!, item.batch_type)}
                 className={`${cardClass} w-full text-left`}
               >
                 {body}

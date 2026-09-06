@@ -8,12 +8,15 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import type { BookingActivityFilterValue } from "@/lib/bookingActivityTaxonomy";
 import {
   fetchImportBatchDetail,
+  fetchRunBatchDetail,
   type ImportBatchDetail,
   type ImportBatchRetryRow,
+  type RunBatchDetail,
 } from "@/services/bookings/bookingActivityService";
 import BookingsHistorySkeleton from "./BookingsHistorySkeleton";
 import HistoryFeed from "./HistoryFeed";
 import ImportBatchDetailModal from "./ImportBatchDetailModal";
+import RunBatchDetailModal from "./RunBatchDetailModal";
 
 const PAGE_SIZE = 20;
 
@@ -68,27 +71,62 @@ export default function BookingsHistoryPanel({
     enabled,
   );
 
-  const [batchOpen, setBatchOpen] = useState(false);
-  const [batchDetail, setBatchDetail] = useState<ImportBatchDetail | null>(null);
-  const [batchLoading, setBatchLoading] = useState(false);
-  const [batchError, setBatchError] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importDetail, setImportDetail] = useState<ImportBatchDetail | null>(
+    null,
+  );
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
-  const openBatch = useCallback(async (batchId: number) => {
-    setBatchOpen(true);
-    setBatchDetail(null);
-    setBatchError(null);
-    setBatchLoading(true);
+  const [runOpen, setRunOpen] = useState(false);
+  const [runDetail, setRunDetail] = useState<RunBatchDetail | null>(null);
+  const [runLoading, setRunLoading] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+
+  const openImportBatch = useCallback(async (batchId: number) => {
+    setImportOpen(true);
+    setImportDetail(null);
+    setImportError(null);
+    setImportLoading(true);
     try {
       const detail = await fetchImportBatchDetail(batchId);
-      setBatchDetail(detail);
+      setImportDetail(detail);
     } catch (err) {
-      setBatchError(
+      setImportError(
         getApiErrorMessage(err, "No se pudo cargar el detalle de la importación."),
       );
     } finally {
-      setBatchLoading(false);
+      setImportLoading(false);
     }
   }, []);
+
+  const openRunBatch = useCallback(async (batchId: number) => {
+    setRunOpen(true);
+    setRunDetail(null);
+    setRunError(null);
+    setRunLoading(true);
+    try {
+      const detail = await fetchRunBatchDetail(batchId);
+      setRunDetail(detail);
+    } catch (err) {
+      setRunError(
+        getApiErrorMessage(err, "No se pudo cargar el detalle del lote."),
+      );
+    } finally {
+      setRunLoading(false);
+    }
+  }, []);
+
+  const openBatch = useCallback(
+    async (batchId: number, batchType?: string | null) => {
+      if (!batchType || batchType === "import") {
+        await openImportBatch(batchId);
+        return;
+      }
+      await openRunBatch(batchId);
+    },
+    [openImportBatch, openRunBatch],
+  );
 
   useEffect(() => {
     if (initialBatchId == null) return;
@@ -96,47 +134,68 @@ export default function BookingsHistoryPanel({
     onInitialBatchConsumed?.();
     void (async () => {
       await refresh();
-      await openBatch(batchId);
+      await openImportBatch(batchId);
     })();
-  }, [initialBatchId, refresh, openBatch, onInitialBatchConsumed]);
+  }, [initialBatchId, refresh, openImportBatch, onInitialBatchConsumed]);
 
   const handleReprocess = useCallback(
     (rows: ImportBatchRetryRow[]) => {
       if (!onReprocessRows) return;
-      const source = batchDetail?.source === "paste" ? "paste" : "file";
-      const label = batchDetail?.label || "Reproceso";
-      setBatchOpen(false);
-      setBatchDetail(null);
-      setBatchError(null);
+      const source = importDetail?.source === "paste" ? "paste" : "file";
+      const label = importDetail?.label || "Reproceso";
+      setImportOpen(false);
+      setImportDetail(null);
+      setImportError(null);
       onReprocessRows({ rows, label, source });
     },
-    [batchDetail, onReprocessRows],
+    [importDetail, onReprocessRows],
   );
 
   const errorMessage = error
     ? getApiErrorMessage(error, "No se pudo cargar el historial.")
     : null;
 
-  const batchModal = (
-    <ImportBatchDetailModal
-      open={batchOpen}
-      detail={batchDetail}
-      loading={batchLoading}
-      error={batchError}
-      onClose={() => {
-        setBatchOpen(false);
-        setBatchDetail(null);
-        setBatchError(null);
-      }}
-      onReprocess={onReprocessRows ? handleReprocess : undefined}
-    />
+  const batchModals = (
+    <>
+      <ImportBatchDetailModal
+        open={importOpen}
+        detail={importDetail}
+        loading={importLoading}
+        error={importError}
+        onClose={() => {
+          setImportOpen(false);
+          setImportDetail(null);
+          setImportError(null);
+        }}
+        onReprocess={onReprocessRows ? handleReprocess : undefined}
+        onDetailChange={(next) => {
+          setImportDetail(next);
+          void refresh();
+        }}
+      />
+      <RunBatchDetailModal
+        open={runOpen}
+        detail={runDetail}
+        loading={runLoading}
+        error={runError}
+        onClose={() => {
+          setRunOpen(false);
+          setRunDetail(null);
+          setRunError(null);
+        }}
+        onDetailChange={(next) => {
+          setRunDetail(next);
+          void refresh();
+        }}
+      />
+    </>
   );
 
   if (isLoading) {
     return (
       <>
         <BookingsHistorySkeleton />
-        {batchModal}
+        {batchModals}
       </>
     );
   }
@@ -150,7 +209,7 @@ export default function BookingsHistoryPanel({
 
         <HistoryFeed
           items={items}
-          onOpenBatch={(id) => void openBatch(id)}
+          onOpenBatch={(id, batchType) => void openBatch(id, batchType)}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={onClearFilters}
         />
@@ -167,7 +226,7 @@ export default function BookingsHistoryPanel({
         ) : null}
       </div>
 
-      {batchModal}
+      {batchModals}
     </>
   );
 }

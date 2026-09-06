@@ -110,6 +110,7 @@ export async function createBulkBookingImport(
     source?: "file" | "paste";
     label?: string;
     deferredRows?: BulkImportPreviewRow[];
+    tagName?: string;
   },
 ): Promise<BulkImportCreateResponse> {
   return apiFetch<BulkImportCreateResponse>(`${BASE}bulk-import/create/`, {
@@ -119,6 +120,7 @@ export async function createBulkBookingImport(
       deferred_rows: options?.deferredRows ?? [],
       source: options?.source ?? "file",
       label: options?.label ?? "",
+      tag_name: options?.tagName?.trim() || undefined,
     }),
   });
 }

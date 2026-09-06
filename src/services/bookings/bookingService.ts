@@ -612,6 +612,12 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.override_reason !== undefined) {
     body.override_reason = payload.override_reason;
   }
+  if (payload.tag_name !== undefined) {
+    body.tag_name = payload.tag_name;
+  }
+  if (payload.clear_tag !== undefined) {
+    body.clear_tag = payload.clear_tag;
+  }
 
   return apiFetch<Booking>(`${BASE}${id}/`, {
     method: "PATCH",

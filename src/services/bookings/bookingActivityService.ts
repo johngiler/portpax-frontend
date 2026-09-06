@@ -33,9 +33,18 @@ export type BookingActivityItem = {
   booking_id: number | null;
   booking_code: string | null;
   batch_id: number | null;
+  /** import | mass_update | lta_generate | lta_agreement */
+  batch_type?: string | null;
   created_count: number | null;
+  updated_count?: number | null;
   failed_count: number | null;
   not_created_count?: number | null;
+  changed_fields?: string[] | null;
+  changed_field_labels?: string[] | null;
+  linked_count?: number | null;
+  unlinked_count?: number | null;
+  tag_id?: number | null;
+  tag_name?: string | null;
   label?: string;
   changes?: Record<string, unknown> | null;
   entity?: Record<string, unknown> | null;
@@ -51,6 +60,13 @@ export type BookingActivityResponse = {
 export type ImportBatchCreatedItem = {
   id: number;
   booking_code: string;
+  call_date?: string | null;
+  port_name?: string | null;
+  vessel_name?: string | null;
+  shipping_line_name?: string | null;
+  position_code?: string | null;
+  status?: string | null;
+  status_label?: string | null;
 };
 
 export type ImportBatchFailure = {
@@ -111,6 +127,51 @@ export type ImportBatchDetail = {
   failures: ImportBatchFailure[];
   retry_rows: ImportBatchRetryRow[];
   retry_count: number;
+  tag_id?: number | null;
+  tag_name?: string | null;
+  supports_tag?: boolean;
+};
+
+export type RunBatchFieldChange = {
+  field: string;
+  label: string;
+  from: string;
+  to: string;
+  count?: number;
+};
+
+export type RunBatchBookingItem = {
+  id: number;
+  booking_code: string;
+  call_date?: string | null;
+  port_name?: string | null;
+  vessel_name?: string | null;
+  shipping_line_name?: string | null;
+  position_code?: string | null;
+  status?: string | null;
+  status_label?: string | null;
+  field_changes?: RunBatchFieldChange[];
+};
+
+export type RunBatchDetail = {
+  id: number;
+  kind: "mass_update" | "lta_generate" | "lta_agreement" | string;
+  label: string;
+  created_at: string;
+  user_display: string | null;
+  success_count: number;
+  failed_count: number;
+  changed_fields: string[];
+  changed_field_labels: string[];
+  field_changes?: RunBatchFieldChange[];
+  linked_count?: number;
+  unlinked_count?: number;
+  bookings: RunBatchBookingItem[];
+  failures: ImportBatchFailure[];
+  meta: Record<string, unknown>;
+  tag_id?: number | null;
+  tag_name?: string | null;
+  supports_tag?: boolean;
 };
 
 const BASE = "api/bookings/";
@@ -166,4 +227,10 @@ export async function fetchImportBatchDetail(
   batchId: number,
 ): Promise<ImportBatchDetail> {
   return apiFetch<ImportBatchDetail>(`${BASE}import-batches/${batchId}/`);
+}
+
+export async function fetchRunBatchDetail(
+  batchId: number,
+): Promise<RunBatchDetail> {
+  return apiFetch<RunBatchDetail>(`${BASE}run-batches/${batchId}/`);
 }

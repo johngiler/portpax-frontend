@@ -14,7 +14,7 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Matriz año × mes de calls y PAX por puerto (vista consolidada multi-puerto).",
     notes:
-      "Exporta Excel con estilo ITM. Opción sin LTA / CL / LTD. Base PAX: planificado o cap. máx. (filtros transversales entre reportes).",
+      "Exporta Excel con estilo ITM. Opción sin LTA (excluye solo escalas fantasma LTA; CL sí cuenta). Base PAX: planificado o cap. máx. (filtros transversales entre reportes).",
   },
   {
     id: "port_carrier",

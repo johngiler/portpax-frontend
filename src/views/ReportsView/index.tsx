@@ -371,7 +371,7 @@ export default function ReportsView() {
             onChange={(e) => setWithoutLta(e.target.checked)}
             className="rounded border-zinc-300"
           />
-          Sin LTA / CL / LTD
+          Sin LTA
         </label>
         <FilterActions
           onApply={applyFilters}

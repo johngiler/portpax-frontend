@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import BookingTagField from "@/components/ui/BookingTagField";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
@@ -353,6 +354,7 @@ export default function BulkBookingsEditModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [tagName, setTagName] = useState("");
 
   useEffect(() => {
     if (!open || bookingIds.length === 0) return;
@@ -360,6 +362,7 @@ export default function BulkBookingsEditModal({
     setLoading(true);
     setError(null);
     setRowErrors({});
+    setTagName("");
     void previewBulkEdit(bookingIds)
       .then((res) => {
         if (cancelled) return;
@@ -417,7 +420,7 @@ export default function BulkBookingsEditModal({
     }
     setSaving(true);
     try {
-      const result = await applyBulkEdit(selected);
+      const result = await applyBulkEdit(selected, { tagName });
       onSaved({
         updatedCount: result.updated_count,
         failedCount: result.failed_count,
@@ -489,6 +492,17 @@ export default function BulkBookingsEditModal({
         <p className="text-xs text-zinc-500">
           {`${rows.length} reservas · ${selectedCount} seleccionadas. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
         </p>
+        <div className="flex justify-end">
+          <div className="w-full min-w-[12rem] max-w-xs sm:w-72">
+            <BookingTagField
+              name="bulk_edit_tag"
+              value={tagName}
+              onChange={setTagName}
+              disabled={saving || loading}
+              compact
+            />
+          </div>
+        </div>
         <ModalFormError message={error} />
         <label className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600">
           <input

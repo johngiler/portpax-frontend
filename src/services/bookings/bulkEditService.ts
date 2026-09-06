@@ -31,6 +31,10 @@ export type BulkEditApplyResponse = {
   failed_count: number;
   updated: { booking_id: number; booking_code: string }[];
   failed: { booking_id: number; detail: string }[];
+  batch_id?: number;
+  tag_id?: number | null;
+  tag_name?: string | null;
+  changed_fields?: string[];
 };
 
 export async function previewBulkEdit(
@@ -56,6 +60,7 @@ export async function applyBulkEdit(
   options?: {
     port_operator_override?: boolean;
     override_reason?: string;
+    tagName?: string;
   },
 ): Promise<BulkEditApplyResponse> {
   return apiFetch(`${BASE}bulk-edit/apply/`, {
@@ -63,6 +68,7 @@ export async function applyBulkEdit(
     body: JSON.stringify({
       port_operator_override: options?.port_operator_override || undefined,
       override_reason: options?.override_reason?.trim() || undefined,
+      tag_name: options?.tagName?.trim() || undefined,
       rows: rows.map((r) => ({
         booking_id: r.booking_id,
         port_id: r.port_id,

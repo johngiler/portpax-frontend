@@ -53,6 +53,8 @@ export type BookingListItem = {
   confirmation_pdf_url: string | null;
   conflict_chips?: BookingConflictChip[];
   conflict_highlights?: BookingConflictHighlights;
+  tag_id?: number | null;
+  tag_name?: string | null;
 };
 
 export type Booking = BookingListItem & {
@@ -83,6 +85,8 @@ export type Booking = BookingListItem & {
   arrival_manifest_url: string | null;
   long_term_agreement: number | null;
   long_term_agreement_code: string | null;
+  tag_id?: number | null;
+  tag_name?: string | null;
   audit_entries: BookingAuditEntry[];
   created_at: string;
   updated_at: string;
@@ -205,6 +209,8 @@ export type BookingUpdatePayload = {
   port_operator_override?: boolean;
   acknowledge_combined_red?: boolean;
   override_reason?: string;
+  tag_name?: string | null;
+  clear_tag?: boolean;
 };
 
 export const CANCELLATION_REASON_OPTIONS: {

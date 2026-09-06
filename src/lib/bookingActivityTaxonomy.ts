@@ -86,12 +86,17 @@ function bookingActivityOriginLabel(
 function isBerthingBatch(item: BookingActivityItem): boolean {
   return (
     item.kind === "bulk" &&
+    (item.batch_type === "import" || !item.batch_type) &&
     (item.label?.trim() ?? "").startsWith("BERTHING PAPERS")
   );
 }
 
 function itemOperation(item: BookingActivityItem): BookingActivityOperation {
-  if (item.action === "created" || item.action === "bulk_create") {
+  if (
+    item.action === "created" ||
+    item.action === "bulk_create" ||
+    item.action === "bulk_lta_generate"
+  ) {
     return "create";
   }
   if (item.action === "deleted") {
@@ -107,6 +112,9 @@ function itemOrigin(
     return "berthing_import";
   }
   if (item.kind === "bulk") {
+    if (item.batch_type === "mass_update") return "mass_update";
+    if (item.batch_type === "lta_generate") return "lta_generate";
+    if (item.batch_type === "lta_agreement") return "lta_agreement";
     return "mass_import";
   }
 

@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ClipboardCopy, FileSpreadsheet } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import BookingTagField from "@/components/ui/BookingTagField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
+import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
   BOOKING_DETAIL_LINK_PROPS,
@@ -19,6 +21,7 @@ import type {
   ImportBatchDetail,
   ImportBatchRetryRow,
 } from "@/services/bookings/bookingActivityService";
+import { patchImportBatchTag } from "@/services/bookings/bookingTagService";
 import { copyImportRowsTsv } from "../Import/retryRows";
 
 type ImportBatchDetailModalProps = {
@@ -28,6 +31,7 @@ type ImportBatchDetailModalProps = {
   error?: string | null;
   onClose: () => void;
   onReprocess?: (rows: ImportBatchRetryRow[]) => void;
+  onDetailChange?: (detail: ImportBatchDetail) => void;
 };
 
 export default function ImportBatchDetailModal({
@@ -37,6 +41,7 @@ export default function ImportBatchDetailModal({
   error = null,
   onClose,
   onReprocess,
+  onDetailChange,
 }: ImportBatchDetailModalProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,6 +49,15 @@ export default function ImportBatchDetailModal({
   const [localError, setLocalError] = useState<string | null>(null);
   const [actionHint, setActionHint] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [tagDraft, setTagDraft] = useState("");
+  const [savingTag, setSavingTag] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setTagDraft(detail?.tag_name ?? "");
+    setLocalError(null);
+    setActionHint(null);
+  }, [open, detail?.id, detail?.tag_name]);
 
   const title = detail
     ? `Importación · ${detail.label}`
@@ -78,12 +92,49 @@ export default function ImportBatchDetailModal({
     }
   }
 
+  async function saveTag() {
+    if (!detail) return;
+    setSavingTag(true);
+    setLocalError(null);
+    try {
+      const next = (await patchImportBatchTag(detail.id, {
+        tag_name: tagDraft,
+        clear: !tagDraft.trim(),
+      })) as ImportBatchDetail;
+      onDetailChange?.(next);
+      setTagDraft(next.tag_name ?? "");
+      setActionHint(next.tag_name ? "Tag actualizado." : "Tag quitado.");
+    } catch (err) {
+      setLocalError(getApiErrorMessage(err, "No se pudo guardar el tag."));
+    } finally {
+      setSavingTag(false);
+    }
+  }
+
+  async function clearTag() {
+    if (!detail) return;
+    setSavingTag(true);
+    setLocalError(null);
+    try {
+      const next = (await patchImportBatchTag(detail.id, {
+        clear: true,
+      })) as ImportBatchDetail;
+      onDetailChange?.(next);
+      setTagDraft("");
+      setActionHint("Tag quitado.");
+    } catch (err) {
+      setLocalError(getApiErrorMessage(err, "No se pudo quitar el tag."));
+    } finally {
+      setSavingTag(false);
+    }
+  }
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={title}
-      panelClassName="max-w-2xl"
+      panelClassName="max-w-6xl w-[min(96vw,72rem)]"
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
@@ -142,7 +193,7 @@ export default function ImportBatchDetailModal({
       ) : null}
       {detail ? (
         <div className="space-y-5">
-          <div className="grid gap-2 text-sm sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 text-sm">
             <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/50 px-3 py-2 dark:border-emerald-900 dark:bg-emerald-950/30">
               <p className="text-xs text-emerald-700 dark:text-emerald-300">
                 Creadas
@@ -177,6 +228,35 @@ export default function ImportBatchDetailModal({
             {new Date(detail.created_at).toLocaleString("es-MX")}
           </p>
 
+          <section className="rounded-xl border border-[var(--admin-border)] p-3">
+            <BookingTagField
+              name="import_batch_tag"
+              value={tagDraft}
+              onChange={setTagDraft}
+              disabled={savingTag}
+              compact
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <DefaultButton
+                type="button"
+                disabled={savingTag}
+                onClick={() => void saveTag()}
+              >
+                {savingTag ? "Guardando…" : "Guardar tag"}
+              </DefaultButton>
+              {detail.tag_name ? (
+                <button
+                  type="button"
+                  disabled={savingTag}
+                  onClick={() => void clearTag()}
+                  className="cursor-pointer rounded-md border border-[var(--admin-border)] px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-[var(--admin-surface-muted)] disabled:opacity-40 dark:text-zinc-200"
+                >
+                  Quitar tag
+                </button>
+              ) : null}
+            </div>
+          </section>
+
           <section>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Reservas creadas
@@ -184,20 +264,68 @@ export default function ImportBatchDetailModal({
             {detail.created.length === 0 ? (
               <p className="mt-2 text-xs text-zinc-500">Ninguna.</p>
             ) : (
-              <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-                {detail.created.map((row) => (
-                  <li key={row.id}>
-                    <Link
-                      href={bookingDetailHref(row, { returnTo })}
-                      {...BOOKING_DETAIL_LINK_PROPS}
-                      className="text-sm text-[var(--admin-accent)] hover:underline"
-                      onClick={onClose}
-                    >
-                      {row.booking_code}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-2 max-h-[min(28rem,50vh)] overflow-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
+                <table className="min-w-full border-collapse text-left text-sm">
+                  <thead className="sticky top-0 bg-zinc-50 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                    <tr>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Reserva
+                      </th>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Fecha
+                      </th>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Puerto
+                      </th>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Barco
+                      </th>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Pos.
+                      </th>
+                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {detail.created.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/60"
+                      >
+                        <td className="max-w-[14rem] px-3 py-1 align-middle lg:max-w-xs">
+                          <Link
+                            href={bookingDetailHref(row, { returnTo })}
+                            {...BOOKING_DETAIL_LINK_PROPS}
+                            className="break-all text-[11px] leading-snug text-[var(--admin-accent)] hover:underline"
+                            onClick={onClose}
+                          >
+                            {row.booking_code}
+                          </Link>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-800 dark:text-zinc-100">
+                          {row.call_date
+                            ? formatIsoDateLabel(row.call_date, "short")
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                          {row.port_name || "—"}
+                        </td>
+                        <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                          {row.vessel_name || "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-1 text-xs font-medium tabular-nums text-zinc-800 dark:text-zinc-100">
+                          {row.position_code || "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                          {row.status_label || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
 

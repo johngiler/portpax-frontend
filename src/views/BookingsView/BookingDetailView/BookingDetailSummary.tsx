@@ -1,9 +1,10 @@
 "use client";
 
-import { Anchor, CalendarDays, MapPin, Pencil, Ship } from "lucide-react";
+import { Anchor, CalendarDays, MapPin, Pencil, Ship, Tag } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import BookingTagField from "@/components/ui/BookingTagField";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
@@ -68,6 +69,7 @@ export default function BookingDetailSummary({
   const [vesselName, setVesselName] = useState(booking.vessel_name);
   const [callDate, setCallDate] = useState(booking.call_date);
   const [notes, setNotes] = useState(booking.notes ?? "");
+  const [tagName, setTagName] = useState(booking.tag_name ?? "");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -90,6 +92,7 @@ export default function BookingDetailSummary({
     setVesselName(booking.vessel_name);
     setCallDate(booking.call_date);
     setNotes(booking.notes ?? "");
+    setTagName(booking.tag_name ?? "");
   }, [booking, editing]);
 
   useEffect(() => {
@@ -166,6 +169,7 @@ export default function BookingDetailSummary({
     setVesselName(booking.vessel_name);
     setCallDate(booking.call_date);
     setNotes(booking.notes ?? "");
+    setTagName(booking.tag_name ?? "");
     setEditing(true);
   }
 
@@ -196,6 +200,8 @@ export default function BookingDetailSummary({
         vessel: vesselId,
         call_date: callDate,
         notes,
+        tag_name: tagName.trim() || null,
+        clear_tag: !tagName.trim(),
       });
       onUpdated(updated);
       setEditing(false);
@@ -308,6 +314,15 @@ export default function BookingDetailSummary({
               className="w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-3 py-2 text-xs text-zinc-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100"
             />
           </div>
+          <div className="max-w-md">
+            <BookingTagField
+              name="booking_identity_tag"
+              value={tagName}
+              onChange={setTagName}
+              disabled={saving}
+              compact
+            />
+          </div>
           <div className="flex justify-end gap-3">
             <button
               type="button"
@@ -391,6 +406,14 @@ export default function BookingDetailSummary({
               <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
                 {booking.notes}
               </p>
+            </div>
+          ) : null}
+
+          {booking.tag_name ? (
+            <div className="mt-3">
+              <SummaryItem icon={Tag} label="Tag">
+                <span className="truncate">{booking.tag_name}</span>
+              </SummaryItem>
             </div>
           ) : null}
         </>

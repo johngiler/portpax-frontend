@@ -31,7 +31,7 @@ export function buildReportsActiveFilterChips(input: {
   if (input.withoutLta) {
     chips.push({
       id: "without-lta",
-      label: "Sin LTA / CL / LTD",
+      label: "Sin LTA",
       icon: "lta",
     });
   }

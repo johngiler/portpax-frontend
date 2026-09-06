@@ -3,7 +3,7 @@
 export const REPORTS_FILTERED_EMPTY_TITLE = "Sin datos con estos filtros";
 
 export const REPORTS_FILTERED_EMPTY_DESCRIPTION =
-  "No hay escalas en el período o filtros seleccionados. Ajusta el rango de fechas, el puerto o excluye LTA / CL / LTD.";
+  "No hay escalas en el período o filtros seleccionados. Ajusta el rango de fechas, el puerto o el filtro Sin LTA.";
 
 export const REPORTS_EMPTY_TITLE = "Sin datos en el rango";
 

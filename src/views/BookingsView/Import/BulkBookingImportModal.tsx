@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import BookingTagField from "@/components/ui/BookingTagField";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
@@ -48,6 +49,7 @@ export default function BulkBookingImportModal({
   const [claimingAllLta, setClaimingAllLta] = useState(false);
   const [rematchingGroup, setRematchingGroup] = useState(false);
   const [forcedGroupId, setForcedGroupId] = useState(0);
+  const [tagName, setTagName] = useState("");
   const [forcedGroupLabel, setForcedGroupLabel] = useState("Grupo de naviera");
   const [error, setError] = useState<string | null>(null);
   const claimAllRef = useRef<HTMLInputElement>(null);
@@ -56,6 +58,7 @@ export default function BulkBookingImportModal({
     if (!open) return;
     setForcedGroupId(0);
     setForcedGroupLabel("Grupo de naviera");
+    setTagName("");
     const normalized = initialRows.map((r) => ({
       ...r,
       suggested_status:
@@ -296,6 +299,7 @@ export default function BulkBookingImportModal({
         source: importSource,
         label: fileName,
         deferredRows,
+        tagName,
       });
       onCreated({
         batchId: result.batch_id,
@@ -386,27 +390,38 @@ export default function BulkBookingImportModal({
         </p>
       </div>
 
-      <div className="mb-3 max-w-md [&_.mb-3]:mb-0">
-        <FormFieldSelect<number>
-          label="Grupo de naviera"
-          name="bulk_force_shipping_line_group"
-          value={sharedGroupId}
-          emptyValue={0}
-          optionLabel="Sin forzar"
-          compact
-          disabled={tableBusy}
-          loadOptions={loadGroupOptions}
-          options={
-            sharedGroupId
-              ? [{ value: sharedGroupId, label: sharedGroupLabel }]
-              : []
-          }
-          onChange={(id, option) => {
-            setForcedGroupId(id || 0);
-            setForcedGroupLabel(option?.label ?? "Grupo de naviera");
-            void applyGroupToAll(id || null, option?.label ?? null);
-          }}
-        />
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 max-w-md flex-1 [&_.mb-3]:mb-0">
+          <FormFieldSelect<number>
+            label="Grupo de naviera"
+            name="bulk_force_shipping_line_group"
+            value={sharedGroupId}
+            emptyValue={0}
+            optionLabel="Sin forzar"
+            compact
+            disabled={tableBusy}
+            loadOptions={loadGroupOptions}
+            options={
+              sharedGroupId
+                ? [{ value: sharedGroupId, label: sharedGroupLabel }]
+                : []
+            }
+            onChange={(id, option) => {
+              setForcedGroupId(id || 0);
+              setForcedGroupLabel(option?.label ?? "Grupo de naviera");
+              void applyGroupToAll(id || null, option?.label ?? null);
+            }}
+          />
+        </div>
+        <div className="w-full min-w-[12rem] max-w-xs sm:w-72">
+          <BookingTagField
+            name="bulk_import_tag"
+            value={tagName}
+            onChange={setTagName}
+            disabled={tableBusy}
+            compact
+          />
+        </div>
       </div>
 
       <p className="mb-3 text-[11px] text-zinc-500 dark:text-zinc-400">

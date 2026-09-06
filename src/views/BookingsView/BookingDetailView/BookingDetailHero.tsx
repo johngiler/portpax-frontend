@@ -2,13 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileSignature } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
-import {
-  conflictChipsFromApi,
-} from "@/lib/conflictDisplayFromApi";
+import { conflictChipsFromApi } from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
 import type { Booking } from "@/types/booking";
 
@@ -22,17 +20,39 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
   const backHref = returnTo ?? "/bookings";
   const backLabel = returnToLabel(returnTo);
   const chips = conflictChipsFromApi(booking);
+  const ltaCode = booking.long_term_agreement_code?.trim() || null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <div className="border-b border-zinc-200/80 bg-gradient-to-r from-[var(--admin-accent)]/12 via-[var(--admin-accent)]/5 to-transparent px-5 py-4 dark:border-zinc-800">
-        <Link
-          href={backHref}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-[var(--admin-accent)] dark:text-zinc-400"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} aria-hidden />
-          {backLabel}
-        </Link>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-[var(--admin-accent)] dark:text-zinc-400"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} aria-hidden />
+            {backLabel}
+          </Link>
+          {ltaCode ? (
+            <div className="max-w-full min-w-0 text-right sm:max-w-[min(100%,22rem)]">
+              <p className="inline-flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                <FileSignature
+                  className="h-3 w-3 shrink-0"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                Acuerdo LTA
+              </p>
+              <Link
+                href="/lta"
+                className="mt-0.5 block truncate text-[11px] font-medium text-zinc-600 underline-offset-2 hover:text-[var(--admin-accent)] hover:underline dark:text-zinc-300"
+                title={ltaCode}
+              >
+                {ltaCode}
+              </Link>
+            </div>
+          ) : null}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <BookingStatusBadge status={booking.status} className="text-xs" />
