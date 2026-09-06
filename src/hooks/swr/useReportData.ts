@@ -13,8 +13,9 @@ import {
   type PortsTotalsMatrixReport,
   type PortTrendsReport,
 } from "@/services/bookings/bookingService";
+import type { ReportTab } from "@/views/ReportsView/reportsFilterQuery";
 
-export type ReportTab = "ports_totals" | "port_carrier" | "port_trends";
+export type { ReportTab };
 
 export type ReportFilters = {
   tab: ReportTab;
@@ -48,6 +49,8 @@ type ReportPage =
 
 function reportFetchEnabled(filters: ReportFilters, ready: boolean): boolean {
   if (!ready) return false;
+  // Solicitudes uses its own SWR fetch in SolicitudesPortSection.
+  if (filters.tab === "solicitudes_port") return false;
   if (filters.tab === "ports_totals") return true;
   return filters.portFilter > 0;
 }

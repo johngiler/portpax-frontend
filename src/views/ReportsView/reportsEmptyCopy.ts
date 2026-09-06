@@ -17,3 +17,17 @@ export const REPORTS_MISSING_PORT_CARRIER_DESCRIPTION =
 
 export const REPORTS_MISSING_PORT_TRENDS_DESCRIPTION =
   "Trends requiere un puerto en los filtros.";
+
+export const REPORTS_MISSING_PORT_SOLICITUDES_DESCRIPTION =
+  "El resumen de movimientos requiere un puerto en los filtros.";
+
+export const REPORTS_MISSING_SHIPPING_LINE_TITLE = "Selecciona una naviera";
+
+export const REPORTS_MISSING_SHIPPING_LINE_SOLICITUDES_DESCRIPTION =
+  "El resumen de movimientos requiere una naviera en los filtros.";
+
+export const REPORTS_MISSING_REQUIRED_SOLICITUDES_TITLE =
+  "Selecciona puerto y naviera";
+
+export const REPORTS_MISSING_REQUIRED_SOLICITUDES_DESCRIPTION =
+  "El resumen de movimientos requiere un puerto y una naviera en los filtros.";

@@ -7,7 +7,11 @@ import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
+import {
+  FormField,
+  FormFieldMultiSelect,
+  FormFieldSelect,
+} from "@/components/ui/FormField";
 import FilterActions from "@/components/layout/FilterActions";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import {
@@ -15,6 +19,7 @@ import {
   type DataExportFormat,
 } from "@/lib/dataExportStore";
 import { exportStructuredReport } from "@/services/bookings/bookingService";
+import { suggestBookingTags } from "@/services/bookings/bookingTagService";
 import { fetchPorts } from "@/services/catalogs/portService";
 import { portDisplayName } from "@/types/catalog";
 import {
@@ -28,9 +33,12 @@ import {
 } from "./reportsFilterDefaults";
 import {
   defaultReportsFilters,
+  dateRangeFromSolicitudesYears,
   parseReportsFilters,
   REPORT_PAX_BASIS_OPTIONS,
   serializeReportsFilters,
+  solicitudesYearOptions,
+  yearsInReportRange,
   type ReportPaxBasis,
   type ReportTab,
   type ReportsWorkspaceFilters,
@@ -38,6 +46,7 @@ import {
 import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
+import SolicitudesPortSection from "./SolicitudesPortSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
 import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
@@ -49,16 +58,29 @@ import {
   useReportInfinite,
   type ReportFilters,
 } from "@/hooks/swr/useReportData";
-import { useActivePortsCatalog } from "@/hooks/swr/useCatalogs";
+import { useActivePortsCatalog, useActiveShippingLinesCatalog } from "@/hooks/swr/useCatalogs";
 
-function toApplied(filters: ReportsWorkspaceFilters): ReportFilters {
+type AppliedReportsFilters = ReportFilters & {
+  years: number[];
+  tagIds: number[];
+  shippingLineId: number;
+};
+
+function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
+  const range =
+    filters.tab === "solicitudes_port"
+      ? dateRangeFromSolicitudesYears(filters.years)
+      : { dateFrom: filters.dateFrom, dateTo: filters.dateTo };
   return {
     tab: filters.tab,
-    dateFrom: filters.dateFrom,
-    dateTo: filters.dateTo,
+    dateFrom: range.dateFrom,
+    dateTo: range.dateTo,
     portFilter: filters.port,
     withoutLta: filters.withoutLta,
     paxBasis: filters.paxBasis,
+    years: filters.years,
+    tagIds: filters.tagIds,
+    shippingLineId: filters.shippingLineId,
   };
 }
 
@@ -79,13 +101,22 @@ export default function ReportsView() {
   const [portFilter, setPortFilter] = useState(initial.port);
   const [withoutLta, setWithoutLta] = useState(initial.withoutLta);
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
-  const [appliedFilters, setAppliedFilters] = useState<ReportFilters>(() =>
-    toApplied(initial),
+  const [years, setYears] = useState<number[]>(initial.years);
+  const [tagIds, setTagIds] = useState<number[]>(initial.tagIds);
+  const [shippingLineId, setShippingLineId] = useState(initial.shippingLineId);
+  const [tagOptions, setTagOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
+  const [appliedFilters, setAppliedFilters] = useState<AppliedReportsFilters>(
+    () => toApplied(initial),
   );
   const [error, setError] = useState<string | null>(null);
   const [reportGuideOpen, setReportGuideOpen] = useState(false);
 
   const { ports, isLoading: portsLoading } = useActivePortsCatalog();
+  const { lines: shippingLines } = useActiveShippingLinesCatalog(
+    tab === "solicitudes_port",
+  );
   const ready = !portsLoading;
 
   const {
@@ -113,6 +144,20 @@ export default function ReportsView() {
     }
   }, [reportError]);
 
+  useEffect(() => {
+    if (tab !== "solicitudes_port") return;
+    let cancelled = false;
+    void suggestBookingTags("", 50).then((rows) => {
+      if (cancelled) return;
+      setTagOptions(
+        rows.map((t) => ({ value: t.id, label: t.name })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
+
   const syncUrl = useCallback(
     (filters: ReportsWorkspaceFilters) => {
       const qs = serializeReportsFilters(filters).toString();
@@ -129,8 +174,21 @@ export default function ReportsView() {
       port: portFilter,
       withoutLta,
       paxBasis,
+      years,
+      tagIds,
+      shippingLineId,
     }),
-    [tab, dateFrom, dateTo, portFilter, withoutLta, paxBasis],
+    [
+      tab,
+      dateFrom,
+      dateTo,
+      portFilter,
+      withoutLta,
+      paxBasis,
+      years,
+      tagIds,
+      shippingLineId,
+    ],
   );
 
   const portOptions = useMemo(
@@ -143,17 +201,54 @@ export default function ReportsView() {
     [ports],
   );
 
+  const yearOptions = useMemo(
+    () =>
+      (tab === "solicitudes_port"
+        ? solicitudesYearOptions()
+        : yearsInReportRange(dateFrom, dateTo)
+      ).map((y) => ({
+        value: y,
+        label: String(y),
+      })),
+    [tab, dateFrom, dateTo],
+  );
+
+  const shippingLineOptions = useMemo(
+    () =>
+      shippingLines.map((line) => ({
+        value: line.id,
+        label: line.name,
+        logoUrl: line.logo,
+      })),
+    [shippingLines],
+  );
+
+  const shippingLineLabelsById = useMemo(
+    () => new Map(shippingLines.map((line) => [line.id, line.name])),
+    [shippingLines],
+  );
+
+  const tagLabelsById = useMemo(
+    () => new Map(tagOptions.map((t) => [t.value, t.label])),
+    [tagOptions],
+  );
+
   const hasActiveFilters = reportsHasActiveFilters({
+    tab: appliedFilters.tab,
     portFilter: appliedFilters.portFilter,
     dateFrom: appliedFilters.dateFrom,
     dateTo: appliedFilters.dateTo,
     withoutLta: appliedFilters.withoutLta,
     paxBasis: appliedFilters.paxBasis,
+    years: appliedFilters.years,
+    tagIds: appliedFilters.tagIds,
+    shippingLineId: appliedFilters.shippingLineId,
   });
 
   const activeFilterChips = useMemo(
     () =>
       buildReportsActiveFilterChips({
+        tab: appliedFilters.tab,
         portLabel:
           appliedFilters.portFilter > 0
             ? portsById.get(appliedFilters.portFilter) ?? null
@@ -162,8 +257,16 @@ export default function ReportsView() {
         dateTo: appliedFilters.dateTo,
         withoutLta: appliedFilters.withoutLta,
         paxBasis: appliedFilters.paxBasis,
+        years: appliedFilters.years,
+        tagLabels: appliedFilters.tagIds
+          .map((id) => tagLabelsById.get(id))
+          .filter((label): label is string => Boolean(label)),
+        shippingLineLabel:
+          appliedFilters.shippingLineId > 0
+            ? shippingLineLabelsById.get(appliedFilters.shippingLineId) ?? null
+            : null,
       }),
-    [appliedFilters, portsById],
+    [appliedFilters, portsById, tagLabelsById, shippingLineLabelsById],
   );
 
   const loadPortOptions = useCallback(async (input: string) => {
@@ -183,15 +286,34 @@ export default function ReportsView() {
 
   function handleDateFromChange(value: string) {
     setDateFrom(value);
-    setDateTo(defaultReportDateTo(value));
+    const nextTo = defaultReportDateTo(value);
+    setDateTo(nextTo);
+    const allowed = new Set(yearsInReportRange(value, nextTo));
+    setYears((prev) => prev.filter((y) => allowed.has(y)));
+  }
+
+  function handleDateToChange(value: string) {
+    setDateTo(value);
+    const allowed = new Set(yearsInReportRange(dateFrom, value));
+    setYears((prev) => prev.filter((y) => allowed.has(y)));
   }
 
   const canClearFilters =
-    dateFrom !== defaultDateFrom ||
-    dateTo !== defaultDateTo ||
-    portFilter > 0 ||
-    withoutLta ||
-    paxBasis !== "planned";
+    tab === "solicitudes_port"
+      ? portFilter > 0 ||
+        withoutLta ||
+        paxBasis !== "planned" ||
+        years.length > 0 ||
+        tagIds.length > 0 ||
+        shippingLineId > 0
+      : dateFrom !== defaultDateFrom ||
+        dateTo !== defaultDateTo ||
+        portFilter > 0 ||
+        withoutLta ||
+        paxBasis !== "planned" ||
+        years.length > 0 ||
+        tagIds.length > 0 ||
+        shippingLineId > 0;
 
   const canApplyFilters =
     dateFrom !== appliedFilters.dateFrom ||
@@ -199,7 +321,23 @@ export default function ReportsView() {
     portFilter !== appliedFilters.portFilter ||
     withoutLta !== appliedFilters.withoutLta ||
     paxBasis !== appliedFilters.paxBasis ||
-    tab !== appliedFilters.tab;
+    tab !== appliedFilters.tab ||
+    years.join(",") !== appliedFilters.years.join(",") ||
+    tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
+    shippingLineId !== appliedFilters.shippingLineId;
+
+  // Solicitudes derives dates from years — don't treat draft date drift as dirty.
+  const canApplySolicitudes =
+    portFilter !== appliedFilters.portFilter ||
+    withoutLta !== appliedFilters.withoutLta ||
+    paxBasis !== appliedFilters.paxBasis ||
+    tab !== appliedFilters.tab ||
+    years.join(",") !== appliedFilters.years.join(",") ||
+    tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
+    shippingLineId !== appliedFilters.shippingLineId;
+
+  const canApply =
+    tab === "solicitudes_port" ? canApplySolicitudes : canApplyFilters;
 
   function clearFilters() {
     const clean = defaultReportsFilters();
@@ -209,6 +347,9 @@ export default function ReportsView() {
     setPortFilter(0);
     setWithoutLta(false);
     setPaxBasis("planned");
+    setYears([]);
+    setTagIds([]);
+    setShippingLineId(0);
     setError(null);
     const applied = toApplied(next);
     setAppliedFilters(applied);
@@ -238,6 +379,9 @@ export default function ReportsView() {
           portFilter: appliedPortFilter,
           withoutLta: appliedWithoutLta,
           paxBasis: appliedPaxBasis,
+          years: appliedYears,
+          tagIds: appliedTagIds,
+          shippingLineId: appliedShippingLineId,
         } = appliedFilters;
 
         if (appliedTab === "ports_totals") {
@@ -263,6 +407,29 @@ export default function ReportsView() {
             port: appliedPortFilter,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
+            exportFormat: "xlsx",
+          });
+          return;
+        }
+        if (appliedTab === "solicitudes_port") {
+          if (!appliedPortFilter) {
+            setError("Selecciona un puerto para exportar.");
+            return;
+          }
+          if (!appliedShippingLineId) {
+            setError("Selecciona una naviera para exportar.");
+            return;
+          }
+          await exportStructuredReport({
+            report_type: "solicitudes_port",
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            port: appliedPortFilter,
+            without_lta: appliedWithoutLta,
+            pax_basis: appliedPaxBasis,
+            years: appliedYears,
+            tags: appliedTagIds,
+            shipping_line: appliedShippingLineId,
             exportFormat: "xlsx",
           });
           return;
@@ -295,8 +462,13 @@ export default function ReportsView() {
   if (!ready) return <ReportsViewSkeleton />;
 
   const showPortFilter = tab !== "ports_totals";
-  const portRequired = tab === "port_carrier" || tab === "port_trends";
-  const loading = isLoading;
+  const portRequired =
+    tab === "port_carrier" ||
+    tab === "port_trends" ||
+    tab === "solicitudes_port";
+  const showSolicitudesFilters = tab === "solicitudes_port";
+  const loading =
+    appliedFilters.tab !== "solicitudes_port" && isLoading;
 
   return (
     <>
@@ -310,6 +482,10 @@ export default function ReportsView() {
             { value: "ports_totals", label: "Totals puertos" },
             { value: "port_carrier", label: "Totals por puerto" },
             { value: "port_trends", label: "Trends por puerto" },
+            {
+              value: "solicitudes_port",
+              label: "Resumen de movimientos",
+            },
           ]}
           compact
           labelEnd={
@@ -339,6 +515,40 @@ export default function ReportsView() {
             logoKind="port"
           />
         ) : null}
+        {showSolicitudesFilters ? (
+          <>
+            <FormFieldSelect<number>
+              label="Naviera"
+              name="report_shipping_line"
+              value={shippingLineId}
+              onChange={(v) => setShippingLineId(Number(v))}
+              options={shippingLineOptions}
+              optionLabel="Selecciona una naviera"
+              emptyValue={0}
+              compact
+              showLogo
+              logoKind="shipping_line"
+            />
+            <FormFieldMultiSelect<number>
+              label="Años"
+              name="report_years"
+              value={years}
+              onChange={setYears}
+              options={yearOptions}
+              placeholder="Todos desde 2025"
+              compact
+            />
+            <FormFieldMultiSelect<number>
+              label="Tags"
+              name="report_tags"
+              value={tagIds}
+              onChange={setTagIds}
+              options={tagOptions}
+              placeholder="Todos los tags"
+              compact
+            />
+          </>
+        ) : null}
         <FormFieldSelect<ReportPaxBasis>
           label="Base PAX"
           name="report_pax_basis"
@@ -348,22 +558,26 @@ export default function ReportsView() {
           compact
           labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
         />
-        <FormField
-          label="Desde"
-          name="report_date_from"
-          type="date"
-          value={dateFrom}
-          onChange={(value) => handleDateFromChange(String(value))}
-          compact
-        />
-        <FormField
-          label="Hasta"
-          name="report_date_to"
-          type="date"
-          value={dateTo}
-          onChange={(value) => setDateTo(String(value))}
-          compact
-        />
+        {!showSolicitudesFilters ? (
+          <>
+            <FormField
+              label="Desde"
+              name="report_date_from"
+              type="date"
+              value={dateFrom}
+              onChange={(value) => handleDateFromChange(String(value))}
+              compact
+            />
+            <FormField
+              label="Hasta"
+              name="report_date_to"
+              type="date"
+              value={dateTo}
+              onChange={(value) => handleDateToChange(String(value))}
+              compact
+            />
+          </>
+        ) : null}
         <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
           <input
             type="checkbox"
@@ -377,7 +591,7 @@ export default function ReportsView() {
           onApply={applyFilters}
           onClear={clearFilters}
           canClear={canClearFilters}
-          canApply={canApplyFilters}
+          canApply={canApply}
         />
       </FilterSidebarContent>
 
@@ -403,6 +617,20 @@ export default function ReportsView() {
             sectionCount={appliedFilters.tab === "ports_totals" ? 2 : 1}
           />
         )
+      ) : appliedFilters.tab === "solicitudes_port" ? (
+        <SolicitudesPortSection
+          enabled
+          dateFrom={appliedFilters.dateFrom}
+          dateTo={appliedFilters.dateTo}
+          portId={appliedFilters.portFilter}
+          years={appliedFilters.years}
+          tagIds={appliedFilters.tagIds}
+          shippingLineId={appliedFilters.shippingLineId}
+          withoutLta={appliedFilters.withoutLta}
+          paxBasis={appliedFilters.paxBasis}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearFilters}
+        />
       ) : appliedFilters.tab === "ports_totals" && portsTotals ? (
         <PortsTotalsMatrixSection
           data={portsTotals}
