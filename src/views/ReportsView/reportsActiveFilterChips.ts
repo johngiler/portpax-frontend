@@ -1,7 +1,11 @@
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilterChips";
 import { isDefaultReportDateRange } from "./reportsFilterDefaults";
-import type { ReportPaxBasis, ReportTab } from "./reportsFilterQuery";
+import {
+  defaultMovementYear,
+  type ReportPaxBasis,
+  type ReportTab,
+} from "./reportsFilterQuery";
 
 export function buildReportsActiveFilterChips(input: {
   tab?: ReportTab;
@@ -17,6 +21,11 @@ export function buildReportsActiveFilterChips(input: {
   const chips: ActiveFilterChip[] = [];
   const isSolicitudes = input.tab === "solicitudes_port";
   const isMovements = input.tab === "booking_movements";
+  const movementYear = input.years?.[0];
+  const movementYearActive =
+    isMovements &&
+    movementYear != null &&
+    movementYear !== defaultMovementYear();
 
   if (!isMovements && input.portLabel) {
     chips.push({
@@ -38,12 +47,18 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (input.years?.length) {
+  if (isMovements) {
+    if (movementYearActive) {
+      chips.push({
+        id: "years",
+        label: `Año: ${movementYear}`,
+        icon: "dates",
+      });
+    }
+  } else if (input.years?.length) {
     chips.push({
       id: "years",
-      label: isMovements
-        ? `Año: ${input.years[0]}`
-        : `Años: ${input.years.join(", ")}`,
+      label: `Años: ${input.years.join(", ")}`,
       icon: "dates",
     });
   }
@@ -98,7 +113,8 @@ export function reportsHasActiveFilters(input: {
   shippingLineId?: number;
 }): boolean {
   if (input.tab === "booking_movements") {
-    return (input.years?.length ?? 0) > 0;
+    const year = input.years?.[0];
+    return year != null && year !== defaultMovementYear();
   }
   if (input.tab === "solicitudes_port") {
     return (

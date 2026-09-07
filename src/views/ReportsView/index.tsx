@@ -303,7 +303,8 @@ export default function ReportsView() {
 
   const canClearFilters =
     tab === "booking_movements"
-      ? years[0] !== defaultMovementYear()
+      ? (years[0] ?? 0) !== defaultMovementYear() ||
+        (appliedFilters.years[0] ?? 0) !== defaultMovementYear()
       : tab === "solicitudes_port"
         ? portFilter > 0 ||
           withoutLta ||
