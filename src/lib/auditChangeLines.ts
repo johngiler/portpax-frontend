@@ -70,6 +70,7 @@ const FIELD_LABELS: Record<string, string> = {
   port_code: "Puerto",
   shipping_line_id: "Naviera",
   shipping_line_code: "Naviera",
+  tag_id: "Tag",
   all_vessels: "Todos los barcos",
   vessel_ids: "Barcos",
   position_ids: "Posiciones",
@@ -170,6 +171,10 @@ const META_KEYS = new Set([
   "deleted",
   "agreement_code",
   "task_id",
+  // Technical linkage — not for operators (see history-friendly-labels)
+  "import_batch_id",
+  "run_batch_id",
+  "acknowledge_combined_red",
   // Shown as friendly badge + tooltip in LtaHistoryFeed
   "job_status",
   "job_kind",
@@ -287,6 +292,16 @@ function shortPositionCode(code: string): string {
     return short || text;
   }
   return text;
+}
+
+/** Soften stored summaries that still embed full position slugs. */
+export function friendlyAuditSummary(summary: string): string {
+  const text = summary.trim();
+  if (!text) return text;
+  return text.replace(/posición\s+(\S+)/gi, (_match, code: string) => {
+    const short = shortPositionCode(String(code));
+    return `posición ${short || code}`;
+  });
 }
 
 function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): string {
@@ -428,6 +443,9 @@ function formatValue(value: unknown, key?: string): string {
       import_file: "Importación masiva",
       import_paste: "Importación masiva",
       berthing_import: "BERTHING PAPERS",
+      bulk_edit: "Edición masiva",
+      historical_tag_assign: "Asignación de tag",
+      lta_agreement: "Acuerdo LTA",
       lta_generate: "Generación LTA",
       lta_regenerate: "Regeneración LTA",
     };
@@ -646,26 +664,4 @@ export function auditContextLines(
     });
   }
   return lines;
-}
-
-export function auditEntityHint(
-  changes: Record<string, unknown> | null | undefined,
-): string | null {
-  const entity = changes?.entity;
-  if (!entity || typeof entity !== "object") return null;
-  const rec = entity as Record<string, unknown>;
-  const parts: string[] = [];
-  if (rec.port_code || rec.port_name) {
-    parts.push(String(rec.port_code || rec.port_name));
-  }
-  if (rec.display) parts.push(String(rec.display));
-  if (rec.username) parts.push(`@${rec.username}`);
-  if (rec.shipping_line_name || rec.shipping_line_code) {
-    parts.push(String(rec.shipping_line_name || rec.shipping_line_code));
-  }
-  if (rec.berth_code) parts.push(`Muelle ${rec.berth_code}`);
-  if (rec.vessel_name) parts.push(String(rec.vessel_name));
-  if (rec.call_date) parts.push(String(rec.call_date));
-  if (rec.position_code) parts.push(`Pos. ${rec.position_code}`);
-  return parts.length ? parts.join(" · ") : null;
 }

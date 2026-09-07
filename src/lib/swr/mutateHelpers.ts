@@ -54,6 +54,15 @@ export async function revalidateBookingsLists(): Promise<void> {
   await revalidateNavCounts();
 }
 
+export async function revalidateBookingActivity(): Promise<void> {
+  await mutate(
+    (key) =>
+      Array.isArray(key) && key[0] === "bookings" && key[1] === "activity",
+    undefined,
+    { revalidate: true },
+  );
+}
+
 export async function revalidateLtaAgreements(): Promise<void> {
   await mutate(
     (key) => Array.isArray(key) && key[0] === "lta-agreements",

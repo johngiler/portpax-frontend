@@ -11,8 +11,8 @@ import {
   User,
 } from "lucide-react";
 import {
-  auditEntityHint,
   auditFieldChangeLines,
+  friendlyAuditSummary,
 } from "@/lib/auditChangeLines";
 import { bookingActivityBadges } from "@/lib/bookingActivityTaxonomy";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
@@ -48,26 +48,26 @@ function headline(item: BookingActivityItem): string {
       return "Creó una reserva";
     case "operational_update":
       return item.summary?.startsWith("Override")
-        ? item.summary
+        ? friendlyAuditSummary(item.summary)
         : "Actualizó la reserva";
     case "identity_update":
-      return item.summary || "Actualizó la escala";
+      return friendlyAuditSummary(item.summary || "Actualizó la escala");
     case "status_change":
-      return item.summary || "Cambió el estado";
+      return friendlyAuditSummary(item.summary || "Cambió el estado");
     case "lta_linked":
-      return item.summary || "Vinculó acuerdo LTA";
+      return friendlyAuditSummary(item.summary || "Vinculó acuerdo LTA");
     case "lta_unlinked":
-      return item.summary || "Desvinculó acuerdo LTA";
+      return friendlyAuditSummary(item.summary || "Desvinculó acuerdo LTA");
     case "deleted":
-      return item.summary || "Eliminó la reserva";
+      return friendlyAuditSummary(item.summary || "Eliminó la reserva");
     case "conflict_detected":
-      return item.summary || "Marcó conflictos operativos";
+      return friendlyAuditSummary(item.summary || "Marcó conflictos operativos");
     case "conflict_resolved":
-      return item.summary || "Resolvió los conflictos operativos";
+      return friendlyAuditSummary(item.summary || "Resolvió los conflictos operativos");
     case "conflict_updated":
-      return item.summary || "Actualizó los conflictos operativos";
+      return friendlyAuditSummary(item.summary || "Actualizó los conflictos operativos");
     default:
-      return item.summary || "Movimiento de reserva";
+      return friendlyAuditSummary(item.summary || "Movimiento de reserva");
   }
 }
 
@@ -202,18 +202,6 @@ export default function HistoryFeed({
         const fieldLines = !isBulk
           ? auditFieldChangeLines(item.changes)
           : [];
-        const entityHint = !isBulk
-          ? auditEntityHint(item.changes) ||
-            (item.entity
-              ? [
-                  item.entity.port_code || item.entity.port_name,
-                  item.entity.vessel_name,
-                  item.entity.call_date,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || null
-              : null)
-          : null;
         const when = new Date(item.occurred_at).toLocaleString("es-MX", {
           dateStyle: "medium",
           timeStyle: "short",
@@ -260,12 +248,6 @@ export default function HistoryFeed({
                   </code>
                 ) : null}
               </p>
-
-              {entityHint ? (
-                <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                  {entityHint}
-                </p>
-              ) : null}
 
               {isBulk ? (
                 <div className="mt-3 space-y-2">

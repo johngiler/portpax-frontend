@@ -4,8 +4,8 @@ import { ArrowRight, User } from "lucide-react";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import Skeleton from "@/components/ui/Skeleton";
 import {
-  auditEntityHint,
   auditFieldChangeLines,
+  friendlyAuditSummary,
 } from "@/lib/auditChangeLines";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import type { AuditHistoryRow } from "@/types/audit";
@@ -110,14 +110,13 @@ export default function EntityAuditHistorySection({
           <ul className="mt-5 space-y-4">
             {rows.map((entry) => {
               const fieldLines = auditFieldChangeLines(entry.changes);
-              const whereHint = auditEntityHint(entry.changes);
               const when = new Date(entry.occurredAt).toLocaleString("es-MX", {
                 dateStyle: "medium",
                 timeStyle: "short",
               });
               const who = formatAuditActorDisplay(entry.actorDisplay);
               const label = resolveActionLabel(entry.action);
-              const summary = entry.summary?.trim() || "";
+              const summary = friendlyAuditSummary(entry.summary?.trim() || "");
               const showSummary = Boolean(
                 summary && !titlesMatch(summary, label, entry.action),
               );
@@ -158,11 +157,6 @@ export default function EntityAuditHistorySection({
                       </span>
                     </span>
                     <span>{when}</span>
-                    {whereHint ? (
-                      <span className="min-w-0 truncate" title={whereHint}>
-                        {whereHint}
-                      </span>
-                    ) : null}
                   </div>
                 </li>
               );

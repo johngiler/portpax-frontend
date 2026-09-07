@@ -17,6 +17,7 @@ import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { canEditBookingSchedule } from "@/lib/navAccess";
 import { sanitizeReturnTo } from "@/lib/safeReturnTo";
+import { revalidateBookingActivity } from "@/lib/swr/mutateHelpers";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateBooking } from "@/services/bookings/bookingService";
 import { bookingDetailHref, type Booking } from "@/types/booking";
@@ -204,6 +205,7 @@ export default function BookingDetailSummary({
         clear_tag: !tagName.trim(),
       });
       onUpdated(updated);
+      void revalidateBookingActivity();
       setEditing(false);
       if (updated.booking_code !== booking.booking_code) {
         router.replace(

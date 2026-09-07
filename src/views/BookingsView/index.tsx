@@ -77,6 +77,7 @@ import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
 import BookingsHistoryModal from "./BookingsHistoryModal";
+import BookingTagsModal from "./BookingTagsModal";
 import BookingsVesselProximityPanel from "./BookingsVesselProximityPanel";
 import BookingsList, {
   type BulkStatusPayload,
@@ -255,6 +256,7 @@ export default function BookingsView() {
   const [historyTypeFilter, setHistoryTypeFilter] =
     useState<BookingActivityFilterValue>("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [tagsModalOpen, setTagsModalOpen] = useState(false);
   const [reprocessPasteOpen, setReprocessPasteOpen] = useState(false);
   const [reprocessPasteHeaders, setReprocessPasteHeaders] = useState<string[]>(
     [],
@@ -1333,6 +1335,11 @@ export default function BookingsView() {
         }}
       />
 
+      <BookingTagsModal
+        open={tagsModalOpen}
+        onClose={() => setTagsModalOpen(false)}
+      />
+
       <FilterSidebarContent>
         <BookingFilters
           tab={tab}
@@ -1401,15 +1408,24 @@ export default function BookingsView() {
         description={description}
         actions={
           canWrite ? (
-            <DefaultButton
-              type="button"
-              onClick={() => router.push("/bookings/new")}
-            >
-              <span className="inline-flex items-center gap-2">
-                <Plus className="h-4 w-4" strokeWidth={2} />
-                Reservar
-              </span>
-            </DefaultButton>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTagsModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Tags
+              </button>
+              <DefaultButton
+                type="button"
+                onClick={() => router.push("/bookings/new")}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" strokeWidth={2} />
+                  Reservar
+                </span>
+              </DefaultButton>
+            </div>
           ) : undefined
         }
       />
