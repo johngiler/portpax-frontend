@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Anchor, Plus } from "lucide-react";
+import { Anchor, Layers, Plus } from "lucide-react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -228,6 +228,7 @@ export default function ShippingLinesView() {
                 onClick={() => setGroupsModalOpen(true)}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
+                <Layers className="h-4 w-4" strokeWidth={2} />
                 Grupos
               </button>
               <DefaultButton type="button" onClick={() => setModalOpen(true)}>

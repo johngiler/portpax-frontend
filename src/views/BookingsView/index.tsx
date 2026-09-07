@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus, Tags } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -1414,6 +1414,7 @@ export default function BookingsView() {
                 onClick={() => setTagsModalOpen(true)}
                 className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
+                <Tags className="h-4 w-4" strokeWidth={2} />
                 Tags
               </button>
               <DefaultButton

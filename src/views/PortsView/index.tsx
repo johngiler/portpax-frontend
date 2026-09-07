@@ -121,12 +121,14 @@ export default function PortsView() {
         description="Selecciona un puerto para ver su ficha, muelles, bitas y posiciones."
         actions={
           <div className="flex items-center gap-3">
-            <DefaultButton type="button" onClick={() => setProximityOpen(true)}>
-              <span className="inline-flex items-center gap-2">
-                <LucideWaves className="h-4 w-4" strokeWidth={2} />
-                Proximidad
-              </span>
-            </DefaultButton>
+            <button
+              type="button"
+              onClick={() => setProximityOpen(true)}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              <LucideWaves className="h-4 w-4" strokeWidth={2} />
+              Proximidad
+            </button>
             {canWrite ? (
               <DefaultButton type="button" onClick={() => setModalOpen(true)}>
                 <span className="inline-flex items-center gap-2">
