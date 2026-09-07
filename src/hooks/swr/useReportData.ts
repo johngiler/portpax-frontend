@@ -49,8 +49,9 @@ type ReportPage =
 
 function reportFetchEnabled(filters: ReportFilters, ready: boolean): boolean {
   if (!ready) return false;
-  // Solicitudes uses its own SWR fetch in SolicitudesPortSection.
+  // Own SWR fetch in colocated sections.
   if (filters.tab === "solicitudes_port") return false;
+  if (filters.tab === "booking_movements") return false;
   if (filters.tab === "ports_totals") return true;
   return filters.portFilter > 0;
 }

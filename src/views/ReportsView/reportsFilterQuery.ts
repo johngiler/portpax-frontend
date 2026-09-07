@@ -8,7 +8,8 @@ export type ReportTab =
   | "ports_totals"
   | "port_carrier"
   | "port_trends"
-  | "solicitudes_port";
+  | "solicitudes_port"
+  | "booking_movements";
 
 /** Basis for passenger totals when actual_pax is missing. */
 export type ReportPaxBasis = "planned" | "capacity";
@@ -20,7 +21,7 @@ export type ReportsWorkspaceFilters = {
   port: number;
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
-  /** Calendar years for resumen; empty = all from MIN_REPORT_YEAR. */
+  /** Calendar years for resumen (multi) or movimientos (single). */
   years: number[];
   /** Booking tag IDs (OR). */
   tagIds: number[];
@@ -33,6 +34,7 @@ const TABS = new Set<ReportTab>([
   "port_carrier",
   "port_trends",
   "solicitudes_port",
+  "booking_movements",
 ]);
 const PAX_BASES = new Set<ReportPaxBasis>(["planned", "capacity"]);
 
@@ -68,12 +70,20 @@ export function yearsInReportRange(dateFrom: string, dateTo: string): number[] {
   return years;
 }
 
-/** Year choices for solicitudes (2025 … current+4). */
+/** Year choices for solicitudes / movimientos (2025 … current+4). */
 export function solicitudesYearOptions(): number[] {
   const end = new Date().getFullYear() + 4;
   const years: number[] = [];
   for (let y = MIN_REPORT_YEAR; y <= end; y += 1) years.push(y);
   return years;
+}
+
+/** Default single year for Movimientos de bookings. */
+export function defaultMovementYear(): number {
+  const now = new Date().getFullYear();
+  const options = solicitudesYearOptions();
+  if (options.includes(now)) return now;
+  return options[options.length - 1] ?? MIN_REPORT_YEAR;
 }
 
 /** Date range derived from selected years (or full solicitudes window). */
@@ -125,12 +135,16 @@ export function parseReportsFilters(
       ? (paxRaw as ReportPaxBasis)
       : defaults.paxBasis;
   const yearChoices =
-    tab === "solicitudes_port"
+    tab === "solicitudes_port" || tab === "booking_movements"
       ? new Set(solicitudesYearOptions())
       : new Set(yearsInReportRange(dateFrom, dateTo));
-  const years = parseIdList(searchParams.get("years")).filter((y) =>
-    yearChoices.has(y),
-  );
+  let years = parseIdList(
+    searchParams.get("year") || searchParams.get("years"),
+  ).filter((y) => yearChoices.has(y));
+  if (tab === "booking_movements") {
+    const y = years[0] ?? defaultMovementYear();
+    years = yearChoices.has(y) ? [y] : [defaultMovementYear()];
+  }
   return {
     tab,
     dateFrom,
@@ -155,6 +169,20 @@ export function reportsFiltersForTab(
   current: ReportsWorkspaceFilters,
   tab: ReportTab,
 ): ReportsWorkspaceFilters {
+  if (tab === "booking_movements") {
+    const y = current.years[0] ?? defaultMovementYear();
+    const allowed = new Set(solicitudesYearOptions());
+    return {
+      ...current,
+      tab,
+      years: [allowed.has(y) ? y : defaultMovementYear()],
+      port: 0,
+      tagIds: [],
+      shippingLineId: 0,
+      withoutLta: false,
+      paxBasis: "planned",
+    };
+  }
   return {
     ...current,
     tab,
@@ -167,8 +195,11 @@ export function serializeReportsFilters(
   const defaults = defaultReportsFilters();
   const sp = new URLSearchParams();
   if (filters.tab !== defaults.tab) sp.set("tab", filters.tab);
-  // Solicitudes derives the range from years — omit from/to in the URL.
-  if (filters.tab !== "solicitudes_port") {
+  // Year-driven tabs omit from/to in the URL.
+  if (
+    filters.tab !== "solicitudes_port" &&
+    filters.tab !== "booking_movements"
+  ) {
     if (filters.dateFrom !== defaults.dateFrom) {
       sp.set("from", filters.dateFrom);
     }
@@ -179,7 +210,11 @@ export function serializeReportsFilters(
   if (filters.port > 0) sp.set("port", String(filters.port));
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
-  if (filters.years.length) sp.set("years", filters.years.join(","));
+  if (filters.tab === "booking_movements" && filters.years[0]) {
+    sp.set("year", String(filters.years[0]));
+  } else if (filters.years.length) {
+    sp.set("years", filters.years.join(","));
+  }
   if (filters.tagIds.length) sp.set("tags", filters.tagIds.join(","));
   if (filters.shippingLineId > 0) {
     sp.set("shipping_line", String(filters.shippingLineId));

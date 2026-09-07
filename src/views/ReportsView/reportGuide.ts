@@ -2,7 +2,8 @@ export type ReportGuideId =
   | "ports_totals"
   | "port_carrier"
   | "port_trends"
-  | "solicitudes_port";
+  | "solicitudes_port"
+  | "booking_movements";
 
 export type ReportGuideRow = {
   id: ReportGuideId;
@@ -43,5 +44,13 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
       "Listado de escalas por año en un puerto, con totales PAX del puerto y por naviera.",
     notes:
       "Puerto y naviera obligatorios. Mismos estados de ocupación que los otros reportes (sin canceladas). Sin Desde/Hasta: el rango sale de Años (vacío = todos desde 2025). La naviera filtra el listado y muestra la caja de totales; el puerto no aplica ese filtro. Tags opcionales. Solo Excel.",
+  },
+  {
+    id: "booking_movements",
+    name: "Movimientos de bookings",
+    description:
+      "Conteo de movimientos (alta, cancelación, cambio de fecha/barco, PAX real) por mes, y PAX con signo por puerto y año de escala.",
+    notes:
+      "Solo filtro Año (mismo catálogo 2025…actual+4). Fuente: historial de auditoría. Excel: Movimientos de bookings.xlsx.",
   },
 ];

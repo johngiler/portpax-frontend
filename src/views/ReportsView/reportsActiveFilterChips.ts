@@ -16,8 +16,9 @@ export function buildReportsActiveFilterChips(input: {
 }): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
   const isSolicitudes = input.tab === "solicitudes_port";
+  const isMovements = input.tab === "booking_movements";
 
-  if (input.portLabel) {
+  if (!isMovements && input.portLabel) {
     chips.push({
       id: "port",
       label: input.portLabel,
@@ -27,6 +28,7 @@ export function buildReportsActiveFilterChips(input: {
 
   if (
     !isSolicitudes &&
+    !isMovements &&
     !isDefaultReportDateRange(input.dateFrom, input.dateTo)
   ) {
     chips.push({
@@ -39,12 +41,14 @@ export function buildReportsActiveFilterChips(input: {
   if (input.years?.length) {
     chips.push({
       id: "years",
-      label: `Años: ${input.years.join(", ")}`,
+      label: isMovements
+        ? `Año: ${input.years[0]}`
+        : `Años: ${input.years.join(", ")}`,
       icon: "dates",
     });
   }
 
-  if (input.shippingLineLabel) {
+  if (!isMovements && input.shippingLineLabel) {
     chips.push({
       id: "shipping-line",
       label: input.shippingLineLabel,
@@ -52,7 +56,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (input.tagLabels?.length) {
+  if (!isMovements && input.tagLabels?.length) {
     chips.push({
       id: "tags",
       label:
@@ -63,7 +67,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (input.withoutLta) {
+  if (!isMovements && input.withoutLta) {
     chips.push({
       id: "without-lta",
       label: "Sin LTA",
@@ -71,7 +75,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (input.paxBasis === "capacity") {
+  if (!isMovements && input.paxBasis === "capacity") {
     chips.push({
       id: "pax-basis",
       label: "PAX: Cap. máx.",
@@ -93,6 +97,9 @@ export function reportsHasActiveFilters(input: {
   tagIds?: number[];
   shippingLineId?: number;
 }): boolean {
+  if (input.tab === "booking_movements") {
+    return (input.years?.length ?? 0) > 0;
+  }
   if (input.tab === "solicitudes_port") {
     return (
       input.portFilter > 0 ||

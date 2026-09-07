@@ -34,8 +34,10 @@ import {
 import {
   defaultReportsFilters,
   dateRangeFromSolicitudesYears,
+  defaultMovementYear,
   parseReportsFilters,
   REPORT_PAX_BASIS_OPTIONS,
+  reportsFiltersForTab,
   serializeReportsFilters,
   solicitudesYearOptions,
   yearsInReportRange,
@@ -43,6 +45,7 @@ import {
   type ReportTab,
   type ReportsWorkspaceFilters,
 } from "./reportsFilterQuery";
+import BookingMovementsSection from "./BookingMovementsSection";
 import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
@@ -68,7 +71,7 @@ type AppliedReportsFilters = ReportFilters & {
 
 function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
   const range =
-    filters.tab === "solicitudes_port"
+    filters.tab === "solicitudes_port" || filters.tab === "booking_movements"
       ? dateRangeFromSolicitudesYears(filters.years)
       : { dateFrom: filters.dateFrom, dateTo: filters.dateTo };
   return {
@@ -203,7 +206,7 @@ export default function ReportsView() {
 
   const yearOptions = useMemo(
     () =>
-      (tab === "solicitudes_port"
+      (tab === "solicitudes_port" || tab === "booking_movements"
         ? solicitudesYearOptions()
         : yearsInReportRange(dateFrom, dateTo)
       ).map((y) => ({
@@ -299,21 +302,23 @@ export default function ReportsView() {
   }
 
   const canClearFilters =
-    tab === "solicitudes_port"
-      ? portFilter > 0 ||
-        withoutLta ||
-        paxBasis !== "planned" ||
-        years.length > 0 ||
-        tagIds.length > 0 ||
-        shippingLineId > 0
-      : dateFrom !== defaultDateFrom ||
-        dateTo !== defaultDateTo ||
-        portFilter > 0 ||
-        withoutLta ||
-        paxBasis !== "planned" ||
-        years.length > 0 ||
-        tagIds.length > 0 ||
-        shippingLineId > 0;
+    tab === "booking_movements"
+      ? years[0] !== defaultMovementYear()
+      : tab === "solicitudes_port"
+        ? portFilter > 0 ||
+          withoutLta ||
+          paxBasis !== "planned" ||
+          years.length > 0 ||
+          tagIds.length > 0 ||
+          shippingLineId > 0
+        : dateFrom !== defaultDateFrom ||
+          dateTo !== defaultDateTo ||
+          portFilter > 0 ||
+          withoutLta ||
+          paxBasis !== "planned" ||
+          years.length > 0 ||
+          tagIds.length > 0 ||
+          shippingLineId > 0;
 
   const canApplyFilters =
     dateFrom !== appliedFilters.dateFrom ||
@@ -326,8 +331,8 @@ export default function ReportsView() {
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
     shippingLineId !== appliedFilters.shippingLineId;
 
-  // Solicitudes derives dates from years — don't treat draft date drift as dirty.
-  const canApplySolicitudes =
+  // Year-driven tabs: don't treat draft date drift as dirty.
+  const canApplyYearDriven =
     portFilter !== appliedFilters.portFilter ||
     withoutLta !== appliedFilters.withoutLta ||
     paxBasis !== appliedFilters.paxBasis ||
@@ -337,17 +342,22 @@ export default function ReportsView() {
     shippingLineId !== appliedFilters.shippingLineId;
 
   const canApply =
-    tab === "solicitudes_port" ? canApplySolicitudes : canApplyFilters;
+    tab === "solicitudes_port" || tab === "booking_movements"
+      ? canApplyYearDriven
+      : canApplyFilters;
 
   function clearFilters() {
     const clean = defaultReportsFilters();
-    const next = { ...clean, tab };
+    const next =
+      tab === "booking_movements"
+        ? { ...clean, tab, years: [defaultMovementYear()] }
+        : { ...clean, tab };
     setDateFrom(next.dateFrom);
     setDateTo(next.dateTo);
     setPortFilter(0);
     setWithoutLta(false);
     setPaxBasis("planned");
-    setYears([]);
+    setYears(next.years);
     setTagIds([]);
     setShippingLineId(0);
     setError(null);
@@ -358,13 +368,26 @@ export default function ReportsView() {
 
   function applyFilters() {
     setError(null);
-    const next = draftFilters;
+    const next =
+      tab === "booking_movements"
+        ? {
+            ...draftFilters,
+            years: [years[0] ?? defaultMovementYear()],
+          }
+        : draftFilters;
     setAppliedFilters(toApplied(next));
     syncUrl(next);
   }
 
   function handleTabChange(value: ReportTab) {
-    setTab(value);
+    const next = reportsFiltersForTab(draftFilters, value);
+    setTab(next.tab);
+    setPortFilter(next.port);
+    setWithoutLta(next.withoutLta);
+    setPaxBasis(next.paxBasis);
+    setYears(next.years);
+    setTagIds(next.tagIds);
+    setShippingLineId(next.shippingLineId);
     setError(null);
   }
 
@@ -434,6 +457,15 @@ export default function ReportsView() {
           });
           return;
         }
+        if (appliedTab === "booking_movements") {
+          const year = appliedYears[0] ?? defaultMovementYear();
+          await exportStructuredReport({
+            report_type: "booking_movements",
+            year,
+            exportFormat: "xlsx",
+          });
+          return;
+        }
         if (!appliedPortFilter) {
           setError("Selecciona un puerto para exportar.");
           return;
@@ -461,14 +493,19 @@ export default function ReportsView() {
 
   if (!ready) return <ReportsViewSkeleton />;
 
-  const showPortFilter = tab !== "ports_totals";
+  const showPortFilter =
+    tab !== "ports_totals" && tab !== "booking_movements";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||
     tab === "solicitudes_port";
   const showSolicitudesFilters = tab === "solicitudes_port";
+  const showMovementsFilters = tab === "booking_movements";
+  const showSharedReportFilters = !showMovementsFilters;
   const loading =
-    appliedFilters.tab !== "solicitudes_port" && isLoading;
+    appliedFilters.tab !== "solicitudes_port" &&
+    appliedFilters.tab !== "booking_movements" &&
+    isLoading;
 
   return (
     <>
@@ -485,6 +522,10 @@ export default function ReportsView() {
             {
               value: "solicitudes_port",
               label: "Resumen de movimientos",
+            },
+            {
+              value: "booking_movements",
+              label: "Movimientos de bookings",
             },
           ]}
           compact
@@ -549,16 +590,28 @@ export default function ReportsView() {
             />
           </>
         ) : null}
-        <FormFieldSelect<ReportPaxBasis>
-          label="Base PAX"
-          name="report_pax_basis"
-          value={paxBasis}
-          onChange={setPaxBasis}
-          options={REPORT_PAX_BASIS_OPTIONS}
-          compact
-          labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
-        />
-        {!showSolicitudesFilters ? (
+        {showMovementsFilters ? (
+          <FormFieldSelect<number>
+            label="Año"
+            name="report_movement_year"
+            value={years[0] ?? defaultMovementYear()}
+            onChange={(v) => setYears([Number(v)])}
+            options={yearOptions}
+            compact
+          />
+        ) : null}
+        {showSharedReportFilters ? (
+          <FormFieldSelect<ReportPaxBasis>
+            label="Base PAX"
+            name="report_pax_basis"
+            value={paxBasis}
+            onChange={setPaxBasis}
+            options={REPORT_PAX_BASIS_OPTIONS}
+            compact
+            labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
+          />
+        ) : null}
+        {showSharedReportFilters && !showSolicitudesFilters ? (
           <>
             <FormField
               label="Desde"
@@ -578,15 +631,17 @@ export default function ReportsView() {
             />
           </>
         ) : null}
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
-          <input
-            type="checkbox"
-            checked={withoutLta}
-            onChange={(e) => setWithoutLta(e.target.checked)}
-            className="rounded border-zinc-300"
-          />
-          Sin LTA
-        </label>
+        {showSharedReportFilters ? (
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
+            <input
+              type="checkbox"
+              checked={withoutLta}
+              onChange={(e) => setWithoutLta(e.target.checked)}
+              className="rounded border-zinc-300"
+            />
+            Sin LTA
+          </label>
+        ) : null}
         <FilterActions
           onApply={applyFilters}
           onClear={clearFilters}
@@ -630,6 +685,11 @@ export default function ReportsView() {
           paxBasis={appliedFilters.paxBasis}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearFilters}
+        />
+      ) : appliedFilters.tab === "booking_movements" ? (
+        <BookingMovementsSection
+          enabled
+          year={appliedFilters.years[0] ?? defaultMovementYear()}
         />
       ) : appliedFilters.tab === "ports_totals" && portsTotals ? (
         <PortsTotalsMatrixSection

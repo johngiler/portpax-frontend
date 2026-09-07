@@ -167,7 +167,46 @@ export type StructuredReportType =
   | "ports_totals_matrix"
   | "port_carrier_matrix"
   | "port_trends"
-  | "solicitudes_port";
+  | "solicitudes_port"
+  | "booking_movements";
+
+export type BookingMovementsTypeRow = {
+  kind: string;
+  months: number[];
+  total: number;
+};
+
+export type BookingMovementsYearRow = {
+  year: number;
+  months: number[];
+  total: number;
+};
+
+export type BookingMovementsPortBlock = {
+  port_id: number;
+  port_name: string;
+  months: number[];
+  total: number;
+  years: BookingMovementsYearRow[];
+};
+
+export type BookingMovementsReport = {
+  kind: "booking_movements";
+  title: string;
+  year: number;
+  month_labels: string[];
+  type_rows: BookingMovementsTypeRow[];
+  type_month_totals: number[];
+  type_grand_total: number;
+  type_month_pct: number[];
+  type_avg_per_month: number;
+  port_blocks: BookingMovementsPortBlock[];
+  pax_month_totals: number[];
+  pax_grand_total: number;
+  pax_month_pct: number[];
+  pax_avg_per_month: number;
+  note?: string;
+};
 
 export type SolicitudesPortRow = {
   booking_id: number;
@@ -491,10 +530,20 @@ export async function fetchSolicitudesPortReport(params: {
   );
 }
 
+export async function fetchBookingMovementsReport(params: {
+  year: number;
+}): Promise<BookingMovementsReport> {
+  const query = new URLSearchParams();
+  query.set("year", String(params.year));
+  return apiFetch<BookingMovementsReport>(
+    `${BASE}report-booking-movements/?${query.toString()}`,
+  );
+}
+
 export async function exportStructuredReport(params: {
   report_type: StructuredReportType;
-  date_from: string;
-  date_to: string;
+  date_from?: string;
+  date_to?: string;
   port?: number;
   shipping_line?: number;
   vessel?: number;
@@ -504,15 +553,16 @@ export async function exportStructuredReport(params: {
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
   years?: number[];
+  year?: number;
   tags?: number[];
   exportFormat?: "xlsx" | "csv";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
   const query = new URLSearchParams();
   query.set("report_type", params.report_type);
-  query.set("date_from", params.date_from);
-  query.set("date_to", params.date_to);
   query.set("export_format", format);
+  if (params.date_from) query.set("date_from", params.date_from);
+  if (params.date_to) query.set("date_to", params.date_to);
   if (params.port) query.set("port", String(params.port));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.vessel) query.set("vessel", String(params.vessel));
@@ -521,6 +571,7 @@ export async function exportStructuredReport(params: {
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
   }
+  if (params.year) query.set("year", String(params.year));
   if (params.years?.length) query.set("years", params.years.join(","));
   if (params.tags?.length) query.set("tags", params.tags.join(","));
   const statusCsv =
@@ -533,6 +584,7 @@ export async function exportStructuredReport(params: {
   );
   const fallbackNames: Partial<Record<StructuredReportType, string>> = {
     solicitudes_port: "Resumen de movimientos",
+    booking_movements: "Movimientos de bookings",
   };
   const fallbackBase =
     fallbackNames[params.report_type] ?? params.report_type;
