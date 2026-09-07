@@ -15,7 +15,7 @@ export default function DashboardOccupancyByPort({ rows }: DashboardOccupancyByP
     <ViewSection
       icon={Anchor}
       title="Ocupación por puerto"
-      description="Porcentaje de slot-días ocupados (muelles pier) en el período filtrado."
+      description="Posiciones pier físicas × días. Un mega (par E1+E2 u overflow de eslora) cuenta el bloqueo real del muelle."
       className="mb-6"
     >
       <div className="px-5 py-4 sm:px-6">

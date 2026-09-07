@@ -23,6 +23,7 @@ const ISSUE_TITLE: Record<string, string> = {
   combined_loa_orange: "LOA combinada en zona amarilla",
   multi_port_conflict: "Conflicto multi-puerto",
   multi_port_proximity: "Proximidad multi-puerto",
+  vessel_itinerary_buffer: "Separación de itinerario",
   filo_eta_violation: "FILO · arribo",
   filo_etd_violation: "FILO · zarpe",
   position_occupied: "Posición ocupada",

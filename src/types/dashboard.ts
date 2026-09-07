@@ -76,6 +76,7 @@ export type DashboardYoy = {
   prior_date_to: string;
   calls: DashboardYoyMetric;
   planned_pax: DashboardYoyMetric;
+  occupancy: DashboardYoyMetric;
 };
 
 export type DashboardActionPortRow = {
@@ -91,6 +92,17 @@ export type DashboardActionQueue = {
   holds: number;
   new_requests: number;
   by_port: DashboardActionPortRow[];
+};
+
+export type DashboardConflictTypeRow = {
+  type: string;
+  label: string;
+  count: number;
+};
+
+export type DashboardConflicts = {
+  total: number;
+  by_type: DashboardConflictTypeRow[];
 };
 
 export type DashboardNext30PortRow = {
@@ -129,6 +141,7 @@ export type DashboardStats = {
   date_to: string;
   day_count: number;
   kpis: DashboardKpis;
+  conflicts: DashboardConflicts;
   action_queue: DashboardActionQueue;
   next_30_days: DashboardNext30Days;
   current_week?: DashboardCurrentWeek;

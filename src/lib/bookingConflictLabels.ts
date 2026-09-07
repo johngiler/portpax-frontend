@@ -11,7 +11,7 @@ export const CONFLICT_TYPE_FILTER_CODES: Record<
   ConflictTypeFilterValue,
   readonly string[]
 > = {
-  proximity: ["multi_port_proximity", "multi_port_conflict"],
+  proximity: ["multi_port_proximity", "multi_port_conflict", "vessel_itinerary_buffer"],
   loa: [
     "loa_exceeds_position",
     "loa_overhang",
