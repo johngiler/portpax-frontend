@@ -89,7 +89,7 @@ export default function BookingsHistoryPanel({
     setImportError(null);
     setImportLoading(true);
     try {
-      const detail = await fetchImportBatchDetail(batchId);
+      const detail = await fetchImportBatchDetail(batchId, { page: 1 });
       setImportDetail(detail);
     } catch (err) {
       setImportError(
@@ -106,7 +106,7 @@ export default function BookingsHistoryPanel({
     setRunError(null);
     setRunLoading(true);
     try {
-      const detail = await fetchRunBatchDetail(batchId);
+      const detail = await fetchRunBatchDetail(batchId, { page: 1 });
       setRunDetail(detail);
     } catch (err) {
       setRunError(

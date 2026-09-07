@@ -124,6 +124,9 @@ export type ImportBatchDetail = {
   failed_count: number;
   not_created_count: number;
   created: ImportBatchCreatedItem[];
+  created_total?: number;
+  created_page?: number;
+  created_page_size?: number;
   failures: ImportBatchFailure[];
   retry_rows: ImportBatchRetryRow[];
   retry_count: number;
@@ -167,6 +170,9 @@ export type RunBatchDetail = {
   linked_count?: number;
   unlinked_count?: number;
   bookings: RunBatchBookingItem[];
+  bookings_total?: number;
+  bookings_page?: number;
+  bookings_page_size?: number;
   failures: ImportBatchFailure[];
   meta: Record<string, unknown>;
   tag_id?: number | null;
@@ -223,14 +229,28 @@ export async function fetchBookingActivityActors(): Promise<{
   );
 }
 
+export const BATCH_BOOKINGS_PAGE_SIZE = 20;
+
 export async function fetchImportBatchDetail(
   batchId: number,
+  opts?: { page?: number; pageSize?: number },
 ): Promise<ImportBatchDetail> {
-  return apiFetch<ImportBatchDetail>(`${BASE}import-batches/${batchId}/`);
+  const sp = new URLSearchParams();
+  sp.set("page", String(opts?.page ?? 1));
+  sp.set("page_size", String(opts?.pageSize ?? BATCH_BOOKINGS_PAGE_SIZE));
+  return apiFetch<ImportBatchDetail>(
+    `${BASE}import-batches/${batchId}/?${sp.toString()}`,
+  );
 }
 
 export async function fetchRunBatchDetail(
   batchId: number,
+  opts?: { page?: number; pageSize?: number },
 ): Promise<RunBatchDetail> {
-  return apiFetch<RunBatchDetail>(`${BASE}run-batches/${batchId}/`);
+  const sp = new URLSearchParams();
+  sp.set("page", String(opts?.page ?? 1));
+  sp.set("page_size", String(opts?.pageSize ?? BATCH_BOOKINGS_PAGE_SIZE));
+  return apiFetch<RunBatchDetail>(
+    `${BASE}run-batches/${batchId}/?${sp.toString()}`,
+  );
 }

@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/apiClient";
+import { BATCH_BOOKINGS_PAGE_SIZE } from "@/services/bookings/bookingActivityService";
 
 const BASE = "api/bookings/tags/";
 
@@ -47,25 +48,32 @@ export async function deleteBookingTag(id: number): Promise<void> {
   await apiFetch<void>(`${BASE}${id}/`, { method: "DELETE" });
 }
 
+function batchPageQuery(opts?: { page?: number; pageSize?: number }): string {
+  const sp = new URLSearchParams();
+  sp.set("page", String(opts?.page ?? 1));
+  sp.set("page_size", String(opts?.pageSize ?? BATCH_BOOKINGS_PAGE_SIZE));
+  return sp.toString();
+}
+
 export async function patchImportBatchTag(
   batchId: number,
   payload: { tag_name?: string; clear?: boolean },
+  opts?: { page?: number; pageSize?: number },
 ): Promise<unknown> {
-  return apiFetch(`api/bookings/import-batches/${batchId}/tag/`, {
+  const qs = batchPageQuery(opts);
+  return apiFetch(`api/bookings/import-batches/${batchId}/tag/?${qs}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
 
-export async function fetchRunBatchDetail(batchId: number) {
-  return apiFetch(`api/bookings/run-batches/${batchId}/`);
-}
-
 export async function patchRunBatchTag(
   batchId: number,
   payload: { tag_name?: string; clear?: boolean },
+  opts?: { page?: number; pageSize?: number },
 ): Promise<unknown> {
-  return apiFetch(`api/bookings/run-batches/${batchId}/tag/`, {
+  const qs = batchPageQuery(opts);
+  return apiFetch(`api/bookings/run-batches/${batchId}/tag/?${qs}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

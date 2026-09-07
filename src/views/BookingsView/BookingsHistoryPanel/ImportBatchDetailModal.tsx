@@ -8,6 +8,7 @@ import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
+import TablePagination from "@/components/tables/TablePagination";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
@@ -17,9 +18,11 @@ import {
   bookingDetailHref,
 } from "@/types/booking";
 import { exportImportBatchPendingXlsx } from "@/services/bookings/bulkImportService";
-import type {
-  ImportBatchDetail,
-  ImportBatchRetryRow,
+import {
+  BATCH_BOOKINGS_PAGE_SIZE,
+  fetchImportBatchDetail,
+  type ImportBatchDetail,
+  type ImportBatchRetryRow,
 } from "@/services/bookings/bookingActivityService";
 import { patchImportBatchTag } from "@/services/bookings/bookingTagService";
 import { copyImportRowsTsv } from "../Import/retryRows";
@@ -51,6 +54,7 @@ export default function ImportBatchDetailModal({
   const [exporting, setExporting] = useState(false);
   const [tagDraft, setTagDraft] = useState("");
   const [savingTag, setSavingTag] = useState(false);
+  const [paging, setPaging] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +70,26 @@ export default function ImportBatchDetailModal({
   const retryRows = detail?.retry_rows ?? [];
   const canReprocess = retryRows.length > 0 && Boolean(onReprocess);
   const displayError = localError || error;
+  const createdPage = detail?.created_page ?? 1;
+  const createdPageSize = detail?.created_page_size ?? BATCH_BOOKINGS_PAGE_SIZE;
+  const createdTotal = detail?.created_total ?? detail?.created.length ?? 0;
+
+  async function handleCreatedPageChange(page: number) {
+    if (!detail || paging) return;
+    setPaging(true);
+    setLocalError(null);
+    try {
+      const next = await fetchImportBatchDetail(detail.id, {
+        page,
+        pageSize: createdPageSize,
+      });
+      onDetailChange?.(next);
+    } catch (err) {
+      setLocalError(getApiErrorMessage(err, "No se pudo cargar la página."));
+    } finally {
+      setPaging(false);
+    }
+  }
 
   async function handleCopy() {
     if (!retryRows.length) return;
@@ -97,10 +121,14 @@ export default function ImportBatchDetailModal({
     setSavingTag(true);
     setLocalError(null);
     try {
-      const next = (await patchImportBatchTag(detail.id, {
-        tag_name: tagDraft,
-        clear: !tagDraft.trim(),
-      })) as ImportBatchDetail;
+      const next = (await patchImportBatchTag(
+        detail.id,
+        {
+          tag_name: tagDraft,
+          clear: !tagDraft.trim(),
+        },
+        { page: createdPage, pageSize: createdPageSize },
+      )) as ImportBatchDetail;
       onDetailChange?.(next);
       setTagDraft(next.tag_name ?? "");
       setActionHint(next.tag_name ? "Tag actualizado." : "Tag quitado.");
@@ -116,9 +144,11 @@ export default function ImportBatchDetailModal({
     setSavingTag(true);
     setLocalError(null);
     try {
-      const next = (await patchImportBatchTag(detail.id, {
-        clear: true,
-      })) as ImportBatchDetail;
+      const next = (await patchImportBatchTag(
+        detail.id,
+        { clear: true },
+        { page: createdPage, pageSize: createdPageSize },
+      )) as ImportBatchDetail;
       onDetailChange?.(next);
       setTagDraft("");
       setActionHint("Tag quitado.");
@@ -264,67 +294,78 @@ export default function ImportBatchDetailModal({
             {detail.created.length === 0 ? (
               <p className="mt-2 text-xs text-zinc-500">Ninguna.</p>
             ) : (
-              <div className="mt-2 max-h-[min(28rem,50vh)] overflow-auto rounded-lg border border-zinc-200/80 dark:border-zinc-700">
-                <table className="min-w-full border-collapse text-left text-sm">
-                  <thead className="sticky top-0 bg-zinc-50 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                    <tr>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Reserva
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Fecha
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Puerto
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Barco
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Pos.
-                      </th>
-                      <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
-                        Estado
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {detail.created.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/60"
-                      >
-                        <td className="max-w-[14rem] px-3 py-1 align-middle lg:max-w-xs">
-                          <Link
-                            href={bookingDetailHref(row, { returnTo })}
-                            {...BOOKING_DETAIL_LINK_PROPS}
-                            className="break-all text-[11px] leading-snug text-[var(--admin-accent)] hover:underline"
-                            onClick={onClose}
-                          >
-                            {row.booking_code}
-                          </Link>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-800 dark:text-zinc-100">
-                          {row.call_date
-                            ? formatIsoDateLabel(row.call_date, "short")
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
-                          {row.port_name || "—"}
-                        </td>
-                        <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
-                          {row.vessel_name || "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-1 text-xs font-medium tabular-nums text-zinc-800 dark:text-zinc-100">
-                          {row.position_code || "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
-                          {row.status_label || "—"}
-                        </td>
+              <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200/80 dark:border-zinc-700">
+                <div className="max-h-[min(28rem,50vh)] overflow-auto">
+                  <table className="min-w-full border-collapse text-left text-sm">
+                    <thead className="sticky top-0 bg-zinc-50 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                      <tr>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Reserva
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Fecha
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Puerto
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Barco
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Pos.
+                        </th>
+                        <th className="border-b border-zinc-200 px-3 py-2 font-semibold dark:border-zinc-700">
+                          Estado
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {detail.created.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/60"
+                        >
+                          <td className="max-w-[14rem] px-3 py-1 align-middle lg:max-w-xs">
+                            <Link
+                              href={bookingDetailHref(row, { returnTo })}
+                              {...BOOKING_DETAIL_LINK_PROPS}
+                              className="break-all text-[11px] leading-snug text-[var(--admin-accent)] hover:underline"
+                              onClick={onClose}
+                            >
+                              {row.booking_code}
+                            </Link>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-800 dark:text-zinc-100">
+                            {row.call_date
+                              ? formatIsoDateLabel(row.call_date, "short")
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                            {row.port_name || "—"}
+                          </td>
+                          <td className="px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                            {row.vessel_name || "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1 text-xs font-medium tabular-nums text-zinc-800 dark:text-zinc-100">
+                            {row.position_code || "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-700 dark:text-zinc-200">
+                            {row.status_label || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {createdTotal > createdPageSize ? (
+                  <TablePagination
+                    page={createdPage}
+                    pageSize={createdPageSize}
+                    totalCount={createdTotal}
+                    onPageChange={(page) => void handleCreatedPageChange(page)}
+                    label="reservas"
+                  />
+                ) : null}
               </div>
             )}
           </section>
