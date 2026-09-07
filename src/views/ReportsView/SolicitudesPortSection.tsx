@@ -1,9 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import useSWR from "swr";
 import { FileSpreadsheet } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchSolicitudesPortReport,
@@ -31,52 +33,124 @@ function formatPax(n: number): string {
   return n.toLocaleString("es-MX");
 }
 
-function SummaryTable({
-  title,
-  rows,
-  total,
-  highlightYears,
+function paxByYearMap(rows: SolicitudesPortYearPax[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const row of rows) {
+    map.set(row.year, row.pax);
+  }
+  return map;
+}
+
+function formatPct(carrierPax: number, portPax: number): string {
+  if (portPax <= 0) return "—";
+  const pct = Math.round((carrierPax / portPax) * 100);
+  return `${pct}%`;
+}
+
+function cellBorder(extra = ""): string {
+  return `border border-zinc-200/80 dark:border-zinc-700/70 ${extra}`.trim();
+}
+
+function PortCarrierSummary({
+  portName,
+  carrierName,
+  carrierRows,
+  portRows,
 }: {
-  title: string;
-  rows: SolicitudesPortYearPax[];
-  total?: number;
-  highlightYears?: Set<number>;
+  portName: string;
+  carrierName: string;
+  carrierRows: SolicitudesPortYearPax[];
+  portRows: SolicitudesPortYearPax[];
 }) {
+  const { years, carrierMap, portMap, carrierTotal, portTotal } = useMemo(() => {
+    const nextCarrier = paxByYearMap(carrierRows);
+    const nextPort = paxByYearMap(portRows);
+    const nextYears = Array.from(
+      new Set([...nextCarrier.keys(), ...nextPort.keys()]),
+    ).sort((a, b) => a - b);
+    return {
+      years: nextYears,
+      carrierMap: nextCarrier,
+      portMap: nextPort,
+      carrierTotal: carrierRows.reduce((sum, row) => sum + row.pax, 0),
+      portTotal: portRows.reduce((sum, row) => sum + row.pax, 0),
+    };
+  }, [carrierRows, portRows]);
+
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <div className="border-b border-zinc-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-sky-950/40">
-        {title}
+    <div className="h-fit w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <div className="border-b border-zinc-200 bg-sky-50 px-3 py-2 dark:border-zinc-700 dark:bg-sky-950/40">
+        <p className="text-sm font-semibold text-[var(--admin-accent)]">
+          {portName}
+        </p>
+        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+          {carrierName}
+        </p>
       </div>
       <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="bg-zinc-50 text-xs text-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300">
+            <th
+              className={cellBorder(
+                "px-3 py-1.5 text-left font-semibold",
+              )}
+            >
+              Año
+            </th>
+            <th
+              className={cellBorder(
+                "px-3 py-1.5 text-right font-semibold",
+              )}
+            >
+              <span className="inline-flex items-center justify-end gap-1">
+                Naviera vs total
+                <InfoTooltip
+                  content="Naviera seleccionada vs total de navieras"
+                  label="Naviera vs total"
+                />
+              </span>
+            </th>
+          </tr>
+        </thead>
         <tbody>
-          {rows.map((row) => {
-            const hi = highlightYears?.has(row.year);
+          {years.map((year) => {
+            const carrierPax = carrierMap.get(year) ?? 0;
+            const portPax = portMap.get(year) ?? 0;
             return (
-              <tr
-                key={row.year}
-                className={
-                  hi
-                    ? "bg-sky-100/80 dark:bg-sky-950/50"
-                    : "bg-white dark:bg-zinc-950/40"
-                }
-              >
-                <td className="border-b border-zinc-100 px-3 py-1.5 text-center tabular-nums dark:border-zinc-800">
-                  {row.year}
+              <tr key={year} className="bg-white dark:bg-zinc-950/40">
+                <td
+                  className={cellBorder(
+                    "px-3 py-1.5 text-center tabular-nums",
+                  )}
+                >
+                  {year}
                 </td>
-                <td className="border-b border-zinc-100 px-3 py-1.5 text-right tabular-nums dark:border-zinc-800">
-                  {formatPax(row.pax)}
+                <td
+                  className={cellBorder(
+                    "px-3 py-1.5 text-right tabular-nums",
+                  )}
+                >
+                  {formatPax(carrierPax)} / {formatPax(portPax)}{" "}
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    ({formatPct(carrierPax, portPax)})
+                  </span>
                 </td>
               </tr>
             );
           })}
-          {total != null ? (
-            <tr className="bg-zinc-50 font-semibold dark:bg-zinc-900/60">
-              <td className="px-3 py-1.5">Total</td>
-              <td className="px-3 py-1.5 text-right tabular-nums">
-                {formatPax(total)}
-              </td>
-            </tr>
-          ) : null}
+          <tr className="bg-zinc-50 font-semibold dark:bg-zinc-900/60">
+            <td className={cellBorder("px-3 py-1.5")}>Total</td>
+            <td
+              className={cellBorder(
+                "px-3 py-1.5 text-right tabular-nums",
+              )}
+            >
+              {formatPax(carrierTotal)} / {formatPax(portTotal)}{" "}
+              <span className="font-semibold text-zinc-600 dark:text-zinc-300">
+                ({formatPct(carrierTotal, portTotal)})
+              </span>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -151,11 +225,14 @@ export default function SolicitudesPortSection({
     );
   }
 
-  const highlight = new Set(data.years);
   const hasRows = data.year_blocks.some((b) => b.rows.length > 0);
-  const showCarrier =
+  const carrierRows =
+    data.carrier_by_year?.length > 0
+      ? data.carrier_by_year
+      : data.nuevas_solicitadas;
+  const showSummary =
     Boolean(data.shipping_line_label) &&
-    (data.carrier_by_year?.length ?? 0) > 0;
+    (carrierRows.length > 0 || data.port_by_year.length > 0);
 
   return (
     <ViewSection
@@ -171,7 +248,7 @@ export default function SolicitudesPortSection({
       title={data.title}
       description={data.subtitle}
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-6">
           {!hasRows ? (
             <ReportsEmptyState
@@ -245,21 +322,14 @@ export default function SolicitudesPortSection({
           )}
         </div>
 
-        <div className="space-y-4">
-          <SummaryTable
-            title="Nuevas solicitadas"
-            rows={data.nuevas_solicitadas}
-            total={data.nuevas_total}
+        {showSummary ? (
+          <PortCarrierSummary
+            portName={data.port_name}
+            carrierName={data.shipping_line_label}
+            carrierRows={carrierRows}
+            portRows={data.port_by_year}
           />
-          <SummaryTable title={data.port_name} rows={data.port_by_year} />
-          {showCarrier ? (
-            <SummaryTable
-              title={data.shipping_line_label}
-              rows={data.carrier_by_year}
-              highlightYears={highlight}
-            />
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </ViewSection>
   );
