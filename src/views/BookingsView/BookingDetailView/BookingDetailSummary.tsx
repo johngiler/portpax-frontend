@@ -3,6 +3,7 @@
 import { Anchor, CalendarDays, MapPin, Pencil, Ship, Tag } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
@@ -19,8 +20,11 @@ import { canEditBookingSchedule } from "@/lib/navAccess";
 import { sanitizeReturnTo } from "@/lib/safeReturnTo";
 import { revalidateBookingActivity } from "@/lib/swr/mutateHelpers";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateBooking } from "@/services/bookings/bookingService";
-import { bookingDetailHref, type Booking } from "@/types/booking";
+import {
+  updateBooking,
+  validateBookings,
+} from "@/services/bookings/bookingService";
+import { bookingDetailHref, type Booking, type BookingValidationIssue } from "@/types/booking";
 import { portDisplayName } from "@/types/catalog";
 
 type SummaryItemProps = {
@@ -74,6 +78,7 @@ export default function BookingDetailSummary({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [liveWarnings, setLiveWarnings] = useState<BookingValidationIssue[]>([]);
 
   const { ports } = useActivePortsCatalog(editing);
   const { lines } = useActiveShippingLinesCatalog(editing);
@@ -95,6 +100,33 @@ export default function BookingDetailSummary({
     setNotes(booking.notes ?? "");
     setTagName(booking.tag_name ?? "");
   }, [booking, editing]);
+
+  useEffect(() => {
+    if (!editing || !portId || !vesselId || !callDate) {
+      setLiveWarnings([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      validateBookings({
+        port: portId,
+        vessel: vesselId,
+        call_dates: [callDate],
+        exclude_booking: booking.id,
+      })
+        .then((result) => {
+          if (cancelled) return;
+          setLiveWarnings(result.warnings ?? []);
+        })
+        .catch(() => {
+          if (!cancelled) setLiveWarnings([]);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [editing, portId, vesselId, callDate, booking.id]);
 
   useEffect(() => {
     if (!editing || !lineId || vesselsLoading) return;
@@ -163,6 +195,7 @@ export default function BookingDetailSummary({
 
   function startEdit() {
     setFormError(null);
+    setLiveWarnings([]);
     setFieldErrors({});
     setPortId(booking.port);
     setLineId(booking.shipping_line);
@@ -177,6 +210,7 @@ export default function BookingDetailSummary({
   function cancelEdit() {
     setEditing(false);
     setFormError(null);
+    setLiveWarnings([]);
     setFieldErrors({});
   }
 
@@ -245,6 +279,9 @@ export default function BookingDetailSummary({
       {editing ? (
         <div className="mt-4 space-y-4">
           {formError ? <FormErrorAlert message={formError} /> : null}
+          {liveWarnings.length > 0 ? (
+            <ValidationIssuesAlert warnings={liveWarnings} returnTo={returnTo} />
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <FormFieldSelect<number>
               label="Puerto"

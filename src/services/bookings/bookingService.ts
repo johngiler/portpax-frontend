@@ -620,6 +620,7 @@ export async function validateBookings(params: {
   eta?: string | null;
   etd?: string | null;
   acknowledge_combined_red?: boolean;
+  exclude_booking?: number | null;
 }): Promise<BookingValidationResult> {
   return apiFetch<BookingValidationResult>(`${BASE}validate/`, {
     method: "POST",
@@ -797,7 +798,7 @@ export async function deleteBooking(id: number): Promise<void> {
 export type FetchDashboardStatsParams = {
   date_from: string;
   date_to: string;
-  port?: number;
+  ports?: number[];
   shipping_line?: number;
   shipping_line_group?: number;
 };
@@ -808,7 +809,9 @@ export async function fetchDashboardStats(
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
-  if (params.port) query.set("port", String(params.port));
+  if (params.ports && params.ports.length > 0) {
+    query.set("port", params.ports.join(","));
+  }
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));

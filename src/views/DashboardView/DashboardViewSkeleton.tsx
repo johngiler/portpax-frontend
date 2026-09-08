@@ -4,12 +4,16 @@ import { LayoutDashboard } from "lucide-react";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import Skeleton from "@/components/ui/Skeleton";
 
-export default function DashboardViewSkeleton() {
+export default function DashboardViewSkeleton({
+  title = "Dashboard",
+}: {
+  title?: string;
+}) {
   return (
     <>
       <ViewPageHeader
         icon={LayoutDashboard}
-        title="Dashboard"
+        title={title}
         description="KPIs operativos del período, arribos de la semana, conflictos y ocupación por puerto."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo } from "react";
 import FilterActions from "@/components/layout/FilterActions";
-import { FormField, FormFieldSelect } from "@/components/ui/FormField";
-import { fetchPorts } from "@/services/catalogs/portService";
+import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
+import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
@@ -13,8 +13,8 @@ type DashboardFiltersProps = {
   ports: Port[];
   groups: ShippingLineGroup[];
   lines: ShippingLine[];
-  selectedPortId: number | null;
-  onPortChange: (portId: number | null) => void;
+  selectedPortIds: number[];
+  onPortChange: (portIds: number[]) => void;
   dateFrom: string;
   dateTo: string;
   onDateFromChange: (value: string) => void;
@@ -48,7 +48,7 @@ export default function DashboardFilters({
   ports,
   groups,
   lines,
-  selectedPortId,
+  selectedPortIds,
   onPortChange,
   dateFrom,
   dateTo,
@@ -65,7 +65,7 @@ export default function DashboardFilters({
   const portOptions = useMemo(
     () =>
       ports.map((port) => ({
-        value: String(port.id),
+        value: port.id,
         label: portDisplayName(port),
         logoUrl: port.logo,
       })),
@@ -88,18 +88,6 @@ export default function DashboardFilters({
       })),
     ];
   }, [groups, lines]);
-
-  const loadPortOptions = useCallback(async (input: string) => {
-    const res = await fetchPorts({
-      search: input.trim() || undefined,
-      pageSize: 30,
-    });
-    return res.results.map((port) => ({
-      value: String(port.id),
-      label: portDisplayName(port),
-      logoUrl: port.logo,
-    }));
-  }, []);
 
   const loadCarrierOptions = useCallback(
     async (input: string) => {
@@ -135,15 +123,17 @@ export default function DashboardFilters({
 
   const carrierValue = carrierToValue(carrierFilter);
   const canClear =
-    selectedPortId != null ||
+    selectedPortIds.length > 0 ||
     carrierFilter.type !== "all" ||
     dateFrom !== defaultDateFrom ||
     dateTo !== defaultDateTo;
 
   function handleFromChange(value: string) {
     onDateFromChange(value);
-    if (value && dateTo && value > dateTo) {
-      onDateToChange(value);
+    // Full calendar year of Desde (e.g. 2027-01-01 → 2027-12-31).
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const { year } = parseIsoDate(value);
+      onDateToChange(toIsoDate(year, 11, 31));
     }
   }
 
@@ -156,20 +146,16 @@ export default function DashboardFilters({
 
   return (
     <>
-      <FormFieldSelect<string>
+      <FormFieldMultiSelect<number>
         label="Puerto"
         name="dashboard_port"
         compact
         showLogo
         logoKind="port"
-        value={selectedPortId == null ? "" : String(selectedPortId)}
-        onChange={(value) =>
-          onPortChange(!value || value === "all" ? null : Number(value))
-        }
+        value={selectedPortIds}
+        onChange={onPortChange}
         options={portOptions}
-        loadOptions={loadPortOptions}
-        optionLabel="Todos los puertos"
-        emptyValue=""
+        placeholder="Todos los puertos"
       />
       <FormFieldSelect<string>
         label="Naviera"

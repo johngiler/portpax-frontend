@@ -8,7 +8,7 @@ import type { DashboardCarrierFilter, DashboardStats } from "@/types/dashboard";
 export type DashboardStatsParams = {
   dateFrom: string;
   dateTo: string;
-  portId: number | null;
+  portIds: number[];
   carrier: DashboardCarrierFilter;
 };
 
@@ -17,12 +17,10 @@ function statsParamsKey(params: DashboardStatsParams): string {
     params.carrier.type === "all"
       ? "all"
       : `${params.carrier.type}:${params.carrier.id}`;
-  return [
-    params.dateFrom,
-    params.dateTo,
-    params.portId ?? 0,
-    carrierPart,
-  ].join("|");
+  const portsPart = [...params.portIds].sort((a, b) => a - b).join(",");
+  return [params.dateFrom, params.dateTo, portsPart || "0", carrierPart].join(
+    "|",
+  );
 }
 
 export function useDashboardStats(params: DashboardStatsParams, enabled = true) {
@@ -35,7 +33,7 @@ export function useDashboardStats(params: DashboardStatsParams, enabled = true) 
       fetchDashboardStats({
         date_from: params.dateFrom,
         date_to: params.dateTo,
-        port: params.portId ?? undefined,
+        ports: params.portIds.length > 0 ? params.portIds : undefined,
         shipping_line:
           params.carrier.type === "line" ? params.carrier.id : undefined,
         shipping_line_group:

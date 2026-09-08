@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Users } from "lucide-react";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
+import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewStatCard from "@/components/layout/ViewStatCard";
 import {
@@ -18,6 +19,7 @@ import {
   buildBookingsWorkspaceQuery,
   type BookingsWorkspaceFilters,
 } from "@/lib/viewFilterQuery";
+import { portDisplayName } from "@/types/catalog";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
 import DashboardActionQueueSection from "./DashboardActionQueueSection";
 import DashboardCharts from "./DashboardCharts";
@@ -26,6 +28,11 @@ import DashboardHorizonSection from "./DashboardHorizonSection";
 import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
 import DashboardYoyBadge from "./DashboardYoyBadge";
+import {
+  buildDashboardActiveFilterChips,
+  dashboardHasActiveFilters,
+  dashboardTitleYear,
+} from "./dashboardActiveFilterChips";
 import { formatCompactNumber, formatYoyBadge } from "./formatDashboardKpi";
 
 function defaultYearRange(): { from: string; to: string } {
@@ -36,10 +43,17 @@ function defaultYearRange(): { from: string; to: string } {
   };
 }
 
+function sameNumberList(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort((x, y) => x - y);
+  const sortedB = [...b].sort((x, y) => x - y);
+  return sortedA.every((value, index) => value === sortedB[index]);
+}
+
 function dashboardBookingsHref(input: {
   dateFrom: string;
   dateTo: string;
-  portId: number | null;
+  portIds: number[];
   carrier: DashboardCarrierFilter;
   conflict?: "" | "yes";
 }): string {
@@ -48,7 +62,7 @@ function dashboardBookingsHref(input: {
     tab: "list",
     status: [],
     search: "",
-    ports: input.portId ? [input.portId] : [],
+    ports: input.portIds,
     line: input.carrier.type === "line" ? input.carrier.id : 0,
     vessel: 0,
     datePreset: "custom",
@@ -82,14 +96,14 @@ export default function DashboardView() {
   const catalogReady = !portsLoading && !groupsLoading && !linesLoading;
   const catalogError = portsError || groupsError || linesError;
 
-  const [selectedPortId, setSelectedPortId] = useState<number | null>(null);
+  const [selectedPortIds, setSelectedPortIds] = useState<number[]>([]);
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
   const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
     type: "all",
   });
-  const [appliedSelectedPortId, setAppliedSelectedPortId] = useState<number | null>(
-    null,
+  const [appliedSelectedPortIds, setAppliedSelectedPortIds] = useState<number[]>(
+    [],
   );
   const [appliedDateFrom, setAppliedDateFrom] = useState(defaults.from);
   const [appliedDateTo, setAppliedDateTo] = useState(defaults.to);
@@ -101,11 +115,70 @@ export default function DashboardView() {
     {
       dateFrom: appliedDateFrom,
       dateTo: appliedDateTo,
-      portId: appliedSelectedPortId,
+      portIds: appliedSelectedPortIds,
       carrier: appliedCarrierFilter,
     },
     catalogReady,
   );
+
+  const portsById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const port of ports) {
+      map.set(port.id, portDisplayName(port));
+    }
+    return map;
+  }, [ports]);
+
+  const titleYear = dashboardTitleYear(appliedDateFrom, appliedDateTo);
+  const dashboardTitle = titleYear ? `Dashboard ${titleYear}` : "Dashboard";
+
+  const hasActiveFilters = dashboardHasActiveFilters({
+    portIds: appliedSelectedPortIds,
+    carrier: appliedCarrierFilter,
+    dateFrom: appliedDateFrom,
+    dateTo: appliedDateTo,
+    defaultDateFrom: defaults.from,
+    defaultDateTo: defaults.to,
+  });
+
+  const activeFilterChips = useMemo(() => {
+    const portLabel =
+      appliedSelectedPortIds.length === 0
+        ? null
+        : appliedSelectedPortIds.length === 1
+          ? (portsById.get(appliedSelectedPortIds[0]) ?? null)
+          : `${portsById.get(appliedSelectedPortIds[0]) ?? "Puerto"} +${appliedSelectedPortIds.length - 1}`;
+
+    let carrierLabel: string | null = null;
+    if (appliedCarrierFilter.type === "line") {
+      carrierLabel =
+        lines.find((line) => line.id === appliedCarrierFilter.id)?.name ?? null;
+    } else if (appliedCarrierFilter.type === "group") {
+      const groupName = groups.find(
+        (group) => group.id === appliedCarrierFilter.id,
+      )?.name;
+      carrierLabel = groupName ? `Grupo: ${groupName}` : null;
+    }
+
+    return buildDashboardActiveFilterChips({
+      portLabel,
+      carrierLabel,
+      dateFrom: appliedDateFrom,
+      dateTo: appliedDateTo,
+      defaultDateFrom: defaults.from,
+      defaultDateTo: defaults.to,
+    });
+  }, [
+    appliedSelectedPortIds,
+    appliedCarrierFilter,
+    appliedDateFrom,
+    appliedDateTo,
+    defaults.from,
+    defaults.to,
+    portsById,
+    lines,
+    groups,
+  ]);
 
   useEffect(() => {
     if (catalogError) {
@@ -123,26 +196,26 @@ export default function DashboardView() {
   }, [catalogError, statsError]);
 
   if (!catalogReady || (isLoading && !stats)) {
-    return <DashboardViewSkeleton />;
+    return <DashboardViewSkeleton title={dashboardTitle} />;
   }
 
   const kpis = stats?.kpis;
   const bookingsListHref = dashboardBookingsHref({
     dateFrom: appliedDateFrom,
     dateTo: appliedDateTo,
-    portId: appliedSelectedPortId,
+    portIds: appliedSelectedPortIds,
     carrier: appliedCarrierFilter,
   });
   const bookingsConflictHref = dashboardBookingsHref({
     dateFrom: appliedDateFrom,
     dateTo: appliedDateTo,
-    portId: appliedSelectedPortId,
+    portIds: appliedSelectedPortIds,
     carrier: appliedCarrierFilter,
     conflict: "yes",
   });
 
   function applyFilters() {
-    setAppliedSelectedPortId(selectedPortId);
+    setAppliedSelectedPortIds(selectedPortIds);
     setAppliedDateFrom(dateFrom);
     setAppliedDateTo(dateTo);
     setAppliedCarrierFilter(carrierFilter);
@@ -151,11 +224,11 @@ export default function DashboardView() {
 
   function clearFilters() {
     const allCarriers: DashboardCarrierFilter = { type: "all" };
-    setSelectedPortId(null);
+    setSelectedPortIds([]);
     setDateFrom(defaults.from);
     setDateTo(defaults.to);
     setCarrierFilter(allCarriers);
-    setAppliedSelectedPortId(null);
+    setAppliedSelectedPortIds([]);
     setAppliedDateFrom(defaults.from);
     setAppliedDateTo(defaults.to);
     setAppliedCarrierFilter(allCarriers);
@@ -163,7 +236,7 @@ export default function DashboardView() {
   }
 
   const canApplyFilters =
-    selectedPortId !== appliedSelectedPortId ||
+    !sameNumberList(selectedPortIds, appliedSelectedPortIds) ||
     dateFrom !== appliedDateFrom ||
     dateTo !== appliedDateTo ||
     carrierFilter.type !== appliedCarrierFilter.type ||
@@ -178,8 +251,8 @@ export default function DashboardView() {
           ports={ports}
           groups={groups}
           lines={lines}
-          selectedPortId={selectedPortId}
-          onPortChange={setSelectedPortId}
+          selectedPortIds={selectedPortIds}
+          onPortChange={setSelectedPortIds}
           dateFrom={dateFrom}
           dateTo={dateTo}
           onDateFromChange={setDateFrom}
@@ -196,9 +269,13 @@ export default function DashboardView() {
 
       <ViewPageHeader
         icon={LayoutDashboard}
-        title="Dashboard"
+        title={dashboardTitle}
         description="KPIs operativos del período, arribos de la semana, conflictos y ocupación por puerto."
       />
+
+      {hasActiveFilters ? (
+        <ViewFilteredBanner onClear={clearFilters} chips={activeFilterChips} />
+      ) : null}
 
       {viewError && (
         <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
