@@ -26,6 +26,15 @@ type BulkImportRowIssuesCellProps = {
   modalTitle?: string;
 };
 
+/** Narrative twin of the occupancy card — same fact, drop when card is shown. */
+function isPositionOccupiedNarrative(msg: string): boolean {
+  return (
+    msg.startsWith("La posición ya está asignada") ||
+    msg.startsWith("La posición está ocupada por un call CL") ||
+    msg.startsWith("Conflicto con ")
+  );
+}
+
 export default function BulkImportRowIssuesCell({
   row,
   revalidating = false,
@@ -58,7 +67,10 @@ export default function BulkImportRowIssuesCell({
   const hasOccupancy = Boolean(
     (occupant || occupancyHint) && !occupancyIsClaimableLta,
   );
-  const warnings = Array.from(new Set(row.warnings ?? []));
+  // Card «posición ocupada» already shows the occupant — drop the duplicate narrative.
+  const warnings = Array.from(new Set(row.warnings ?? [])).filter(
+    (msg) => !(hasOccupancy && isPositionOccupiedNarrative(msg)),
+  );
   const total =
     issues.length +
     warnings.length +
