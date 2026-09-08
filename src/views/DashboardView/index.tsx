@@ -325,8 +325,6 @@ export default function DashboardView() {
                   by_port: [],
                 }
               }
-              portIds={appliedSelectedPortIds}
-              carrier={appliedCarrierFilter}
             />
           </div>
           <div className="mb-6 grid items-stretch gap-6 lg:grid-cols-2">
