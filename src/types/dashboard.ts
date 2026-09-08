@@ -20,6 +20,7 @@ export type DashboardNamedCount = {
   code?: string;
   bookings: number;
   planned_pax?: number;
+  avg_planned_pax?: number;
 };
 
 export type DashboardMonthRow = {
@@ -51,12 +52,17 @@ export type DashboardCancelReason = {
   reason: string;
   label: string;
   count: number;
+  planned_pax?: number;
+  port_name?: string | null;
+  shipping_line_name?: string | null;
 };
 
 export type DashboardWeekday = {
   weekday: number;
   label: string;
   count: number;
+  days_in_period?: number;
+  days_used?: number;
 };
 
 export type DashboardStatusSlice = {

@@ -7,22 +7,6 @@ import ChartCard from "./charts/ChartCard";
 import DonutChart from "./charts/DonutChart";
 import HorizontalBarChart from "./charts/HorizontalBarChart";
 import PortMonthComboChart from "./charts/PortMonthComboChart";
-import VerticalGroupedBars from "./charts/VerticalGroupedBars";
-
-const MONTH_LABELS = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
-];
 
 const STATUS_COLORS: Record<string, string> = {
   h: "#f59e0b",
@@ -40,17 +24,6 @@ type DashboardChartsProps = {
 export default function DashboardCharts({ stats }: DashboardChartsProps) {
   const [portMonthMode, setPortMonthMode] = useState<"chart" | "table">("chart");
 
-  const monthCategories = MONTH_LABELS;
-  const monthValues: Record<string, Record<string, number>> = {};
-  for (const row of stats.by_month) {
-    const label = MONTH_LABELS[row.month - 1];
-    monthValues[label] = {
-      nr: row.nr,
-      co: row.co,
-      c: row.c,
-    };
-  }
-
   const statusSlices = stats.status_breakdown.map((slice) => ({
     key: slice.status,
     label: slice.label,
@@ -63,7 +36,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
     <div className="grid gap-5 lg:grid-cols-2">
       <ChartCard
         title="Pasajeros por mes y puerto"
-        description="Zona baja ampliada hasta el máx. de calls (≥100); arriba escala pax en xK."
+        description="Líneas = pax (eje izq.) · barras = calls (eje der.)."
         accent="#3478b5"
         className="lg:col-span-2"
         actions={
@@ -116,42 +89,8 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       </ChartCard>
 
       <ChartCard
-        title="Reservas por mes"
-        description="Tendencia mensual por estado."
-        accent="#d97706"
-      >
-        <VerticalGroupedBars
-          categories={monthCategories}
-          series={[
-            { key: "co", label: "Confirmadas", color: STATUS_COLORS.co },
-            { key: "nr", label: "Solicitadas", color: "#d97706" },
-            { key: "c", label: "Canceladas", color: STATUS_COLORS.c },
-          ]}
-          values={monthValues}
-        />
-      </ChartCard>
-
-      <ChartCard
-        title="Totales por naviera"
-        description="Reservas activas (sin canceladas) por marca."
-        accent="#3478b5"
-      >
-        <HorizontalBarChart
-          accent="#3478b5"
-          items={stats.by_shipping_line.map((row) => ({
-            label: row.name,
-            value: row.bookings,
-            hint:
-              row.planned_pax && row.planned_pax > 0
-                ? `· ${row.planned_pax.toLocaleString("es")} pax`
-                : undefined,
-          }))}
-        />
-      </ChartCard>
-
-      <ChartCard
         title="Barcos principales"
-        description="Flota con más escalas en el período."
+        description="Flota con más escalas · pax planificados totales."
         accent="#7c3aed"
       >
         <HorizontalBarChart
@@ -159,7 +98,14 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
           items={stats.top_vessels.map((row) => ({
             label: row.name,
             value: row.bookings,
-            hint: `· ${row.shipping_line_name}`,
+            hint: [
+              row.shipping_line_name,
+              row.planned_pax > 0
+                ? `${row.planned_pax.toLocaleString("es")} pax`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
           }))}
         />
       </ChartCard>
@@ -180,22 +126,31 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
 
       <ChartCard
         title="Carga por día de la semana"
-        description="Qué días concentran más escalas activas."
+        description="Calls activos · días con escala vs días del período."
         accent="#0891b2"
       >
         <HorizontalBarChart
           accent="#0891b2"
-          items={stats.by_weekday.map((row) => ({
-            label: row.label,
-            value: row.count,
-          }))}
+          valueSuffix="calls"
+          items={stats.by_weekday.map((row) => {
+            const inPeriod = row.days_in_period ?? 0;
+            const used = row.days_used ?? 0;
+            return {
+              label: row.label,
+              value: row.count,
+              hint:
+                inPeriod > 0
+                  ? `${used.toLocaleString("es")}/${inPeriod.toLocaleString("es")} días`
+                  : undefined,
+            };
+          })}
         />
       </ChartCard>
 
       {stats.by_cancellation_reason.length > 0 ? (
         <ChartCard
           title="Motivos de cancelación"
-          description="Desglose de cancelaciones registradas."
+          description="Desglose con puerto, naviera y pax planificados."
           className="lg:col-span-2"
           accent="#dc2626"
         >
@@ -205,10 +160,43 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
             items={stats.by_cancellation_reason.map((row) => ({
               label: row.label,
               value: row.count,
+              hint: [
+                row.port_name,
+                row.shipping_line_name,
+                row.planned_pax != null && row.planned_pax > 0
+                  ? `${row.planned_pax.toLocaleString("es")} pax`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · "),
             }))}
           />
         </ChartCard>
       ) : null}
+
+      <ChartCard
+        title="Totales por naviera"
+        description="Ordenado por pax planificados · promedio por escala."
+        accent="#3478b5"
+        className="lg:col-span-2"
+      >
+        <HorizontalBarChart
+          accent="#3478b5"
+          valueSuffix="pax"
+          items={stats.by_shipping_line.map((row) => ({
+            label: row.name,
+            value: row.planned_pax ?? 0,
+            hint: [
+              `${row.bookings.toLocaleString("es")} calls`,
+              row.avg_planned_pax != null && row.avg_planned_pax > 0
+                ? `prom. ${row.avg_planned_pax.toLocaleString("es")} pax`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          }))}
+        />
+      </ChartCard>
     </div>
   );
 }

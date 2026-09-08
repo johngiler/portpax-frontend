@@ -52,9 +52,11 @@ export default function HorizontalBarChart({
                 {item.label}
               </span>
               <span className="shrink-0 text-xs font-semibold tabular-nums text-zinc-500">
-                {item.value}
+                {item.value.toLocaleString("es")}
                 {item.hint ? (
-                  <span className="ml-1 font-normal text-zinc-400">{item.hint}</span>
+                  <span className="ml-1 font-normal text-zinc-400">
+                    {item.hint}
+                  </span>
                 ) : null}
               </span>
             </div>
