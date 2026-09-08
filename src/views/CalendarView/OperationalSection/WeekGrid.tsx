@@ -21,7 +21,7 @@ import {
 
 type WeekGridProps = {
   weekAnchor: string;
-  onWeekAnchorChange: (iso: string) => void;
+  onWeekAnchorChange?: (iso: string) => void;
   bookings: BookingListItem[];
   positions: Position[];
   /** @deprecated Soft-focus uses focus.positionId; columns always show all piers. */
@@ -29,6 +29,8 @@ type WeekGridProps = {
   multiPort?: boolean;
   loading?: boolean;
   focus?: BookingCalendarFocus;
+  /** Hide week navigation (dashboard snap). */
+  readOnly?: boolean;
 };
 
 function dayBookingsVisible(
@@ -63,6 +65,7 @@ export default function WeekGrid({
   multiPort = false,
   loading = false,
   focus = {},
+  readOnly = false,
 }: WeekGridProps) {
   const days = weekDatesFrom(weekAnchor);
   // Keep all pier columns so neighbors on other berths stay visible.
@@ -76,42 +79,44 @@ export default function WeekGrid({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Semana anterior"
-            onClick={() => onWeekAnchorChange(addDaysIso(days[0], -7))}
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <p className="min-w-[12rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-            {formatIsoDateLabel(days[0], "short")} –{" "}
-            {formatIsoDateLabel(days[6], "short")}
-          </p>
-          <button
-            type="button"
-            aria-label="Semana siguiente"
-            onClick={() => onWeekAnchorChange(addDaysIso(days[0], 7))}
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const now = new Date();
-              onWeekAnchorChange(
-                `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
-              );
-            }}
-            className="ml-1 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--admin-accent)] hover:bg-[var(--admin-accent)]/10"
-          >
-            Ir a hoy
-          </button>
+      {!readOnly ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Semana anterior"
+              onClick={() => onWeekAnchorChange?.(addDaysIso(days[0], -7))}
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p className="min-w-[12rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              {formatIsoDateLabel(days[0], "short")} –{" "}
+              {formatIsoDateLabel(days[6], "short")}
+            </p>
+            <button
+              type="button"
+              aria-label="Semana siguiente"
+              onClick={() => onWeekAnchorChange?.(addDaysIso(days[0], 7))}
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                onWeekAnchorChange?.(
+                  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
+                );
+              }}
+              className="ml-1 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--admin-accent)] hover:bg-[var(--admin-accent)]/10"
+            >
+              Ir a hoy
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {loading ? (
         <BookingsViewSkeleton variant="calendar" calendarMode="weekly" />

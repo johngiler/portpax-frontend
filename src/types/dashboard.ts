@@ -94,6 +94,36 @@ export type DashboardActionQueue = {
   by_port: DashboardActionPortRow[];
 };
 
+export type DashboardPendingConfirmPortRow = {
+  port_id: number;
+  name: string;
+  code: string;
+  logo?: string | null;
+  holds: number;
+  lta: number;
+  total: number;
+};
+
+export type DashboardPendingConfirm = {
+  holds: number;
+  lta: number;
+  total: number;
+  hold_since: string | null;
+  lta_since: string | null;
+  by_port: DashboardPendingConfirmPortRow[];
+};
+
+export type DashboardPeakPaxPortRow = {
+  port_id: number;
+  name: string;
+  code: string;
+  logo?: string | null;
+  call_date: string;
+  calls: number;
+  passengers: number;
+  base_pax: "real" | "planificado";
+};
+
 export type DashboardConflictTypeRow = {
   type: string;
   label: string;
@@ -121,8 +151,10 @@ export type DashboardNext30Days = {
   by_port: DashboardNext30PortRow[];
 };
 
-/** Same shape as next_30_days — Monday–Sunday of the current week. */
-export type DashboardCurrentWeek = DashboardNext30Days;
+/** Monday–Sunday of the current week. */
+export type DashboardCurrentWeek = DashboardNext30Days & {
+  iso_week?: number;
+};
 
 export type DashboardOccupancyPortRow = {
   port_id: number;
@@ -142,9 +174,11 @@ export type DashboardStats = {
   day_count: number;
   kpis: DashboardKpis;
   conflicts: DashboardConflicts;
+  pending_confirm?: DashboardPendingConfirm;
   action_queue: DashboardActionQueue;
   next_30_days: DashboardNext30Days;
   current_week?: DashboardCurrentWeek;
+  peak_pax_by_port?: DashboardPeakPaxPortRow[];
   yoy: DashboardYoy;
   occupancy_by_port: DashboardOccupancyPortRow[];
   by_shipping_line: DashboardNamedCount[];

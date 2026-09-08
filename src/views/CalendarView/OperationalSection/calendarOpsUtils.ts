@@ -26,6 +26,17 @@ export function weekDatesFrom(isoInWeek: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDaysIso(start, i));
 }
 
+/** ISO-8601 week number (Mon–Sun weeks) for the Monday of this week. */
+export function isoWeekNumber(isoInWeek: string): number {
+  const monday = startOfWeekMonday(isoInWeek);
+  const { year, monthIndex, day } = parseIsoDate(monday);
+  const date = new Date(Date.UTC(year, monthIndex, day));
+  // Thursday in current week decides the year / week number.
+  date.setUTCDate(date.getUTCDate() + 3);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
 export function monthBounds(year: number, monthIndex: number): { from: string; to: string } {
   const lastDay = new Date(year, monthIndex + 1, 0).getDate();
   return {

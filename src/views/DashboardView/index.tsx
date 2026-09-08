@@ -15,24 +15,23 @@ import {
 import { useDashboardStats } from "@/hooks/swr/useDashboardStats";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
-import {
-  buildBookingsWorkspaceQuery,
-  type BookingsWorkspaceFilters,
-} from "@/lib/viewFilterQuery";
 import { portDisplayName } from "@/types/catalog";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
-import DashboardActionQueueSection from "./DashboardActionQueueSection";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
 import DashboardHorizonSection from "./DashboardHorizonSection";
 import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
+import DashboardPeakPaxByPortCard from "./DashboardPeakPaxByPortCard";
+import DashboardPendingConfirmCard from "./DashboardPendingConfirmCard";
 import DashboardViewSkeleton from "./DashboardViewSkeleton";
+import DashboardWeekArrivalsCard from "./DashboardWeekArrivalsCard";
 import DashboardYoyBadge from "./DashboardYoyBadge";
 import {
   buildDashboardActiveFilterChips,
   dashboardHasActiveFilters,
   dashboardTitleYear,
 } from "./dashboardActiveFilterChips";
+import { dashboardBookingsHref } from "./dashboardBookingsHref";
 import { formatCompactNumber, formatYoyBadge } from "./formatDashboardKpi";
 
 function defaultYearRange(): { from: string; to: string } {
@@ -48,39 +47,6 @@ function sameNumberList(a: number[], b: number[]): boolean {
   const sortedA = [...a].sort((x, y) => x - y);
   const sortedB = [...b].sort((x, y) => x - y);
   return sortedA.every((value, index) => value === sortedB[index]);
-}
-
-function dashboardBookingsHref(input: {
-  dateFrom: string;
-  dateTo: string;
-  portIds: number[];
-  carrier: DashboardCarrierFilter;
-  conflict?: "" | "yes";
-}): string {
-  const year = Number(input.dateFrom.slice(0, 4)) || new Date().getFullYear();
-  const state: BookingsWorkspaceFilters = {
-    tab: "list",
-    status: [],
-    search: "",
-    ports: input.portIds,
-    line: input.carrier.type === "line" ? input.carrier.id : 0,
-    vessel: 0,
-    datePreset: "custom",
-    customFrom: input.dateFrom,
-    customTo: input.dateTo,
-    mode: "monthly",
-    season: "natural",
-    position: 0,
-    week: input.dateFrom,
-    year,
-    month: Math.max(0, Number(input.dateFrom.slice(5, 7)) - 1) || 0,
-    heat: "availability",
-    density: 0,
-    conflict: input.conflict ?? "",
-    importedDates: [],
-  };
-  const qs = buildBookingsWorkspaceQuery(state);
-  return qs ? `/bookings?${qs}` : "/bookings";
 }
 
 export default function DashboardView() {
@@ -200,17 +166,14 @@ export default function DashboardView() {
   }
 
   const kpis = stats?.kpis;
-  const bookingsListHref = dashboardBookingsHref({
+  const linkBase = {
     dateFrom: appliedDateFrom,
     dateTo: appliedDateTo,
     portIds: appliedSelectedPortIds,
     carrier: appliedCarrierFilter,
-  });
-  const bookingsConflictHref = dashboardBookingsHref({
-    dateFrom: appliedDateFrom,
-    dateTo: appliedDateTo,
-    portIds: appliedSelectedPortIds,
-    carrier: appliedCarrierFilter,
+  };
+  const bookingsListHref = dashboardBookingsHref(linkBase);
+  const bookingsConflictHref = dashboardBookingsHref(linkBase, {
     conflict: "yes",
   });
 
@@ -351,9 +314,8 @@ export default function DashboardView() {
 
       {stats ? (
         <>
-          <div className="mb-6 grid gap-6 lg:grid-cols-2">
-            <DashboardHorizonSection
-              variant="current_week"
+          <div className="mb-6">
+            <DashboardWeekArrivalsCard
               data={
                 stats.current_week ?? {
                   date_from: "",
@@ -363,8 +325,28 @@ export default function DashboardView() {
                   by_port: [],
                 }
               }
+              portIds={appliedSelectedPortIds}
+              carrier={appliedCarrierFilter}
             />
-            <DashboardActionQueueSection data={stats.action_queue} />
+          </div>
+          <div className="mb-6 grid items-stretch gap-6 lg:grid-cols-2">
+            <DashboardPendingConfirmCard
+              data={
+                stats.pending_confirm ?? {
+                  holds: 0,
+                  lta: 0,
+                  total: 0,
+                  hold_since: null,
+                  lta_since: null,
+                  by_port: [],
+                }
+              }
+              linkBase={linkBase}
+            />
+            <DashboardPeakPaxByPortCard
+              rows={stats.peak_pax_by_port ?? []}
+              linkBase={linkBase}
+            />
           </div>
           <div className="mb-6">
             <DashboardHorizonSection
