@@ -43,6 +43,7 @@ export default function DashboardWeekArrivalsCard({
       icon={CalendarDays}
       title={`Arribos de la semana · Sem. ${weekNum}`}
       description={`Calls confirmados del ${rangeLabel}.`}
+      accent="#3478b5"
     >
       <div className="px-5 py-4 sm:px-6">
         <div className="mb-4 flex flex-wrap gap-4 text-sm text-zinc-600 dark:text-zinc-300">
@@ -59,7 +60,7 @@ export default function DashboardWeekArrivalsCard({
             Pax planificados
           </span>
         </div>
-        <div className="max-h-[22rem] overflow-auto rounded-xl border border-zinc-100 dark:border-zinc-800">
+        <div className="max-h-[24rem] overflow-auto rounded-xl">
           <WeekGrid
             weekAnchor={today}
             bookings={bookings}
@@ -67,6 +68,7 @@ export default function DashboardWeekArrivalsCard({
             multiPort
             loading={isLoading}
             readOnly
+            embedded
           />
         </div>
       </div>

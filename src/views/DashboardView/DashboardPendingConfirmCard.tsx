@@ -63,6 +63,7 @@ export default function DashboardPendingConfirmCard({
       description="Holds y LTA en el rango del filtro (requieren seguimiento)."
       className="flex h-full flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col p-0"
+      accent="#d97706"
     >
       {data.by_port.length === 0 ? (
         <p className="px-5 py-4 text-sm text-zinc-500 dark:text-zinc-400 sm:px-6">
@@ -134,7 +135,7 @@ export default function DashboardPendingConfirmCard({
               </tbody>
             </table>
           </div>
-          <div className="mt-auto shrink-0 border-t border-zinc-200 bg-zinc-50/80 px-5 py-3 dark:border-zinc-700 dark:bg-zinc-900/50 sm:px-6">
+          <div className="mt-auto shrink-0 border-t border-white/50 bg-white/40 px-5 py-3 backdrop-blur-sm dark:border-zinc-700/50 dark:bg-zinc-900/40 sm:px-6">
             <table className="w-full min-w-[20rem] table-fixed border-collapse text-left text-sm">
               <PendingConfirmColGroup />
               <tbody>

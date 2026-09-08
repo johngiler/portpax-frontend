@@ -27,6 +27,7 @@ export default function DashboardPeakPaxByPortCard({
       description="Día con más pasajeros en el rango del filtro (Real si ya pasó; Planificado si es futuro)."
       className="flex h-full flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col p-5 sm:p-6"
+      accent="#0d9488"
     >
       {rows.length === 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">

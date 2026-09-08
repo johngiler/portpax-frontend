@@ -19,7 +19,6 @@ import { portDisplayName } from "@/types/catalog";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
-import DashboardHorizonSection from "./DashboardHorizonSection";
 import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
 import DashboardPeakPaxByPortCard from "./DashboardPeakPaxByPortCard";
 import DashboardPendingConfirmCard from "./DashboardPendingConfirmCard";
@@ -346,13 +345,10 @@ export default function DashboardView() {
               linkBase={linkBase}
             />
           </div>
-          <div className="mb-6">
-            <DashboardHorizonSection
-              variant="next_30"
-              data={stats.next_30_days}
-            />
-          </div>
-          <DashboardOccupancyByPort rows={stats.occupancy_by_port} />
+          <DashboardOccupancyByPort
+            rows={stats.occupancy_by_port}
+            trends={stats.occupancy_trends}
+          />
           <DashboardCharts stats={stats} />
         </>
       ) : null}

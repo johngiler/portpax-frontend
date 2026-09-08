@@ -143,16 +143,13 @@ export type DashboardNext30PortRow = {
   planned_pax: number;
 };
 
-export type DashboardNext30Days = {
+/** Monday–Sunday of the current week. */
+export type DashboardCurrentWeek = {
   date_from: string;
   date_to: string;
   total_confirmed: number;
   planned_pax: number;
   by_port: DashboardNext30PortRow[];
-};
-
-/** Monday–Sunday of the current week. */
-export type DashboardCurrentWeek = DashboardNext30Days & {
   iso_week?: number;
 };
 
@@ -166,6 +163,49 @@ export type DashboardOccupancyPortRow = {
   occupancy_pct: number;
 };
 
+export type DashboardPortMonthPoint = {
+  month: number;
+  calls: number;
+  passengers: number;
+};
+
+export type DashboardPortMonthSeries = {
+  port_id: number;
+  name: string;
+  code: string;
+  months: DashboardPortMonthPoint[];
+};
+
+export type DashboardByPortMonth = {
+  ports: DashboardPortMonthSeries[];
+};
+
+export type DashboardOccupancyTrendSlice = {
+  year?: number;
+  month?: number;
+  season?: string;
+  label?: string;
+  date_from: string;
+  date_to: string;
+  by_port: DashboardOccupancyPortRow[];
+};
+
+export type DashboardOccupancyDockRow = {
+  position_id: number;
+  port_id: number;
+  port_name: string;
+  code: string;
+  capacity_slot_days: number;
+  occupied_slot_days: number;
+  occupancy_pct: number;
+};
+
+export type DashboardOccupancyTrends = {
+  by_month: DashboardOccupancyTrendSlice[];
+  by_season: DashboardOccupancyTrendSlice[];
+  by_dock: DashboardOccupancyDockRow[];
+};
+
 export type DashboardStats = {
   years: number[];
   year: number | null;
@@ -176,11 +216,12 @@ export type DashboardStats = {
   conflicts: DashboardConflicts;
   pending_confirm?: DashboardPendingConfirm;
   action_queue: DashboardActionQueue;
-  next_30_days: DashboardNext30Days;
   current_week?: DashboardCurrentWeek;
   peak_pax_by_port?: DashboardPeakPaxPortRow[];
   yoy: DashboardYoy;
   occupancy_by_port: DashboardOccupancyPortRow[];
+  occupancy_trends?: DashboardOccupancyTrends;
+  by_port_month?: DashboardByPortMonth;
   by_shipping_line: DashboardNamedCount[];
   by_month: DashboardMonthRow[];
   top_vessels: DashboardVesselRow[];

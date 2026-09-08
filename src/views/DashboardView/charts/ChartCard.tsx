@@ -9,6 +9,7 @@ type ChartCardProps = {
   className?: string;
   /** Soft tint for card background gradient */
   accent?: string;
+  actions?: ReactNode;
 };
 
 export default function ChartCard({
@@ -17,6 +18,7 @@ export default function ChartCard({
   children,
   className = "",
   accent = "#3478b5",
+  actions,
 }: ChartCardProps) {
   return (
     <section
@@ -34,10 +36,19 @@ export default function ChartCard({
         aria-hidden
       />
       <div className="relative">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{title}</h3>
-        {description ? (
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
-        ) : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              {title}
+            </h3>
+            {description ? (
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {description}
+              </p>
+            ) : null}
+          </div>
+          {actions ? <div className="shrink-0">{actions}</div> : null}
+        </div>
         <div className="mt-4">{children}</div>
       </div>
     </section>
