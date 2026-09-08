@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import ChartTooltip from "./ChartTooltip";
 
 type Slice = {
@@ -8,12 +10,14 @@ type Slice = {
   label: string;
   value: number;
   color: string;
+  href?: string;
 };
 
 type DonutChartProps = {
   slices: Slice[];
   centerLabel?: string;
   centerValue?: string | number;
+  centerHref?: string;
   emptyLabel?: string;
 };
 
@@ -59,8 +63,10 @@ export default function DonutChart({
   slices,
   centerLabel,
   centerValue,
+  centerHref,
   emptyLabel = "Sin datos en el período",
 }: DonutChartProps) {
+  const router = useRouter();
   const gradId = useId().replace(/:/g, "");
   const [hovered, setHovered] = useState<string | null>(null);
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
@@ -135,7 +141,12 @@ export default function DonutChart({
                 key={slice.key}
                 d={path}
                 fill={`url(#${gradId}-${slice.key})`}
-                className="cursor-pointer transition-opacity duration-150"
+                role={slice.href ? "link" : undefined}
+                tabIndex={slice.href ? 0 : undefined}
+                className={[
+                  "transition-opacity duration-150",
+                  slice.href ? "cursor-pointer" : "",
+                ].join(" ")}
                 style={{
                   opacity: hovered === null || isActive ? 1 : 0.38,
                   filter: isActive
@@ -144,15 +155,35 @@ export default function DonutChart({
                 }}
                 onMouseEnter={() => setHovered(slice.key)}
                 onMouseLeave={() => setHovered(null)}
+                onClick={() => {
+                  if (slice.href) router.push(slice.href);
+                }}
+                onKeyDown={(e) => {
+                  if (!slice.href) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(slice.href);
+                  }
+                }}
               />
             );
           })}
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           {centerValue != null ? (
-            <span className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {centerValue}
-            </span>
+            centerHref ? (
+              <Link
+                href={centerHref}
+                className="pointer-events-auto text-lg font-bold tabular-nums text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
+                title="Ver todas las reservas del filtro"
+              >
+                {centerValue}
+              </Link>
+            ) : (
+              <span className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                {centerValue}
+              </span>
+            )
           ) : null}
           {centerLabel ? (
             <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">
@@ -165,18 +196,16 @@ export default function DonutChart({
         {slices.map((slice) => {
           const pct = Math.round((slice.value / total) * 100);
           const isActive = hovered === slice.key;
-          return (
-            <li
-              key={slice.key}
-              className={[
-                "flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors",
-                isActive
-                  ? "bg-white/80 shadow-sm dark:bg-zinc-800/80"
-                  : "hover:bg-white/50 dark:hover:bg-zinc-800/40",
-              ].join(" ")}
-              onMouseEnter={() => setHovered(slice.key)}
-              onMouseLeave={() => setHovered(null)}
-            >
+          const rowClass = [
+            "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors",
+            isActive
+              ? "bg-white/80 shadow-sm dark:bg-zinc-800/80"
+              : "hover:bg-white/50 dark:hover:bg-zinc-800/40",
+            slice.href ? "cursor-pointer" : "",
+          ].join(" ");
+
+          const content = (
+            <>
               <span className="flex min-w-0 items-center gap-2 text-zinc-600 dark:text-zinc-300">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -190,6 +219,30 @@ export default function DonutChart({
                 {slice.value}
                 <span className="ml-1 font-normal text-zinc-400">({pct}%)</span>
               </span>
+            </>
+          );
+
+          return (
+            <li key={slice.key}>
+              {slice.href ? (
+                <Link
+                  href={slice.href}
+                  className={rowClass}
+                  title={`Ver reservas · ${slice.label}`}
+                  onMouseEnter={() => setHovered(slice.key)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div
+                  className={rowClass}
+                  onMouseEnter={() => setHovered(slice.key)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {content}
+                </div>
+              )}
             </li>
           );
         })}

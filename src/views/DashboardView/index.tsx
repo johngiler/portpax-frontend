@@ -349,7 +349,7 @@ export default function DashboardView() {
             rows={stats.occupancy_by_port}
             trends={stats.occupancy_trends}
           />
-          <DashboardCharts stats={stats} />
+          <DashboardCharts stats={stats} linkBase={linkBase} />
         </>
       ) : null}
     </>

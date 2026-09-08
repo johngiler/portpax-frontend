@@ -2,35 +2,54 @@
 
 import { useState } from "react";
 import { ChartLine, Table2 } from "lucide-react";
+import type { BookingStatusFilterValue } from "@/types/booking";
+import { isBookingStatusFilterValue } from "@/types/booking";
 import type { DashboardStats } from "@/types/dashboard";
 import ChartCard from "./charts/ChartCard";
 import DonutChart from "./charts/DonutChart";
 import HorizontalBarChart from "./charts/HorizontalBarChart";
 import PortMonthComboChart from "./charts/PortMonthComboChart";
+import {
+  dashboardBookingsHref,
+  type DashboardBookingsLinkBase,
+} from "./dashboardBookingsHref";
 
 const STATUS_COLORS: Record<string, string> = {
   h: "#f59e0b",
   co: "#3478b5",
   cl: "#1d4ed8",
   lta: "#06b6d4",
-  r: "#ef4444",
+  r: "#16a34a",
   c: "#7f1d1d",
 };
 
 type DashboardChartsProps = {
   stats: DashboardStats;
+  linkBase: DashboardBookingsLinkBase;
 };
 
-export default function DashboardCharts({ stats }: DashboardChartsProps) {
+export default function DashboardCharts({
+  stats,
+  linkBase,
+}: DashboardChartsProps) {
   const [portMonthMode, setPortMonthMode] = useState<"chart" | "table">("chart");
 
-  const statusSlices = stats.status_breakdown.map((slice) => ({
-    key: slice.status,
-    label: slice.label,
-    value: slice.count,
-    color: STATUS_COLORS[slice.status] ?? "#71717a",
-  }));
+  const statusSlices = stats.status_breakdown.map((slice) => {
+    const status = isBookingStatusFilterValue(slice.status)
+      ? ([slice.status] as BookingStatusFilterValue[])
+      : undefined;
+    return {
+      key: slice.status,
+      label: slice.label,
+      value: slice.count,
+      color: STATUS_COLORS[slice.status] ?? "#71717a",
+      href: status
+        ? dashboardBookingsHref(linkBase, { status })
+        : dashboardBookingsHref(linkBase),
+    };
+  });
   const statusTotal = statusSlices.reduce((sum, s) => sum + s.value, 0);
+  const statusTotalHref = dashboardBookingsHref(linkBase);
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
@@ -84,25 +103,25 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
         <DonutChart
           centerLabel="Total"
           centerValue={statusTotal}
+          centerHref={statusTotalHref}
           slices={statusSlices}
         />
       </ChartCard>
 
       <ChartCard
         title="Barcos principales"
-        description="Flota con más escalas · pax planificados totales."
+        description="Ordenado por pax planificados · calls por barco."
         accent="#7c3aed"
       >
         <HorizontalBarChart
           accent="#7c3aed"
+          valueSuffix="pax"
           items={stats.top_vessels.map((row) => ({
             label: row.name,
-            value: row.bookings,
+            value: row.planned_pax,
             hint: [
               row.shipping_line_name,
-              row.planned_pax > 0
-                ? `${row.planned_pax.toLocaleString("es")} pax`
-                : null,
+              `${row.bookings.toLocaleString("es")} calls`,
             ]
               .filter(Boolean)
               .join(" · "),
