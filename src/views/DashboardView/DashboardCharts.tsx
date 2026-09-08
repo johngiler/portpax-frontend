@@ -145,24 +145,16 @@ export default function DashboardCharts({
 
       <ChartCard
         title="Carga por día de la semana"
-        description="Calls activos · días con escala vs días del período."
+        description="Calls activos por día de la semana."
         accent="#0891b2"
       >
         <HorizontalBarChart
           accent="#0891b2"
           valueSuffix="calls"
-          items={stats.by_weekday.map((row) => {
-            const inPeriod = row.days_in_period ?? 0;
-            const used = row.days_used ?? 0;
-            return {
-              label: row.label,
-              value: row.count,
-              hint:
-                inPeriod > 0
-                  ? `${used.toLocaleString("es")}/${inPeriod.toLocaleString("es")} días`
-                  : undefined,
-            };
-          })}
+          items={stats.by_weekday.map((row) => ({
+            label: row.label,
+            value: row.count,
+          }))}
         />
       </ChartCard>
 
