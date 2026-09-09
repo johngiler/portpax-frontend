@@ -10,6 +10,8 @@ import UserDetailAuditSection from "./UserDetailAuditSection";
 type UserRowDetailProps = {
   user: ManagedUser;
   portLabels: string[];
+  /** When false, skip audit fetch (accordion keeps content mounted while collapsed). */
+  active?: boolean;
 };
 
 function formatDateTime(value: string | null | undefined): string {
@@ -47,7 +49,11 @@ function MetaCard({
   );
 }
 
-export default function UserRowDetail({ user, portLabels }: UserRowDetailProps) {
+export default function UserRowDetail({
+  user,
+  portLabels,
+  active = true,
+}: UserRowDetailProps) {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
 
   return (
@@ -124,7 +130,7 @@ export default function UserRowDetail({ user, portLabels }: UserRowDetailProps) 
         </div>
         </div>
 
-        <UserDetailAuditSection userId={user.id} />
+        <UserDetailAuditSection userId={user.id} active={active} />
       </div>
     </div>
   );

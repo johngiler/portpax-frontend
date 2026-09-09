@@ -10,10 +10,13 @@ import { userActivityToRow } from "@/lib/auditHistoryRows";
 
 type UserDetailAuditSectionProps = {
   userId: number;
+  /** When false, do not fetch (row detail still mounted while collapsed). */
+  active?: boolean;
 };
 
 export default function UserDetailAuditSection({
   userId,
+  active = true,
 }: UserDetailAuditSectionProps) {
   const {
     items,
@@ -27,7 +30,7 @@ export default function UserDetailAuditSection({
       userId,
       pageSize: DETAIL_AUDIT_PAGE_SIZE,
     },
-    userId > 0,
+    active && userId > 0,
   );
 
   const rows = useMemo(

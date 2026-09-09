@@ -262,7 +262,11 @@ export default function UsersView() {
                         setExpandedUserId(open ? managed.id : null)
                       }
                       expandContent={
-                        <UserRowDetail user={managed} portLabels={portLabels} />
+                        <UserRowDetail
+                          user={managed}
+                          portLabels={portLabels}
+                          active={isExpanded}
+                        />
                       }
                     >
                       <MainTableTd className="font-medium">
