@@ -40,18 +40,24 @@ export default function NoticeAlert({
   if (messages.length === 0) return null;
 
   const { container, icon, Icon } = NOTICE_STYLES[variant];
+  const role = variant === "error" ? "alert" : "status";
 
   return (
-    <div
-      className={`flex gap-3 rounded-xl border px-4 py-3 ${container} ${className}`}
-      role={variant === "error" ? "alert" : "status"}
-    >
-      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${icon}`} strokeWidth={2} aria-hidden />
-      <ul className="min-w-0 space-y-1.5 text-sm leading-snug">
-        {messages.map((message) => (
-          <li key={message}>{message}</li>
-        ))}
-      </ul>
+    <div className={`flex flex-col gap-3 ${className}`.trim()}>
+      {messages.map((message, index) => (
+        <div
+          key={`${index}-${message.slice(0, 64)}`}
+          className={`flex gap-3 rounded-xl border px-4 py-3 ${container}`}
+          role={role}
+        >
+          <Icon
+            className={`mt-0.5 h-5 w-5 shrink-0 ${icon}`}
+            strokeWidth={2}
+            aria-hidden
+          />
+          <p className="min-w-0 text-sm leading-snug">{message}</p>
+        </div>
+      ))}
     </div>
   );
 }

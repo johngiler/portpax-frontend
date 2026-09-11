@@ -209,12 +209,20 @@ export default function BulkImportRowIssuesCell({
             />
           ) : null}
 
-          {issues.length > 0 ? (
-            <NoticeAlert variant="error" messages={issues} />
-          ) : null}
-          {warnings.length > 0 ? (
-            <NoticeAlert variant="warning" messages={warnings} />
-          ) : null}
+          {issues.map((message, index) => (
+            <NoticeAlert
+              key={`issue-${index}-${message.slice(0, 48)}`}
+              variant="error"
+              messages={[message]}
+            />
+          ))}
+          {warnings.map((message, index) => (
+            <NoticeAlert
+              key={`warning-${index}-${message.slice(0, 48)}`}
+              variant="warning"
+              messages={[message]}
+            />
+          ))}
           {hasOccupancy ? (
             <div
               className="flex gap-3 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-300"

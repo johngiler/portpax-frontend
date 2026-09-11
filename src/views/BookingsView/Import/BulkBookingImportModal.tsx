@@ -18,6 +18,7 @@ import {
 import { applyLtaSpaceClaim } from "./applyLtaSpaceClaim";
 import BulkImportEditableRow from "./BulkImportEditableRow";
 import { withDraftBatchConflictWarnings } from "./draftBatchConflicts";
+import { withDraftMajorityGroupWarnings } from "./draftMajorityGroupWarnings";
 
 type BulkBookingImportModalProps = {
   open: boolean;
@@ -101,7 +102,10 @@ export default function BulkBookingImportModal({
   const someLtaClaimed = claimableLtaRows.some((r) => Boolean(r.claim_lta_space));
 
   const displayRows = useMemo(
-    () => withDraftBatchConflictWarnings(draftRows),
+    () =>
+      withDraftMajorityGroupWarnings(
+        withDraftBatchConflictWarnings(draftRows),
+      ),
     [draftRows],
   );
 
