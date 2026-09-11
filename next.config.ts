@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
   },
+  // Next 16.3+ reads this in base-server without a null guard; static export
+  // can leave instantInsights undefined and crash on validationLevel.
+  experimental: {
+    instantInsights: {
+      validationLevel: "manual-warning",
+    },
+  },
 };
 
 export default nextConfig;
