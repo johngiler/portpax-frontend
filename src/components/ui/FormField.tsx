@@ -161,6 +161,8 @@ type FormFieldProps = {
   name: string;
   type?: "text" | "number" | "email" | "date" | "password" | "time";
   value: string | number | "";
+  // Shared text/number field; callers pass string or number setters.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentional loose callback
   onChange: (value: any) => void;
   placeholder?: string;
   error?: string;

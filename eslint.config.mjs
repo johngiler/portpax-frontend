@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // eslint-config-next 16.3 pulls react-hooks@7 with stricter rules.
+    // Keep security bump; treat new rules as warnings until a dedicated cleanup.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

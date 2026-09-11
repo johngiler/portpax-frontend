@@ -10,24 +10,33 @@
   },
   "dependencies": {
     "lucide-react": "^0.577.0",
-    "motion": "^12.40.0",
-    "next": "16.2.7",
+    "motion": "^12.43.0",
+    "next": "16.3.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-select": "^5.10.2",
-    "swr": "^2.4.2"
+    "swr": "^2.5.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.7",
-    "tailwindcss": "^4",
+    "eslint-config-next": "16.3.5",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.28",
+    "browserslist": "^4.28.9",
+    "js-yaml": "4.3.2",
+    "baseline-browser-mapping": "^2.11.22",
+    "minimatch@<9": {
+      "brace-expansion": "1.1.18"
+    },
+    "minimatch@>=9": {
+      "brace-expansion": "5.0.9"
+    }
   }
 }
