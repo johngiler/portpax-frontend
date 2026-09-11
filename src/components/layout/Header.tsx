@@ -20,6 +20,7 @@ import { userRoleLabel } from "@/types/accounts";
 import { userDisplayName } from "@/types/auth";
 import { roleHomePath } from "@/lib/navAccess";
 import NotificationDropdown from "./NotificationDropdown";
+import OnlineUsersDropdown from "./OnlineUsersDropdown";
 import PortPaxLogo from "./PortPaxLogo";
 
 const iconBtnClass =
@@ -28,13 +29,15 @@ const iconBtnClass =
 export default function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState<"notifications" | "user" | null>(null);
+  const [openMenu, setOpenMenu] = useState<
+    "online" | "notifications" | "user" | null
+  >(null);
 
   const { resolvedTheme, toggleTheme } = useTheme();
   const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
   const homeHref = roleHomePath(user?.role);
   const closeAll = () => setOpenMenu(null);
-  const toggle = (key: "notifications" | "user") =>
+  const toggle = (key: "online" | "notifications" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
 
   const handleLogout = () => {
@@ -103,6 +106,11 @@ export default function Header() {
             <Moon className="h-5 w-5" strokeWidth={1.5} />
           )}
         </button>
+        <OnlineUsersDropdown
+          open={openMenu === "online"}
+          onToggle={() => toggle("online")}
+          onClose={closeAll}
+        />
         <NotificationDropdown
           open={openMenu === "notifications"}
           onToggle={() => toggle("notifications")}

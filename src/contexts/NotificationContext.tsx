@@ -16,6 +16,7 @@ import { useAppUpdateOptional } from "@/contexts/AppUpdateContext";
 import {
   useNotificationsInfinite,
 } from "@/hooks/swr/useNotificationsInfinite";
+import { usePresenceActivity } from "@/hooks/usePresenceActivity";
 import { swrKeys } from "@/lib/swr/keys";
 import { wsNotificationsUrl } from "@/services/apiBase";
 import { getStoredAccessToken } from "@/services/authService";
@@ -25,10 +26,16 @@ import {
   markNotificationRead,
 } from "@/services/notificationService";
 import type { AppNotification, NotificationListResponse } from "@/types/notification";
+import type {
+  OnlineUser,
+  PresencePayload,
+  PresenceStatus,
+} from "@/types/presence";
 
 type NotificationContextValue = {
   notifications: AppNotification[];
   unreadCount: number;
+  onlineUsers: OnlineUser[];
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
@@ -61,6 +68,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liveItems, setLiveItems] = useState<AppNotification[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [wsReady, setWsReady] = useState(false);
+
+  const sendPresenceStatus = useCallback((status: PresenceStatus) => {
+    const socket = wsRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "presence_status", status }));
+  }, []);
+
+  usePresenceActivity(isAuthenticated && wsReady, sendPresenceStatus);
 
   const {
     items: baseNotifications,
@@ -151,6 +168,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAuthenticated) {
       setLiveItems([]);
+      setOnlineUsers([]);
+      setWsReady(false);
       void setSize(1);
       return;
     }
@@ -163,12 +182,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       const socket = new WebSocket(wsNotificationsUrl(token));
       wsRef.current = socket;
+      setWsReady(false);
+
+      socket.onopen = () => {
+        if (cancelled || wsRef.current !== socket) return;
+        setWsReady(true);
+        // Explicit active pulse after connect (hidden tab handled by tracker).
+        if (typeof document !== "undefined" && !document.hidden) {
+          socket.send(
+            JSON.stringify({ type: "presence_status", status: "active" }),
+          );
+        } else {
+          socket.send(
+            JSON.stringify({ type: "presence_status", status: "idle" }),
+          );
+        }
+      };
 
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data as string) as {
             type?: string;
-            payload?: AppNotification | { build_id?: string };
+            payload?: AppNotification | PresencePayload | { build_id?: string };
           };
           if (data.type === "app_update") {
             const buildId =
@@ -179,6 +214,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 : undefined;
             if (typeof buildId === "string" && buildId.trim()) {
               notifyRemoteBuild?.(buildId);
+            }
+            return;
+          }
+          if (data.type === "presence") {
+            const presence = (data.payload || {}) as PresencePayload;
+            if (Array.isArray(presence.users)) {
+              setOnlineUsers(presence.users);
             }
             return;
           }
@@ -199,6 +241,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       socket.onclose = () => {
         if (cancelled) return;
+        setWsReady(false);
+        setOnlineUsers([]);
         reconnectTimer.current = setTimeout(connect, 4000);
       };
     }
@@ -207,6 +251,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      setWsReady(false);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       const socket = wsRef.current;
       wsRef.current = null;
@@ -223,6 +268,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     () => ({
       notifications,
       unreadCount,
+      onlineUsers,
       loading: loading && notifications.length === 0,
       loadingMore,
       hasMore,
@@ -236,6 +282,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [
       notifications,
       unreadCount,
+      onlineUsers,
       loading,
       loadingMore,
       hasMore,
