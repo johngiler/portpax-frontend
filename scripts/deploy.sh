@@ -4,6 +4,10 @@
 # Requires: npm, rsync, SSH Host portpax-frontend (~/.ssh/config).
 # Server repo path: /home/git/portpax — static export synced to /home/git/portpax/out
 #
+# Usage:
+#   ./scripts/deploy.sh              # build + sync + notify connected clients (default)
+#   ./scripts/deploy.sh --no-notify  # build + sync only (skip app_update broadcast)
+#
 
 set -e
 
@@ -14,6 +18,24 @@ REMOTE_HOST="webapp"
 REMOTE_REPO="/home/git/portpax"
 REMOTE_PATH="$REMOTE_REPO/out"
 ENV_FILE="$FRONTEND_DIR/.env.dev"
+NOTIFY=1
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-notify) NOTIFY=0 ;;
+    -h|--help)
+      echo "Usage: $0 [--no-notify]"
+      echo "  (default)     build, rsync, and POST build id so Daphne notifies logged-in users"
+      echo "  --no-notify   skip the update broadcast (use on intermediate deploys; omit on the last)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Usage: $0 [--no-notify]" >&2
+      exit 2
+      ;;
+  esac
+done
 
 cd "$FRONTEND_DIR"
 
@@ -55,16 +77,20 @@ rsync -avz --delete -e ssh "$OUT_DIR/" "$REMOTE_HOST:$REMOTE_PATH/"
 echo "[deploy] Fixing permissions for nginx (read + execute on dirs)..."
 ssh "$REMOTE_HOST" "chmod -R a+rX $REMOTE_PATH"
 
-if [[ -n "${FRONTEND_BUILD_PUBLISH_TOKEN:-}" ]]; then
-  echo "[deploy] Publishing build id to API for WebSocket clients..."
-  curl -fsS -X POST "${NEXT_PUBLIC_API_URL}/api/notifications/frontend-build/" \
-    -H "Content-Type: application/json" \
-    -H "X-PortPax-Build-Token: ${FRONTEND_BUILD_PUBLISH_TOKEN}" \
-    -d "{\"build_id\": \"${BUILD_ID}\"}" \
-    >/dev/null
-  echo "[deploy] Build id published: $BUILD_ID"
+if [[ "$NOTIFY" -eq 1 ]]; then
+  if [[ -n "${FRONTEND_BUILD_PUBLISH_TOKEN:-}" ]]; then
+    echo "[deploy] Publishing build id to API for WebSocket clients..."
+    curl -fsS -X POST "${NEXT_PUBLIC_API_URL}/api/notifications/frontend-build/" \
+      -H "Content-Type: application/json" \
+      -H "X-PortPax-Build-Token: ${FRONTEND_BUILD_PUBLISH_TOKEN}" \
+      -d "{\"build_id\": \"${BUILD_ID}\"}" \
+      >/dev/null
+    echo "[deploy] Build id published: $BUILD_ID"
+  else
+    echo "[deploy] WARN: FRONTEND_BUILD_PUBLISH_TOKEN unset — skip app_update broadcast"
+  fi
 else
-  echo "[deploy] WARN: FRONTEND_BUILD_PUBLISH_TOKEN unset — skip app_update broadcast"
+  echo "[deploy] --no-notify: skipped app_update broadcast (build id $BUILD_ID not published)."
 fi
 
 echo "[deploy] Done. https://itm.portpax.com"
