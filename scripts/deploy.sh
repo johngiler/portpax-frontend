@@ -32,7 +32,13 @@ if [[ -z "${NEXT_PUBLIC_API_URL:-}" ]]; then
   exit 1
 fi
 
-echo "[deploy] Building for DEV (NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL)..."
+BUILD_ID="$(git rev-parse --short HEAD 2>/dev/null || true)"
+if [[ -z "$BUILD_ID" ]]; then
+  BUILD_ID="$(date -u +%Y%m%d%H%M%S)"
+fi
+export NEXT_PUBLIC_APP_BUILD_ID="$BUILD_ID"
+
+echo "[deploy] Building for DEV (NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL, BUILD_ID=$BUILD_ID)..."
 NODE_ENV=production npm run build
 
 if [[ ! -d "$OUT_DIR" ]]; then
@@ -48,5 +54,17 @@ rsync -avz --delete -e ssh "$OUT_DIR/" "$REMOTE_HOST:$REMOTE_PATH/"
 
 echo "[deploy] Fixing permissions for nginx (read + execute on dirs)..."
 ssh "$REMOTE_HOST" "chmod -R a+rX $REMOTE_PATH"
+
+if [[ -n "${FRONTEND_BUILD_PUBLISH_TOKEN:-}" ]]; then
+  echo "[deploy] Publishing build id to API for WebSocket clients..."
+  curl -fsS -X POST "${NEXT_PUBLIC_API_URL}/api/notifications/frontend-build/" \
+    -H "Content-Type: application/json" \
+    -H "X-PortPax-Build-Token: ${FRONTEND_BUILD_PUBLISH_TOKEN}" \
+    -d "{\"build_id\": \"${BUILD_ID}\"}" \
+    >/dev/null
+  echo "[deploy] Build id published: $BUILD_ID"
+else
+  echo "[deploy] WARN: FRONTEND_BUILD_PUBLISH_TOKEN unset — skip app_update broadcast"
+fi
 
 echo "[deploy] Done. https://itm.portpax.com"

@@ -12,6 +12,7 @@ import {
 } from "react";
 import useSWR, { mutate } from "swr";
 import { useAuthOptional } from "@/contexts/AuthContext";
+import { useAppUpdateOptional } from "@/contexts/AppUpdateContext";
 import {
   useNotificationsInfinite,
 } from "@/hooks/swr/useNotificationsInfinite";
@@ -55,6 +56,8 @@ function patchNotificationPages(
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const auth = useAuthOptional();
   const isAuthenticated = auth?.isAuthenticated ?? false;
+  const appUpdate = useAppUpdateOptional();
+  const notifyRemoteBuild = appUpdate?.notifyRemoteBuild;
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liveItems, setLiveItems] = useState<AppNotification[]>([]);
@@ -165,10 +168,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         try {
           const data = JSON.parse(event.data as string) as {
             type?: string;
-            payload?: AppNotification;
+            payload?: AppNotification | { build_id?: string };
           };
+          if (data.type === "app_update") {
+            const buildId =
+              data.payload &&
+              typeof data.payload === "object" &&
+              "build_id" in data.payload
+                ? data.payload.build_id
+                : undefined;
+            if (typeof buildId === "string" && buildId.trim()) {
+              notifyRemoteBuild?.(buildId);
+            }
+            return;
+          }
           if (data.type !== "notification" || !data.payload) return;
-          const payload = data.payload;
+          const payload = data.payload as AppNotification;
           setLiveItems((prev) => {
             const without = prev.filter((item) => item.id !== payload.id);
             return [payload, ...without];
@@ -202,7 +217,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         socket.close();
       }
     };
-  }, [isAuthenticated, mutateList, mutateUnread, setSize]);
+  }, [isAuthenticated, mutateList, mutateUnread, notifyRemoteBuild, setSize]);
 
   const value = useMemo<NotificationContextValue>(
     () => ({

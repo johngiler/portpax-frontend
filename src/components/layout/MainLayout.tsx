@@ -4,9 +4,11 @@
  */
 "use client";
 
+import { AppUpdateProvider } from "@/contexts/AppUpdateContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { MainLayoutProvider, useMainLayoutOptional } from "@/contexts/MainLayoutContext";
+import AppUpdateBanner from "./AppUpdateBanner";
 import Header from "./Header";
 import MainWithFilterMargin from "./MainWithFilterMargin";
 import PageTransition from "./PageTransition";
@@ -36,14 +38,17 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <ConfirmProvider>
-      <NotificationProvider>
-        <MainLayoutProvider>
-          <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
-            <Header />
-            <LayoutContent>{children}</LayoutContent>
-          </div>
-        </MainLayoutProvider>
-      </NotificationProvider>
+      <AppUpdateProvider>
+        <NotificationProvider>
+          <MainLayoutProvider>
+            <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
+              <Header />
+              <LayoutContent>{children}</LayoutContent>
+              <AppUpdateBanner />
+            </div>
+          </MainLayoutProvider>
+        </NotificationProvider>
+      </AppUpdateProvider>
     </ConfirmProvider>
   );
 }
