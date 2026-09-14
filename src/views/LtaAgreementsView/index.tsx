@@ -22,7 +22,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useActivePortsCatalog,
-  useActiveShippingLinesCatalog,
+  useShippingLineGroupsCatalog,
 } from "@/hooks/swr/useCatalogs";
 import { useLtaAgreementsPage } from "@/hooks/swr/useLtaAgreementsPage";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
@@ -71,7 +71,7 @@ export default function LtaAgreementsView() {
     useState<LongTermAgreement | null>(null);
 
   const { ports } = useActivePortsCatalog(canBrowse);
-  const { lines: shippingLines } = useActiveShippingLinesCatalog(canBrowse);
+  const { groups: shippingLineGroups } = useShippingLineGroupsCatalog(canBrowse);
 
   const { rows, totalCount, isLoading, error, mutate } = useLtaAgreementsPage(
     page,
@@ -279,7 +279,7 @@ export default function LtaAgreementsView() {
               <MainTableHeader>
                 <MainTableTh>Código</MainTableTh>
                 <MainTableTh>Puerto</MainTableTh>
-                <MainTableTh>Naviera</MainTableTh>
+                <MainTableTh>Grupo</MainTableTh>
                 <MainTableTh>Días</MainTableTh>
                 <MainTableTh>Ventana</MainTableTh>
                 <MainTableTh>
@@ -341,7 +341,7 @@ export default function LtaAgreementsView() {
                         <p className="text-xs text-zinc-500">{row.name}</p>
                       </MainTableTd>
                       <MainTableTd>{row.port_name}</MainTableTd>
-                      <MainTableTd>{row.shipping_line_name}</MainTableTd>
+                      <MainTableTd>{row.shipping_line_group_name}</MainTableTd>
                       <MainTableTd>
                         <span className="text-sm">{formatLtaWeekdays(row.weekdays)}</span>
                         {row.position_codes.length ? (
@@ -413,7 +413,7 @@ export default function LtaAgreementsView() {
           mode={modalMode}
           initial={editing}
           ports={ports}
-          shippingLines={shippingLines}
+          shippingLineGroups={shippingLineGroups}
           saving={saving}
           onClose={() => !saving && setModalOpen(false)}
           onSubmit={handleSave}

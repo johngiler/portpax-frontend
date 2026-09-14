@@ -20,7 +20,7 @@ import { positionShortCode } from "@/lib/positionCode";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { fetchAllVessels } from "@/services/catalogs/vesselService";
 import type { Port } from "@/types/catalog";
-import type { ShippingLine, Vessel } from "@/types/cruise";
+import type { ShippingLineGroup, Vessel } from "@/types/cruise";
 import {
   LTA_BOOKING_POLICY_OPTIONS,
   LTA_WEEKDAY_OPTIONS,
@@ -42,7 +42,7 @@ type LtaFormModalProps = {
   mode: LtaFormMode;
   initial?: LongTermAgreement | null;
   ports: Port[];
-  shippingLines: ShippingLine[];
+  shippingLineGroups: ShippingLineGroup[];
   saving: boolean;
   onClose: () => void;
   onSubmit: (data: LtaFormSubmitData) => Promise<void>;
@@ -56,7 +56,7 @@ function emptyForm(): FormState {
     code: "",
     name: "",
     port: 0,
-    shipping_line: 0,
+    shipping_line_group: 0,
     all_vessels: false,
     vessel_ids: [],
     position_ids: [],
@@ -81,7 +81,7 @@ function toForm(row: LongTermAgreement): FormState {
     code: row.code,
     name: row.name,
     port: row.port,
-    shipping_line: row.shipping_line,
+    shipping_line_group: row.shipping_line_group,
     all_vessels: row.all_vessels,
     vessel_ids: row.vessel_ids,
     position_ids: row.position_ids,
@@ -104,7 +104,7 @@ function toForm(row: LongTermAgreement): FormState {
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {};
   if (!form.port) errors.port = "Requerido";
-  if (!form.shipping_line) errors.shipping_line = "Requerido";
+  if (!form.shipping_line_group) errors.shipping_line_group = "Requerido";
   if (!form.all_vessels && form.vessel_ids.length === 0) {
     errors.vessel_ids = "Selecciona barcos o marca todos";
   }
@@ -125,7 +125,7 @@ export default function LtaFormModal({
   mode,
   initial,
   ports,
-  shippingLines,
+  shippingLineGroups,
   saving,
   onClose,
   onSubmit,
@@ -152,12 +152,12 @@ export default function LtaFormModal({
   }, [open, initial]);
 
   useEffect(() => {
-    if (!open || !form.shipping_line) {
+    if (!open || !form.shipping_line_group) {
       setVessels([]);
       return;
     }
     let cancelled = false;
-    fetchAllVessels({ shipping_line: form.shipping_line })
+    fetchAllVessels({ shipping_line_group: form.shipping_line_group })
       .then((rows) => {
         if (!cancelled) setVessels(rows.filter((v) => v.is_active));
       })
@@ -167,7 +167,7 @@ export default function LtaFormModal({
     return () => {
       cancelled = true;
     };
-  }, [open, form.shipping_line]);
+  }, [open, form.shipping_line_group]);
 
   useEffect(() => {
     if (!open || !form.port) {
@@ -197,14 +197,15 @@ export default function LtaFormModal({
     () => ports.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),
     [ports],
   );
-  const lineOptions = useMemo(
+  const groupOptions = useMemo(
     () =>
-      shippingLines.map((l) => ({
-        value: l.id,
-        label: l.name,
-        logoUrl: l.logo ?? undefined,
-      })),
-    [shippingLines],
+      shippingLineGroups
+        .filter((g) => g.is_active)
+        .map((g) => ({
+          value: g.id,
+          label: g.name,
+        })),
+    [shippingLineGroups],
   );
   const vesselOptions = useMemo(
     () => vessels.map((v) => ({ value: v.id, label: v.name })),
@@ -225,7 +226,7 @@ export default function LtaFormModal({
       if (key === "port") {
         next.position_ids = [];
       }
-      if (key === "shipping_line") {
+      if (key === "shipping_line_group") {
         next.vessel_ids = [];
         next.all_vessels = false;
       }
@@ -290,8 +291,8 @@ export default function LtaFormModal({
 
         <div className="space-y-4">
           <FormSection
-            title="Puerto y naviera"
-            description="Alcance geográfico y titular del acuerdo."
+            title="Puerto y grupo"
+            description="Alcance geográfico y grupo corporativo dueño del acuerdo."
           >
             <FormFieldSelect<number>
               label="Puerto"
@@ -304,16 +305,14 @@ export default function LtaFormModal({
               error={errors.port}
             />
             <FormFieldSelect<number>
-              label="Naviera"
-              name="lta_line"
-              value={form.shipping_line}
-              onChange={(v) => patch("shipping_line", v)}
-              options={lineOptions}
+              label="Grupo de naviera"
+              name="lta_group"
+              value={form.shipping_line_group}
+              onChange={(v) => patch("shipping_line_group", v)}
+              options={groupOptions}
               emptyValue={0}
-              showLogo
-              logoKind="shipping_line"
               required
-              error={errors.shipping_line}
+              error={errors.shipping_line_group}
             />
           </FormSection>
 
@@ -329,7 +328,7 @@ export default function LtaFormModal({
                 onChange={(e) => patch("all_vessels", e.target.checked)}
                 className="h-4 w-4 cursor-pointer rounded border-[var(--admin-border)]"
               />
-              Todos los barcos de la naviera
+              Todos los barcos del grupo
             </label>
             {!form.all_vessels ? (
               <FormFieldMultiSelect<number>

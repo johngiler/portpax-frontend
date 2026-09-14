@@ -94,7 +94,7 @@ export default function LtaRowDetail({
   onOpenExceptions,
 }: LtaRowDetailProps) {
   const vesselsLabel = agreement.all_vessels
-    ? "Todos los barcos de la naviera"
+    ? "Todos los barcos del grupo"
     : agreement.vessel_names.length
       ? agreement.vessel_names.join(", ")
       : "—";
@@ -155,10 +155,10 @@ export default function LtaRowDetail({
               {agreement.port_code}
             </span>
           </OverviewField>
-          <OverviewField label="Naviera">
-            {agreement.shipping_line_name}
+          <OverviewField label="Grupo de naviera">
+            {agreement.shipping_line_group_name}
             <span className="mt-0.5 block text-xs font-normal text-zinc-500">
-              {agreement.shipping_line_code}
+              {agreement.shipping_line_group_code}
             </span>
           </OverviewField>
           <OverviewField label="Barcos">{vesselsLabel}</OverviewField>

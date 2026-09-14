@@ -135,6 +135,14 @@ function itemOrigin(
     return "mass_update";
   }
 
+  if (source === "historical_tag_assign") {
+    return "mass_update";
+  }
+
+  if (source === "tag_rename" || source === "booking_update") {
+    return "booking_update";
+  }
+
   if (source === "wizard") return "wizard";
   if (source === "lta_generate") return "lta_generate";
   if (

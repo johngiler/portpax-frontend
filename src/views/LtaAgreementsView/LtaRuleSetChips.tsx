@@ -34,7 +34,7 @@ export default function LtaRuleSetChips({
       : "Sin cadencia";
   const chips = [
     agreement.port_name || "Sin puerto",
-    agreement.shipping_line_name || "Sin naviera",
+    agreement.shipping_line_group_name || "Sin grupo",
     formatLtaWeekdays(agreement.weekdays),
     cadence,
     positions,

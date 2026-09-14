@@ -34,6 +34,10 @@ export type LongTermAgreement = {
   port: number;
   port_code: string;
   port_name: string;
+  shipping_line_group: number;
+  shipping_line_group_code: string;
+  shipping_line_group_name: string;
+  /** Titular brand (auto-derived; stamped on generated LTA bookings). */
   shipping_line: number;
   shipping_line_code: string;
   shipping_line_name: string;
@@ -74,7 +78,7 @@ export type LongTermAgreementPayload = {
   code: string;
   name: string;
   port: number;
-  shipping_line: number;
+  shipping_line_group: number;
   all_vessels: boolean;
   vessel_ids: number[];
   position_ids: number[];

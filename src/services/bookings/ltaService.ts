@@ -14,6 +14,7 @@ export type FetchLtaParams = {
   pageSize?: number;
   search?: string;
   port?: number;
+  shipping_line_group?: number;
   shipping_line?: number;
   is_active?: boolean;
 };
@@ -38,7 +39,9 @@ function buildLtaFormData(
   const data = payload as LongTermAgreementPayload;
 
   if (data.port != null) appendScalar(form, "port", data.port);
-  if (data.shipping_line != null) appendScalar(form, "shipping_line", data.shipping_line);
+  if (data.shipping_line_group != null) {
+    appendScalar(form, "shipping_line_group", data.shipping_line_group);
+  }
   if (data.all_vessels != null) appendScalar(form, "all_vessels", data.all_vessels);
   if (data.min_packs != null) appendScalar(form, "min_packs", data.min_packs);
   else if ("min_packs" in data) form.append("min_packs", "");
@@ -97,6 +100,9 @@ export async function fetchLongTermAgreements(
   if (params.pageSize) query.set("page_size", String(params.pageSize));
   if (params.search?.trim()) query.set("search", params.search.trim());
   if (params.port) query.set("port", String(params.port));
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.is_active != null) query.set("is_active", String(params.is_active));
   const qs = query.toString();
