@@ -51,6 +51,7 @@ const FIELD_LABELS: Record<string, string> = {
   notes: "Notas",
   operation_notes: "Notas de operación",
   long_term_agreement: "Acuerdo LTA",
+  claimed_lta_space: "Espacio LTA reclamado",
   source: "Origen",
   override_reason: "Motivo override",
   acknowledge_combined_red: "Ack. eslora combinada",
