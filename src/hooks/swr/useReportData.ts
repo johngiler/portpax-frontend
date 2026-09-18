@@ -52,6 +52,7 @@ function reportFetchEnabled(filters: ReportFilters, ready: boolean): boolean {
   // Own SWR fetch in colocated sections.
   if (filters.tab === "solicitudes_port") return false;
   if (filters.tab === "booking_movements") return false;
+  if (filters.tab === "weekly_report") return false;
   if (filters.tab === "ports_totals") return true;
   return filters.portFilter > 0;
 }
@@ -133,13 +134,15 @@ function mergeReportPages(pages: ReportPage[]): ReportPayload | null {
       },
     };
   }
+  if (head.kind !== "port_trends") return null;
   return {
     tab: "port_trends",
     data: {
       ...head,
-      lines: pages.flatMap((page) =>
-        page.kind === "port_trends" ? page.lines : [],
+      groups: pages.flatMap((page) =>
+        page.kind === "port_trends" ? page.groups : [],
       ),
+      totals: head.totals,
     },
   };
 }
@@ -180,7 +183,7 @@ export function useReportInfinite(filters: ReportFilters, ready = true) {
   const totalCount = payload ? (lastPage?.total_count ?? 0) : 0;
   const loadedCount =
     payload?.tab === "port_trends"
-      ? payload.data.lines.length
+      ? payload.data.groups.length
       : payload?.tab === "ports_totals" || payload?.tab === "port_carrier"
         ? payload.data.sections.length
         : 0;

@@ -9,7 +9,8 @@ export type ReportTab =
   | "port_carrier"
   | "port_trends"
   | "solicitudes_port"
-  | "booking_movements";
+  | "booking_movements"
+  | "weekly_report";
 
 /** Basis for passenger totals when actual_pax is missing. */
 export type ReportPaxBasis = "planned" | "capacity";
@@ -21,8 +22,10 @@ export type ReportsWorkspaceFilters = {
   port: number;
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
-  /** Calendar years for resumen (multi) or movimientos (single). */
+  /** Calendar years for resumen (multi) or movimientos / semanal (single). */
   years: number[];
+  /** ISO week for Reporte Semanal (1–53). */
+  week: number;
   /** Booking tag IDs (OR). */
   tagIds: number[];
   /** Shipping line group — filters alone or scopes the naviera select. 0 = none. */
@@ -37,6 +40,7 @@ const TABS = new Set<ReportTab>([
   "port_trends",
   "solicitudes_port",
   "booking_movements",
+  "weekly_report",
 ]);
 const PAX_BASES = new Set<ReportPaxBasis>(["planned", "capacity"]);
 
@@ -60,6 +64,31 @@ function parseIdList(raw: string | null): number[] {
   return out;
 }
 
+/** ISO week number + ISO week-year for a local Date. */
+export function isoYearWeek(d = new Date()): { year: number; week: number } {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const year = date.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  const week = Math.ceil(
+    ((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return { year, week };
+}
+
+/** Last ISO week number of a calendar/ISO year (52 or 53). */
+export function maxIsoWeek(year: number): number {
+  return isoYearWeek(new Date(year, 11, 28)).week;
+}
+
+export function clampIsoWeek(year: number, week: number): number {
+  const max = maxIsoWeek(year);
+  if (!Number.isFinite(week) || week < 1) return 1;
+  if (week > max) return max;
+  return Math.trunc(week);
+}
+
 /** Years in [from, to] inclusive, from MIN_REPORT_YEAR upward. */
 export function yearsInReportRange(dateFrom: string, dateTo: string): number[] {
   const fromY = Number(dateFrom.slice(0, 4));
@@ -80,12 +109,45 @@ export function solicitudesYearOptions(): number[] {
   return years;
 }
 
-/** Default single year for Movimientos de bookings. */
+/**
+ * Year choices for audit-based reports (Movimientos + Semanal):
+ * past + current only — no future ops years.
+ * Uses max(calendar, ISO year) so late-Dec ISO week 1 of next year is selectable.
+ */
+export function auditOpsYearOptions(): number[] {
+  const cal = new Date().getFullYear();
+  const { year: isoY } = isoYearWeek();
+  const end = Math.max(cal, isoY);
+  const years: number[] = [];
+  for (let y = MIN_REPORT_YEAR; y <= end; y += 1) years.push(y);
+  return years;
+}
+
+/** @deprecated Prefer auditOpsYearOptions — same list. */
+export function weeklyReportYearOptions(): number[] {
+  return auditOpsYearOptions();
+}
+
+/** Default single year for Movimientos de bookings / defaults. */
 export function defaultMovementYear(): number {
   const now = new Date().getFullYear();
-  const options = solicitudesYearOptions();
+  const options = auditOpsYearOptions();
   if (options.includes(now)) return now;
   return options[options.length - 1] ?? MIN_REPORT_YEAR;
+}
+
+/** Default ISO year + week for Reporte Semanal (current week). */
+export function defaultWeeklyYearWeek(): { year: number; week: number } {
+  const { year, week } = isoYearWeek();
+  const options = new Set(auditOpsYearOptions());
+  if (options.has(year)) return { year, week: clampIsoWeek(year, week) };
+  const fallback = auditOpsYearOptions().at(-1) ?? MIN_REPORT_YEAR;
+  return { year: fallback, week: clampIsoWeek(fallback, 1) };
+}
+
+export function weekOptionsForYear(year: number): number[] {
+  const max = maxIsoWeek(year);
+  return Array.from({ length: max }, (_, i) => i + 1);
 }
 
 /** Date range derived from selected years (or full solicitudes window). */
@@ -107,6 +169,7 @@ export function dateRangeFromSolicitudesYears(years: number[]): {
 
 export function defaultReportsFilters(): ReportsWorkspaceFilters {
   const dateFrom = defaultReportDateFrom();
+  const weekly = defaultWeeklyYearWeek();
   return {
     tab: "ports_totals",
     dateFrom,
@@ -115,6 +178,7 @@ export function defaultReportsFilters(): ReportsWorkspaceFilters {
     withoutLta: false,
     paxBasis: "planned",
     years: [],
+    week: weekly.week,
     tagIds: [],
     shippingLineGroupId: 0,
     shippingLineId: 0,
@@ -138,9 +202,11 @@ export function parseReportsFilters(
       ? (paxRaw as ReportPaxBasis)
       : defaults.paxBasis;
   const yearChoices =
-    tab === "solicitudes_port" || tab === "booking_movements"
-      ? new Set(solicitudesYearOptions())
-      : new Set(yearsInReportRange(dateFrom, dateTo));
+    tab === "weekly_report" || tab === "booking_movements"
+      ? new Set(auditOpsYearOptions())
+      : tab === "solicitudes_port"
+        ? new Set(solicitudesYearOptions())
+        : new Set(yearsInReportRange(dateFrom, dateTo));
   let years = parseIdList(
     searchParams.get("year") || searchParams.get("years"),
   ).filter((y) => yearChoices.has(y));
@@ -148,6 +214,25 @@ export function parseReportsFilters(
     const y = years[0] ?? defaultMovementYear();
     years = yearChoices.has(y) ? [y] : [defaultMovementYear()];
   }
+  const weeklyDefault = defaultWeeklyYearWeek();
+  if (tab === "weekly_report") {
+    const y = years[0] ?? weeklyDefault.year;
+    years = yearChoices.has(y) ? [y] : [weeklyDefault.year];
+  }
+  const yearForWeek = years[0] ?? weeklyDefault.year;
+  const weekRaw = Number(searchParams.get("week"));
+  const week =
+    tab === "weekly_report"
+      ? clampIsoWeek(
+          yearForWeek,
+          Number.isFinite(weekRaw) && weekRaw > 0
+            ? weekRaw
+            : yearForWeek === weeklyDefault.year
+              ? weeklyDefault.week
+              : 1,
+        )
+      : defaults.week;
+
   return {
     tab,
     dateFrom,
@@ -158,6 +243,7 @@ export function parseReportsFilters(
     ),
     paxBasis,
     years,
+    week,
     tagIds: parseIdList(searchParams.get("tags")),
     shippingLineGroupId: parseIntId(searchParams.get("group")),
     shippingLineId: parseIntId(
@@ -175,11 +261,35 @@ export function reportsFiltersForTab(
 ): ReportsWorkspaceFilters {
   if (tab === "booking_movements") {
     const y = current.years[0] ?? defaultMovementYear();
-    const allowed = new Set(solicitudesYearOptions());
+    const allowed = new Set(auditOpsYearOptions());
     return {
       ...current,
       tab,
       years: [allowed.has(y) ? y : defaultMovementYear()],
+      port: 0,
+      tagIds: [],
+      shippingLineGroupId: 0,
+      shippingLineId: 0,
+      withoutLta: false,
+      paxBasis: "planned",
+    };
+  }
+  if (tab === "weekly_report") {
+    const weekly = defaultWeeklyYearWeek();
+    const allowed = new Set(auditOpsYearOptions());
+    const y = current.years[0] ?? weekly.year;
+    const year = allowed.has(y) ? y : weekly.year;
+    const week =
+      current.tab === "weekly_report"
+        ? clampIsoWeek(year, current.week)
+        : year === weekly.year
+          ? weekly.week
+          : clampIsoWeek(year, current.week || 1);
+    return {
+      ...current,
+      tab,
+      years: [year],
+      week,
       port: 0,
       tagIds: [],
       shippingLineGroupId: 0,
@@ -203,7 +313,8 @@ export function serializeReportsFilters(
   // Year-driven tabs omit from/to in the URL.
   if (
     filters.tab !== "solicitudes_port" &&
-    filters.tab !== "booking_movements"
+    filters.tab !== "booking_movements" &&
+    filters.tab !== "weekly_report"
   ) {
     if (filters.dateFrom !== defaults.dateFrom) {
       sp.set("from", filters.dateFrom);
@@ -215,10 +326,16 @@ export function serializeReportsFilters(
   if (filters.port > 0) sp.set("port", String(filters.port));
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
-  if (filters.tab === "booking_movements" && filters.years[0]) {
+  if (
+    (filters.tab === "booking_movements" || filters.tab === "weekly_report") &&
+    filters.years[0]
+  ) {
     sp.set("year", String(filters.years[0]));
   } else if (filters.years.length) {
     sp.set("years", filters.years.join(","));
+  }
+  if (filters.tab === "weekly_report" && filters.week > 0) {
+    sp.set("week", String(filters.week));
   }
   if (filters.tagIds.length) sp.set("tags", filters.tagIds.join(","));
   if (filters.shippingLineGroupId > 0) {

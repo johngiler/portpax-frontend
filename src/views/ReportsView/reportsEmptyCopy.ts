@@ -10,6 +10,12 @@ export const REPORTS_EMPTY_TITLE = "Sin datos en el rango";
 export const REPORTS_EMPTY_DESCRIPTION =
   "No hay escalas en el período seleccionado.";
 
+export const REPORTS_WEEKLY_FILTERED_EMPTY_DESCRIPTION =
+  "No hay movimientos de auditoría (altas, cancelaciones, cambios de barco o PAX) registrados en esa semana ISO. Prueba otra semana o año.";
+
+export const REPORTS_WEEKLY_EMPTY_DESCRIPTION =
+  "No hay movimientos registrados en la semana actual.";
+
 export const REPORTS_MISSING_PORT_TITLE = "Selecciona un puerto";
 
 export const REPORTS_MISSING_PORT_CARRIER_DESCRIPTION =

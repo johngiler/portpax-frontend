@@ -105,3 +105,24 @@ export function ReportTrendsContentSkeleton() {
     </div>
   );
 }
+
+export function WeeklyReportContentSkeleton() {
+  return (
+    <ViewSection
+      icon={BarChart3}
+      title="Cargando reporte semanal…"
+      description="Obteniendo desglose de movimientos por puerto."
+      actions={<Skeleton className="h-12 w-14 rounded-lg" />}
+      bodyClassName={reportViewSectionBody}
+    >
+      <div className={reportMatrix.shell}>
+        <div className="space-y-2 p-3 sm:p-4">
+          <Skeleton className="h-8 w-full rounded-md" />
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={index} className="h-7 w-full rounded-md" />
+          ))}
+        </div>
+      </div>
+    </ViewSection>
+  );
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSpreadsheet, FileText, type LucideIcon } from "lucide-react";
+import { FileSpreadsheet, FileText, FileType, type LucideIcon } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import type { DataExportFormat } from "@/lib/dataExportStore";
 
@@ -24,12 +24,19 @@ const EXPORT_OPTIONS: ExportOptionDef[] = [
     description: "Descarga un archivo .csv compatible con hojas de cálculo.",
     icon: FileText,
   },
+  {
+    id: "pdf",
+    title: "Exportar a PDF",
+    description: "Descarga un archivo .pdf listo para imprimir o compartir.",
+    icon: FileType,
+  },
 ];
 
 type ExportOptionsModalProps = {
   open: boolean;
   onClose: () => void;
   onExport: (format: DataExportFormat) => void | Promise<void>;
+  formats?: DataExportFormat[];
   disabled?: boolean;
   exporting?: boolean;
 };
@@ -38,10 +45,12 @@ export default function ExportOptionsModal({
   open,
   onClose,
   onExport,
+  formats = ["xlsx", "csv"],
   disabled = false,
   exporting = false,
 }: ExportOptionsModalProps) {
   const busy = disabled || exporting;
+  const options = EXPORT_OPTIONS.filter((option) => formats.includes(option.id));
 
   return (
     <Modal
@@ -65,7 +74,7 @@ export default function ExportOptionsModal({
         Elige el formato de descarga. Se aplican los filtros de la vista actual.
       </p>
       <div className="flex flex-col gap-3">
-        {EXPORT_OPTIONS.map((option) => {
+        {options.map((option) => {
           const Icon = option.icon;
           return (
             <button

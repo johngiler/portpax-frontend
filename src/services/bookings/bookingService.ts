@@ -181,7 +181,8 @@ export type StructuredReportType =
   | "port_carrier_matrix"
   | "port_trends"
   | "solicitudes_port"
-  | "booking_movements";
+  | "booking_movements"
+  | "weekly_report";
 
 export type BookingMovementsTypeRow = {
   kind: string;
@@ -324,6 +325,27 @@ export type PortCarrierMatrixReport = {
   note: string;
 } & ReportPagination;
 
+export type PortTrendsMetricRow = {
+  by_year: Array<{ year: number; ships: number; pax: number }>;
+  growth: Array<{ year: number; pct: number | null }>;
+  total_ships: number;
+  total_pax: number;
+};
+
+export type PortTrendsLine = PortTrendsMetricRow & {
+  shipping_line_id: number;
+  code: string;
+  name: string;
+  logo?: string | null;
+};
+
+export type PortTrendsGroup = PortTrendsMetricRow & {
+  shipping_line_group_id: number;
+  code: string;
+  name: string;
+  lines: PortTrendsLine[];
+};
+
 export type PortTrendsReport = {
   kind: "port_trends";
   title: string;
@@ -333,16 +355,8 @@ export type PortTrendsReport = {
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
   years: number[];
-  lines: Array<{
-    shipping_line_id: number;
-    code: string;
-    name: string;
-    logo?: string | null;
-    by_year: Array<{ year: number; ships: number; pax: number }>;
-    growth: Array<{ year: number; pct: number | null }>;
-    total_ships: number;
-    total_pax: number;
-  }>;
+  groups: PortTrendsGroup[];
+  totals: PortTrendsMetricRow;
   note: string;
 } & ReportPagination;
 
@@ -569,6 +583,44 @@ export async function fetchBookingMovementsReport(params: {
   );
 }
 
+export type WeeklyReportMetric = {
+  key: string;
+  label: string;
+  values: number[];
+};
+
+export type WeeklyReportPort = {
+  port_id: number;
+  port_name: string;
+  logo: string | null;
+  totals: number[];
+  metrics: WeeklyReportMetric[];
+};
+
+export type WeeklyReport = {
+  kind: "weekly_report";
+  title: string;
+  report_name: string;
+  year: number;
+  week: number;
+  week_start: string;
+  week_end: string;
+  call_years: number[];
+  metric_labels: string[];
+  ports: WeeklyReportPort[];
+  note: string;
+};
+
+export async function fetchWeeklyReport(params: {
+  year: number;
+  week: number;
+}): Promise<WeeklyReport> {
+  const query = new URLSearchParams();
+  query.set("year", String(params.year));
+  query.set("week", String(params.week));
+  return apiFetch<WeeklyReport>(`${BASE}report-weekly/?${query.toString()}`);
+}
+
 export async function exportStructuredReport(params: {
   report_type: StructuredReportType;
   date_from?: string;
@@ -584,8 +636,9 @@ export async function exportStructuredReport(params: {
   pax_basis?: "planned" | "capacity";
   years?: number[];
   year?: number;
+  week?: number;
   tags?: number[];
-  exportFormat?: "xlsx" | "csv";
+  exportFormat?: "xlsx" | "csv" | "pdf";
 }): Promise<void> {
   const format = params.exportFormat ?? "xlsx";
   const query = new URLSearchParams();
@@ -605,6 +658,7 @@ export async function exportStructuredReport(params: {
     query.set("pax_basis", params.pax_basis);
   }
   if (params.year) query.set("year", String(params.year));
+  if (params.week) query.set("week", String(params.week));
   if (params.years?.length) query.set("years", params.years.join(","));
   if (params.tags?.length) query.set("tags", params.tags.join(","));
   const statusCsv =
@@ -616,8 +670,13 @@ export async function exportStructuredReport(params: {
     `${BASE}report-export/?${query.toString()}`,
   );
   const fallbackNames: Partial<Record<StructuredReportType, string>> = {
+    ports_totals_matrix: "Totals puertos",
+    port_carrier_matrix: "Totals por puerto",
+    port_trends: "Trends por puerto",
     solicitudes_port: "Resumen de movimientos",
     booking_movements: "Movimientos de bookings",
+    weekly_report: "Reporte Semanal",
+    availability: "Availability Chart",
   };
   const fallbackBase =
     fallbackNames[params.report_type] ?? params.report_type;

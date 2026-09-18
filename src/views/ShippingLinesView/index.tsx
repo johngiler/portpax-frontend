@@ -95,6 +95,7 @@ export default function ShippingLinesView() {
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
+      if (format !== "xlsx" && format !== "csv") return;
       try {
         setViewError(null);
         await exportShippingLinesCatalog({

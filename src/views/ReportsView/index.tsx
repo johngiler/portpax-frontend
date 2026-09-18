@@ -35,11 +35,15 @@ import {
   defaultReportsFilters,
   dateRangeFromSolicitudesYears,
   defaultMovementYear,
+  defaultWeeklyYearWeek,
+  clampIsoWeek,
   parseReportsFilters,
   REPORT_PAX_BASIS_OPTIONS,
   reportsFiltersForTab,
   serializeReportsFilters,
   solicitudesYearOptions,
+  weekOptionsForYear,
+  auditOpsYearOptions,
   yearsInReportRange,
   type ReportPaxBasis,
   type ReportTab,
@@ -50,6 +54,7 @@ import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
 import SolicitudesPortSection from "./SolicitudesPortSection";
+import WeeklyReportSection from "./WeeklyReportSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
 import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import ReportsViewSkeleton from "./ReportsViewSkeleton";
@@ -69,6 +74,7 @@ import {
 
 type AppliedReportsFilters = ReportFilters & {
   years: number[];
+  week: number;
   tagIds: number[];
   shippingLineGroupId: number;
   shippingLineId: number;
@@ -76,7 +82,9 @@ type AppliedReportsFilters = ReportFilters & {
 
 function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
   const range =
-    filters.tab === "solicitudes_port" || filters.tab === "booking_movements"
+    filters.tab === "solicitudes_port" ||
+    filters.tab === "booking_movements" ||
+    filters.tab === "weekly_report"
       ? dateRangeFromSolicitudesYears(filters.years)
       : { dateFrom: filters.dateFrom, dateTo: filters.dateTo };
   return {
@@ -87,6 +95,7 @@ function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
     withoutLta: filters.withoutLta,
     paxBasis: filters.paxBasis,
     years: filters.years,
+    week: filters.week,
     tagIds: filters.tagIds,
     shippingLineGroupId: filters.shippingLineGroupId,
     shippingLineId: filters.shippingLineId,
@@ -111,6 +120,7 @@ export default function ReportsView() {
   const [withoutLta, setWithoutLta] = useState(initial.withoutLta);
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
   const [years, setYears] = useState<number[]>(initial.years);
+  const [week, setWeek] = useState<number>(initial.week);
   const [tagIds, setTagIds] = useState<number[]>(initial.tagIds);
   const [shippingLineGroupId, setShippingLineGroupId] = useState(
     initial.shippingLineGroupId,
@@ -203,6 +213,7 @@ export default function ReportsView() {
       withoutLta,
       paxBasis,
       years,
+      week,
       tagIds,
       shippingLineGroupId,
       shippingLineId,
@@ -215,6 +226,7 @@ export default function ReportsView() {
       withoutLta,
       paxBasis,
       years,
+      week,
       tagIds,
       shippingLineGroupId,
       shippingLineId,
@@ -233,15 +245,25 @@ export default function ReportsView() {
 
   const yearOptions = useMemo(
     () =>
-      (tab === "solicitudes_port" || tab === "booking_movements"
-        ? solicitudesYearOptions()
-        : yearsInReportRange(dateFrom, dateTo)
+      (tab === "weekly_report" || tab === "booking_movements"
+        ? auditOpsYearOptions()
+        : tab === "solicitudes_port"
+          ? solicitudesYearOptions()
+          : yearsInReportRange(dateFrom, dateTo)
       ).map((y) => ({
         value: y,
         label: String(y),
       })),
     [tab, dateFrom, dateTo],
   );
+
+  const weekSelectOptions = useMemo(() => {
+    const y = years[0] ?? defaultWeeklyYearWeek().year;
+    return weekOptionsForYear(y).map((w) => ({
+      value: w,
+      label: `Semana ${w}`,
+    }));
+  }, [years]);
 
   const shippingLineGroupOptions = useMemo(
     () =>
@@ -287,6 +309,7 @@ export default function ReportsView() {
     withoutLta: appliedFilters.withoutLta,
     paxBasis: appliedFilters.paxBasis,
     years: appliedFilters.years,
+    week: appliedFilters.week,
     tagIds: appliedFilters.tagIds,
     shippingLineGroupId: appliedFilters.shippingLineGroupId,
     shippingLineId: appliedFilters.shippingLineId,
@@ -305,6 +328,7 @@ export default function ReportsView() {
         withoutLta: appliedFilters.withoutLta,
         paxBasis: appliedFilters.paxBasis,
         years: appliedFilters.years,
+        week: appliedFilters.week,
         tagLabels: appliedFilters.tagIds
           .map((id) => tagLabelsById.get(id))
           .filter((label): label is string => Boolean(label)),
@@ -361,6 +385,16 @@ export default function ReportsView() {
     tab === "booking_movements"
       ? (years[0] ?? 0) !== defaultMovementYear() ||
         (appliedFilters.years[0] ?? 0) !== defaultMovementYear()
+      : tab === "weekly_report"
+        ? (() => {
+            const weekly = defaultWeeklyYearWeek();
+            return (
+              (years[0] ?? 0) !== weekly.year ||
+              week !== weekly.week ||
+              (appliedFilters.years[0] ?? 0) !== weekly.year ||
+              appliedFilters.week !== weekly.week
+            );
+          })()
       : tab === "solicitudes_port"
         ? portFilter > 0 ||
           withoutLta ||
@@ -387,6 +421,7 @@ export default function ReportsView() {
     paxBasis !== appliedFilters.paxBasis ||
     tab !== appliedFilters.tab ||
     years.join(",") !== appliedFilters.years.join(",") ||
+    week !== appliedFilters.week ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
     shippingLineGroupId !== appliedFilters.shippingLineGroupId ||
     shippingLineId !== appliedFilters.shippingLineId;
@@ -398,27 +433,34 @@ export default function ReportsView() {
     paxBasis !== appliedFilters.paxBasis ||
     tab !== appliedFilters.tab ||
     years.join(",") !== appliedFilters.years.join(",") ||
+    week !== appliedFilters.week ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
     shippingLineGroupId !== appliedFilters.shippingLineGroupId ||
     shippingLineId !== appliedFilters.shippingLineId;
 
   const canApply =
-    tab === "solicitudes_port" || tab === "booking_movements"
+    tab === "solicitudes_port" ||
+    tab === "booking_movements" ||
+    tab === "weekly_report"
       ? canApplyYearDriven
       : canApplyFilters;
 
   function clearFilters() {
     const clean = defaultReportsFilters();
+    const weekly = defaultWeeklyYearWeek();
     const next =
       tab === "booking_movements"
         ? { ...clean, tab, years: [defaultMovementYear()] }
-        : { ...clean, tab };
+        : tab === "weekly_report"
+          ? { ...clean, tab, years: [weekly.year], week: weekly.week }
+          : { ...clean, tab };
     setDateFrom(next.dateFrom);
     setDateTo(next.dateTo);
     setPortFilter(0);
     setWithoutLta(false);
     setPaxBasis("planned");
     setYears(next.years);
+    setWeek(next.week);
     setTagIds([]);
     setShippingLineGroupId(0);
     setShippingLineId(0);
@@ -430,13 +472,20 @@ export default function ReportsView() {
 
   function applyFilters() {
     setError(null);
-    const next =
-      tab === "booking_movements"
-        ? {
-            ...draftFilters,
-            years: [years[0] ?? defaultMovementYear()],
-          }
-        : draftFilters;
+    let next = draftFilters;
+    if (tab === "booking_movements") {
+      next = {
+        ...draftFilters,
+        years: [years[0] ?? defaultMovementYear()],
+      };
+    } else if (tab === "weekly_report") {
+      const y = years[0] ?? defaultWeeklyYearWeek().year;
+      next = {
+        ...draftFilters,
+        years: [y],
+        week: clampIsoWeek(y, week),
+      };
+    }
     setAppliedFilters(toApplied(next));
     syncUrl(next);
   }
@@ -448,6 +497,7 @@ export default function ReportsView() {
     setWithoutLta(next.withoutLta);
     setPaxBasis(next.paxBasis);
     setYears(next.years);
+    setWeek(next.week);
     setTagIds(next.tagIds);
     setShippingLineGroupId(next.shippingLineGroupId);
     setShippingLineId(next.shippingLineId);
@@ -455,7 +505,7 @@ export default function ReportsView() {
   }
 
   const handleExport = useCallback(
-    async (_format: DataExportFormat) => {
+    async (format: DataExportFormat) => {
       setError(null);
       try {
         const {
@@ -478,7 +528,7 @@ export default function ReportsView() {
             date_to: appliedDateTo,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
-            exportFormat: "xlsx",
+            exportFormat: format,
           });
           return;
         }
@@ -494,7 +544,7 @@ export default function ReportsView() {
             port: appliedPortFilter,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
-            exportFormat: "xlsx",
+            exportFormat: format,
           });
           return;
         }
@@ -522,7 +572,7 @@ export default function ReportsView() {
               appliedShippingLineId <= 0 && appliedShippingLineGroupId > 0
                 ? appliedShippingLineGroupId
                 : undefined,
-            exportFormat: "xlsx",
+            exportFormat: format,
           });
           return;
         }
@@ -531,7 +581,17 @@ export default function ReportsView() {
           await exportStructuredReport({
             report_type: "booking_movements",
             year,
-            exportFormat: "xlsx",
+            exportFormat: format,
+          });
+          return;
+        }
+        if (appliedTab === "weekly_report") {
+          const weekly = defaultWeeklyYearWeek();
+          await exportStructuredReport({
+            report_type: "weekly_report",
+            year: appliedYears[0] ?? weekly.year,
+            week: appliedFilters.week || weekly.week,
+            exportFormat: format,
           });
           return;
         }
@@ -546,7 +606,7 @@ export default function ReportsView() {
           port: appliedPortFilter,
           without_lta: appliedWithoutLta,
           pax_basis: appliedPaxBasis,
-          exportFormat: "xlsx",
+          exportFormat: format,
         });
       } catch (err) {
         setError(getApiErrorMessage(err, "No se pudo exportar el reporte."));
@@ -556,24 +616,30 @@ export default function ReportsView() {
   );
 
   useEffect(() => {
-    setDataExportHandler(handleExport);
+    setDataExportHandler(handleExport, {
+      formats: ["xlsx", "csv", "pdf"],
+    });
     return () => setDataExportHandler(null);
   }, [handleExport]);
 
   if (!ready) return <ReportsViewSkeleton />;
 
   const showPortFilter =
-    tab !== "ports_totals" && tab !== "booking_movements";
+    tab !== "ports_totals" &&
+    tab !== "booking_movements" &&
+    tab !== "weekly_report";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||
     tab === "solicitudes_port";
   const showSolicitudesFilters = tab === "solicitudes_port";
   const showMovementsFilters = tab === "booking_movements";
-  const showSharedReportFilters = !showMovementsFilters;
+  const showWeeklyFilters = tab === "weekly_report";
+  const showSharedReportFilters = !showMovementsFilters && !showWeeklyFilters;
   const loading =
     appliedFilters.tab !== "solicitudes_port" &&
     appliedFilters.tab !== "booking_movements" &&
+    appliedFilters.tab !== "weekly_report" &&
     isLoading;
 
   return (
@@ -595,6 +661,10 @@ export default function ReportsView() {
             {
               value: "booking_movements",
               label: "Movimientos de bookings",
+            },
+            {
+              value: "weekly_report",
+              label: "Reporte Semanal",
             },
           ]}
           compact
@@ -687,6 +757,30 @@ export default function ReportsView() {
             compact
           />
         ) : null}
+        {showWeeklyFilters ? (
+          <>
+            <FormFieldSelect<number>
+              label="Año"
+              name="report_weekly_year"
+              value={years[0] ?? defaultWeeklyYearWeek().year}
+              onChange={(v) => {
+                const y = Number(v);
+                setYears([y]);
+                setWeek((prev) => clampIsoWeek(y, prev));
+              }}
+              options={yearOptions}
+              compact
+            />
+            <FormFieldSelect<number>
+              label="Semana"
+              name="report_weekly_week"
+              value={week}
+              onChange={(v) => setWeek(Number(v))}
+              options={weekSelectOptions}
+              compact
+            />
+          </>
+        ) : null}
         {showSharedReportFilters ? (
           <FormFieldSelect<ReportPaxBasis>
             label="Base PAX"
@@ -778,6 +872,14 @@ export default function ReportsView() {
         <BookingMovementsSection
           enabled
           year={appliedFilters.years[0] ?? defaultMovementYear()}
+        />
+      ) : appliedFilters.tab === "weekly_report" ? (
+        <WeeklyReportSection
+          enabled
+          year={appliedFilters.years[0] ?? defaultWeeklyYearWeek().year}
+          week={appliedFilters.week || defaultWeeklyYearWeek().week}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearFilters}
         />
       ) : appliedFilters.tab === "ports_totals" && portsTotals ? (
         <PortsTotalsMatrixSection

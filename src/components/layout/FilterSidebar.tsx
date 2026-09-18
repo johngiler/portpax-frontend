@@ -6,7 +6,7 @@ import {
   useMainLayoutOptional,
 } from "@/contexts/MainLayoutContext";
 import { useDataActivity } from "@/lib/dataActivityStore";
-import { useDataExport } from "@/lib/dataExportStore";
+import { useDataExport, type DataExportFormat } from "@/lib/dataExportStore";
 import { useDataImport } from "@/lib/dataImportStore";
 import ExportOptionsModal from "@/components/ui/ExportOptionsModal";
 import {
@@ -47,7 +47,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const layout = useMainLayoutOptional();
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
-  const { canExport, runExport } = useDataExport();
+  const { canExport, formats, runExport } = useDataExport();
   const { canImport, runImport } = useDataImport();
   const { canOpenActivity, runActivity } = useDataActivity();
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -72,7 +72,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     setExportModalOpen(true);
   };
 
-  const handleExportOption = async (id: "xlsx" | "csv") => {
+  const handleExportOption = async (id: DataExportFormat) => {
     if (!canExport || exporting) return;
     setExporting(true);
     try {
@@ -267,6 +267,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         open={exportModalOpen}
         onClose={() => !exporting && setExportModalOpen(false)}
         onExport={handleExportOption}
+        formats={formats}
         disabled={!canExport}
         exporting={exporting}
       />

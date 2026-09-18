@@ -937,6 +937,7 @@ export default function BookingsView() {
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
       setViewError(null);
+      if (format !== "xlsx" && format !== "csv") return;
       try {
         if (tab === "list") {
           await exportBookingsReport({

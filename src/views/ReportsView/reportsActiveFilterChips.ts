@@ -3,6 +3,7 @@ import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilter
 import { isDefaultReportDateRange } from "./reportsFilterDefaults";
 import {
   defaultMovementYear,
+  defaultWeeklyYearWeek,
   type ReportPaxBasis,
   type ReportTab,
 } from "./reportsFilterQuery";
@@ -15,6 +16,7 @@ export function buildReportsActiveFilterChips(input: {
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
   years?: number[];
+  week?: number;
   tagLabels?: string[];
   shippingLineGroupLabel?: string | null;
   shippingLineLabel?: string | null;
@@ -22,13 +24,23 @@ export function buildReportsActiveFilterChips(input: {
   const chips: ActiveFilterChip[] = [];
   const isSolicitudes = input.tab === "solicitudes_port";
   const isMovements = input.tab === "booking_movements";
+  const isWeekly = input.tab === "weekly_report";
   const movementYear = input.years?.[0];
+  const weeklyDefault = defaultWeeklyYearWeek();
   const movementYearActive =
     isMovements &&
     movementYear != null &&
     movementYear !== defaultMovementYear();
+  const weeklyYearActive =
+    isWeekly &&
+    movementYear != null &&
+    movementYear !== weeklyDefault.year;
+  const weeklyWeekActive =
+    isWeekly &&
+    input.week != null &&
+    (movementYear !== weeklyDefault.year || input.week !== weeklyDefault.week);
 
-  if (!isMovements && input.portLabel) {
+  if (!isMovements && !isWeekly && input.portLabel) {
     chips.push({
       id: "port",
       label: input.portLabel,
@@ -39,6 +51,7 @@ export function buildReportsActiveFilterChips(input: {
   if (
     !isSolicitudes &&
     !isMovements &&
+    !isWeekly &&
     !isDefaultReportDateRange(input.dateFrom, input.dateTo)
   ) {
     chips.push({
@@ -56,6 +69,14 @@ export function buildReportsActiveFilterChips(input: {
         icon: "dates",
       });
     }
+  } else if (isWeekly) {
+    if (weeklyYearActive || weeklyWeekActive) {
+      chips.push({
+        id: "years",
+        label: `Año ${movementYear} · Semana ${input.week}`,
+        icon: "dates",
+      });
+    }
   } else if (input.years?.length) {
     chips.push({
       id: "years",
@@ -64,7 +85,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (!isMovements && input.shippingLineGroupLabel) {
+  if (!isMovements && !isWeekly && input.shippingLineGroupLabel) {
     chips.push({
       id: "shipping-line-group",
       label: input.shippingLineGroupLabel,
@@ -72,7 +93,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (!isMovements && input.shippingLineLabel) {
+  if (!isMovements && !isWeekly && input.shippingLineLabel) {
     chips.push({
       id: "shipping-line",
       label: input.shippingLineLabel,
@@ -80,7 +101,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (!isMovements && input.tagLabels?.length) {
+  if (!isMovements && !isWeekly && input.tagLabels?.length) {
     chips.push({
       id: "tags",
       label:
@@ -91,7 +112,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (!isMovements && input.withoutLta) {
+  if (!isMovements && !isWeekly && input.withoutLta) {
     chips.push({
       id: "without-lta",
       label: "Sin LTA",
@@ -99,7 +120,7 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
-  if (!isMovements && input.paxBasis === "capacity") {
+  if (!isMovements && !isWeekly && input.paxBasis === "capacity") {
     chips.push({
       id: "pax-basis",
       label: "PAX: Cap. máx.",
@@ -118,6 +139,7 @@ export function reportsHasActiveFilters(input: {
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
   years?: number[];
+  week?: number;
   tagIds?: number[];
   shippingLineGroupId?: number;
   shippingLineId?: number;
@@ -125,6 +147,14 @@ export function reportsHasActiveFilters(input: {
   if (input.tab === "booking_movements") {
     const year = input.years?.[0];
     return year != null && year !== defaultMovementYear();
+  }
+  if (input.tab === "weekly_report") {
+    const weekly = defaultWeeklyYearWeek();
+    const year = input.years?.[0];
+    return (
+      (year != null && year !== weekly.year) ||
+      (input.week != null && input.week !== weekly.week)
+    );
   }
   if (input.tab === "solicitudes_port") {
     return (
