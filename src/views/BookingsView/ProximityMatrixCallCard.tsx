@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Clock3, Ruler, Users } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import {
@@ -90,9 +91,12 @@ export default function ProximityMatrixCallCard({
             ) : null}
             <ConflictTypeChips chips={cell.conflict_chips} />
           </div>
-          <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-            {cell.shipping_line_name}
-          </p>
+          <ShippingLineCaption
+            name={cell.shipping_line_name}
+            groupName={cell.shipping_line_group_name}
+            nameClassName="truncate text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
+            groupClassName="truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+          />
         </div>
       </div>
       <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">

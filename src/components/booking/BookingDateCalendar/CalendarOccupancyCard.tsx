@@ -18,6 +18,7 @@ import {
 } from "@/lib/bookingDisplay";
 import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import {
   suggestBookingPositions,
   updateBooking,
@@ -220,7 +221,10 @@ export default function CalendarOccupancyCard({
             </h4>
             <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
               <Anchor className="h-3 w-3 shrink-0" strokeWidth={2} />
-              {booking.shipping_line_name}
+              {shippingLineWithGroupLabel(
+                booking.shipping_line_name,
+                booking.shipping_line_group_name,
+              )}
             </p>
           </div>
         </div>

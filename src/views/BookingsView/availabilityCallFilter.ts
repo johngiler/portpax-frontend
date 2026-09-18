@@ -25,8 +25,11 @@ export type AvailabilityCall = {
   has_conflict?: boolean;
   /** Home position; related columns may echo the same call for occupancy. */
   position_id?: number;
+  tag_id?: number;
   shipping_line_id?: number;
+  shipping_line_group_id?: number;
   shipping_line_name: string;
+  shipping_line_group_name?: string | null;
   shipping_line_logo: string | null;
   vessel_id?: number;
   vessel_name: string;
@@ -45,7 +48,9 @@ export type AvailabilityFocusFilters = CatalogConflictFocus & {
     | undefined;
   vesselId?: number;
   shippingLineId?: number;
+  shippingLineGroupId?: number;
   positionId?: number;
+  tagIds?: number[];
 };
 
 function matchesOneStatus(
@@ -109,7 +114,9 @@ export function availabilityCallMatchesFocus(
     | "status"
     | "vessel_id"
     | "shipping_line_id"
+    | "shipping_line_group_id"
     | "position_id"
+    | "tag_id"
     | "conflict_chips"
     | "conflict_highlights"
   >,
@@ -136,10 +143,26 @@ export function availabilityCallMatchesFocus(
   if (vesselId <= 0 && lineId > 0 && (call.shipping_line_id ?? 0) !== lineId) {
     return false;
   }
+  const groupId =
+    focus.shippingLineGroupId && focus.shippingLineGroupId > 0
+      ? focus.shippingLineGroupId
+      : 0;
+  if (
+    vesselId <= 0 &&
+    lineId <= 0 &&
+    groupId > 0 &&
+    (call.shipping_line_group_id ?? 0) !== groupId
+  ) {
+    return false;
+  }
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
   if (positionId > 0 && (call.position_id ?? 0) !== positionId) {
     return false;
+  }
+  if (focus.tagIds && focus.tagIds.length > 0) {
+    const tagId = call.tag_id ?? 0;
+    if (!focus.tagIds.includes(tagId)) return false;
   }
   return true;
 }
@@ -150,7 +173,9 @@ export function availabilityFocusNeighborTitle(
     | "status"
     | "vessel_id"
     | "shipping_line_id"
+    | "shipping_line_group_id"
     | "position_id"
+    | "tag_id"
     | "booking_code"
     | "conflict_chips"
     | "conflict_highlights"
@@ -178,10 +203,28 @@ export function availabilityFocusNeighborTitle(
   if (vesselId <= 0 && lineId > 0 && (call.shipping_line_id ?? 0) !== lineId) {
     return `${call.booking_code} · otra naviera (vecino)`;
   }
+  const groupId =
+    focus.shippingLineGroupId && focus.shippingLineGroupId > 0
+      ? focus.shippingLineGroupId
+      : 0;
+  if (
+    vesselId <= 0 &&
+    lineId <= 0 &&
+    groupId > 0 &&
+    (call.shipping_line_group_id ?? 0) !== groupId
+  ) {
+    return `${call.booking_code} · otro grupo (vecino)`;
+  }
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
   if (positionId > 0 && (call.position_id ?? 0) !== positionId) {
     return `${call.booking_code} · otra posición (vecino)`;
+  }
+  if (focus.tagIds && focus.tagIds.length > 0) {
+    const tagId = call.tag_id ?? 0;
+    if (!focus.tagIds.includes(tagId)) {
+      return `${call.booking_code} · otro tag (vecino)`;
+    }
   }
   return call.booking_code;
 }
@@ -195,7 +238,9 @@ export function availabilityFocusIsActive(
     statuses.length > 0 ||
       (focus.vesselId && focus.vesselId > 0) ||
       (focus.shippingLineId && focus.shippingLineId > 0) ||
+      (focus.shippingLineGroupId && focus.shippingLineGroupId > 0) ||
       (focus.positionId && focus.positionId > 0) ||
+      (focus.tagIds && focus.tagIds.length > 0) ||
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
       focus.conflict_type,

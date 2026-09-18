@@ -4,6 +4,7 @@ import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilter
 
 export function buildDashboardActiveFilterChips(input: {
   portLabel: string | null;
+  shippingLineGroupLabel?: string | null;
   carrierLabel: string | null;
   dateFrom: string;
   dateTo: string;
@@ -17,6 +18,14 @@ export function buildDashboardActiveFilterChips(input: {
       id: "port",
       label: input.portLabel,
       icon: "port",
+    });
+  }
+
+  if (input.shippingLineGroupLabel) {
+    chips.push({
+      id: "shipping-line-group",
+      label: input.shippingLineGroupLabel,
+      icon: "shipping_line",
     });
   }
 

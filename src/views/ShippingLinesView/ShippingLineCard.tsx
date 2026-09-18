@@ -5,7 +5,6 @@ import { Anchor } from "lucide-react";
 import type { ShippingLine } from "@/types/cruise";
 import {
   shippingLineDetailHref,
-  shippingLineDisplayName,
   shippingLineStatusLabel,
 } from "@/types/cruise";
 
@@ -40,9 +39,13 @@ export default function ShippingLineCard({ line }: ShippingLineCardProps) {
       </div>
       <div className="flex flex-1 flex-col gap-0.5 p-3">
         <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          {shippingLineDisplayName(line)}
+          {line.name}
         </h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">{line.group_name}</p>
+        {line.group_name && line.group_name !== line.name ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {line.group_name}
+          </p>
+        ) : null}
         <p className="mt-auto pt-2 text-xs text-zinc-400">
           {line.vessel_count > 0
             ? `${line.vessel_count} barco${line.vessel_count === 1 ? "" : "s"}`

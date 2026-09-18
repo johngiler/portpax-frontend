@@ -61,11 +61,16 @@ import {
   useReportInfinite,
   type ReportFilters,
 } from "@/hooks/swr/useReportData";
-import { useActivePortsCatalog, useActiveShippingLinesCatalog } from "@/hooks/swr/useCatalogs";
+import {
+  useActivePortsCatalog,
+  useActiveShippingLinesCatalog,
+  useShippingLineGroupsCatalog,
+} from "@/hooks/swr/useCatalogs";
 
 type AppliedReportsFilters = ReportFilters & {
   years: number[];
   tagIds: number[];
+  shippingLineGroupId: number;
   shippingLineId: number;
 };
 
@@ -83,6 +88,7 @@ function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
     paxBasis: filters.paxBasis,
     years: filters.years,
     tagIds: filters.tagIds,
+    shippingLineGroupId: filters.shippingLineGroupId,
     shippingLineId: filters.shippingLineId,
   };
 }
@@ -106,6 +112,9 @@ export default function ReportsView() {
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
   const [years, setYears] = useState<number[]>(initial.years);
   const [tagIds, setTagIds] = useState<number[]>(initial.tagIds);
+  const [shippingLineGroupId, setShippingLineGroupId] = useState(
+    initial.shippingLineGroupId,
+  );
   const [shippingLineId, setShippingLineId] = useState(initial.shippingLineId);
   const [tagOptions, setTagOptions] = useState<
     { value: number; label: string }[]
@@ -120,7 +129,23 @@ export default function ReportsView() {
   const { lines: shippingLines } = useActiveShippingLinesCatalog(
     tab === "solicitudes_port",
   );
+  const { groups: shippingLineGroups } = useShippingLineGroupsCatalog(
+    tab === "solicitudes_port",
+  );
   const ready = !portsLoading;
+
+  // Derive group from line when URL only had shipping_line.
+  useEffect(() => {
+    if (shippingLineGroupId > 0 || shippingLineId <= 0) return;
+    const line = shippingLines.find((l) => l.id === shippingLineId);
+    if (!line?.group) return;
+    setShippingLineGroupId(line.group);
+    setAppliedFilters((prev) =>
+      prev.shippingLineId === shippingLineId && prev.shippingLineGroupId <= 0
+        ? { ...prev, shippingLineGroupId: line.group }
+        : prev,
+    );
+  }, [shippingLines, shippingLineId, shippingLineGroupId]);
 
   const {
     payload,
@@ -179,6 +204,7 @@ export default function ReportsView() {
       paxBasis,
       years,
       tagIds,
+      shippingLineGroupId,
       shippingLineId,
     }),
     [
@@ -190,6 +216,7 @@ export default function ReportsView() {
       paxBasis,
       years,
       tagIds,
+      shippingLineGroupId,
       shippingLineId,
     ],
   );
@@ -216,14 +243,30 @@ export default function ReportsView() {
     [tab, dateFrom, dateTo],
   );
 
-  const shippingLineOptions = useMemo(
+  const shippingLineGroupOptions = useMemo(
     () =>
-      shippingLines.map((line) => ({
-        value: line.id,
-        label: line.name,
-        logoUrl: line.logo,
+      shippingLineGroups.map((group) => ({
+        value: group.id,
+        label: group.name,
       })),
-    [shippingLines],
+    [shippingLineGroups],
+  );
+
+  const shippingLineOptions = useMemo(() => {
+    const scoped =
+      shippingLineGroupId > 0
+        ? shippingLines.filter((line) => line.group === shippingLineGroupId)
+        : shippingLines;
+    return scoped.map((line) => ({
+      value: line.id,
+      label: line.name,
+      logoUrl: line.logo,
+    }));
+  }, [shippingLines, shippingLineGroupId]);
+
+  const shippingLineGroupLabelsById = useMemo(
+    () => new Map(shippingLineGroups.map((group) => [group.id, group.name])),
+    [shippingLineGroups],
   );
 
   const shippingLineLabelsById = useMemo(
@@ -245,6 +288,7 @@ export default function ReportsView() {
     paxBasis: appliedFilters.paxBasis,
     years: appliedFilters.years,
     tagIds: appliedFilters.tagIds,
+    shippingLineGroupId: appliedFilters.shippingLineGroupId,
     shippingLineId: appliedFilters.shippingLineId,
   });
 
@@ -264,12 +308,24 @@ export default function ReportsView() {
         tagLabels: appliedFilters.tagIds
           .map((id) => tagLabelsById.get(id))
           .filter((label): label is string => Boolean(label)),
+        shippingLineGroupLabel:
+          appliedFilters.shippingLineGroupId > 0
+            ? shippingLineGroupLabelsById.get(
+                appliedFilters.shippingLineGroupId,
+              ) ?? null
+            : null,
         shippingLineLabel:
           appliedFilters.shippingLineId > 0
             ? shippingLineLabelsById.get(appliedFilters.shippingLineId) ?? null
             : null,
       }),
-    [appliedFilters, portsById, tagLabelsById, shippingLineLabelsById],
+    [
+      appliedFilters,
+      portsById,
+      tagLabelsById,
+      shippingLineGroupLabelsById,
+      shippingLineLabelsById,
+    ],
   );
 
   const loadPortOptions = useCallback(async (input: string) => {
@@ -311,6 +367,7 @@ export default function ReportsView() {
           paxBasis !== "planned" ||
           years.length > 0 ||
           tagIds.length > 0 ||
+          shippingLineGroupId > 0 ||
           shippingLineId > 0
         : dateFrom !== defaultDateFrom ||
           dateTo !== defaultDateTo ||
@@ -319,6 +376,7 @@ export default function ReportsView() {
           paxBasis !== "planned" ||
           years.length > 0 ||
           tagIds.length > 0 ||
+          shippingLineGroupId > 0 ||
           shippingLineId > 0;
 
   const canApplyFilters =
@@ -330,6 +388,7 @@ export default function ReportsView() {
     tab !== appliedFilters.tab ||
     years.join(",") !== appliedFilters.years.join(",") ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
+    shippingLineGroupId !== appliedFilters.shippingLineGroupId ||
     shippingLineId !== appliedFilters.shippingLineId;
 
   // Year-driven tabs: don't treat draft date drift as dirty.
@@ -340,6 +399,7 @@ export default function ReportsView() {
     tab !== appliedFilters.tab ||
     years.join(",") !== appliedFilters.years.join(",") ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
+    shippingLineGroupId !== appliedFilters.shippingLineGroupId ||
     shippingLineId !== appliedFilters.shippingLineId;
 
   const canApply =
@@ -360,6 +420,7 @@ export default function ReportsView() {
     setPaxBasis("planned");
     setYears(next.years);
     setTagIds([]);
+    setShippingLineGroupId(0);
     setShippingLineId(0);
     setError(null);
     const applied = toApplied(next);
@@ -388,6 +449,7 @@ export default function ReportsView() {
     setPaxBasis(next.paxBasis);
     setYears(next.years);
     setTagIds(next.tagIds);
+    setShippingLineGroupId(next.shippingLineGroupId);
     setShippingLineId(next.shippingLineId);
     setError(null);
   }
@@ -406,6 +468,7 @@ export default function ReportsView() {
           years: appliedYears,
           tagIds: appliedTagIds,
           shippingLineId: appliedShippingLineId,
+          shippingLineGroupId: appliedShippingLineGroupId,
         } = appliedFilters;
 
         if (appliedTab === "ports_totals") {
@@ -440,8 +503,8 @@ export default function ReportsView() {
             setError("Selecciona un puerto para exportar.");
             return;
           }
-          if (!appliedShippingLineId) {
-            setError("Selecciona una naviera para exportar.");
+          if (!appliedShippingLineId && !appliedShippingLineGroupId) {
+            setError("Selecciona un grupo de naviera o una naviera para exportar.");
             return;
           }
           await exportStructuredReport({
@@ -453,7 +516,12 @@ export default function ReportsView() {
             pax_basis: appliedPaxBasis,
             years: appliedYears,
             tags: appliedTagIds,
-            shipping_line: appliedShippingLineId,
+            shipping_line:
+              appliedShippingLineId > 0 ? appliedShippingLineId : undefined,
+            shipping_line_group:
+              appliedShippingLineId <= 0 && appliedShippingLineGroupId > 0
+                ? appliedShippingLineGroupId
+                : undefined,
             exportFormat: "xlsx",
           });
           return;
@@ -560,16 +628,34 @@ export default function ReportsView() {
         {showSolicitudesFilters ? (
           <>
             <FormFieldSelect<number>
+              label="Grupo de naviera"
+              name="report_shipping_line_group"
+              value={shippingLineGroupId}
+              onChange={(v) => {
+                setShippingLineGroupId(Number(v));
+                setShippingLineId(0);
+              }}
+              options={shippingLineGroupOptions}
+              optionLabel="Selecciona un grupo"
+              emptyValue={0}
+              compact
+            />
+            <FormFieldSelect<number>
               label="Naviera"
               name="report_shipping_line"
               value={shippingLineId}
               onChange={(v) => setShippingLineId(Number(v))}
               options={shippingLineOptions}
-              optionLabel="Selecciona una naviera"
+              optionLabel={
+                shippingLineGroupId > 0
+                  ? "Todas las navieras del grupo"
+                  : "Elige un grupo primero"
+              }
               emptyValue={0}
               compact
               showLogo
               logoKind="shipping_line"
+              disabled={shippingLineGroupId <= 0}
             />
             <FormFieldMultiSelect<number>
               label="Años"
@@ -681,6 +767,7 @@ export default function ReportsView() {
           portId={appliedFilters.portFilter}
           years={appliedFilters.years}
           tagIds={appliedFilters.tagIds}
+          shippingLineGroupId={appliedFilters.shippingLineGroupId}
           shippingLineId={appliedFilters.shippingLineId}
           withoutLta={appliedFilters.withoutLta}
           paxBasis={appliedFilters.paxBasis}

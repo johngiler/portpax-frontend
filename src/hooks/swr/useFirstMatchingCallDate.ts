@@ -18,6 +18,7 @@ function probeKey(filters: FirstMatchProbeFilters): string {
     (filters.ports ?? []).join(","),
     filters.position ?? 0,
     filters.shipping_line ?? 0,
+    filters.shipping_line_group ?? 0,
     filters.vessel ?? 0,
     (filters.statuses ?? []).join(","),
     filters.has_conflict === true

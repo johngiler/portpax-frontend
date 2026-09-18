@@ -201,12 +201,19 @@ export default function GlobalSearch() {
                           onClick={() => setExpanded(false)}
                         >
                           <Ship className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                          <span className="font-medium">{s.name}</span>
-                          {s.shipping_line_name && (
-                            <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                              {s.shipping_line_name}
-                            </span>
-                          )}
+                          <span className="min-w-0 flex flex-col gap-0.5">
+                            <span className="font-medium">{s.name}</span>
+                            {s.shipping_line_name ? (
+                              <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                {s.shipping_line_name}
+                              </span>
+                            ) : null}
+                            {s.shipping_line_group_name ? (
+                              <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                {s.shipping_line_group_name}
+                              </span>
+                            ) : null}
+                          </span>
                         </Link>
                       ))}
                     </div>
@@ -224,7 +231,14 @@ export default function GlobalSearch() {
                           onClick={() => setExpanded(false)}
                         >
                           <Building2 className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                          <span className="font-medium">{sl.name}</span>
+                          <span className="min-w-0 flex flex-col gap-0.5">
+                            <span className="font-medium">{sl.name}</span>
+                            {sl.shipping_line_group_name ? (
+                              <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                {sl.shipping_line_group_name}
+                              </span>
+                            ) : null}
+                          </span>
                         </Link>
                       ))}
                     </div>

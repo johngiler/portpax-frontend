@@ -27,6 +27,7 @@ export type VesselProximityMatrixCell = {
   vessel_name: string;
   vessel_logo: string | null;
   shipping_line_name: string;
+  shipping_line_group_name?: string | null;
   loa_m: string | null;
   eta: string | null;
   etd: string | null;

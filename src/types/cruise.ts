@@ -91,7 +91,7 @@ export type VesselPayload = {
 
 export function shippingLineDisplayName(line: ShippingLine): string {
   if (line.group_name && line.group_name !== line.name) {
-    return `${line.name} (${line.group_name})`;
+    return `${line.name} · ${line.group_name}`;
   }
   return line.name;
 }
@@ -109,5 +109,10 @@ export function vesselStatusLabel(isActive: boolean): string {
 }
 
 export function vesselDisplayName(vessel: Vessel): string {
-  return `${vessel.name} — ${vessel.shipping_line_name}`;
+  const line = vessel.shipping_line_name.trim();
+  const group = vessel.group_name?.trim() || "";
+  if (group && group !== line) {
+    return `${vessel.name} — ${line} · ${group}`;
+  }
+  return `${vessel.name} — ${line}`;
 }

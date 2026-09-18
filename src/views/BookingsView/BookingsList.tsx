@@ -22,6 +22,7 @@ import {
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
+import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import {
   BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
@@ -340,7 +341,10 @@ export default function BookingsList({
                       <span className="truncate">
                         {booking.port_name}
                         <span className="text-zinc-400"> · </span>
-                        {booking.shipping_line_name}
+                        {shippingLineWithGroupLabel(
+                          booking.shipping_line_name,
+                          booking.shipping_line_group_name,
+                        )}
                       </span>
                     </Link>
                   </div>

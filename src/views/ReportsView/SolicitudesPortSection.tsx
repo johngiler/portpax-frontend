@@ -22,6 +22,7 @@ type SolicitudesPortSectionProps = {
   portId: number;
   years: number[];
   tagIds: number[];
+  shippingLineGroupId: number;
   shippingLineId: number;
   withoutLta: boolean;
   paxBasis: "planned" | "capacity";
@@ -54,11 +55,14 @@ function cellBorder(extra = ""): string {
 function PortCarrierSummary({
   portName,
   carrierName,
+  carrierScope,
   carrierRows,
   portRows,
 }: {
   portName: string;
   carrierName: string;
+  /** line = naviera seleccionada; group = solo grupo. */
+  carrierScope: "line" | "group";
   carrierRows: SolicitudesPortYearPax[];
   portRows: SolicitudesPortYearPax[];
 }) {
@@ -76,6 +80,13 @@ function PortCarrierSummary({
       portTotal: portRows.reduce((sum, row) => sum + row.pax, 0),
     };
   }, [carrierRows, portRows]);
+
+  const compareLabel =
+    carrierScope === "group" ? "Grupo vs total" : "Naviera vs total";
+  const compareHint =
+    carrierScope === "group"
+      ? "Grupo seleccionado vs total del puerto"
+      : "Naviera seleccionada vs total del puerto";
 
   return (
     <div className="h-fit w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
@@ -103,11 +114,8 @@ function PortCarrierSummary({
               )}
             >
               <span className="inline-flex items-center justify-end gap-1">
-                Naviera vs total
-                <InfoTooltip
-                  content="Naviera seleccionada vs total de navieras"
-                  label="Naviera vs total"
-                />
+                {compareLabel}
+                <InfoTooltip content={compareHint} label={compareLabel} />
               </span>
             </th>
           </tr>
@@ -164,25 +172,29 @@ export default function SolicitudesPortSection({
   portId,
   years,
   tagIds,
+  shippingLineGroupId,
   shippingLineId,
   withoutLta,
   paxBasis,
   hasActiveFilters = false,
   onClearFilters,
 }: SolicitudesPortSectionProps) {
+  const hasCarrier =
+    shippingLineId > 0 || shippingLineGroupId > 0;
   const paramsKey = [
     dateFrom,
     dateTo,
     portId,
     years.join(","),
     tagIds.join(","),
+    shippingLineGroupId,
     shippingLineId,
     withoutLta ? 1 : 0,
     paxBasis,
   ].join("|");
 
   const { data, isLoading, error } = useSWR<SolicitudesPortReport>(
-    enabled && portId > 0 && shippingLineId > 0
+    enabled && portId > 0 && hasCarrier
       ? swrKeys.report("solicitudes_port", paramsKey)
       : null,
     () =>
@@ -192,7 +204,11 @@ export default function SolicitudesPortSection({
         port: portId,
         years,
         tags: tagIds,
-        shipping_line: shippingLineId,
+        shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
+        shipping_line_group:
+          shippingLineId <= 0 && shippingLineGroupId > 0
+            ? shippingLineGroupId
+            : undefined,
         without_lta: withoutLta,
         pax_basis: paxBasis,
       }),
@@ -200,7 +216,7 @@ export default function SolicitudesPortSection({
 
   if (!enabled) return null;
 
-  if (portId <= 0 && shippingLineId <= 0) {
+  if (portId <= 0 && !hasCarrier) {
     return <ReportsEmptyState variant="missing_required_solicitudes" />;
   }
 
@@ -208,7 +224,7 @@ export default function SolicitudesPortSection({
     return <ReportsEmptyState variant="missing_port_solicitudes" />;
   }
 
-  if (shippingLineId <= 0) {
+  if (!hasCarrier) {
     return <ReportsEmptyState variant="missing_shipping_line_solicitudes" />;
   }
 
@@ -233,6 +249,8 @@ export default function SolicitudesPortSection({
   const showSummary =
     Boolean(data.shipping_line_label) &&
     (carrierRows.length > 0 || data.port_by_year.length > 0);
+  const carrierScope: "line" | "group" =
+    (data.shipping_line_ids?.length ?? 0) > 0 ? "line" : "group";
 
   return (
     <ViewSection
@@ -326,6 +344,7 @@ export default function SolicitudesPortSection({
           <PortCarrierSummary
             portName={data.port_name}
             carrierName={data.shipping_line_label}
+            carrierScope={carrierScope}
             carrierRows={carrierRows}
             portRows={data.port_by_year}
           />

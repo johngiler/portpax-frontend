@@ -25,6 +25,8 @@ type BookingsHistoryPanelProps = {
   dateFrom: string;
   dateTo: string;
   actor?: string;
+  /** Single tag id (0 = all). */
+  tagId?: number;
   /** When false, SWR does not fetch (e.g. history modal closed). */
   enabled?: boolean;
   hasActiveFilters?: boolean;
@@ -44,6 +46,7 @@ export default function BookingsHistoryPanel({
   dateFrom,
   dateTo,
   actor = "",
+  tagId = 0,
   enabled = true,
   hasActiveFilters = false,
   onClearFilters,
@@ -66,6 +69,7 @@ export default function BookingsHistoryPanel({
       dateFrom,
       dateTo,
       actor,
+      tagId,
       pageSize: PAGE_SIZE,
     },
     enabled,

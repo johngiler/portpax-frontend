@@ -25,7 +25,9 @@ export type ReportsWorkspaceFilters = {
   years: number[];
   /** Booking tag IDs (OR). */
   tagIds: number[];
-  /** Single shipping line — drives the carrier summary box. 0 = none. */
+  /** Shipping line group — filters alone or scopes the naviera select. 0 = none. */
+  shippingLineGroupId: number;
+  /** Single shipping line — optional when a group is selected. 0 = none. */
   shippingLineId: number;
 };
 
@@ -114,6 +116,7 @@ export function defaultReportsFilters(): ReportsWorkspaceFilters {
     paxBasis: "planned",
     years: [],
     tagIds: [],
+    shippingLineGroupId: 0,
     shippingLineId: 0,
   };
 }
@@ -156,6 +159,7 @@ export function parseReportsFilters(
     paxBasis,
     years,
     tagIds: parseIdList(searchParams.get("tags")),
+    shippingLineGroupId: parseIntId(searchParams.get("group")),
     shippingLineId: parseIntId(
       searchParams.get("shipping_line") ||
         searchParams.get("shipping_lines") ||
@@ -178,6 +182,7 @@ export function reportsFiltersForTab(
       years: [allowed.has(y) ? y : defaultMovementYear()],
       port: 0,
       tagIds: [],
+      shippingLineGroupId: 0,
       shippingLineId: 0,
       withoutLta: false,
       paxBasis: "planned",
@@ -216,6 +221,9 @@ export function serializeReportsFilters(
     sp.set("years", filters.years.join(","));
   }
   if (filters.tagIds.length) sp.set("tags", filters.tagIds.join(","));
+  if (filters.shippingLineGroupId > 0) {
+    sp.set("group", String(filters.shippingLineGroupId));
+  }
   if (filters.shippingLineId > 0) {
     sp.set("shipping_line", String(filters.shippingLineId));
   }

@@ -15,6 +15,7 @@ import type {
   CalendarViewModeQuery,
   ConflictFilterValue,
 } from "@/lib/viewFilterQuery";
+import { fetchShippingLineGroups } from "@/services/catalogs/shippingLineGroupService";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
@@ -84,8 +85,11 @@ type BookingFiltersProps = {
   search: string;
   /** Empty = all ports. */
   portFilter: number[];
+  shippingLineGroupFilter: number;
   shippingLineFilter: number;
   vesselFilter: number;
+  tagFilter: number[];
+  tagOptions: FilterOption[];
   datePreset: BookingsDatePreset;
   customDateFrom: string;
   customDateTo: string;
@@ -97,6 +101,7 @@ type BookingFiltersProps = {
   heatMode: AvailabilityHeatModeQuery;
   density: number;
   portOptions: FilterOption[];
+  shippingLineGroupOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
   vesselOptions: FilterOption[];
   positionOptions: FilterOption[];
@@ -106,8 +111,10 @@ type BookingFiltersProps = {
   onConflictFilterChange: (value: ConflictFilterValue) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portIds: number[]) => void;
+  onShippingLineGroupFilterChange: (groupId: number) => void;
   onShippingLineFilterChange: (lineId: number) => void;
   onVesselFilterChange: (vesselId: number) => void;
+  onTagFilterChange: (tagIds: number[]) => void;
   onDatePresetChange: (preset: BookingsDatePreset) => void;
   onCustomDateFromChange: (value: string) => void;
   onCustomDateToChange: (value: string) => void;
@@ -131,8 +138,11 @@ export default function BookingFilters({
   conflictFilter,
   search,
   portFilter,
+  shippingLineGroupFilter,
   shippingLineFilter,
   vesselFilter,
+  tagFilter,
+  tagOptions,
   datePreset,
   customDateFrom,
   customDateTo,
@@ -144,6 +154,7 @@ export default function BookingFilters({
   heatMode,
   density,
   portOptions,
+  shippingLineGroupOptions,
   shippingLineOptions,
   vesselOptions,
   positionOptions,
@@ -153,8 +164,10 @@ export default function BookingFilters({
   onConflictFilterChange,
   onSearchChange,
   onPortFilterChange,
+  onShippingLineGroupFilterChange,
   onShippingLineFilterChange,
   onVesselFilterChange,
+  onTagFilterChange,
   onDatePresetChange,
   onCustomDateFromChange,
   onCustomDateToChange,
@@ -202,6 +215,8 @@ export default function BookingFilters({
     tab === "calendar" ||
     tab === "proximity" ||
     isOccupancyHeat;
+  const showTags =
+    tab === "list" || tab === "calendar" || isOccupancyHeat;
   const showStatus = !isAvailabilityGaps;
   const showConflict =
     tab === "list" ||
@@ -209,17 +224,34 @@ export default function BookingFilters({
     tab === "calendar" ||
     isOccupancyHeat;
 
-  const loadLineOptions = useCallback(async (input: string) => {
-    const res = await fetchShippingLines({
-      search: input.trim() || undefined,
-      pageSize: 30,
-    });
-    return res.results.map((line) => ({
-      value: line.id,
-      label: line.name,
-      logoUrl: line.logo,
-    }));
+  const loadGroupOptions = useCallback(async (input: string) => {
+    const groups = await fetchShippingLineGroups();
+    const needle = input.trim().toLowerCase();
+    return groups
+      .filter((g) => !needle || g.name.toLowerCase().includes(needle))
+      .slice(0, 30)
+      .map((g) => ({
+        value: g.id,
+        label: g.name,
+      }));
   }, []);
+
+  const loadLineOptions = useCallback(
+    async (input: string) => {
+      if (shippingLineGroupFilter <= 0) return [];
+      const res = await fetchShippingLines({
+        group: shippingLineGroupFilter,
+        search: input.trim() || undefined,
+        pageSize: 30,
+      });
+      return res.results.map((line) => ({
+        value: line.id,
+        label: line.name,
+        logoUrl: line.logo,
+      }));
+    },
+    [shippingLineGroupFilter],
+  );
 
   const loadVesselOptions = useCallback(
     async (input: string) => {
@@ -272,6 +304,9 @@ export default function BookingFilters({
           suggestion.filterEntity === "shipping_line" &&
           suggestion.entityId
         ) {
+          if (suggestion.shippingLineGroupId) {
+            onShippingLineGroupFilterChange(suggestion.shippingLineGroupId);
+          }
           onShippingLineFilterChange(suggestion.entityId);
           onVesselFilterChange(0);
           onSearchChange("");
@@ -282,6 +317,9 @@ export default function BookingFilters({
           suggestion.entityId &&
           suggestion.shippingLineId
         ) {
+          if (suggestion.shippingLineGroupId) {
+            onShippingLineGroupFilterChange(suggestion.shippingLineGroupId);
+          }
           onShippingLineFilterChange(suggestion.shippingLineId);
           onVesselFilterChange(suggestion.entityId);
           onSearchChange("");
@@ -393,6 +431,24 @@ export default function BookingFilters({
     />
   ) : null;
 
+  const groupField = showLine ? (
+    <FormFieldSelect<number>
+      label="Grupo de naviera"
+      name="booking_group_filter"
+      value={shippingLineGroupFilter}
+      onChange={(groupId) => {
+        onShippingLineGroupFilterChange(groupId);
+        onShippingLineFilterChange(0);
+        onVesselFilterChange(0);
+      }}
+      options={shippingLineGroupOptions}
+      loadOptions={loadGroupOptions}
+      optionLabel="Todos los grupos"
+      emptyValue={0}
+      compact
+    />
+  ) : null;
+
   const lineField = showLine ? (
     <FormFieldSelect<number>
       label="Naviera"
@@ -403,12 +459,19 @@ export default function BookingFilters({
         onVesselFilterChange(0);
       }}
       options={shippingLineOptions}
-      loadOptions={loadLineOptions}
-      optionLabel="Todas las navieras"
+      loadOptions={
+        shippingLineGroupFilter > 0 ? loadLineOptions : undefined
+      }
+      optionLabel={
+        shippingLineGroupFilter > 0
+          ? "Todas las navieras"
+          : "Elige un grupo primero"
+      }
       emptyValue={0}
       compact
       showLogo
       logoKind="shipping_line"
+      disabled={shippingLineGroupFilter <= 0}
     />
   ) : null;
 
@@ -432,6 +495,18 @@ export default function BookingFilters({
       showLogo
       logoKind="vessel"
       disabled={shippingLineFilter <= 0}
+    />
+  ) : null;
+
+  const tagsField = showTags ? (
+    <FormFieldMultiSelect<number>
+      label="Tags"
+      name="booking_tag_filter"
+      value={tagFilter}
+      onChange={onTagFilterChange}
+      options={tagOptions}
+      placeholder="Todos los tags"
+      compact
     />
   ) : null;
 
@@ -519,8 +594,10 @@ export default function BookingFilters({
         {portField}
         {positionField}
         {densityField}
+        {groupField}
         {lineField}
         {vesselField}
+        {tagsField}
         {statusField}
         {conflictField}
         {datesField}
@@ -535,8 +612,10 @@ export default function BookingFilters({
       {calendarFields}
       {portField}
       {positionField}
+      {groupField}
       {lineField}
       {vesselField}
+      {tagsField}
       {statusField}
       {conflictField}
       {datesField}

@@ -59,6 +59,7 @@ export default function BookingsAvailabilityPanel({
   const allowKey = dateAllowlist?.join(",") ?? "";
   const filtersKey = [
     filters.shipping_line ?? 0,
+    filters.shipping_line_group ?? 0,
     filters.vessel ?? 0,
     filters.position ?? 0,
     (filters.statuses ?? []).join(","),
@@ -86,6 +87,7 @@ export default function BookingsAvailabilityPanel({
 
   const hasFilters =
     Boolean(filters.shipping_line) ||
+    Boolean(filters.shipping_line_group) ||
     Boolean(filters.vessel) ||
     Boolean(filters.position) ||
     Boolean(filters.statuses?.length) ||

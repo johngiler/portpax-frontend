@@ -30,6 +30,7 @@ export function dashboardBookingsHref(
     status: overrides?.status ?? [],
     search: "",
     ports: overrides?.portIds ?? base.portIds,
+    group: base.carrier.type === "group" ? base.carrier.id : 0,
     line: base.carrier.type === "line" ? base.carrier.id : 0,
     vessel: 0,
     datePreset: "custom",
@@ -44,6 +45,7 @@ export function dashboardBookingsHref(
     heat: "availability",
     density: 0,
     conflict: overrides?.conflict ?? "",
+    tags: [],
     importedDates: [],
   };
   const qs = buildBookingsWorkspaceQuery(state);

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
 import PaxCapacityMeter from "@/components/booking/PaxCapacityMeter";
@@ -465,20 +466,13 @@ export default function ReviewStep({
           ) : null}
         </SummaryItem>
         <SummaryItem icon={Anchor} label="Naviera">
-          <div className="flex items-center gap-2">
-            <CatalogLogoThumb
-              src={line?.logo}
-              alt=""
-              size="xs"
-              kind="shipping_line"
-            />
-            <span className="truncate">{line?.name ?? "—"}</span>
-          </div>
-          {line ? (
-            <p className="mt-0.5 truncate text-xs font-normal text-zinc-500">
-              {line.code}
-            </p>
-          ) : null}
+          <ShippingLineCaption
+            name={line?.name ?? "—"}
+            groupName={line?.group_name}
+            logoUrl={line?.logo}
+            showLogo
+            nameClassName="truncate font-semibold text-zinc-900 dark:text-zinc-50"
+          />
         </SummaryItem>
         <SummaryItem icon={Ship} label="Barco">
           <div className="flex items-center gap-2">

@@ -30,8 +30,11 @@ export type AvailabilityBookingCall = {
   conflict_chips?: BookingConflictChip[];
   conflict_highlights?: BookingConflictHighlights;
   position_id?: number;
+  tag_id?: number;
   shipping_line_id?: number;
+  shipping_line_group_id?: number;
   shipping_line_name: string;
+  shipping_line_group_name?: string | null;
   shipping_line_logo: string | null;
   vessel_id?: number;
   vessel_name: string;
@@ -51,8 +54,12 @@ export type FetchBookingsParams = {
   ports?: number[];
   position?: number;
   shipping_line?: number;
+  /** When set without shipping_line, filters by all lines in the group. */
+  shipping_line_group?: number;
   vessel?: number;
   long_term_agreement?: number;
+  /** Multi-tag filter (CSV on `tags` query param). */
+  tags?: number[];
   /** @deprecated Prefer `statuses` multi-select. */
   status?: BookingListStatusFilter;
   statuses?: BookingStatusFilterValue[];
@@ -81,9 +88,15 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   }
   if (params.position) query.set("position", String(params.position));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.long_term_agreement) {
     query.set("long_term_agreement", String(params.long_term_agreement));
+  }
+  if (params.tags && params.tags.length > 0) {
+    query.set("tags", params.tags.join(","));
   }
   const statusCsv =
     params.statuses && params.statuses.length > 0
@@ -252,6 +265,8 @@ export type SolicitudesPortReport = {
   shipping_line_ids: number[];
   shipping_line_names: string[];
   shipping_line_label: string;
+  shipping_line_group_id?: number | null;
+  shipping_line_group_name?: string | null;
   year_blocks: SolicitudesPortYearBlock[];
   nuevas_solicitadas: SolicitudesPortYearPax[];
   nuevas_total: number;
@@ -361,8 +376,10 @@ export async function fetchAvailabilityReport(params: {
   date_to: string;
   port: number;
   shipping_line?: number;
+  shipping_line_group?: number;
   vessel?: number;
   position?: number;
+  tags?: number[];
   status?: string;
   statuses?: string[];
   /** Exact distinct ships on that day (1–4); enables server pagination. */
@@ -382,8 +399,14 @@ export async function fetchAvailabilityReport(params: {
   if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
+  if (params.tags && params.tags.length > 0) {
+    query.set("tags", params.tags.join(","));
+  }
   const statusCsv =
     params.statuses && params.statuses.length > 0
       ? params.statuses.join(",")
@@ -408,8 +431,10 @@ export async function fetchAvailabilityReport(params: {
     Boolean(params.conflict_severity) ||
     Boolean(params.conflict_type) ||
     Boolean(params.shipping_line) ||
+    Boolean(params.shipping_line_group) ||
     Boolean(params.vessel) ||
     Boolean(params.position) ||
+    Boolean(params.tags?.length) ||
     Boolean(params.statuses?.length) ||
     Boolean(params.status);
   if (paged) {
@@ -509,6 +534,7 @@ export async function fetchSolicitudesPortReport(params: {
   years?: number[];
   tags?: number[];
   shipping_line?: number;
+  shipping_line_group?: number;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
 }): Promise<SolicitudesPortReport> {
@@ -520,6 +546,9 @@ export async function fetchSolicitudesPortReport(params: {
   if (params.tags?.length) query.set("tags", params.tags.join(","));
   if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
+  }
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
@@ -546,6 +575,7 @@ export async function exportStructuredReport(params: {
   date_to?: string;
   port?: number;
   shipping_line?: number;
+  shipping_line_group?: number;
   vessel?: number;
   position?: number;
   status?: string;
@@ -565,6 +595,9 @@ export async function exportStructuredReport(params: {
   if (params.date_to) query.set("date_to", params.date_to);
   if (params.port) query.set("port", String(params.port));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   if (params.vessel) query.set("vessel", String(params.vessel));
   if (params.position) query.set("position", String(params.position));
   if (params.without_lta) query.set("without_lta", "true");

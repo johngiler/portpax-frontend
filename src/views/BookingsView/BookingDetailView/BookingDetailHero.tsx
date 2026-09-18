@@ -8,7 +8,9 @@ import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import { conflictChipsFromApi } from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
+import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import type { Booking } from "@/types/booking";
+import { useActiveShippingLinesCatalog } from "@/hooks/swr/useCatalogs";
 
 type BookingDetailHeroProps = {
   booking: Booking;
@@ -21,6 +23,12 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
   const backLabel = returnToLabel(returnTo);
   const chips = conflictChipsFromApi(booking);
   const ltaCode = booking.long_term_agreement_code?.trim() || null;
+  const needsGroup = !booking.shipping_line_group_name?.trim();
+  const { lines } = useActiveShippingLinesCatalog(needsGroup);
+  const groupName =
+    booking.shipping_line_group_name?.trim() ||
+    lines.find((line) => line.id === booking.shipping_line)?.group_name?.trim() ||
+    "";
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -65,7 +73,8 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
           {booking.vessel_name}
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-          {booking.port_name} · {booking.shipping_line_name}
+          {booking.port_name} ·{" "}
+          {shippingLineWithGroupLabel(booking.shipping_line_name, groupName)}
         </p>
 
         <BookingCodeRef

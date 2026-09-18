@@ -15,6 +15,7 @@ import {
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchBookingActivityActors } from "@/services/bookings/bookingActivityService";
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
+import { fetchBookingTags } from "@/services/bookings/bookingTagService";
 import BookingsHistoryPanel from "../BookingsHistoryPanel";
 
 type BookingsHistoryModalProps = {
@@ -44,6 +45,7 @@ export default function BookingsHistoryModal({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actor, setActor] = useState(HISTORY_ACTOR_ALL);
+  const [tagId, setTagId] = useState(0);
 
   useEffect(() => {
     if (!open || !initialTypeFilter) return;
@@ -56,6 +58,11 @@ export default function BookingsHistoryModal({
     fetchBookingActivityActors,
   );
 
+  const { data: tagsData } = useSWR(
+    open ? swrKeys.bookingTags : null,
+    () => fetchBookingTags(),
+  );
+
   const actorOptions = useMemo(
     () =>
       historyActorSelectOptions(
@@ -65,13 +72,23 @@ export default function BookingsHistoryModal({
     [actorsData],
   );
 
+  const tagOptions = useMemo(
+    () =>
+      (tagsData ?? []).map((t) => ({
+        value: t.id,
+        label: t.name,
+      })),
+    [tagsData],
+  );
+
   const hasActiveFilters = useMemo(
     () =>
       Boolean(typeFilter) ||
       Boolean(dateFrom) ||
       Boolean(dateTo) ||
-      Boolean(actor),
-    [typeFilter, dateFrom, dateTo, actor],
+      Boolean(actor) ||
+      tagId > 0,
+    [typeFilter, dateFrom, dateTo, actor, tagId],
   );
 
   function clearFilters() {
@@ -79,6 +96,7 @@ export default function BookingsHistoryModal({
     setDateFrom("");
     setDateTo("");
     setActor(HISTORY_ACTOR_ALL);
+    setTagId(0);
   }
 
   return (
@@ -87,7 +105,7 @@ export default function BookingsHistoryModal({
       onClose={onClose}
       title="Historial de movimientos de reservas"
       toolbar={
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <FormFieldSelect<BookingActivityFilterValue>
             label="Tipo"
             name="history_type"
@@ -106,6 +124,16 @@ export default function BookingsHistoryModal({
             options={actorOptions}
             emptyValue={HISTORY_ACTOR_ALL}
             optionLabel="Todos"
+            compact
+          />
+          <FormFieldSelect<number>
+            label="Tag"
+            name="history_tag"
+            value={tagId}
+            onChange={setTagId}
+            options={tagOptions}
+            optionLabel="Todos"
+            emptyValue={0}
             compact
           />
           <FormField
@@ -133,6 +161,7 @@ export default function BookingsHistoryModal({
           dateFrom={dateFrom}
           dateTo={dateTo}
           actor={actor}
+          tagId={tagId}
           enabled={open}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearFilters}

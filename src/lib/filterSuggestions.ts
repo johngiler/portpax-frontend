@@ -8,7 +8,10 @@ import { globalSearch } from "@/services/searchService";
 export type FilterSuggestion = {
   id: string;
   label: string;
+  /** Single subtitle line (ports, users, …). Prefer `hints` for stacked lines. */
   hint?: string;
+  /** Stacked subtitles under the label (e.g. vessel → naviera, grupo). */
+  hints?: string[];
   /** Text written into the search field when the user picks this row. */
   applyValue: string;
   group?: string;
@@ -17,9 +20,25 @@ export type FilterSuggestion = {
   entityId?: number;
   /** Required for vessel picks so the Barco selector can load options. */
   shippingLineId?: number;
+  /** Group cascade for vessel / naviera picks. */
+  shippingLineGroupId?: number;
 };
 
 const SUGGEST_LIMIT = 8;
+
+/** Vessel suggestion: name + naviera + grupo (stacked). */
+function vesselSubtitleHints(input: {
+  shipping_line_name?: string | null;
+  shipping_line_code?: string | null;
+  shipping_line_group_name?: string | null;
+}): string[] {
+  const line =
+    input.shipping_line_name?.trim() ||
+    input.shipping_line_code?.trim() ||
+    "";
+  const group = input.shipping_line_group_name?.trim() || "";
+  return [line, group].filter(Boolean);
+}
 
 function formatScaleDate(d: string | null): string {
   if (!d) return "";
@@ -53,12 +72,13 @@ export async function suggestBookings(
     items.push({
       id: `ship-${s.id}`,
       label: s.name,
-      hint: s.shipping_line_name ?? s.shipping_line_code,
+      hints: vesselSubtitleHints(s),
       applyValue: "",
       group: "Barcos",
       filterEntity: "vessel",
       entityId: s.id,
       shippingLineId: s.shipping_line_id,
+      shippingLineGroupId: s.shipping_line_group_id ?? undefined,
     });
   }
   for (const p of data.ports) {
@@ -77,11 +97,12 @@ export async function suggestBookings(
       items.push({
         id: `line-${sl.id}`,
         label: sl.name,
-        hint: sl.code,
+        hint: sl.shipping_line_group_name?.trim() || undefined,
         applyValue: "",
         group: "Navieras",
         filterEntity: "shipping_line",
         entityId: sl.id,
+        shippingLineGroupId: sl.shipping_line_group_id ?? undefined,
       });
     }
   }
@@ -132,7 +153,7 @@ export async function suggestShippingLines(query: string): Promise<FilterSuggest
     items.push({
       id: `line-${line.id}`,
       label: line.name,
-      hint: line.code,
+      hint: line.group_name?.trim() || undefined,
       applyValue: line.name,
       group: "Navieras",
     });
@@ -145,7 +166,7 @@ export async function suggestShippingLines(query: string): Promise<FilterSuggest
       items.push({
         id: `ship-${ship.id}`,
         label: ship.name,
-        hint: ship.shipping_line_name ?? ship.shipping_line_code,
+        hints: vesselSubtitleHints(ship),
         // Filter list by vessel name so API `vessels__name` search finds the line.
         applyValue: ship.name,
         group: "Barcos",
@@ -159,7 +180,7 @@ export async function suggestShippingLines(query: string): Promise<FilterSuggest
         items.push({
           id: `line-${ship.shipping_line_id}`,
           label: ship.shipping_line_name,
-          hint: ship.shipping_line_code,
+          hint: ship.shipping_line_group_name?.trim() || undefined,
           applyValue: ship.shipping_line_name,
           group: "Navieras",
         });

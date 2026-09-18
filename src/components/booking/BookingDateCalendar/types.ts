@@ -3,6 +3,7 @@ export type CalendarDayBooking = {
   booking_code: string;
   port_name: string;
   shipping_line_name: string;
+  shipping_line_group_name?: string | null;
   vessel_name: string;
   vessel_id: number;
   port_id: number;

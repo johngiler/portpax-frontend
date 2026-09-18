@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import FilterActions from "@/components/layout/FilterActions";
 import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
-import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
@@ -28,20 +27,19 @@ type DashboardFiltersProps = {
   onClear: () => void;
 };
 
-function carrierToValue(filter: DashboardCarrierFilter): string {
-  if (filter.type === "group") return `group:${filter.id}`;
-  if (filter.type === "line") return `line:${filter.id}`;
-  return "all";
+function carrierGroupId(
+  filter: DashboardCarrierFilter,
+  lines: ShippingLine[],
+): number {
+  if (filter.type === "group") return filter.id;
+  if (filter.type === "line") {
+    return lines.find((line) => line.id === filter.id)?.group ?? 0;
+  }
+  return 0;
 }
 
-function valueToCarrier(value: string): DashboardCarrierFilter {
-  if (value.startsWith("group:")) {
-    return { type: "group", id: Number(value.slice(6)) };
-  }
-  if (value.startsWith("line:")) {
-    return { type: "line", id: Number(value.slice(5)) };
-  }
-  return { type: "all" };
+function carrierLineId(filter: DashboardCarrierFilter): number {
+  return filter.type === "line" ? filter.id : 0;
 }
 
 export default function DashboardFilters({
@@ -62,6 +60,9 @@ export default function DashboardFilters({
   onApply,
   onClear,
 }: DashboardFiltersProps) {
+  const shippingLineGroupId = carrierGroupId(carrierFilter, lines);
+  const shippingLineId = carrierLineId(carrierFilter);
+
   const portOptions = useMemo(
     () =>
       ports.map((port) => ({
@@ -72,56 +73,30 @@ export default function DashboardFilters({
     [ports],
   );
 
-  const carrierOptions = useMemo(() => {
-    const activeGroups = groups.filter((group) => group.is_active);
-    const activeLines = lines.filter((line) => line.is_active);
-    return [
-      ...activeGroups.map((group) => ({
-        value: `group:${group.id}`,
-        label: `Grupo: ${group.name}`,
-        logoUrl: null as string | null,
-      })),
-      ...activeLines.map((line) => ({
-        value: `line:${line.id}`,
-        label: line.name,
-        logoUrl: line.logo,
-      })),
-    ];
-  }, [groups, lines]);
-
-  const loadCarrierOptions = useCallback(
-    async (input: string) => {
-      const q = input.trim().toLowerCase();
-      const groupHits = groups
+  const groupOptions = useMemo(
+    () =>
+      groups
         .filter((group) => group.is_active)
-        .filter(
-          (group) =>
-            !q ||
-            group.name.toLowerCase().includes(q) ||
-            group.code?.toLowerCase().includes(q),
-        )
         .map((group) => ({
-          value: `group:${group.id}`,
-          label: `Grupo: ${group.name}`,
-          logoUrl: null as string | null,
-        }));
-
-      const res = await fetchShippingLines({
-        search: input.trim() || undefined,
-        pageSize: 30,
-      });
-      const lineHits = res.results.map((line) => ({
-        value: `line:${line.id}`,
-        label: line.name,
-        logoUrl: line.logo,
-      }));
-
-      return [...groupHits, ...lineHits];
-    },
+          value: group.id,
+          label: group.name,
+        })),
     [groups],
   );
 
-  const carrierValue = carrierToValue(carrierFilter);
+  const lineOptions = useMemo(() => {
+    const active = lines.filter((line) => line.is_active);
+    const scoped =
+      shippingLineGroupId > 0
+        ? active.filter((line) => line.group === shippingLineGroupId)
+        : active;
+    return scoped.map((line) => ({
+      value: line.id,
+      label: line.name,
+      logoUrl: line.logo,
+    }));
+  }, [lines, shippingLineGroupId]);
+
   const canClear =
     selectedPortIds.length > 0 ||
     carrierFilter.type !== "all" ||
@@ -144,6 +119,26 @@ export default function DashboardFilters({
     }
   }
 
+  function handleGroupChange(value: number) {
+    if (value <= 0) {
+      onCarrierChange({ type: "all" });
+      return;
+    }
+    onCarrierChange({ type: "group", id: value });
+  }
+
+  function handleLineChange(value: number) {
+    if (value > 0) {
+      onCarrierChange({ type: "line", id: value });
+      return;
+    }
+    if (shippingLineGroupId > 0) {
+      onCarrierChange({ type: "group", id: shippingLineGroupId });
+      return;
+    }
+    onCarrierChange({ type: "all" });
+  }
+
   return (
     <>
       <FormFieldMultiSelect<number>
@@ -157,18 +152,32 @@ export default function DashboardFilters({
         options={portOptions}
         placeholder="Todos los puertos"
       />
-      <FormFieldSelect<string>
+      <FormFieldSelect<number>
+        label="Grupo de naviera"
+        name="dashboard_shipping_line_group"
+        compact
+        value={shippingLineGroupId}
+        onChange={(v) => handleGroupChange(Number(v))}
+        options={groupOptions}
+        optionLabel="Todos los grupos"
+        emptyValue={0}
+      />
+      <FormFieldSelect<number>
         label="Naviera"
-        name="dashboard_carrier"
+        name="dashboard_shipping_line"
         compact
         showLogo
         logoKind="shipping_line"
-        value={carrierValue === "all" ? "" : carrierValue}
-        onChange={(value) => onCarrierChange(valueToCarrier(value || "all"))}
-        options={carrierOptions}
-        loadOptions={loadCarrierOptions}
-        optionLabel="Todas las navieras"
-        emptyValue=""
+        value={shippingLineId}
+        onChange={(v) => handleLineChange(Number(v))}
+        options={lineOptions}
+        optionLabel={
+          shippingLineGroupId > 0
+            ? "Todas las navieras"
+            : "Elige un grupo primero"
+        }
+        emptyValue={0}
+        disabled={shippingLineGroupId <= 0}
       />
       <FormField
         label="Desde"

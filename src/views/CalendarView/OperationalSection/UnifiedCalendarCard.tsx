@@ -44,8 +44,10 @@ type UnifiedCalendarCardProps = {
   /** Empty = all ports in one card. */
   portIds: number[];
   portLabel: string;
+  shippingLineGroupId: number;
   shippingLineId: number;
   vesselId: number;
+  tagIds?: number[];
   statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
@@ -69,8 +71,10 @@ export default function UnifiedCalendarCard({
   onModeChange,
   portIds,
   portLabel,
+  shippingLineGroupId,
   shippingLineId,
   vesselId,
+  tagIds = [],
   statuses,
   positionId,
   search,
@@ -114,7 +118,9 @@ export default function UnifiedCalendarCard({
       statuses,
       vesselId,
       shippingLineId,
+      shippingLineGroupId,
       positionId: multiPort ? 0 : positionId,
+      tagIds: tagIds.length > 0 ? tagIds : undefined,
       has_conflict: conflictFilters.has_conflict,
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
@@ -124,8 +130,10 @@ export default function UnifiedCalendarCard({
       statuses,
       vesselId,
       shippingLineId,
+      shippingLineGroupId,
       multiPort,
       positionId,
+      tagIds,
       conflictFilters.has_conflict,
       conflictFilters.conflict_severity,
       conflictFilters.conflict_type,
@@ -143,8 +151,13 @@ export default function UnifiedCalendarCard({
     () => ({
       ports: portIds.length > 0 ? portIds : undefined,
       shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
+      shipping_line_group:
+        shippingLineId <= 0 && shippingLineGroupId > 0
+          ? shippingLineGroupId
+          : undefined,
       vessel: vesselId > 0 ? vesselId : undefined,
       position: !multiPort && positionId > 0 ? positionId : undefined,
+      tags: tagIds.length > 0 ? tagIds : undefined,
       statuses: statuses.length > 0 ? statuses : undefined,
       has_conflict: conflictFilters.has_conflict,
       conflict_severity: conflictFilters.conflict_severity,
@@ -154,9 +167,11 @@ export default function UnifiedCalendarCard({
     [
       portIds,
       shippingLineId,
+      shippingLineGroupId,
       vesselId,
       multiPort,
       positionId,
+      tagIds,
       statuses,
       conflictFilters,
       callDates,

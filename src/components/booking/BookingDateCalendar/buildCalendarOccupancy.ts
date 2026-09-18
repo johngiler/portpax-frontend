@@ -55,6 +55,7 @@ export function buildCalendarOccupancy(
       booking_code: booking.booking_code,
       port_name: booking.port_name,
       shipping_line_name: booking.shipping_line_name,
+      shipping_line_group_name: booking.shipping_line_group_name ?? null,
       vessel_name: booking.vessel_name,
       vessel_id: booking.vessel,
       port_id: booking.port,

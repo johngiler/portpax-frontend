@@ -43,7 +43,7 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Listado de escalas por año en un puerto, con totales PAX del puerto y por naviera.",
     notes:
-      "Puerto y naviera obligatorios. Mismos estados de ocupación que los otros reportes (sin canceladas). Sin Desde/Hasta: el rango sale de Años (vacío = todos desde 2025). La naviera filtra el listado y muestra la caja de totales; el puerto no aplica ese filtro. Tags opcionales. Solo Excel.",
+      "Puerto obligatorio. Grupo de naviera o naviera (cualquiera de los dos). Sin naviera, el grupo filtra todas las navieras del grupo. Mismos estados de ocupación que los otros reportes (sin canceladas). Sin Desde/Hasta: el rango sale de Años (vacío = todos desde 2025). El carrier filtra el listado y muestra la caja de totales; el puerto no aplica ese filtro. Tags opcionales. Solo Excel.",
   },
   {
     id: "booking_movements",

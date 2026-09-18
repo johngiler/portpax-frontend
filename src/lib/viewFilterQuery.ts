@@ -57,6 +57,8 @@ export type BookingsWorkspaceFilters = {
   search: string;
   /** Empty = all ports. One or more for lista / calendario / disponibilidad. */
   ports: number[];
+  /** Shipping line group (0 = all). */
+  group: number;
   line: number;
   vessel: number;
   datePreset: BookingsDatePresetQuery;
@@ -83,6 +85,8 @@ export type BookingsWorkspaceFilters = {
     | "yellow"
     | "red"
     | ConflictTypeFilterValue;
+  /** Booking tag IDs (multi). Empty = all tags. */
+  tags: number[];
   /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
   importedDates: string[];
 };
@@ -188,6 +192,7 @@ export function parseBookingsWorkspaceFilters(
     status: parseBookingStatusFilters(statusRaw),
     search: sp.get("q")?.trim() ?? "",
     ports,
+    group: parseIntId(sp.get("group")),
     line: parseIntId(sp.get("line")),
     vessel: parseIntId(sp.get("vessel")),
     datePreset: isDatePreset(dateRaw) ? dateRaw : "all",
@@ -211,6 +216,10 @@ export function parseBookingsWorkspaceFilters(
     heat,
     density,
     conflict,
+    tags: (sp.get("tags") ?? "")
+      .split(",")
+      .map((p) => parseIntId(p.trim()))
+      .filter((id) => id > 0),
     importedDates: parseImportedIsoDates(
       sp.getAll("idates").join(",") || sp.get("idates"),
     ),
@@ -226,8 +235,10 @@ export function buildBookingsWorkspaceQuery(
   if (statusCsv) sp.set("status", statusCsv);
   if (state.search) sp.set("q", state.search);
   if (state.ports.length > 0) sp.set("ports", state.ports.join(","));
+  if (state.group > 0) sp.set("group", String(state.group));
   if (state.line > 0) sp.set("line", String(state.line));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
+  if (state.tags.length > 0) sp.set("tags", state.tags.join(","));
   if (
     state.conflict === "yes" ||
     state.conflict === "no" ||

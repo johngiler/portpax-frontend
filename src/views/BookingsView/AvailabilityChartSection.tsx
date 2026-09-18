@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
 import { cardPaxTitle, formatCardPax } from "@/lib/bookingPaxDisplay";
@@ -61,8 +62,12 @@ type Props = {
   vesselFocusId?: number;
   /** Shipping-line focus when no vessel is selected. */
   shippingLineFocusId?: number;
+  /** Group focus when no line/vessel is selected. */
+  shippingLineGroupFocusId?: number;
   /** Position focus: other berths stay visible (muted). */
   positionFocusId?: number;
+  /** Tag soft-focus (any of the IDs). */
+  tagFocusIds?: number[];
   /** Conflict sidebar focus (neighbors stay muted). */
   conflictFocus?: {
     has_conflict?: boolean;
@@ -214,7 +219,9 @@ export default function AvailabilityChartSection({
   statusFilter,
   vesselFocusId = 0,
   shippingLineFocusId = 0,
+  shippingLineGroupFocusId = 0,
   positionFocusId = 0,
+  tagFocusIds,
   conflictFocus,
   footer,
   scrollRootRef,
@@ -227,7 +234,9 @@ export default function AvailabilityChartSection({
     statuses: statusFilter,
     vesselId: vesselFocusId,
     shippingLineId: shippingLineFocusId,
+    shippingLineGroupId: shippingLineGroupFocusId,
     positionId: positionFocusId,
+    tagIds: tagFocusIds?.length ? tagFocusIds : undefined,
     has_conflict: conflictFocus?.has_conflict,
     conflict_severity: conflictFocus?.conflict_severity,
     conflict_type: conflictFocus?.conflict_type,
@@ -422,9 +431,12 @@ export default function AvailabilityChartSection({
                                       ) : null}
                                       <ConflictTypeChips chips={chips} />
                                     </div>
-                                    <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                                      {call.shipping_line_name}
-                                    </p>
+                                    <ShippingLineCaption
+                                      name={call.shipping_line_name}
+                                      groupName={call.shipping_line_group_name}
+                                      nameClassName="truncate text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
+                                      groupClassName="truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+                                    />
                                   </div>
                                 </div>
                                 <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">

@@ -7,6 +7,8 @@ import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import CountryLabel from "@/components/ui/CountryLabel";
+import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import {
@@ -81,10 +83,19 @@ export default function BookingDetailSummary({
   const [liveWarnings, setLiveWarnings] = useState<BookingValidationIssue[]>([]);
 
   const { ports } = useActivePortsCatalog(editing);
-  const { lines } = useActiveShippingLinesCatalog(editing);
+  const needsGroupLabel = !booking.shipping_line_group_name?.trim();
+  const { lines } = useActiveShippingLinesCatalog(editing || needsGroupLabel);
   const { vessels, isLoading: vesselsLoading } = useActiveVesselsCatalog(lineId, editing);
 
   const groupId = booking.shipping_line_group;
+  const lineFromCatalog = lines.find((line) => line.id === booking.shipping_line);
+  const shippingLineGroupName =
+    booking.shipping_line_group_name?.trim() ||
+    lineFromCatalog?.group_name?.trim() ||
+    (groupId != null
+      ? lines.find((line) => line.group === groupId)?.group_name?.trim()
+      : "") ||
+    "";
   const readOnly =
     !canWrite ||
     booking.status === "c" ||
@@ -391,25 +402,25 @@ export default function BookingDetailSummary({
                   size="xs"
                   kind="port"
                 />
-                <span className="truncate">{booking.port_name}</span>
+                <span className="truncate font-semibold text-zinc-900 dark:text-zinc-50">
+                  {booking.port_name}
+                </span>
               </div>
-              <p className="mt-0.5 text-xs font-normal text-zinc-500">
-                {booking.port_code}
-              </p>
+              {booking.port_country ? (
+                <CountryLabel
+                  country={booking.port_country}
+                  className="mt-0.5 text-xs font-normal text-zinc-500 dark:text-zinc-400"
+                />
+              ) : null}
             </SummaryItem>
             <SummaryItem icon={Anchor} label="Naviera">
-              <div className="flex items-center gap-2">
-                <CatalogLogoThumb
-                  src={booking.shipping_line_logo}
-                  alt=""
-                  size="xs"
-                  kind="shipping_line"
-                />
-                <span className="truncate">{booking.shipping_line_name}</span>
-              </div>
-              <p className="mt-0.5 text-xs font-normal text-zinc-500">
-                {booking.shipping_line_code}
-              </p>
+              <ShippingLineCaption
+                name={booking.shipping_line_name}
+                groupName={shippingLineGroupName}
+                logoUrl={booking.shipping_line_logo}
+                showLogo
+                nameClassName="truncate font-semibold text-zinc-900 dark:text-zinc-50"
+              />
             </SummaryItem>
             <SummaryItem icon={Ship} label="Barco">
               <div className="flex items-center gap-2">

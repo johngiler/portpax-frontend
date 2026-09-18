@@ -15,8 +15,10 @@ export const AVAILABILITY_DAYS_BATCH = 30;
 
 export type AvailabilityListFilters = {
   shipping_line?: number;
+  shipping_line_group?: number;
   vessel?: number;
   position?: number;
+  tags?: number[];
   statuses?: string[];
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
@@ -54,8 +56,10 @@ function pageDateRange(
 function filtersKey(filters: AvailabilityListFilters): string {
   return [
     filters.shipping_line ?? 0,
+    filters.shipping_line_group ?? 0,
     filters.vessel ?? 0,
     filters.position ?? 0,
+    (filters.tags ?? []).join(","),
     (filters.statuses ?? []).join(","),
     filters.has_conflict === true
       ? "1"
@@ -78,8 +82,10 @@ export function useAvailabilityInfinite(
 ) {
   const keyExtra = filtersKey(filters);
   const line = filters.shipping_line;
+  const group = filters.shipping_line_group;
   const vessel = filters.vessel;
   const position = filters.position;
+  const tags = filters.tags;
   const statuses = filters.statuses;
   const hasConflict = filters.has_conflict;
   const conflictSeverity = filters.conflict_severity;
@@ -92,8 +98,11 @@ export function useAvailabilityInfinite(
   const occupiedOnly = Boolean(filters.occupied_only);
   const softFocusMode = Boolean(
     (line != null && line > 0) ||
+      (filters.shipping_line_group != null &&
+        filters.shipping_line_group > 0) ||
       (vessel != null && vessel > 0) ||
       (position != null && position > 0) ||
+      (tags != null && tags.length > 0) ||
       (statuses != null && statuses.length > 0) ||
       hasConflict !== undefined ||
       Boolean(conflictSeverity) ||
@@ -135,8 +144,10 @@ export function useAvailabilityInfinite(
           date_from: dateFrom,
           date_to: dateTo,
           shipping_line: line,
+          shipping_line_group: group,
           vessel,
           position,
+          tags,
           statuses,
           has_conflict: hasConflict,
           conflict_severity: conflictSeverity,
@@ -154,8 +165,10 @@ export function useAvailabilityInfinite(
         date_from: from,
         date_to: to,
         shipping_line: line,
+        shipping_line_group: group,
         vessel,
         position,
+        tags,
         statuses,
         has_conflict: hasConflict,
         conflict_severity: conflictSeverity,

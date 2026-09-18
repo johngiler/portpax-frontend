@@ -280,10 +280,7 @@ export default function ShippingLineStep({
                     >
                       {line.name}
                     </p>
-                    <p className="truncate text-[10px] font-medium uppercase tracking-wide text-zinc-500 sm:text-[11px]">
-                      {line.code}
-                    </p>
-                    <p className="line-clamp-1 text-[10px] text-zinc-400 sm:text-[11px]">
+                    <p className="line-clamp-1 text-[10px] text-zinc-500 sm:text-[11px]">
                       {line.group_name}
                     </p>
                   </div>

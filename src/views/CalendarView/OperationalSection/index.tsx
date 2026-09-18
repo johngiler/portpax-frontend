@@ -18,8 +18,10 @@ type OperationalSectionProps = {
   /** Empty = all ports in one unified card. */
   portIds: number[];
   portLabel: string;
+  shippingLineGroupId: number;
   shippingLineId: number;
   vesselId: number;
+  tagIds?: number[];
   statuses: BookingStatusFilterValue[];
   positionId: number;
   search: string;
@@ -41,8 +43,10 @@ export default function OperationalSection({
   onModeChange,
   portIds,
   portLabel,
+  shippingLineGroupId,
   shippingLineId,
   vesselId,
+  tagIds = [],
   statuses,
   positionId,
   search,
@@ -59,8 +63,10 @@ export default function OperationalSection({
   onClearFilters,
 }: OperationalSectionProps) {
   const hasFilters =
+    shippingLineGroupId > 0 ||
     shippingLineId > 0 ||
     vesselId > 0 ||
+    tagIds.length > 0 ||
     positionId > 0 ||
     statuses.length > 0 ||
     Boolean(search.trim()) ||
@@ -76,8 +82,10 @@ export default function OperationalSection({
       onModeChange={onModeChange}
       portIds={portIds}
       portLabel={portLabel}
+      shippingLineGroupId={shippingLineGroupId}
       shippingLineId={shippingLineId}
       vesselId={vesselId}
+      tagIds={tagIds}
       statuses={statuses}
       positionId={positionId}
       search={search}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Ship } from "lucide-react";
 import type { Vessel } from "@/types/cruise";
+import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import WizardStepSearch from "../WizardStepSearch";
 
 type VesselStepProps = {
@@ -18,6 +19,7 @@ function matchesVessel(vessel: Vessel, query: string): boolean {
   return (
     vessel.name.toLowerCase().includes(q) ||
     vessel.shipping_line_name.toLowerCase().includes(q) ||
+    vessel.group_name.toLowerCase().includes(q) ||
     vessel.vessel_class.toLowerCase().includes(q)
   );
 }
@@ -141,8 +143,11 @@ export default function VesselStep({ vessels, selectedId, onSelect, loading }: V
                   >
                     {vessel.name}
                   </p>
-                  <p className="line-clamp-1 text-[10px] text-zinc-500 sm:text-[11px]">
-                    {vessel.shipping_line_name}
+                  <p className="line-clamp-2 text-[10px] text-zinc-500 sm:text-[11px]">
+                    {shippingLineWithGroupLabel(
+                      vessel.shipping_line_name,
+                      vessel.group_name,
+                    )}
                   </p>
                   <div className="mt-0.5 flex flex-wrap gap-x-1.5 gap-y-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
                     {vessel.loa_m && <span>LOA {vessel.loa_m} m</span>}

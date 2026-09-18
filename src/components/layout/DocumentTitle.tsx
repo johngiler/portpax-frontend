@@ -40,13 +40,50 @@ function titleForPath(pathname: string): string {
   return "PortPax";
 }
 
-/** Sets `document.title` to `PortPax | {View}` from the current route. */
+function documentTitleForPath(pathname: string): string {
+  const view = titleForPath(pathname);
+  return view === "PortPax" ? "PortPax" : `PortPax | ${view}`;
+}
+
+/**
+ * Sets `document.title` to `PortPax | {View}` from the current route.
+ *
+ * Next.js 16.3 soft navigation can drop `<title>` (empty tab) after our effect
+ * runs; re-apply on head mutations and a short retry window.
+ */
 export default function DocumentTitle() {
   const pathname = usePathname() ?? "/";
 
   useEffect(() => {
-    const view = titleForPath(pathname);
-    document.title = view === "PortPax" ? "PortPax" : `PortPax | ${view}`;
+    const desired = documentTitleForPath(pathname);
+
+    function apply() {
+      if (document.title !== desired) {
+        document.title = desired;
+      }
+    }
+
+    apply();
+
+    const timers = [
+      window.setTimeout(apply, 0),
+      window.setTimeout(apply, 50),
+      window.setTimeout(apply, 200),
+    ];
+    const raf = requestAnimationFrame(apply);
+
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      for (const id of timers) window.clearTimeout(id);
+      observer.disconnect();
+    };
   }, [pathname]);
 
   return null;

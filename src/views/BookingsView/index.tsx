@@ -15,6 +15,7 @@ import {
   useActivePortsCatalog,
   useActiveShippingLinesCatalog,
   useActiveVesselsCatalog,
+  useShippingLineGroupsCatalog,
 } from "@/hooks/swr/useCatalogs";
 import { useBookingsInfinite } from "@/hooks/swr/useBookingsInfinite";
 import { useFirstMatchingCallDate } from "@/hooks/swr/useFirstMatchingCallDate";
@@ -60,6 +61,7 @@ import {
 } from "@/services/bookings/bulkImportService";
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
+import { fetchBookingTags } from "@/services/bookings/bookingTagService";
 import { portDisplayName } from "@/types/catalog";
 import {
   bookingDetailHref,
@@ -159,6 +161,7 @@ export default function BookingsView() {
 
   const { ports, isLoading: portsLoading } = useActivePortsCatalog();
   const { lines, isLoading: linesLoading } = useActiveShippingLinesCatalog();
+  const { groups } = useShippingLineGroupsCatalog();
   const portsReady = !portsLoading && !linesLoading;
 
   const portOptions = useMemo(
@@ -175,14 +178,13 @@ export default function BookingsView() {
     for (const port of ports) byId.set(port.id, portDisplayName(port));
     return byId;
   }, [ports]);
-  const shippingLineOptions = useMemo(
+  const shippingLineGroupOptions = useMemo(
     () =>
-      lines.map((line) => ({
-        value: line.id,
-        label: line.name,
-        logoUrl: line.logo,
+      groups.map((group) => ({
+        value: group.id,
+        label: group.name,
       })),
-    [lines],
+    [groups],
   );
 
   const [tab, setTab] = useState<BookingsTabQuery>("list");
@@ -199,10 +201,18 @@ export default function BookingsView() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState<number[]>([]);
   const [appliedPortFilter, setAppliedPortFilter] = useState<number[]>([]);
+  const [shippingLineGroupFilter, setShippingLineGroupFilter] = useState(0);
+  const [appliedShippingLineGroupFilter, setAppliedShippingLineGroupFilter] =
+    useState(0);
   const [shippingLineFilter, setShippingLineFilter] = useState(0);
   const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
   const [vesselFilter, setVesselFilter] = useState(0);
   const [appliedVesselFilter, setAppliedVesselFilter] = useState(0);
+  const [tagFilter, setTagFilter] = useState<number[]>([]);
+  const [appliedTagFilter, setAppliedTagFilter] = useState<number[]>([]);
+  const [tagOptions, setTagOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
   const [datePreset, setDatePreset] = useState<BookingsDatePreset>("all");
   const [appliedDatePreset, setAppliedDatePreset] =
     useState<BookingsDatePreset>("all");
@@ -271,6 +281,19 @@ export default function BookingsView() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditIds, setBulkEditIds] = useState<number[]>([]);
 
+  const shippingLineOptions = useMemo(() => {
+    const scoped =
+      shippingLineGroupFilter > 0
+        ? lines.filter((line) => line.group === shippingLineGroupFilter)
+        : lines;
+    return scoped.map((line) => ({
+      value: line.id,
+      label: line.name,
+      logoUrl: line.logo,
+      groupId: line.group,
+    }));
+  }, [lines, shippingLineGroupFilter]);
+
   const { vessels } = useActiveVesselsCatalog(
     shippingLineFilter > 0 ? shippingLineFilter : null,
   );
@@ -293,8 +316,10 @@ export default function BookingsView() {
       status: appliedStatusFilter,
       search: appliedSearch,
       ports: appliedPortFilter,
+      group: appliedShippingLineGroupFilter,
       line: appliedShippingLineFilter,
       vessel: appliedVesselFilter,
+      tags: appliedTagFilter,
       datePreset: appliedDatePreset,
       customFrom: appliedCustomDateFrom,
       customTo: appliedCustomDateTo,
@@ -349,10 +374,18 @@ export default function BookingsView() {
     setAppliedSearch(parsed.search);
     setPortFilter(ports);
     setAppliedPortFilter(ports);
+    let nextGroup = parsed.group;
+    if (nextGroup <= 0 && parsed.line > 0) {
+      nextGroup = lines.find((line) => line.id === parsed.line)?.group ?? 0;
+    }
+    setShippingLineGroupFilter(nextGroup);
+    setAppliedShippingLineGroupFilter(nextGroup);
     setShippingLineFilter(parsed.line);
     setAppliedShippingLineFilter(parsed.line);
     setVesselFilter(parsed.vessel);
     setAppliedVesselFilter(parsed.vessel);
+    setTagFilter(parsed.tags);
+    setAppliedTagFilter(parsed.tags);
     setDatePreset(parsed.datePreset as BookingsDatePreset);
     setAppliedDatePreset(parsed.datePreset as BookingsDatePreset);
     setCustomDateFrom(parsed.customFrom);
@@ -378,7 +411,7 @@ export default function BookingsView() {
     setAvailabilityDateAllowlist(
       parsed.importedDates.length ? parsed.importedDates : null,
     );
-  }, [portsReady, searchParams, portOptions, navDefaults]);
+  }, [portsReady, searchParams, portOptions, lines, navDefaults]);
 
   useEffect(() => {
     if (portFilter.length !== 1) {
@@ -410,6 +443,23 @@ export default function BookingsView() {
     };
   }, [portFilter]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchBookingTags()
+      .then((rows) => {
+        if (cancelled) return;
+        setTagOptions(
+          rows.map((t) => ({ value: t.id, label: t.name })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setTagOptions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const listParams = useMemo(() => {
     const dateRange = resolveBookingsDateRange(
       appliedDatePreset,
@@ -423,7 +473,12 @@ export default function BookingsView() {
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      shipping_line_group:
+        appliedShippingLineFilter <= 0 && appliedShippingLineGroupFilter > 0
+          ? appliedShippingLineGroupFilter
+          : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      tags: appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
       position:
         appliedPortFilter.length === 1 && appliedPositionFilter > 0
           ? appliedPositionFilter
@@ -442,7 +497,9 @@ export default function BookingsView() {
     appliedConflictFilter,
     appliedPortFilter,
     appliedShippingLineFilter,
+    appliedShippingLineGroupFilter,
     appliedVesselFilter,
+    appliedTagFilter,
     appliedPositionFilter,
     appliedDatePreset,
     appliedCustomDateFrom,
@@ -543,7 +600,12 @@ export default function BookingsView() {
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      shipping_line_group:
+        appliedShippingLineFilter <= 0 && appliedShippingLineGroupFilter > 0
+          ? appliedShippingLineGroupFilter
+          : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      tags: appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
       position:
         appliedPortFilter.length === 1 && appliedPositionFilter > 0
           ? appliedPositionFilter
@@ -559,7 +621,9 @@ export default function BookingsView() {
       appliedSearch,
       appliedPortFilter,
       appliedShippingLineFilter,
+      appliedShippingLineGroupFilter,
       appliedVesselFilter,
+      appliedTagFilter,
       appliedPositionFilter,
       appliedStatusFilter,
       appliedConflictFilter,
@@ -570,8 +634,10 @@ export default function BookingsView() {
   const listHasSidebarFilters =
     Boolean(appliedSearch) ||
     appliedPortFilter.length > 0 ||
+    appliedShippingLineGroupFilter > 0 ||
     appliedShippingLineFilter > 0 ||
     appliedVesselFilter > 0 ||
+    appliedTagFilter.length > 0 ||
     appliedPositionFilter > 0 ||
     appliedStatusFilter.length > 0 ||
     appliedConflictFilter !== "" ||
@@ -620,8 +686,10 @@ export default function BookingsView() {
       setPositionFilter(nextPosition);
     }
     setAppliedPortFilter(portFilter);
+    setAppliedShippingLineGroupFilter(shippingLineGroupFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
     setAppliedVesselFilter(vesselFilter);
+    setAppliedTagFilter(tagFilter);
     setAppliedDatePreset(datePreset);
     setAppliedCustomDateFrom(customDateFrom);
     setAppliedCustomDateTo(customDateTo);
@@ -643,8 +711,10 @@ export default function BookingsView() {
         status: statusFilter,
         search: nextSearch,
         ports: portFilter,
+        group: shippingLineGroupFilter,
         line: shippingLineFilter,
         vessel: vesselFilter,
+        tags: tagFilter,
         datePreset,
         customFrom: customDateFrom,
         customTo: customDateTo,
@@ -707,10 +777,14 @@ export default function BookingsView() {
     setAppliedSearch("");
     setPortFilter(ports);
     setAppliedPortFilter(ports);
+    setShippingLineGroupFilter(0);
+    setAppliedShippingLineGroupFilter(0);
     setShippingLineFilter(0);
     setAppliedShippingLineFilter(0);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
+    setTagFilter([]);
+    setAppliedTagFilter([]);
     setDatePreset("all");
     setAppliedDatePreset("all");
     setCustomDateFrom(from);
@@ -738,8 +812,10 @@ export default function BookingsView() {
       status: [],
       search: "",
       ports,
+      group: 0,
       line: 0,
       vessel: 0,
+      tags: [],
       datePreset: "all",
       customFrom: from,
       customTo: to,
@@ -791,8 +867,10 @@ export default function BookingsView() {
         appliedConflictFilter !== "") ||
       (tab === "list" && appliedSearch !== "") ||
       (tab !== "proximity" && appliedPortFilter.length > 0) ||
+      appliedShippingLineGroupFilter > 0 ||
       appliedShippingLineFilter > 0 ||
       appliedVesselFilter > 0 ||
+      appliedTagFilter.length > 0 ||
       (tab !== "proximity" && appliedPositionFilter > 0) ||
       appliedDatePreset !== "all" ||
       Boolean(availabilityDateAllowlist?.length) ||
@@ -812,10 +890,14 @@ export default function BookingsView() {
     (tab === "list" && (search.trim() !== "" || appliedSearch !== "")) ||
     (tab !== "proximity" &&
       (portFilter.length > 0 || appliedPortFilter.length > 0)) ||
+    shippingLineGroupFilter > 0 ||
+    appliedShippingLineGroupFilter > 0 ||
     shippingLineFilter > 0 ||
     appliedShippingLineFilter > 0 ||
     vesselFilter > 0 ||
     appliedVesselFilter > 0 ||
+    tagFilter.length > 0 ||
+    appliedTagFilter.length > 0 ||
     positionFilter > 0 ||
     appliedPositionFilter > 0 ||
     datePreset !== "all" ||
@@ -837,8 +919,10 @@ export default function BookingsView() {
       conflictFilter !== appliedConflictFilter) ||
     (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && !sameNumberList(portFilter, appliedPortFilter)) ||
+    shippingLineGroupFilter !== appliedShippingLineGroupFilter ||
     shippingLineFilter !== appliedShippingLineFilter ||
     vesselFilter !== appliedVesselFilter ||
+    !sameNumberList(tagFilter, appliedTagFilter) ||
     datePreset !== appliedDatePreset ||
     customDateFrom !== appliedCustomDateFrom ||
     customDateTo !== appliedCustomDateTo ||
@@ -865,8 +949,15 @@ export default function BookingsView() {
               appliedShippingLineFilter > 0
                 ? appliedShippingLineFilter
                 : undefined,
+            shipping_line_group:
+              appliedShippingLineFilter <= 0 &&
+              appliedShippingLineGroupFilter > 0
+                ? appliedShippingLineGroupFilter
+                : undefined,
             vessel:
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+            tags:
+              appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
             call_date_from: listParams.call_date_from,
             call_date_to: listParams.call_date_to,
             ordering: listParams.ordering,
@@ -888,6 +979,11 @@ export default function BookingsView() {
             shipping_line:
               appliedShippingLineFilter > 0
                 ? appliedShippingLineFilter
+                : undefined,
+            shipping_line_group:
+              appliedShippingLineFilter <= 0 &&
+              appliedShippingLineGroupFilter > 0
+                ? appliedShippingLineGroupFilter
                 : undefined,
             vessel:
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
@@ -953,6 +1049,7 @@ export default function BookingsView() {
       appliedYear,
       appliedMonthIndex,
       appliedShippingLineFilter,
+      appliedShippingLineGroupFilter,
       appliedVesselFilter,
       appliedPositionFilter,
       appliedStatusFilter,
@@ -1142,6 +1239,12 @@ export default function BookingsView() {
   );
 
   const activeFilterChips = useMemo(() => {
+    const groupLabel =
+      appliedShippingLineGroupFilter > 0
+        ? shippingLineGroupOptions.find(
+            (o) => o.value === appliedShippingLineGroupFilter,
+          )?.label
+        : null;
     const lineLabel =
       appliedShippingLineFilter > 0
         ? shippingLineOptions.find((o) => o.value === appliedShippingLineFilter)
@@ -1151,6 +1254,12 @@ export default function BookingsView() {
       appliedVesselFilter > 0
         ? vesselOptions.find((o) => o.value === appliedVesselFilter)?.label
         : null;
+    const tagLabels = appliedTagFilter
+      .map(
+        (id) =>
+          tagOptions.find((o) => o.value === id)?.label ?? `Tag #${id}`,
+      )
+      .filter(Boolean);
     const positionLabel =
       appliedPositionFilter > 0
         ? positionOptions.find((o) => o.value === appliedPositionFilter)?.label
@@ -1172,8 +1281,10 @@ export default function BookingsView() {
             ? (portsById.get(appliedPortFilter[0]) ?? null)
             : `${portsById.get(appliedPortFilter[0]) ?? "Puerto"} +${appliedPortFilter.length - 1}`,
       positionLabel: positionLabel ?? null,
+      groupLabel: groupLabel ?? null,
       lineLabel: lineLabel ?? null,
       vesselLabel: vesselLabel ?? null,
+      tagLabels,
       statuses: appliedStatusFilter,
       conflict: appliedConflictFilter,
       search: appliedSearch,
@@ -1189,10 +1300,14 @@ export default function BookingsView() {
     portsById,
     appliedPositionFilter,
     positionOptions,
+    appliedShippingLineGroupFilter,
+    shippingLineGroupOptions,
     appliedShippingLineFilter,
     shippingLineOptions,
     appliedVesselFilter,
     vesselOptions,
+    appliedTagFilter,
+    tagOptions,
     appliedStatusFilter,
     appliedConflictFilter,
     appliedSearch,
@@ -1347,8 +1462,11 @@ export default function BookingsView() {
           conflictFilter={conflictFilter}
           search={search}
           portFilter={portFilter}
+          shippingLineGroupFilter={shippingLineGroupFilter}
           shippingLineFilter={shippingLineFilter}
           vesselFilter={vesselFilter}
+          tagFilter={tagFilter}
+          tagOptions={tagOptions}
           datePreset={datePreset}
           customDateFrom={customDateFrom}
           customDateTo={customDateTo}
@@ -1360,6 +1478,7 @@ export default function BookingsView() {
           heatMode={heatMode}
           density={density}
           portOptions={portOptions}
+          shippingLineGroupOptions={shippingLineGroupOptions}
           shippingLineOptions={shippingLineOptions}
           vesselOptions={vesselOptions}
           positionOptions={positionOptions}
@@ -1374,8 +1493,10 @@ export default function BookingsView() {
               setPositionFilter(0);
             }
           }}
+          onShippingLineGroupFilterChange={setShippingLineGroupFilter}
           onShippingLineFilterChange={setShippingLineFilter}
           onVesselFilterChange={setVesselFilter}
+          onTagFilterChange={setTagFilter}
           onDatePresetChange={handleDatePresetChange}
           onCustomDateFromChange={handleCustomDateFromChange}
           onCustomDateToChange={handleCustomDateToChange}
@@ -1522,8 +1643,10 @@ export default function BookingsView() {
           }}
           portIds={appliedPortFilter}
           portLabel={calendarPortLabel}
+          shippingLineGroupId={appliedShippingLineGroupFilter}
           shippingLineId={appliedShippingLineFilter}
           vesselId={appliedVesselFilter}
+          tagIds={appliedTagFilter}
           statuses={appliedStatusFilter}
           positionId={appliedPositionFilter}
           search=""
@@ -1572,9 +1695,18 @@ export default function BookingsView() {
                     appliedShippingLineFilter > 0
                       ? appliedShippingLineFilter
                       : undefined,
+                  shipping_line_group:
+                    appliedShippingLineFilter <= 0 &&
+                    appliedShippingLineGroupFilter > 0
+                      ? appliedShippingLineGroupFilter
+                      : undefined,
                   vessel:
                     appliedVesselFilter > 0
                       ? appliedVesselFilter
+                      : undefined,
+                  tags:
+                    appliedTagFilter.length > 0
+                      ? appliedTagFilter
                       : undefined,
                   position:
                     appliedPortFilter.length === 1 &&

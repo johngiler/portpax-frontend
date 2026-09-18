@@ -114,19 +114,24 @@ export default function DashboardView() {
           ? (portsById.get(appliedSelectedPortIds[0]) ?? null)
           : `${portsById.get(appliedSelectedPortIds[0]) ?? "Puerto"} +${appliedSelectedPortIds.length - 1}`;
 
+    let shippingLineGroupLabel: string | null = null;
     let carrierLabel: string | null = null;
     if (appliedCarrierFilter.type === "line") {
-      carrierLabel =
-        lines.find((line) => line.id === appliedCarrierFilter.id)?.name ?? null;
+      const line = lines.find((row) => row.id === appliedCarrierFilter.id);
+      carrierLabel = line?.name ?? null;
+      shippingLineGroupLabel =
+        line?.group_name?.trim() ||
+        groups.find((group) => group.id === line?.group)?.name ||
+        null;
     } else if (appliedCarrierFilter.type === "group") {
-      const groupName = groups.find(
-        (group) => group.id === appliedCarrierFilter.id,
-      )?.name;
-      carrierLabel = groupName ? `Grupo: ${groupName}` : null;
+      shippingLineGroupLabel =
+        groups.find((group) => group.id === appliedCarrierFilter.id)?.name ??
+        null;
     }
 
     return buildDashboardActiveFilterChips({
       portLabel,
+      shippingLineGroupLabel,
       carrierLabel,
       dateFrom: appliedDateFrom,
       dateTo: appliedDateTo,

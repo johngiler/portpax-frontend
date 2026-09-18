@@ -99,6 +99,8 @@ export const swrKeys = {
 
   bookingActivityActors: ["bookings", "activity", "actors"] as const,
 
+  bookingTags: ["bookings", "tags"] as const,
+
   userActivityInfinite: (paramsKey: string) =>
     ["users", "activity", "infinite", paramsKey] as const,
 

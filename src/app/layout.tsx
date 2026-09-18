@@ -12,10 +12,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "PortPax",
-    template: "PortPax | %s",
-  },
+  title: "PortPax",
   description: "Plataforma de gestión de operaciones en puertos de cruceros",
 };
 

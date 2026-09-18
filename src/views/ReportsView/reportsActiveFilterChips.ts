@@ -16,6 +16,7 @@ export function buildReportsActiveFilterChips(input: {
   paxBasis: ReportPaxBasis;
   years?: number[];
   tagLabels?: string[];
+  shippingLineGroupLabel?: string | null;
   shippingLineLabel?: string | null;
 }): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
@@ -63,11 +64,19 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
+  if (!isMovements && input.shippingLineGroupLabel) {
+    chips.push({
+      id: "shipping-line-group",
+      label: input.shippingLineGroupLabel,
+      icon: "shipping_line",
+    });
+  }
+
   if (!isMovements && input.shippingLineLabel) {
     chips.push({
       id: "shipping-line",
       label: input.shippingLineLabel,
-      icon: "port",
+      icon: "shipping_line",
     });
   }
 
@@ -110,6 +119,7 @@ export function reportsHasActiveFilters(input: {
   paxBasis: ReportPaxBasis;
   years?: number[];
   tagIds?: number[];
+  shippingLineGroupId?: number;
   shippingLineId?: number;
 }): boolean {
   if (input.tab === "booking_movements") {
@@ -123,6 +133,7 @@ export function reportsHasActiveFilters(input: {
       input.paxBasis !== "planned" ||
       (input.years?.length ?? 0) > 0 ||
       (input.tagIds?.length ?? 0) > 0 ||
+      (input.shippingLineGroupId ?? 0) > 0 ||
       (input.shippingLineId ?? 0) > 0
     );
   }

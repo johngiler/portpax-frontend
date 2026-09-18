@@ -186,11 +186,14 @@ export default function FilterSuggestField({
                       onClick={() => pick(item)}
                     >
                       <span className="truncate font-medium">{item.label}</span>
-                      {item.hint ? (
-                        <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                          {item.hint}
+                      {suggestionSubtitles(item).map((line) => (
+                        <span
+                          key={line}
+                          className="truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+                        >
+                          {line}
                         </span>
-                      ) : null}
+                      ))}
                     </button>
                   );
                 })}
@@ -201,6 +204,14 @@ export default function FilterSuggestField({
       ) : null}
     </div>
   );
+}
+
+function suggestionSubtitles(item: FilterSuggestion): string[] {
+  if (item.hints?.length) {
+    return item.hints.map((h) => h.trim()).filter(Boolean);
+  }
+  const single = item.hint?.trim();
+  return single ? [single] : [];
 }
 
 function groupSuggestions(items: FilterSuggestion[]) {

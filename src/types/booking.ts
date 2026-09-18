@@ -41,6 +41,10 @@ export type BookingListItem = {
   shipping_line: number;
   shipping_line_code: string;
   shipping_line_name: string;
+  /** Corporate group id (ShippingLine.group) for soft-focus filters. */
+  shipping_line_group: number | null;
+  /** Friendly corporate group name — show with naviera in cards. */
+  shipping_line_group_name?: string | null;
   position: number | null;
   position_code: string | null;
   call_date: string;
@@ -59,11 +63,10 @@ export type BookingListItem = {
 
 export type Booking = BookingListItem & {
   port_code: string;
+  port_country: string;
   port_logo: string | null;
   shipping_line: number;
   shipping_line_logo: string | null;
-  /** Corporate group id (ShippingLine.group); used to restrict identity edits. */
-  shipping_line_group: number | null;
   vessel_logo: string | null;
   eta_real: string | null;
   etd_real: string | null;

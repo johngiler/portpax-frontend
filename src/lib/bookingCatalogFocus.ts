@@ -31,19 +31,26 @@ export type BookingCalendarFocus = CatalogConflictFocus & {
   statuses?: BookingStatusFilterValue[];
   vesselId?: number;
   shippingLineId?: number;
+  shippingLineGroupId?: number;
   positionId?: number;
+  /** Soft-focus: booking must have one of these tag IDs. */
+  tagIds?: number[];
   /** Imported discrete dates — soft-focus (neighbors on other days stay muted). */
   callDates?: string[];
 };
 
 /** Soft focus for vessel / shipping-line filters (neighbors stay visible). */
 export function bookingMatchesCatalogFocus(
-  booking: Pick<BookingListItem, "vessel" | "shipping_line">,
+  booking: Pick<BookingListItem, "vessel" | "shipping_line" | "shipping_line_group">,
   vesselId: number,
   shippingLineId: number,
+  shippingLineGroupId = 0,
 ): boolean {
   if (vesselId > 0) return booking.vessel === vesselId;
   if (shippingLineId > 0) return booking.shipping_line === shippingLineId;
+  if (shippingLineGroupId > 0) {
+    return booking.shipping_line_group === shippingLineGroupId;
+  }
   return true;
 }
 
@@ -132,9 +139,25 @@ export function bookingMatchesCalendarFocus(
   if (vesselId <= 0 && lineId > 0 && booking.shipping_line !== lineId) {
     return false;
   }
+  const groupId =
+    focus.shippingLineGroupId && focus.shippingLineGroupId > 0
+      ? focus.shippingLineGroupId
+      : 0;
+  if (
+    vesselId <= 0 &&
+    lineId <= 0 &&
+    groupId > 0 &&
+    booking.shipping_line_group !== groupId
+  ) {
+    return false;
+  }
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
   if (positionId > 0 && booking.position !== positionId) return false;
+  if (focus.tagIds && focus.tagIds.length > 0) {
+    const tagId = booking.tag_id ?? 0;
+    if (!focus.tagIds.includes(tagId)) return false;
+  }
   if (focus.callDates && focus.callDates.length > 0) {
     const allow = new Set(focus.callDates);
     if (!allow.has(booking.call_date)) return false;
@@ -148,7 +171,9 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
     (focus.statuses && focus.statuses.length > 0) ||
       (focus.vesselId && focus.vesselId > 0) ||
       (focus.shippingLineId && focus.shippingLineId > 0) ||
+      (focus.shippingLineGroupId && focus.shippingLineGroupId > 0) ||
       (focus.positionId && focus.positionId > 0) ||
+      (focus.tagIds && focus.tagIds.length > 0) ||
       (focus.callDates && focus.callDates.length > 0) ||
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||

@@ -38,7 +38,8 @@ export type ActiveFilterChipIcon =
   | "heat"
   | "density"
   | "calendar"
-  | "lta";
+  | "lta"
+  | "tag";
 
 export type ActiveFilterChip = {
   id: string;
@@ -50,8 +51,10 @@ export type BookingsActiveFilterChipInput = {
   tab: "list" | "calendar" | "availability" | "proximity";
   portLabel?: string | null;
   positionLabel?: string | null;
+  groupLabel?: string | null;
   lineLabel?: string | null;
   vesselLabel?: string | null;
+  tagLabels?: string[];
   statuses: BookingStatusFilterValue[];
   conflict: ConflictFilterValue;
   search: string;
@@ -88,6 +91,13 @@ export function buildBookingsActiveFilterChips(
     tab === "availability" && input.heatMode === "availability";
 
   if (!gapsOnly) {
+    if (input.groupLabel) {
+      chips.push({
+        id: "group",
+        label: input.groupLabel,
+        icon: "shipping_line",
+      });
+    }
     if (input.lineLabel) {
       chips.push({
         id: "line",
@@ -100,6 +110,13 @@ export function buildBookingsActiveFilterChips(
         id: "vessel",
         label: input.vesselLabel,
         icon: "vessel",
+      });
+    }
+    for (const [index, label] of (input.tagLabels ?? []).entries()) {
+      chips.push({
+        id: `tag-${index}`,
+        label,
+        icon: "tag",
       });
     }
 
