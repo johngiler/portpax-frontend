@@ -392,9 +392,11 @@ export default function ReportsView() {
               (years[0] ?? 0) !== weekly.year ||
               week !== weekly.week ||
               withoutLta ||
+              paxBasis !== "planned" ||
               (appliedFilters.years[0] ?? 0) !== weekly.year ||
               appliedFilters.week !== weekly.week ||
-              appliedFilters.withoutLta
+              appliedFilters.withoutLta ||
+              appliedFilters.paxBasis !== "planned"
             );
           })()
       : tab === "solicitudes_port"
@@ -594,6 +596,7 @@ export default function ReportsView() {
             year: appliedYears[0] ?? weekly.year,
             week: appliedFilters.week || weekly.week,
             without_lta: appliedWithoutLta,
+            pax_basis: appliedPaxBasis,
             exportFormat: format,
           });
           return;
@@ -782,6 +785,15 @@ export default function ReportsView() {
               options={weekSelectOptions}
               compact
             />
+            <FormFieldSelect<ReportPaxBasis>
+              label="Base PAX"
+              name="report_weekly_pax_basis"
+              value={paxBasis}
+              onChange={setPaxBasis}
+              options={REPORT_PAX_BASIS_OPTIONS}
+              compact
+              labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
+            />
             <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
               <input
                 type="checkbox"
@@ -891,6 +903,7 @@ export default function ReportsView() {
           year={appliedFilters.years[0] ?? defaultWeeklyYearWeek().year}
           week={appliedFilters.week || defaultWeeklyYearWeek().week}
           withoutLta={appliedFilters.withoutLta}
+          paxBasis={appliedFilters.paxBasis}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearFilters}
         />

@@ -17,12 +17,14 @@ import {
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import ReportsEmptyState from "./ReportsEmptyState";
 import { WeeklyReportContentSkeleton } from "./ReportsContentSkeleton";
+import type { ReportPaxBasis } from "./reportsFilterQuery";
 
 type Props = {
   enabled: boolean;
   year: number;
   week: number;
   withoutLta: boolean;
+  paxBasis: ReportPaxBasis;
   hasActiveFilters: boolean;
   onClearFilters?: () => void;
 };
@@ -54,6 +56,7 @@ export default function WeeklyReportSection({
   year,
   week,
   withoutLta,
+  paxBasis,
   hasActiveFilters,
   onClearFilters,
 }: Props) {
@@ -61,10 +64,16 @@ export default function WeeklyReportSection({
     enabled && year > 0 && week > 0
       ? swrKeys.report(
           "weekly_report",
-          `${year}|${week}|${withoutLta ? 1 : 0}`,
+          `${year}|${week}|${withoutLta ? 1 : 0}|${paxBasis}`,
         )
       : null,
-    () => fetchWeeklyReport({ year, week, without_lta: withoutLta }),
+    () =>
+      fetchWeeklyReport({
+        year,
+        week,
+        without_lta: withoutLta,
+        pax_basis: paxBasis,
+      }),
     { keepPreviousData: false },
   );
 
@@ -72,7 +81,8 @@ export default function WeeklyReportSection({
     data &&
       (data.year !== year ||
         data.week !== week ||
-        Boolean(data.without_lta) !== withoutLta),
+        Boolean(data.without_lta) !== withoutLta ||
+        (data.pax_basis ?? "planned") !== paxBasis),
   );
 
   if (isLoading || mismatch || !data) {

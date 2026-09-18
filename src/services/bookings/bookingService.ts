@@ -606,6 +606,7 @@ export type WeeklyReport = {
   week_start: string;
   week_end: string;
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   call_years: number[];
   metric_labels: string[];
   ports: WeeklyReportPort[];
@@ -616,11 +617,15 @@ export async function fetchWeeklyReport(params: {
   year: number;
   week: number;
   without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
 }): Promise<WeeklyReport> {
   const query = new URLSearchParams();
   query.set("year", String(params.year));
   query.set("week", String(params.week));
   if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   return apiFetch<WeeklyReport>(`${BASE}report-weekly/?${query.toString()}`);
 }
 

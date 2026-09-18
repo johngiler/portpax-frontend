@@ -60,6 +60,6 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Por puerto: totales anuales de PAX (fila azul) y desglose de movimientos de la semana ISO (NEW / CANCEL / SHIP / PAX PROY·REAL).",
     notes:
-      "Filtros: Año (pasados + actual) + Semana ISO (por defecto la actual) + Sin LTA. Fila azul = totales PAX del puerto por año de escala (todos los años del rango). Filas = movimientos de la semana. PAX PROY / REAL = capacidad proyectada − PAX real. Exporta PDF / Excel / CSV.",
+      "Filtros: Año (pasados + actual) + Semana ISO (por defecto la actual) + Base PAX + Sin LTA. Fila azul = totales PAX del puerto por año de escala (todos los años del rango). Filas = movimientos de la semana. PAX PROY / REAL = proyectado (Base PAX) − PAX real. Exporta PDF / Excel / CSV.",
   },
 ];

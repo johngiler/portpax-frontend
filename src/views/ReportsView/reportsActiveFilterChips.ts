@@ -84,6 +84,13 @@ export function buildReportsActiveFilterChips(input: {
         icon: "lta",
       });
     }
+    if (input.paxBasis === "capacity") {
+      chips.push({
+        id: "pax-basis",
+        label: "PAX: Cap. máx.",
+        icon: "dates",
+      });
+    }
   } else if (input.years?.length) {
     chips.push({
       id: "years",
@@ -161,7 +168,8 @@ export function reportsHasActiveFilters(input: {
     return (
       (year != null && year !== weekly.year) ||
       (input.week != null && input.week !== weekly.week) ||
-      Boolean(input.withoutLta)
+      Boolean(input.withoutLta) ||
+      input.paxBasis !== "planned"
     );
   }
   if (input.tab === "solicitudes_port") {
