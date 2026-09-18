@@ -58,8 +58,8 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     id: "weekly_report",
     name: "Reporte Semanal",
     description:
-      "Desglose de movimientos de la semana ISO: por puerto, PAX con signo (NEW BOOKING, CANCELLATION, SHIP CHANGE, PAX PROY / REAL) en columnas de año de escala.",
+      "Por puerto: totales anuales de PAX (fila azul) y desglose de movimientos de la semana ISO (NEW / CANCEL / SHIP / PAX PROY·REAL).",
     notes:
-      "Filtros: Año (pasados + actual) + Semana ISO (por defecto la semana actual). Fuente: auditoría. Exporta PDF / Excel / CSV como «Reporte Semanal».",
+      "Filtros: Año (pasados + actual) + Semana ISO (por defecto la actual) + Sin LTA. Fila azul = totales PAX del puerto por año de escala (todos los años del rango). Filas = movimientos de la semana. PAX PROY / REAL = capacidad proyectada − PAX real. Exporta PDF / Excel / CSV.",
   },
 ];

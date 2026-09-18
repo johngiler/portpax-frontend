@@ -294,7 +294,7 @@ export function reportsFiltersForTab(
       tagIds: [],
       shippingLineGroupId: 0,
       shippingLineId: 0,
-      withoutLta: false,
+      // Keep Sin LTA when switching into weekly (Beto).
       paxBasis: "planned",
     };
   }

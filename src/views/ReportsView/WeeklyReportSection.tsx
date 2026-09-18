@@ -22,12 +22,17 @@ type Props = {
   enabled: boolean;
   year: number;
   week: number;
+  withoutLta: boolean;
   hasActiveFilters: boolean;
   onClearFilters?: () => void;
 };
 
 function formatSigned(n: number): string {
   if (!n) return "";
+  return n.toLocaleString("es-MX");
+}
+
+function formatTotal(n: number): string {
   return n.toLocaleString("es-MX");
 }
 
@@ -48,19 +53,26 @@ export default function WeeklyReportSection({
   enabled,
   year,
   week,
+  withoutLta,
   hasActiveFilters,
   onClearFilters,
 }: Props) {
   const { data, isLoading, error } = useSWR<WeeklyReport>(
     enabled && year > 0 && week > 0
-      ? swrKeys.report("weekly_report", `${year}|${week}`)
+      ? swrKeys.report(
+          "weekly_report",
+          `${year}|${week}|${withoutLta ? 1 : 0}`,
+        )
       : null,
-    () => fetchWeeklyReport({ year, week }),
+    () => fetchWeeklyReport({ year, week, without_lta: withoutLta }),
     { keepPreviousData: false },
   );
 
   const mismatch = Boolean(
-    data && (data.year !== year || data.week !== week),
+    data &&
+      (data.year !== year ||
+        data.week !== week ||
+        Boolean(data.without_lta) !== withoutLta),
   );
 
   if (isLoading || mismatch || !data) {
@@ -125,7 +137,7 @@ export default function WeeklyReportSection({
                         key={`t-${port.port_id}-${idx}`}
                         className="border-b border-[var(--admin-accent)]/20 bg-[var(--admin-accent)] px-2 py-2 text-center text-xs font-semibold tabular-nums text-white"
                       >
-                        {formatSigned(value)}
+                        {formatTotal(value)}
                       </td>
                     ))}
                   </tr>

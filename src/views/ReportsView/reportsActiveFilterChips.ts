@@ -69,12 +69,19 @@ export function buildReportsActiveFilterChips(input: {
         icon: "dates",
       });
     }
-  } else if (isWeekly) {
+  } else   if (isWeekly) {
     if (weeklyYearActive || weeklyWeekActive) {
       chips.push({
         id: "years",
         label: `Año ${movementYear} · Semana ${input.week}`,
         icon: "dates",
+      });
+    }
+    if (input.withoutLta) {
+      chips.push({
+        id: "without-lta",
+        label: "Sin LTA",
+        icon: "lta",
       });
     }
   } else if (input.years?.length) {
@@ -153,7 +160,8 @@ export function reportsHasActiveFilters(input: {
     const year = input.years?.[0];
     return (
       (year != null && year !== weekly.year) ||
-      (input.week != null && input.week !== weekly.week)
+      (input.week != null && input.week !== weekly.week) ||
+      Boolean(input.withoutLta)
     );
   }
   if (input.tab === "solicitudes_port") {

@@ -391,8 +391,10 @@ export default function ReportsView() {
             return (
               (years[0] ?? 0) !== weekly.year ||
               week !== weekly.week ||
+              withoutLta ||
               (appliedFilters.years[0] ?? 0) !== weekly.year ||
-              appliedFilters.week !== weekly.week
+              appliedFilters.week !== weekly.week ||
+              appliedFilters.withoutLta
             );
           })()
       : tab === "solicitudes_port"
@@ -591,6 +593,7 @@ export default function ReportsView() {
             report_type: "weekly_report",
             year: appliedYears[0] ?? weekly.year,
             week: appliedFilters.week || weekly.week,
+            without_lta: appliedWithoutLta,
             exportFormat: format,
           });
           return;
@@ -779,6 +782,15 @@ export default function ReportsView() {
               options={weekSelectOptions}
               compact
             />
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
+              <input
+                type="checkbox"
+                checked={withoutLta}
+                onChange={(e) => setWithoutLta(e.target.checked)}
+                className="rounded border-zinc-300"
+              />
+              Sin LTA
+            </label>
           </>
         ) : null}
         {showSharedReportFilters ? (
@@ -878,6 +890,7 @@ export default function ReportsView() {
           enabled
           year={appliedFilters.years[0] ?? defaultWeeklyYearWeek().year}
           week={appliedFilters.week || defaultWeeklyYearWeek().week}
+          withoutLta={appliedFilters.withoutLta}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearFilters}
         />
