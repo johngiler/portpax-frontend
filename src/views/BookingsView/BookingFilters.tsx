@@ -82,6 +82,7 @@ type BookingFiltersProps = {
   tab: BookingsTabQuery;
   status: BookingStatusFilterValue[];
   conflictFilter: ConflictFilterValue;
+  firstArrival: boolean;
   search: string;
   /** Empty = all ports. */
   portFilter: number[];
@@ -109,6 +110,7 @@ type BookingFiltersProps = {
   canApply: boolean;
   onStatusChange: (status: BookingStatusFilterValue[]) => void;
   onConflictFilterChange: (value: ConflictFilterValue) => void;
+  onFirstArrivalChange: (value: boolean) => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portIds: number[]) => void;
   onShippingLineGroupFilterChange: (groupId: number) => void;
@@ -136,6 +138,7 @@ export default function BookingFilters({
   tab,
   status,
   conflictFilter,
+  firstArrival,
   search,
   portFilter,
   shippingLineGroupFilter,
@@ -162,6 +165,7 @@ export default function BookingFilters({
   canApply,
   onStatusChange,
   onConflictFilterChange,
+  onFirstArrivalChange,
   onSearchChange,
   onPortFilterChange,
   onShippingLineGroupFilterChange,
@@ -536,16 +540,27 @@ export default function BookingFilters({
   ) : null;
 
   const conflictField = showConflict ? (
-    <FormFieldSelect<ConflictFilterValue>
-      label="Conflicto"
-      name="booking_conflict_filter"
-      value={conflictFilter}
-      onChange={onConflictFilterChange}
-      options={CONFLICT_OPTIONS}
-      optionLabel="Todos"
-      emptyValue=""
-      compact
-    />
+    <>
+      <FormFieldSelect<ConflictFilterValue>
+        label="Conflicto"
+        name="booking_conflict_filter"
+        value={conflictFilter}
+        onChange={onConflictFilterChange}
+        options={CONFLICT_OPTIONS}
+        optionLabel="Todos"
+        emptyValue=""
+        compact
+      />
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
+        <input
+          type="checkbox"
+          checked={firstArrival}
+          onChange={(e) => onFirstArrivalChange(e.target.checked)}
+          className="rounded border-zinc-300"
+        />
+        Primer arribo
+      </label>
+    </>
   ) : null;
 
   const datesField = showDates ? (

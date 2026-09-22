@@ -197,6 +197,8 @@ export default function BookingsView() {
   const [conflictFilter, setConflictFilter] = useState<ConflictFilterValue>("");
   const [appliedConflictFilter, setAppliedConflictFilter] =
     useState<ConflictFilterValue>("");
+  const [firstArrival, setFirstArrival] = useState(false);
+  const [appliedFirstArrival, setAppliedFirstArrival] = useState(false);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState<number[]>([]);
@@ -332,6 +334,7 @@ export default function BookingsView() {
       heat: appliedHeatMode,
       density: appliedDensity,
       conflict: appliedConflictFilter,
+      firstArrival: appliedFirstArrival,
       importedDates: availabilityDateAllowlist ?? [],
       ...overrides,
     };
@@ -370,6 +373,8 @@ export default function BookingsView() {
     setAppliedStatusFilter(parsed.status);
     setConflictFilter(parsed.conflict);
     setAppliedConflictFilter(parsed.conflict);
+    setFirstArrival(parsed.firstArrival);
+    setAppliedFirstArrival(parsed.firstArrival);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
     setPortFilter(ports);
@@ -470,6 +475,7 @@ export default function BookingsView() {
       search: appliedSearch,
       statuses: appliedStatusFilter,
       ...conflictFilterToApiParams(appliedConflictFilter),
+      first_arrival: appliedFirstArrival || undefined,
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
@@ -495,6 +501,7 @@ export default function BookingsView() {
     appliedSearch,
     appliedStatusFilter,
     appliedConflictFilter,
+    appliedFirstArrival,
     appliedPortFilter,
     appliedShippingLineFilter,
     appliedShippingLineGroupFilter,
@@ -613,6 +620,7 @@ export default function BookingsView() {
       statuses:
         appliedStatusFilter.length > 0 ? appliedStatusFilter : undefined,
       ...conflictFilterToApiParams(appliedConflictFilter),
+      first_arrival: appliedFirstArrival || undefined,
       call_dates: availabilityDateAllowlist?.length
         ? availabilityDateAllowlist
         : undefined,
@@ -627,6 +635,7 @@ export default function BookingsView() {
       appliedPositionFilter,
       appliedStatusFilter,
       appliedConflictFilter,
+      appliedFirstArrival,
       availabilityDateAllowlist,
     ],
   );
@@ -641,6 +650,7 @@ export default function BookingsView() {
     appliedPositionFilter > 0 ||
     appliedStatusFilter.length > 0 ||
     appliedConflictFilter !== "" ||
+    appliedFirstArrival ||
     Boolean(availabilityDateAllowlist?.length);
 
   const { firstDate: listFirstOutsideDate } = useFirstMatchingCallDate(
@@ -669,11 +679,16 @@ export default function BookingsView() {
       tab === "calendar" ||
       tab === "availability";
     const nextConflict = conflictTabs ? conflictFilter : "";
+    const nextFirstArrival = conflictTabs ? firstArrival : false;
 
     setAppliedStatusFilter(statusFilter);
     setAppliedConflictFilter(nextConflict);
     if (nextConflict !== conflictFilter) {
       setConflictFilter(nextConflict);
+    }
+    setAppliedFirstArrival(nextFirstArrival);
+    if (nextFirstArrival !== firstArrival) {
+      setFirstArrival(nextFirstArrival);
     }
     setAppliedSearch(tab === "list" ? search.trim() : "");
     if (tab !== "list" && search.trim() !== "") {
@@ -727,6 +742,7 @@ export default function BookingsView() {
         heat: heatMode,
         density,
         conflict: nextConflict,
+        firstArrival: nextFirstArrival,
       }),
     );
   }
@@ -773,6 +789,8 @@ export default function BookingsView() {
     setAppliedStatusFilter([]);
     setConflictFilter(clearedConflict);
     setAppliedConflictFilter(clearedConflict);
+    setFirstArrival(false);
+    setAppliedFirstArrival(false);
     setSearch("");
     setAppliedSearch("");
     setPortFilter(ports);
@@ -828,6 +846,7 @@ export default function BookingsView() {
       heat: "availability",
       density: 0,
       conflict: clearedConflict,
+      firstArrival: false,
       importedDates: [],
     });
   }
@@ -864,7 +883,8 @@ export default function BookingsView() {
         tab === "proximity" ||
         tab === "calendar" ||
         tab === "availability") &&
-        appliedConflictFilter !== "") ||
+        appliedConflictFilter !== "" ||
+        appliedFirstArrival) ||
       (tab === "list" && appliedSearch !== "") ||
       (tab !== "proximity" && appliedPortFilter.length > 0) ||
       appliedShippingLineGroupFilter > 0 ||
@@ -886,7 +906,10 @@ export default function BookingsView() {
       tab === "proximity" ||
       tab === "calendar" ||
       tab === "availability") &&
-      (conflictFilter !== "" || appliedConflictFilter !== "")) ||
+      (conflictFilter !== "" ||
+        appliedConflictFilter !== "" ||
+        firstArrival ||
+        appliedFirstArrival)) ||
     (tab === "list" && (search.trim() !== "" || appliedSearch !== "")) ||
     (tab !== "proximity" &&
       (portFilter.length > 0 || appliedPortFilter.length > 0)) ||
@@ -916,7 +939,8 @@ export default function BookingsView() {
       tab === "proximity" ||
       tab === "calendar" ||
       tab === "availability") &&
-      conflictFilter !== appliedConflictFilter) ||
+      conflictFilter !== appliedConflictFilter ||
+      firstArrival !== appliedFirstArrival) ||
     (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && !sameNumberList(portFilter, appliedPortFilter)) ||
     shippingLineGroupFilter !== appliedShippingLineGroupFilter ||
@@ -1235,8 +1259,11 @@ export default function BookingsView() {
   );
 
   const appliedConflictApiFilters = useMemo(
-    () => conflictFilterToApiParams(appliedConflictFilter),
-    [appliedConflictFilter],
+    () => ({
+      ...conflictFilterToApiParams(appliedConflictFilter),
+      ...(appliedFirstArrival ? { first_arrival: true as const } : {}),
+    }),
+    [appliedConflictFilter, appliedFirstArrival],
   );
 
   const activeFilterChips = useMemo(() => {
@@ -1288,6 +1315,7 @@ export default function BookingsView() {
       tagLabels,
       statuses: appliedStatusFilter,
       conflict: appliedConflictFilter,
+      firstArrival: appliedFirstArrival,
       search: appliedSearch,
       datePreset: appliedDatePreset,
       importedDatesCount: availabilityDateAllowlist?.length ?? 0,
@@ -1311,6 +1339,7 @@ export default function BookingsView() {
     tagOptions,
     appliedStatusFilter,
     appliedConflictFilter,
+    appliedFirstArrival,
     appliedSearch,
     appliedDatePreset,
     availabilityDateAllowlist,
@@ -1461,6 +1490,7 @@ export default function BookingsView() {
           tab={tab}
           status={statusFilter}
           conflictFilter={conflictFilter}
+          firstArrival={firstArrival}
           search={search}
           portFilter={portFilter}
           shippingLineGroupFilter={shippingLineGroupFilter}
@@ -1487,6 +1517,7 @@ export default function BookingsView() {
           canApply={canApplyFilters}
           onStatusChange={setStatusFilter}
           onConflictFilterChange={setConflictFilter}
+          onFirstArrivalChange={setFirstArrival}
           onSearchChange={setSearch}
           onPortFilterChange={(ids) => {
             setPortFilter(ids);
@@ -1719,6 +1750,9 @@ export default function BookingsView() {
                       ? appliedStatusFilter
                       : undefined,
                   ...conflictFilterToApiParams(appliedConflictFilter),
+                  ...(appliedFirstArrival
+                    ? { first_arrival: true as const }
+                    : {}),
                 }
               : {}
           }

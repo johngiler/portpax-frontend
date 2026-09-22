@@ -29,6 +29,7 @@ import {
   type BookingBadgeStatus,
 } from "@/types/booking";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
 import {
@@ -73,6 +74,7 @@ type Props = {
     has_conflict?: boolean;
     conflict_severity?: "yellow" | "red" | "green";
     conflict_type?: ConflictTypeFilterValue;
+    first_arrival?: boolean;
   };
   /** Inside the card scroll panel (e.g. load-more sentinel). */
   footer?: ReactNode;
@@ -428,6 +430,9 @@ export default function AvailabilityChartSection({
                                           status={badgeStatus}
                                           size="sm"
                                         />
+                                      ) : null}
+                                      {call.first_arrival ? (
+                                        <FirstArrivalBadge compact />
                                       ) : null}
                                       <ConflictTypeChips chips={chips} />
                                     </div>

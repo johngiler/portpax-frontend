@@ -20,6 +20,7 @@ export function dashboardBookingsHref(
     dateFrom?: string;
     dateTo?: string;
     conflict?: "" | "yes";
+    firstArrival?: boolean;
   },
 ): string {
   const dateFrom = overrides?.dateFrom ?? base.dateFrom;
@@ -47,6 +48,7 @@ export function dashboardBookingsHref(
     conflict: overrides?.conflict ?? "",
     tags: [],
     importedDates: [],
+    firstArrival: overrides?.firstArrival ?? false,
   };
   const qs = buildBookingsWorkspaceQuery(state);
   return qs ? `/bookings?${qs}` : "/bookings";

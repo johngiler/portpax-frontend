@@ -37,6 +37,7 @@ export type AvailabilityCall = {
   loa_m: string | null;
   eta: string | null;
   etd: string | null;
+  first_arrival?: boolean;
 } & ConflictDisplaySource;
 
 export type AvailabilityFocusFilters = CatalogConflictFocus & {
@@ -119,6 +120,7 @@ export function availabilityCallMatchesFocus(
     | "tag_id"
     | "conflict_chips"
     | "conflict_highlights"
+    | "first_arrival"
   >,
   callDate: string,
   focus: AvailabilityFocusFilters,
@@ -164,6 +166,8 @@ export function availabilityCallMatchesFocus(
     const tagId = call.tag_id ?? 0;
     if (!focus.tagIds.includes(tagId)) return false;
   }
+  if (focus.first_arrival === true && !call.first_arrival) return false;
+  if (focus.first_arrival === false && call.first_arrival) return false;
   return true;
 }
 
@@ -179,6 +183,7 @@ export function availabilityFocusNeighborTitle(
     | "booking_code"
     | "conflict_chips"
     | "conflict_highlights"
+    | "first_arrival"
   >,
   callDate: string,
   focus: AvailabilityFocusFilters,
@@ -243,7 +248,8 @@ export function availabilityFocusIsActive(
       (focus.tagIds && focus.tagIds.length > 0) ||
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
-      focus.conflict_type,
+      focus.conflict_type ||
+      focus.first_arrival !== undefined,
   );
 }
 

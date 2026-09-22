@@ -85,6 +85,8 @@ export type BookingsWorkspaceFilters = {
     | "yellow"
     | "red"
     | ConflictTypeFilterValue;
+  /** Only bookings marked primer arribo (first_arrival=true). */
+  firstArrival: boolean;
   /** Booking tag IDs (multi). Empty = all tags. */
   tags: number[];
   /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
@@ -216,6 +218,9 @@ export function parseBookingsWorkspaceFilters(
     heat,
     density,
     conflict,
+    firstArrival: ["1", "true", "yes", "si", "sí"].includes(
+      (sp.get("first_arrival") || "").trim().toLowerCase(),
+    ),
     tags: (sp.get("tags") ?? "")
       .split(",")
       .map((p) => parseIntId(p.trim()))
@@ -248,6 +253,7 @@ export function buildBookingsWorkspaceQuery(
   ) {
     sp.set("conflict", state.conflict);
   }
+  if (state.firstArrival) sp.set("first_arrival", "1");
   if (state.datePreset !== "all") {
     sp.set("date", state.datePreset);
     if (state.datePreset === "custom") {

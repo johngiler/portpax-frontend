@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import ChartTooltip, { barFill } from "./ChartTooltip";
 
 type BarItem = {
   label: string;
   value: number;
   hint?: string;
+  href?: string;
 };
 
 type HorizontalBarChartProps = {
@@ -40,13 +42,8 @@ export default function HorizontalBarChart({
         const pct = max > 0 ? (item.value / max) * 100 : 0;
         const share = total > 0 ? Math.round((item.value / total) * 100) : 0;
         const isActive = hovered === item.label;
-        return (
-          <li
-            key={item.label}
-            className="relative"
-            onMouseEnter={() => setHovered(item.label)}
-            onMouseLeave={() => setHovered(null)}
-          >
+        const body = (
+          <>
             <div className="mb-1 flex items-baseline justify-between gap-2">
               <span className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-200">
                 {item.label}
@@ -75,13 +72,36 @@ export default function HorizontalBarChart({
                 }}
               />
             </div>
+          </>
+        );
+        return (
+          <li
+            key={item.label}
+            className="relative"
+            onMouseEnter={() => setHovered(item.label)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {item.href ? (
+              <Link
+                href={item.href}
+                className="block rounded-md outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--admin-accent)]/40"
+              >
+                {body}
+              </Link>
+            ) : (
+              body
+            )}
             {isActive ? (
-              <div className="absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2">
+              <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2">
                 <ChartTooltip
                   title={item.label}
                   subtitle={item.hint?.replace(/^·\s*/, "")}
                   rows={[
-                    { label: valueSuffix, value: String(item.value), color: accent },
+                    {
+                      label: valueSuffix,
+                      value: String(item.value),
+                      color: accent,
+                    },
                     { label: "Participación", value: `${share}%` },
                   ]}
                 />

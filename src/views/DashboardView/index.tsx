@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Users } from "lucide-react";
+import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Medal, Users } from "lucide-react";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
@@ -180,6 +180,10 @@ export default function DashboardView() {
   const bookingsConflictHref = dashboardBookingsHref(linkBase, {
     conflict: "yes",
   });
+  const bookingsFirstArrivalHref = dashboardBookingsHref(linkBase, {
+    firstArrival: true,
+  });
+  const firstArrivalsCount = kpis?.first_arrivals ?? 0;
 
   function applyFilters() {
     setAppliedSelectedPortIds(selectedPortIds);
@@ -249,7 +253,7 @@ export default function DashboardView() {
       )}
 
       {kpis && stats ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <ViewStatCard
             label="Ocupación"
             value={`${kpis.occupancy_pct}%`}
@@ -291,6 +295,23 @@ export default function DashboardView() {
             gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
             badge={<DashboardYoyBadge badge={formatYoyBadge(stats.yoy.calls)} />}
             href={bookingsListHref}
+          />
+          <ViewStatCard
+            label="Primeros arribos"
+            value={firstArrivalsCount.toLocaleString("es")}
+            description={
+              firstArrivalsCount > 0
+                ? "Debuts barco × puerto (CO / CL / R)"
+                : "Sin debuts en el período"
+            }
+            icon={Medal}
+            accentColor={firstArrivalsCount > 0 ? "#ca8a04" : "#71717a"}
+            gradient={
+              firstArrivalsCount > 0
+                ? "linear-gradient(160deg, rgba(202, 138, 4, 0.16) 0%, var(--background) 55%)"
+                : "linear-gradient(160deg, rgba(113, 113, 122, 0.12) 0%, var(--background) 55%)"
+            }
+            href={bookingsFirstArrivalHref}
           />
           <ViewStatCard
             label="Conflictos"

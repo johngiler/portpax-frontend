@@ -44,6 +44,7 @@ export type AvailabilityBookingCall = {
   etd: string | null;
   actual_pax: number | null;
   planned_pax: number | null;
+  first_arrival?: boolean;
 };
 
 export type FetchBookingsParams = {
@@ -75,6 +76,8 @@ export type FetchBookingsParams = {
   conflict_severity?: "yellow" | "red" | "green";
   /** Filter by operational conflict type group. */
   conflict_type?: ConflictTypeFilterValue;
+  /** Only first-arrival bookings. */
+  first_arrival?: boolean;
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -118,6 +121,8 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.conflict_type) {
     query.set("conflict_type", params.conflict_type);
   }
+  if (params.first_arrival === true) query.set("first_arrival", "true");
+  if (params.first_arrival === false) query.set("first_arrival", "false");
   return query;
 }
 
@@ -405,6 +410,7 @@ export async function fetchAvailabilityReport(params: {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -434,6 +440,8 @@ export async function fetchAvailabilityReport(params: {
   if (params.conflict_type) {
     query.set("conflict_type", params.conflict_type);
   }
+  if (params.first_arrival === true) query.set("first_arrival", "true");
+  if (params.first_arrival === false) query.set("first_arrival", "false");
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
   }
@@ -442,6 +450,7 @@ export async function fetchAvailabilityReport(params: {
     (params.ships_per_day != null && params.ships_per_day >= 1) ||
     params.occupied_only === true ||
     params.has_conflict !== undefined ||
+    params.first_arrival !== undefined ||
     Boolean(params.conflict_severity) ||
     Boolean(params.conflict_type) ||
     Boolean(params.shipping_line) ||

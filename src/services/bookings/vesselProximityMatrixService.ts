@@ -38,12 +38,14 @@ export type VesselProximityMatrixCell = {
   conflict_highlights: BookingConflictHighlights;
   cell_status: VesselProximityMatrixCellStatus;
   issues: VesselProximityMatrixIssue[];
+  first_arrival?: boolean;
 };
 
 export type VesselProximityMatrixPort = {
   id: number;
   name: string;
   code: string;
+  country: string;
 };
 
 export type VesselProximityMatrixResponse = {
@@ -72,6 +74,7 @@ export type FetchVesselProximityMatrixParams = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
   /** Discrete ISO dates (imported list). */
   call_dates?: string[];
   page?: number;
@@ -99,6 +102,8 @@ export async function fetchVesselProximityMatrix(
   if (params.conflict_type) {
     query.set("conflict_type", params.conflict_type);
   }
+  if (params.first_arrival === true) query.set("first_arrival", "true");
+  if (params.first_arrival === false) query.set("first_arrival", "false");
   if (params.call_dates && params.call_dates.length > 0) {
     query.set("call_dates", params.call_dates.join(","));
   }

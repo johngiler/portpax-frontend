@@ -23,6 +23,11 @@ function listParamsKey(params: BookingsListFilterParams): string {
         : "",
     params.conflict_severity ?? "",
     params.conflict_type ?? "",
+    params.first_arrival === true
+      ? "1"
+      : params.first_arrival === false
+        ? "0"
+        : "",
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,

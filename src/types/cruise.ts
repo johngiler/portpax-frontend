@@ -64,6 +64,13 @@ export type Vessel = {
   bollard_count: number | null;
   bollard_swl_t: string | null;
   is_active: boolean;
+  /** Ports with ≥1 CO/CL/R booking (insignias). */
+  arrived_ports?: {
+    id: number;
+    name: string;
+    country: string;
+    logo: string | null;
+  }[];
   created_at: string;
   updated_at: string;
 };

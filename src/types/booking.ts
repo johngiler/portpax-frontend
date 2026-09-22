@@ -59,6 +59,8 @@ export type BookingListItem = {
   conflict_highlights?: BookingConflictHighlights;
   tag_id?: number | null;
   tag_name?: string | null;
+  /** Earliest CO/CL/R for this vessel + port. */
+  first_arrival?: boolean;
 };
 
 export type Booking = BookingListItem & {

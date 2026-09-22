@@ -21,6 +21,7 @@ export type VesselProximityListFilters = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
   call_dates?: string[];
 };
 
@@ -37,6 +38,11 @@ function filtersKey(filters: VesselProximityListFilters): string {
         : "",
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
+    filters.first_arrival === true
+      ? "1"
+      : filters.first_arrival === false
+        ? "0"
+        : "",
     (filters.call_dates ?? []).join(","),
   ].join("|");
 }
@@ -73,7 +79,8 @@ function mergeProximityPages(
     date_from: dateFrom,
     date_to: dateTo,
     dates: [...datesSet].sort(),
-    ports: [...portMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    // Keep API column order (west → east); do not re-sort by name.
+    ports: first.ports.map((p) => portMap.get(p.id) ?? p),
     cells,
     matched_days: last.matched_days ?? first.matched_days ?? datesSet.size,
     page: last.page ?? first.page,
@@ -95,6 +102,7 @@ export function useVesselProximityInfinite(
   const hasConflict = filters.has_conflict;
   const conflictSeverity = filters.conflict_severity;
   const conflictType = filters.conflict_type;
+  const firstArrival = filters.first_arrival;
   const callDates = filters.call_dates;
 
   const getKey = useCallback(
@@ -122,6 +130,7 @@ export function useVesselProximityInfinite(
         has_conflict: hasConflict,
         conflict_severity: conflictSeverity,
         conflict_type: conflictType,
+        first_arrival: firstArrival,
         call_dates: callDates && callDates.length > 0 ? callDates : undefined,
         page,
         page_size: PROXIMITY_DAYS_BATCH,

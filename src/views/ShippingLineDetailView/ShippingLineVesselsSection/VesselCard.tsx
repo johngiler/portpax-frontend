@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Ship } from "lucide-react";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ImageViewer from "@/components/ui/ImageViewer";
 import type { Vessel } from "@/types/cruise";
 
@@ -20,6 +21,7 @@ export default function VesselCard({
   canWrite = true,
 }: VesselCardProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
+  const arrivedPorts = vessel.arrived_ports ?? [];
 
   return (
     <article
@@ -47,6 +49,27 @@ export default function VesselCard({
           <Ship className="h-10 w-10 text-[var(--admin-accent)]/60" strokeWidth={1.5} />
         )}
       </div>
+      {arrivedPorts.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+          {arrivedPorts.map((port) => (
+            <span
+              key={port.id}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 dark:border-zinc-700 dark:bg-zinc-900"
+              title={`${port.name}${port.country ? ` · ${port.country}` : ""}`}
+            >
+              <CatalogLogoThumb
+                src={port.logo}
+                alt=""
+                size="xs"
+                kind="port"
+              />
+              <span className="max-w-[5.5rem] truncate text-[10px] font-medium text-zinc-600 dark:text-zinc-300">
+                {port.name}
+              </span>
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -82,7 +105,7 @@ export default function VesselCard({
           </div>
           <div>
             <dt className="text-zinc-400">Segmento</dt>
-            <dd className="truncate font-medium text-zinc-700 dark:text-zinc-200">
+            <dd className="font-medium text-zinc-700 dark:text-zinc-200">
               {vessel.segment || "—"}
             </dd>
           </div>
@@ -97,9 +120,9 @@ export default function VesselCard({
 
       {vessel.logo ? (
         <ImageViewer
-          images={[{ src: vessel.logo, alt: vessel.name, caption: vessel.name }]}
           open={viewerOpen}
           onClose={() => setViewerOpen(false)}
+          images={[{ src: vessel.logo, alt: vessel.name }]}
         />
       ) : null}
     </article>

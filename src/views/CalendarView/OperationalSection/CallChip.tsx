@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
+import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import {
   conflictCallCardFrameSeverity,
   conflictChipTitle,
@@ -69,7 +70,7 @@ export default function CallChip({
         booking.status === "c" ? "opacity-50 line-through" : "",
         !focused ? "opacity-55 hover:opacity-80" : "",
       ].join(" ")}
-      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
+      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${booking.first_arrival ? " · Primer arribo" : ""}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
       <span className="flex min-w-0 items-baseline justify-between gap-1">
@@ -80,6 +81,7 @@ export default function CallChip({
       </span>
       <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
         <BookingStatusBadge status={booking.status} size="sm" />
+        {booking.first_arrival ? <FirstArrivalBadge compact /> : null}
         <ConflictTypeChips chips={chips} />
       </span>
       <BookingMetaRow

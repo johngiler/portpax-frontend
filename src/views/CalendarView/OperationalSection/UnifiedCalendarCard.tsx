@@ -36,6 +36,7 @@ type CalendarConflictFilters = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
 };
 
 type UnifiedCalendarCardProps = {
@@ -124,6 +125,7 @@ export default function UnifiedCalendarCard({
       has_conflict: conflictFilters.has_conflict,
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
+      first_arrival: conflictFilters.first_arrival,
       callDates: callDates?.length ? callDates : undefined,
     }),
     [
@@ -137,6 +139,7 @@ export default function UnifiedCalendarCard({
       conflictFilters.has_conflict,
       conflictFilters.conflict_severity,
       conflictFilters.conflict_type,
+      conflictFilters.first_arrival,
       callDates,
     ],
   );
@@ -162,6 +165,7 @@ export default function UnifiedCalendarCard({
       has_conflict: conflictFilters.has_conflict,
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
+      first_arrival: conflictFilters.first_arrival,
       call_dates: callDates?.length ? callDates : undefined,
     }),
     [

@@ -23,6 +23,7 @@ export type AvailabilityListFilters = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
   /** Occupancy criterion: only days with ≥1 call; server-paged. */
@@ -68,6 +69,11 @@ function filtersKey(filters: AvailabilityListFilters): string {
         : "",
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
+    filters.first_arrival === true
+      ? "1"
+      : filters.first_arrival === false
+        ? "0"
+        : "",
     filters.ships_per_day ?? 0,
     filters.occupied_only ? "1" : "0",
   ].join("|");
@@ -90,6 +96,7 @@ export function useAvailabilityInfinite(
   const hasConflict = filters.has_conflict;
   const conflictSeverity = filters.conflict_severity;
   const conflictType = filters.conflict_type;
+  const firstArrival = filters.first_arrival;
   const shipsPerDay =
     filters.ships_per_day != null && filters.ships_per_day >= 1
       ? filters.ships_per_day
@@ -105,6 +112,7 @@ export function useAvailabilityInfinite(
       (tags != null && tags.length > 0) ||
       (statuses != null && statuses.length > 0) ||
       hasConflict !== undefined ||
+      firstArrival !== undefined ||
       Boolean(conflictSeverity) ||
       Boolean(conflictType),
   );
@@ -152,6 +160,7 @@ export function useAvailabilityInfinite(
           has_conflict: hasConflict,
           conflict_severity: conflictSeverity,
           conflict_type: conflictType,
+          first_arrival: firstArrival,
           ships_per_day: densityMode ? shipsPerDay : undefined,
           occupied_only: occupiedOnly && !densityMode ? true : undefined,
           page,
@@ -173,6 +182,7 @@ export function useAvailabilityInfinite(
         has_conflict: hasConflict,
         conflict_severity: conflictSeverity,
         conflict_type: conflictType,
+        first_arrival: firstArrival,
       });
     });
 

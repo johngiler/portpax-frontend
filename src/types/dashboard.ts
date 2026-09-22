@@ -12,6 +12,8 @@ export type DashboardKpis = {
   planned_pax: number;
   actual_pax: number;
   ports_count: number;
+  /** Bookings with first_arrival=True in the period (CO/CL/R debuts). */
+  first_arrivals?: number;
 };
 
 export type DashboardNamedCount = {
@@ -232,6 +234,8 @@ export type DashboardStats = {
   by_month: DashboardMonthRow[];
   top_vessels: DashboardVesselRow[];
   by_port: DashboardPortRow[];
+  /** First arrivals (debut vessel×port) counted per port in the period. */
+  first_arrivals_by_port?: DashboardPortRow[];
   by_cancellation_reason: DashboardCancelReason[];
   by_weekday: DashboardWeekday[];
   status_breakdown: DashboardStatusSlice[];

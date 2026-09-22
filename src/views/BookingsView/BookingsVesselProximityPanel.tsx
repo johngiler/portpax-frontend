@@ -20,6 +20,7 @@ import {
 } from "./bookingsEmptyCopy";
 import FilteredResultsFromHint from "./FilteredResultsFromHint";
 import ProximityMatrixCallCard from "./ProximityMatrixCallCard";
+import CountryLabel from "@/components/ui/CountryLabel";
 
 type BookingsVesselProximityPanelProps = {
   shippingLineId: number;
@@ -30,7 +31,7 @@ type BookingsVesselProximityPanelProps = {
   statuses: BookingStatusFilterValue[];
   conflictFilters?: Pick<
     VesselProximityListFilters,
-    "has_conflict" | "conflict_severity" | "conflict_type"
+    "has_conflict" | "conflict_severity" | "conflict_type" | "first_arrival"
   >;
   callDates?: string[] | null;
   returnTo: string;
@@ -228,14 +229,15 @@ export default function BookingsVesselProximityPanel({
                   key={port.id}
                   className="border-b border-r border-zinc-200 bg-zinc-50 px-2 py-2.5 last:border-r-0 dark:border-zinc-800 dark:bg-zinc-950"
                 >
-                  <div className="rounded-lg border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="flex flex-col items-start gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                       {port.name}
                     </span>
-                    {port.code ? (
-                      <p className="mt-1 truncate text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                        {port.code}
-                      </p>
+                    {port.country ? (
+                      <CountryLabel
+                        country={port.country}
+                        className="text-xs font-normal text-zinc-500 dark:text-zinc-400"
+                      />
                     ) : null}
                   </div>
                 </th>

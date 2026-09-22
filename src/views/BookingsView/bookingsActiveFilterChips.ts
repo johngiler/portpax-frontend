@@ -57,6 +57,7 @@ export type BookingsActiveFilterChipInput = {
   tagLabels?: string[];
   statuses: BookingStatusFilterValue[];
   conflict: ConflictFilterValue;
+  firstArrival?: boolean;
   search: string;
   datePreset: BookingsDatePreset;
   importedDatesCount: number;
@@ -134,6 +135,14 @@ export function buildBookingsActiveFilterChips(
           CONFLICT_CHIP_LABELS[input.conflict] ??
           `Conflicto · ${input.conflict}`,
         icon: "conflict",
+      });
+    }
+
+    if (input.firstArrival) {
+      chips.push({
+        id: "first-arrival",
+        label: "Primer arribo",
+        icon: "status",
       });
     }
   }

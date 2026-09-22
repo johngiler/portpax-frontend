@@ -25,6 +25,7 @@ export type CatalogConflictFocus = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
 };
 
 export type BookingCalendarFocus = CatalogConflictFocus & {
@@ -162,6 +163,8 @@ export function bookingMatchesCalendarFocus(
     const allow = new Set(focus.callDates);
     if (!allow.has(booking.call_date)) return false;
   }
+  if (focus.first_arrival === true && !booking.first_arrival) return false;
+  if (focus.first_arrival === false && booking.first_arrival) return false;
   return true;
 }
 
@@ -177,7 +180,8 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
       (focus.callDates && focus.callDates.length > 0) ||
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
-      focus.conflict_type,
+      focus.conflict_type ||
+      focus.first_arrival !== undefined,
   );
 }
 

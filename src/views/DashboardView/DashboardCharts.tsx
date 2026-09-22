@@ -144,6 +144,26 @@ export default function DashboardCharts({
       </ChartCard>
 
       <ChartCard
+        title="Primeros arribos por puerto"
+        description="Debuts barco×puerto (CO / CL / R) en el período."
+        accent="#ca8a04"
+      >
+        <HorizontalBarChart
+          accent="#ca8a04"
+          valueSuffix="primeros arribos"
+          emptyLabel="Sin primeros arribos en el período"
+          items={(stats.first_arrivals_by_port ?? []).map((row) => ({
+            label: row.name,
+            value: row.bookings,
+            href: dashboardBookingsHref(linkBase, {
+              portIds: [row.id],
+              firstArrival: true,
+            }),
+          }))}
+        />
+      </ChartCard>
+
+      <ChartCard
         title="Carga por día de la semana"
         description="Calls activos por día de la semana."
         accent="#0891b2"
@@ -154,6 +174,29 @@ export default function DashboardCharts({
           items={stats.by_weekday.map((row) => ({
             label: row.label,
             value: row.count,
+          }))}
+        />
+      </ChartCard>
+
+      <ChartCard
+        title="Totales por naviera"
+        description="Ordenado por pax planificados · promedio por escala."
+        accent="#3478b5"
+      >
+        <HorizontalBarChart
+          accent="#3478b5"
+          valueSuffix="pax"
+          items={stats.by_shipping_line.map((row) => ({
+            label: row.name,
+            value: row.planned_pax ?? 0,
+            hint: [
+              `${row.bookings.toLocaleString("es")} calls`,
+              row.avg_planned_pax != null && row.avg_planned_pax > 0
+                ? `prom. ${row.avg_planned_pax.toLocaleString("es")} pax`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
           }))}
         />
       </ChartCard>
@@ -184,30 +227,6 @@ export default function DashboardCharts({
           />
         </ChartCard>
       ) : null}
-
-      <ChartCard
-        title="Totales por naviera"
-        description="Ordenado por pax planificados · promedio por escala."
-        accent="#3478b5"
-        className="lg:col-span-2"
-      >
-        <HorizontalBarChart
-          accent="#3478b5"
-          valueSuffix="pax"
-          items={stats.by_shipping_line.map((row) => ({
-            label: row.name,
-            value: row.planned_pax ?? 0,
-            hint: [
-              `${row.bookings.toLocaleString("es")} calls`,
-              row.avg_planned_pax != null && row.avg_planned_pax > 0
-                ? `prom. ${row.avg_planned_pax.toLocaleString("es")} pax`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · "),
-          }))}
-        />
-      </ChartCard>
     </div>
   );
 }

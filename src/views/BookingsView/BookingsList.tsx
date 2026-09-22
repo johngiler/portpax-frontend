@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, MapPin } from "lucide-react";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import ConfirmationPdfButton from "@/components/booking/ConfirmationPdfButton";
 import {
@@ -321,6 +322,7 @@ export default function BookingsList({
                       <BookingStatusBadge
                         status={getBookingBadgeStatus(booking)}
                       />
+                      {booking.first_arrival ? <FirstArrivalBadge /> : null}
                       <ConflictTypeChips chips={chips} />
                       {booking.confirmation_pdf_url ? (
                         <ConfirmationPdfButton

@@ -28,6 +28,11 @@ function probeKey(filters: FirstMatchProbeFilters): string {
         : "",
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
+    filters.first_arrival === true
+      ? "1"
+      : filters.first_arrival === false
+        ? "0"
+        : "",
     (filters.call_dates ?? []).join(","),
   ].join("|");
 }

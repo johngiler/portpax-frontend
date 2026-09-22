@@ -5,6 +5,7 @@ import { Clock3, Ruler, Users } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import {
   conflictCallCardFrameSeverity,
@@ -89,6 +90,7 @@ export default function ProximityMatrixCallCard({
             {badgeStatus ? (
               <BookingStatusBadge status={badgeStatus} size="sm" />
             ) : null}
+            {cell.first_arrival ? <FirstArrivalBadge compact /> : null}
             <ConflictTypeChips chips={cell.conflict_chips} />
           </div>
           <ShippingLineCaption

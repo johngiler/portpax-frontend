@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, FileSignature } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
+import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import { conflictChipsFromApi } from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
@@ -64,6 +65,7 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           <BookingStatusBadge status={booking.status} className="text-xs" />
+          {booking.first_arrival ? <FirstArrivalBadge /> : null}
           <ConflictTypeChips chips={chips} size="md" />
           <span className="text-xs font-medium text-zinc-400">
             Actualizado {new Date(booking.updated_at).toLocaleDateString("es-MX")}

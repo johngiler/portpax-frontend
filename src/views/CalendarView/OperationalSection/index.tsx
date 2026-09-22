@@ -10,6 +10,7 @@ type CalendarConflictFilters = {
   has_conflict?: boolean;
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
+  first_arrival?: boolean;
 };
 
 type OperationalSectionProps = {
@@ -74,7 +75,8 @@ export default function OperationalSection({
     Boolean(callDates?.length) ||
     conflictFilters.has_conflict !== undefined ||
     Boolean(conflictFilters.conflict_severity) ||
-    Boolean(conflictFilters.conflict_type);
+    Boolean(conflictFilters.conflict_type) ||
+    conflictFilters.first_arrival !== undefined;
 
   return (
     <UnifiedCalendarCard
