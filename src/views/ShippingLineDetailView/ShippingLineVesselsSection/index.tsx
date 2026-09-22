@@ -97,7 +97,7 @@ export default function ShippingLineVesselsSection({
             onChange={(e) => setWithoutArrivals(e.target.checked)}
             className="rounded border-zinc-300"
           />
-          Sin arribos?
+          Sin arribos
         </label>
 
         {vessels.length === 0 ? (
