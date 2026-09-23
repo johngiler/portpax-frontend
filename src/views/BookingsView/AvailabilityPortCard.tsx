@@ -314,6 +314,8 @@ export default function AvailabilityPortCard({
         has_conflict: filters.has_conflict,
         conflict_severity: filters.conflict_severity,
         conflict_type: filters.conflict_type,
+        first_arrival: filters.first_arrival,
+        cancellation_reason: filters.cancellation_reason,
       }}
       scrollRootRef={scrollRootRef}
       canBook={canBook && !isOccupancy}

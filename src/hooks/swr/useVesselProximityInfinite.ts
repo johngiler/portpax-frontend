@@ -10,7 +10,10 @@ import {
   type VesselProximityMatrixPort,
   type VesselProximityMatrixResponse,
 } from "@/services/bookings/vesselProximityMatrixService";
-import type { BookingStatusFilterValue } from "@/types/booking";
+import type {
+  BookingStatusFilterValue,
+  CancellationReason,
+} from "@/types/booking";
 import { serializeBookingStatusFilters } from "@/types/booking";
 
 export const PROXIMITY_DAYS_BATCH = 30;
@@ -22,6 +25,7 @@ export type VesselProximityListFilters = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
   call_dates?: string[];
 };
 
@@ -43,6 +47,7 @@ function filtersKey(filters: VesselProximityListFilters): string {
       : filters.first_arrival === false
         ? "0"
         : "",
+    filters.cancellation_reason ?? "",
     (filters.call_dates ?? []).join(","),
   ].join("|");
 }
@@ -103,6 +108,7 @@ export function useVesselProximityInfinite(
   const conflictSeverity = filters.conflict_severity;
   const conflictType = filters.conflict_type;
   const firstArrival = filters.first_arrival;
+  const cancellationReason = filters.cancellation_reason;
   const callDates = filters.call_dates;
 
   const getKey = useCallback(
@@ -131,6 +137,7 @@ export function useVesselProximityInfinite(
         conflict_severity: conflictSeverity,
         conflict_type: conflictType,
         first_arrival: firstArrival,
+        cancellation_reason: cancellationReason,
         call_dates: callDates && callDates.length > 0 ? callDates : undefined,
         page,
         page_size: PROXIMITY_DAYS_BATCH,

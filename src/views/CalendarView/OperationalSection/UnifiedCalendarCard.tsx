@@ -14,7 +14,10 @@ import {
 } from "@/lib/bookingCatalogFocus";
 import { parseIsoDate } from "@/lib/bookingDates";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
-import type { BookingStatusFilterValue } from "@/types/booking";
+import type {
+  BookingStatusFilterValue,
+  CancellationReason,
+} from "@/types/booking";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import FilteredResultsFromHint from "@/views/BookingsView/FilteredResultsFromHint";
 import {
@@ -37,6 +40,7 @@ type CalendarConflictFilters = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
 };
 
 type UnifiedCalendarCardProps = {
@@ -126,6 +130,7 @@ export default function UnifiedCalendarCard({
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
       first_arrival: conflictFilters.first_arrival,
+      cancellation_reason: conflictFilters.cancellation_reason,
       callDates: callDates?.length ? callDates : undefined,
     }),
     [
@@ -140,6 +145,7 @@ export default function UnifiedCalendarCard({
       conflictFilters.conflict_severity,
       conflictFilters.conflict_type,
       conflictFilters.first_arrival,
+      conflictFilters.cancellation_reason,
       callDates,
     ],
   );
@@ -166,6 +172,7 @@ export default function UnifiedCalendarCard({
       conflict_severity: conflictFilters.conflict_severity,
       conflict_type: conflictFilters.conflict_type,
       first_arrival: conflictFilters.first_arrival,
+      cancellation_reason: conflictFilters.cancellation_reason,
       call_dates: callDates?.length ? callDates : undefined,
     }),
     [

@@ -28,6 +28,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
       : params.first_arrival === false
         ? "0"
         : "",
+    params.cancellation_reason ?? "",
     params.port ?? 0,
     params.position ?? 0,
     params.shipping_line ?? 0,

@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import { parseIsoDate } from "@/lib/bookingDates";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
+import type { CancellationReason } from "@/types/booking";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchAvailabilityReport,
@@ -24,6 +25,7 @@ export type AvailabilityListFilters = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
   /** Exact ships per day (1–4); server filters + pages matching days. */
   ships_per_day?: number;
   /** Occupancy criterion: only days with ≥1 call; server-paged. */
@@ -74,6 +76,7 @@ function filtersKey(filters: AvailabilityListFilters): string {
       : filters.first_arrival === false
         ? "0"
         : "",
+    filters.cancellation_reason ?? "",
     filters.ships_per_day ?? 0,
     filters.occupied_only ? "1" : "0",
   ].join("|");
@@ -97,6 +100,7 @@ export function useAvailabilityInfinite(
   const conflictSeverity = filters.conflict_severity;
   const conflictType = filters.conflict_type;
   const firstArrival = filters.first_arrival;
+  const cancellationReason = filters.cancellation_reason;
   const shipsPerDay =
     filters.ships_per_day != null && filters.ships_per_day >= 1
       ? filters.ships_per_day
@@ -113,6 +117,7 @@ export function useAvailabilityInfinite(
       (statuses != null && statuses.length > 0) ||
       hasConflict !== undefined ||
       firstArrival !== undefined ||
+      Boolean(cancellationReason) ||
       Boolean(conflictSeverity) ||
       Boolean(conflictType),
   );
@@ -161,6 +166,7 @@ export function useAvailabilityInfinite(
           conflict_severity: conflictSeverity,
           conflict_type: conflictType,
           first_arrival: firstArrival,
+          cancellation_reason: cancellationReason,
           ships_per_day: densityMode ? shipsPerDay : undefined,
           occupied_only: occupiedOnly && !densityMode ? true : undefined,
           page,
@@ -183,6 +189,7 @@ export function useAvailabilityInfinite(
         conflict_severity: conflictSeverity,
         conflict_type: conflictType,
         first_arrival: firstArrival,
+        cancellation_reason: cancellationReason,
       });
     });
 

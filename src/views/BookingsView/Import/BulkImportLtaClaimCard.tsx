@@ -56,7 +56,7 @@ export default function BulkImportLtaClaimCard({
         <div className="min-w-0 space-y-1 text-sm leading-snug">
           <p className="font-semibold">Espacio LTA marcado para reclamar</p>
           <p className="text-xs text-emerald-800/80 dark:text-emerald-400/80">
-            Al importar se actualizará a Confirmada LTA
+            Al guardar se actualizará a Confirmada LTA
             {candidate.position_code
               ? ` · posición ${candidate.position_code}`
               : ""}

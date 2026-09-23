@@ -3,7 +3,11 @@
 import { formatLtaWeekdays } from "@/types/lta";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { formatTimeShort } from "@/lib/bookingDisplay";
-import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
+import {
+  BOOKING_STATUS_LABELS,
+  CANCELLATION_REASON_LABELS,
+  type BookingStatus,
+} from "@/types/booking";
 
 const PORT_STATUS_LABELS: Record<string, string> = {
   operational: "Operativo",
@@ -28,6 +32,7 @@ const CHOICE_LABELS_BY_FIELD: Record<string, Record<string, string>> = {
   status: PORT_STATUS_LABELS,
   position_type: POSITION_TYPE_LABELS,
   bollard_type: BOLLARD_TYPE_LABELS,
+  cancellation_reason: CANCELLATION_REASON_LABELS,
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -40,6 +45,7 @@ const FIELD_LABELS: Record<string, string> = {
   port_ids: "Puertos",
   password: "Contraseña",
   status: "Estado",
+  cancellation_reason: "Motivo de cancelación",
   position_id: "Posición",
   eta: "ETA",
   etd: "ETD",
@@ -221,11 +227,16 @@ function formatCatalogStatus(value: unknown): string {
 }
 
 function formatChoiceValue(value: unknown, key?: string): string {
-  if (typeof value === "string" && key && CHOICE_LABELS_BY_FIELD[key]?.[value]) {
-    return CHOICE_LABELS_BY_FIELD[key][value];
+  if (value == null || value === "") return "—";
+  if (typeof value === "string") {
+    if (key && CHOICE_LABELS_BY_FIELD[key]?.[value]) {
+      return CHOICE_LABELS_BY_FIELD[key][value];
+    }
+    if (key === "status") return formatCatalogStatus(value);
+    return value;
   }
   if (key === "status") return formatCatalogStatus(value);
-  return formatValue(value, key);
+  return String(value);
 }
 
 function formatChoiceChange(
@@ -424,7 +435,12 @@ const TIME_FIELD_KEYS = new Set(["eta", "etd", "eta_real", "etd_real", "min_eta"
 
 const ALLOCATION_FIELDS = new Set(["bollard_allocations", "fender_allocations"]);
 
-const CHOICE_FIELDS = new Set(["status", "position_type", "bollard_type"]);
+const CHOICE_FIELDS = new Set([
+  "status",
+  "position_type",
+  "bollard_type",
+  "cancellation_reason",
+]);
 
 function formatConflictList(value: unknown): string {
   if (!Array.isArray(value) || value.length === 0) return "—";

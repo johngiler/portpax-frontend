@@ -38,6 +38,7 @@ export type AvailabilityCall = {
   eta: string | null;
   etd: string | null;
   first_arrival?: boolean;
+  cancellation_reason?: string;
 } & ConflictDisplaySource;
 
 export type AvailabilityFocusFilters = CatalogConflictFocus & {
@@ -121,6 +122,7 @@ export function availabilityCallMatchesFocus(
     | "conflict_chips"
     | "conflict_highlights"
     | "first_arrival"
+    | "cancellation_reason"
   >,
   callDate: string,
   focus: AvailabilityFocusFilters,
@@ -168,6 +170,13 @@ export function availabilityCallMatchesFocus(
   }
   if (focus.first_arrival === true && !call.first_arrival) return false;
   if (focus.first_arrival === false && call.first_arrival) return false;
+  if (
+    focus.cancellation_reason &&
+    call.status === "c" &&
+    (call.cancellation_reason ?? "") !== focus.cancellation_reason
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -249,7 +258,8 @@ export function availabilityFocusIsActive(
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
       focus.conflict_type ||
-      focus.first_arrival !== undefined,
+      focus.first_arrival !== undefined ||
+      Boolean(focus.cancellation_reason),
   );
 }
 

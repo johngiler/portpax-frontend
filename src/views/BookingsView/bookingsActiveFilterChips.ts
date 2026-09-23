@@ -6,7 +6,9 @@ import type {
 } from "@/lib/viewFilterQuery";
 import {
   BOOKING_STATUS_MULTI_OPTIONS,
+  CANCELLATION_REASON_LABELS,
   type BookingStatusFilterValue,
+  type CancellationReason,
 } from "@/types/booking";
 
 const CONFLICT_CHIP_LABELS: Partial<Record<ConflictFilterValue, string>> = {
@@ -58,6 +60,7 @@ export type BookingsActiveFilterChipInput = {
   statuses: BookingStatusFilterValue[];
   conflict: ConflictFilterValue;
   firstArrival?: boolean;
+  cancellationReason?: CancellationReason | "";
   search: string;
   datePreset: BookingsDatePreset;
   importedDatesCount: number;
@@ -142,6 +145,16 @@ export function buildBookingsActiveFilterChips(
       chips.push({
         id: "first-arrival",
         label: "Primer arribo",
+        icon: "status",
+      });
+    }
+
+    if (input.cancellationReason && input.statuses.includes("c")) {
+      chips.push({
+        id: "cancellation-reason",
+        label:
+          CANCELLATION_REASON_LABELS[input.cancellationReason] ??
+          input.cancellationReason,
         icon: "status",
       });
     }

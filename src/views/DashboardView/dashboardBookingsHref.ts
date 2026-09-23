@@ -49,6 +49,7 @@ export function dashboardBookingsHref(
     tags: [],
     importedDates: [],
     firstArrival: overrides?.firstArrival ?? false,
+    cancellationReason: "",
   };
   const qs = buildBookingsWorkspaceQuery(state);
   return qs ? `/bookings?${qs}` : "/bookings";

@@ -62,6 +62,8 @@ export type BookingListItem = {
   tag_name?: string | null;
   /** Earliest CO/CL/R for this vessel + port. */
   first_arrival?: boolean;
+  /** Set when status is cancelled; used by list/calendar filters. */
+  cancellation_reason?: CancellationReason | "";
 };
 
 export type Booking = BookingListItem & {
@@ -226,7 +228,13 @@ export const CANCELLATION_REASON_OPTIONS: {
   { value: "bad_weather", label: "Mal tiempo" },
   { value: "shipping_line_decision", label: "Decisión naviera" },
   { value: "itm_decision", label: "Decisión ITM" },
+  { value: "lta_claimed", label: "Reclamo LTA" },
 ];
+
+export const CANCELLATION_REASON_LABELS: Record<CancellationReason, string> =
+  Object.fromEntries(
+    CANCELLATION_REASON_OPTIONS.map((option) => [option.value, option.label]),
+  ) as Record<CancellationReason, string>;
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   nr: "Solicitada",

@@ -31,7 +31,11 @@ type BookingsVesselProximityPanelProps = {
   statuses: BookingStatusFilterValue[];
   conflictFilters?: Pick<
     VesselProximityListFilters,
-    "has_conflict" | "conflict_severity" | "conflict_type" | "first_arrival"
+    | "has_conflict"
+    | "conflict_severity"
+    | "conflict_type"
+    | "first_arrival"
+    | "cancellation_reason"
   >;
   callDates?: string[] | null;
   returnTo: string;

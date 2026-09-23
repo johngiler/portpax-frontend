@@ -20,7 +20,9 @@ import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
   BOOKING_STATUS_MULTI_OPTIONS,
+  CANCELLATION_REASON_OPTIONS,
   type BookingStatusFilterValue,
+  type CancellationReason,
 } from "@/types/booking";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
 import BookingsDateFilters, { type BookingsDatePreset } from "./BookingsDateFilters";
@@ -83,6 +85,7 @@ type BookingFiltersProps = {
   status: BookingStatusFilterValue[];
   conflictFilter: ConflictFilterValue;
   firstArrival: boolean;
+  cancellationReason: CancellationReason | "";
   search: string;
   /** Empty = all ports. */
   portFilter: number[];
@@ -111,6 +114,7 @@ type BookingFiltersProps = {
   onStatusChange: (status: BookingStatusFilterValue[]) => void;
   onConflictFilterChange: (value: ConflictFilterValue) => void;
   onFirstArrivalChange: (value: boolean) => void;
+  onCancellationReasonChange: (value: CancellationReason | "") => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portIds: number[]) => void;
   onShippingLineGroupFilterChange: (groupId: number) => void;
@@ -139,6 +143,7 @@ export default function BookingFilters({
   status,
   conflictFilter,
   firstArrival,
+  cancellationReason,
   search,
   portFilter,
   shippingLineGroupFilter,
@@ -166,6 +171,7 @@ export default function BookingFilters({
   onStatusChange,
   onConflictFilterChange,
   onFirstArrivalChange,
+  onCancellationReasonChange,
   onSearchChange,
   onPortFilterChange,
   onShippingLineGroupFilterChange,
@@ -536,6 +542,18 @@ export default function BookingFilters({
         onClose={() => setStatusGuideOpen(false)}
         includeFilterExtras
       />
+      {status.includes("c") ? (
+        <FormFieldSelect<CancellationReason | "">
+          label="Motivo de cancelación"
+          name="booking_cancellation_reason_filter"
+          value={cancellationReason}
+          onChange={onCancellationReasonChange}
+          options={CANCELLATION_REASON_OPTIONS}
+          optionLabel="Todos los motivos"
+          emptyValue=""
+          compact
+        />
+      ) : null}
     </>
   ) : null;
 

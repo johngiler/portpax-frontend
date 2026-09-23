@@ -4,6 +4,7 @@ import type {
   BookingConflictHighlights,
   BookingConflictChip,
   BookingStatusFilterValue,
+  CancellationReason,
 } from "@/types/booking";
 import { serializeBookingStatusFilters } from "@/types/booking";
 
@@ -39,6 +40,7 @@ export type VesselProximityMatrixCell = {
   cell_status: VesselProximityMatrixCellStatus;
   issues: VesselProximityMatrixIssue[];
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
 };
 
 export type VesselProximityMatrixPort = {
@@ -75,6 +77,7 @@ export type FetchVesselProximityMatrixParams = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
   /** Discrete ISO dates (imported list). */
   call_dates?: string[];
   page?: number;
@@ -104,6 +107,9 @@ export async function fetchVesselProximityMatrix(
   }
   if (params.first_arrival === true) query.set("first_arrival", "true");
   if (params.first_arrival === false) query.set("first_arrival", "false");
+  if (params.cancellation_reason) {
+    query.set("cancellation_reason", params.cancellation_reason);
+  }
   if (params.call_dates && params.call_dates.length > 0) {
     query.set("call_dates", params.call_dates.join(","));
   }

@@ -27,6 +27,7 @@ import {
   bookingDetailHref,
   newBookingHref,
   type BookingBadgeStatus,
+  type CancellationReason,
 } from "@/types/booking";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
@@ -75,6 +76,7 @@ type Props = {
     conflict_severity?: "yellow" | "red" | "green";
     conflict_type?: ConflictTypeFilterValue;
     first_arrival?: boolean;
+    cancellation_reason?: CancellationReason | "";
   };
   /** Inside the card scroll panel (e.g. load-more sentinel). */
   footer?: ReactNode;
@@ -242,6 +244,8 @@ export default function AvailabilityChartSection({
     has_conflict: conflictFocus?.has_conflict,
     conflict_severity: conflictFocus?.conflict_severity,
     conflict_type: conflictFocus?.conflict_type,
+    first_arrival: conflictFocus?.first_arrival,
+    cancellation_reason: conflictFocus?.cancellation_reason,
   };
 
   return (

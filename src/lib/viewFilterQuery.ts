@@ -1,7 +1,9 @@
 import {
+  CANCELLATION_REASON_OPTIONS,
   parseBookingStatusFilters,
   serializeBookingStatusFilters,
   type BookingStatusFilterValue,
+  type CancellationReason,
 } from "@/types/booking";
 
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
@@ -87,6 +89,8 @@ export type BookingsWorkspaceFilters = {
     | ConflictTypeFilterValue;
   /** Only bookings marked primer arribo (first_arrival=true). */
   firstArrival: boolean;
+  /** Single cancellation reason; only applies when status includes cancelled. */
+  cancellationReason: CancellationReason | "";
   /** Booking tag IDs (multi). Empty = all tags. */
   tags: number[];
   /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
@@ -94,6 +98,19 @@ export type BookingsWorkspaceFilters = {
 };
 
 export type ConflictFilterValue = BookingsWorkspaceFilters["conflict"];
+
+const CANCELLATION_REASONS = new Set<CancellationReason>(
+  CANCELLATION_REASON_OPTIONS.map((option) => option.value),
+);
+
+function parseCancellationReason(
+  raw: string | null,
+): CancellationReason | "" {
+  const value = (raw ?? "").trim();
+  return CANCELLATION_REASONS.has(value as CancellationReason)
+    ? (value as CancellationReason)
+    : "";
+}
 
 const CONFLICT_TYPE_VALUES = new Set<ConflictTypeFilterValue>([
   "proximity",
@@ -188,10 +205,11 @@ export function parseBookingsWorkspaceFilters(
     .split(",")
     .map((p) => parseIntId(p.trim()))
     .filter((id) => id > 0);
+  const status = parseBookingStatusFilters(statusRaw);
 
   return {
     tab,
-    status: parseBookingStatusFilters(statusRaw),
+    status,
     search: sp.get("q")?.trim() ?? "",
     ports,
     group: parseIntId(sp.get("group")),
@@ -221,6 +239,9 @@ export function parseBookingsWorkspaceFilters(
     firstArrival: ["1", "true", "yes", "si", "sí"].includes(
       (sp.get("first_arrival") || "").trim().toLowerCase(),
     ),
+    cancellationReason: status.includes("c")
+      ? parseCancellationReason(sp.get("cancellation_reason"))
+      : "",
     tags: (sp.get("tags") ?? "")
       .split(",")
       .map((p) => parseIntId(p.trim()))
@@ -254,6 +275,9 @@ export function buildBookingsWorkspaceQuery(
     sp.set("conflict", state.conflict);
   }
   if (state.firstArrival) sp.set("first_arrival", "1");
+  if (state.status.includes("c") && state.cancellationReason) {
+    sp.set("cancellation_reason", state.cancellationReason);
+  }
   if (state.datePreset !== "all") {
     sp.set("date", state.datePreset);
     if (state.datePreset === "custom") {

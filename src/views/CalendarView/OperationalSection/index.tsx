@@ -2,7 +2,10 @@
 
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
-import type { BookingStatusFilterValue } from "@/types/booking";
+import type {
+  BookingStatusFilterValue,
+  CancellationReason,
+} from "@/types/booking";
 import type { CalendarSeason } from "./calendarOpsUtils";
 import UnifiedCalendarCard from "./UnifiedCalendarCard";
 
@@ -11,6 +14,7 @@ type CalendarConflictFilters = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
 };
 
 type OperationalSectionProps = {
@@ -76,7 +80,8 @@ export default function OperationalSection({
     conflictFilters.has_conflict !== undefined ||
     Boolean(conflictFilters.conflict_severity) ||
     Boolean(conflictFilters.conflict_type) ||
-    conflictFilters.first_arrival !== undefined;
+    conflictFilters.first_arrival !== undefined ||
+    Boolean(conflictFilters.cancellation_reason);
 
   return (
     <UnifiedCalendarCard

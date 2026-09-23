@@ -18,7 +18,10 @@ import {
   type BulkEditRow,
 } from "@/services/bookings/bulkEditService";
 import { BOOKING_STATUS_LABELS, type BookingStatus } from "@/types/booking";
-import { applyEditLtaSpaceClaim } from "./applyLtaSpaceClaim";
+import {
+  applyEditLtaSpaceClaim,
+  mergeEditRowAfterRevalidate,
+} from "./applyLtaSpaceClaim";
 import BulkImportRowIssuesCell from "./BulkImportRowIssuesCell";
 import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
 import BulkBookingsEditSkeleton from "./BulkBookingsEditSkeleton";
@@ -92,7 +95,7 @@ function EditRow({
   disabled?: boolean;
   saveError?: string | null;
   onToggle: () => void;
-  onRowChange: (next: BulkEditRow) => void;
+  onRowChange: (updater: (current: BulkEditRow) => BulkEditRow) => void;
 }) {
   const [revalidating, setRevalidating] = useState(false);
   const [occupancyReloadKey, setOccupancyReloadKey] = useState(0);
@@ -106,22 +109,20 @@ function EditRow({
       try {
         const next = await revalidateBulkEditRow(draft);
         if (reqId !== reqIdRef.current) return;
-        onRowChange({
-          ...draft,
-          ...next,
-          port_name: next.port_name ?? draft.port_name,
-          port_code: next.port_code ?? draft.port_code,
-          vessel_name: next.vessel_name ?? draft.vessel_name,
-          shipping_line_name:
-            next.shipping_line_name ?? draft.shipping_line_name,
-          shipping_line_group:
-            next.shipping_line_group ?? draft.shipping_line_group,
-          position_code: next.position_code ?? draft.position_code,
-        });
-        setOccupancyReloadKey((k) => k + 1);
+        onRowChange((current) =>
+          mergeEditRowAfterRevalidate(
+            current.claim_lta_space ? current : draft,
+            next,
+          ),
+        );
+        if (!draft.claim_lta_space) {
+          setOccupancyReloadKey((k) => k + 1);
+        }
       } catch {
         if (reqId !== reqIdRef.current) return;
-        onRowChange(draft);
+        onRowChange((current) =>
+          current.claim_lta_space ? current : draft,
+        );
       } finally {
         if (reqId === reqIdRef.current) setRevalidating(false);
       }
@@ -204,7 +205,7 @@ function EditRow({
               claim_lta_space: false,
               lta_space_candidate: null,
             };
-            onRowChange(draft);
+            onRowChange(() => draft);
             void revalidate(draft);
           }}
         />
@@ -231,7 +232,7 @@ function EditRow({
               claim_lta_space: false,
               lta_space_candidate: null,
             };
-            onRowChange(draft);
+            onRowChange(() => draft);
             void revalidate(draft);
           }}
         />
@@ -248,7 +249,7 @@ function EditRow({
               claim_lta_space: false,
               lta_space_candidate: null,
             };
-            onRowChange(draft);
+            onRowChange(() => draft);
             void revalidate(draft);
           }}
           className="w-[9.5rem] rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
@@ -259,11 +260,15 @@ function EditRow({
           eta={row.eta}
           etd={row.etd}
           disabled={fieldLock}
-          onEtaChange={(value) => onRowChange({ ...row, eta: value })}
-          onEtdChange={(value) => onRowChange({ ...row, etd: value })}
+          onEtaChange={(value) =>
+            onRowChange((current) => ({ ...current, eta: value }))
+          }
+          onEtdChange={(value) =>
+            onRowChange((current) => ({ ...current, etd: value }))
+          }
           onCommit={({ eta, etd }) => {
             const draft = { ...row, eta, etd };
-            onRowChange(draft);
+            onRowChange((current) => ({ ...current, eta, etd }));
             void revalidate(draft);
           }}
         />
@@ -276,22 +281,29 @@ function EditRow({
           }
           reloadKey={occupancyReloadKey}
           onChange={(preview) => {
-            onRowChange({
-              ...row,
-              position_id: preview.position_id ?? null,
-              position_code: preview.position_code ?? null,
-              claim_lta_space: false,
-            });
+            onRowChange((current) => ({
+              ...current,
+              position_id: preview.position_id ?? current.position_id,
+              position_code: preview.position_code ?? current.position_code,
+            }));
           }}
           onCommit={(preview) => {
-            const draft = {
-              ...row,
-              position_id: preview.position_id ?? null,
-              position_code: preview.position_code ?? null,
-              claim_lta_space: false,
-            };
-            onRowChange(draft);
-            void revalidate(draft);
+            const nextPos = preview.position_id ?? null;
+            onRowChange((current) => {
+              const candidatePos = current.lta_space_candidate?.position_id ?? null;
+              const keepClaim =
+                Boolean(current.claim_lta_space) &&
+                candidatePos != null &&
+                nextPos === candidatePos;
+              const draft = {
+                ...current,
+                position_id: nextPos,
+                position_code: preview.position_code ?? current.position_code,
+                claim_lta_space: keepClaim,
+              };
+              void revalidate(draft);
+              return draft;
+            });
           }}
         />
       </td>
@@ -320,7 +332,7 @@ function EditRow({
               claim_lta_space: false,
               lta_space_candidate: null,
             };
-            onRowChange(draft);
+            onRowChange(() => draft);
             void revalidate(draft);
           }}
         />
@@ -335,7 +347,7 @@ function EditRow({
           options={STATUS_OPTIONS}
           onChange={(value) => {
             const draft = { ...row, status: value };
-            onRowChange(draft);
+            onRowChange(() => draft);
             void revalidate(draft);
           }}
         />
@@ -347,9 +359,12 @@ function EditRow({
             checked={Boolean(row.claim_lta_space)}
             disabled={fieldLock}
             onChange={(e) => {
-              const draft = applyEditLtaSpaceClaim(row, e.target.checked);
-              onRowChange(draft);
-              void revalidate(draft);
+              const claim = e.target.checked;
+              onRowChange((current) => {
+                const draft = applyEditLtaSpaceClaim(current, claim);
+                void revalidate(draft);
+                return draft;
+              });
             }}
             className="mt-1.5 h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={`Reclamar espacio LTA ${row.lta_space_candidate.booking_code}`}
@@ -384,9 +399,11 @@ function EditRow({
           onClaimLtaSpace={
             row.lta_space_candidate
               ? () => {
-                  const draft = applyEditLtaSpaceClaim(row, true);
-                  onRowChange(draft);
-                  void revalidate(draft);
+                  onRowChange((current) => {
+                    const draft = applyEditLtaSpaceClaim(current, true);
+                    void revalidate(draft);
+                    return draft;
+                  });
                 }
               : undefined
           }
@@ -480,33 +497,48 @@ export default function BulkBookingsEditModal({
         targets.map(async (draft) => {
           try {
             const next = await revalidateBulkEditRow(draft);
-            return { id: draft.booking_id, row: { ...draft, ...next } };
+            return {
+              id: draft.booking_id,
+              row: mergeEditRowAfterRevalidate(draft, next),
+            };
           } catch {
             return { id: draft.booking_id, row: draft };
           }
         }),
       );
       const byId = new Map(settled.map((item) => [item.id, item.row]));
-      setRows((prev) => prev.map((row) => byId.get(row.booking_id) ?? row));
+      setRows((prev) =>
+        prev.map((row) => {
+          const incoming = byId.get(row.booking_id);
+          if (!incoming) return row;
+          return mergeEditRowAfterRevalidate(
+            row.claim_lta_space ? row : incoming,
+            incoming,
+          );
+        }),
+      );
     } finally {
       setClaimingAllLta(false);
     }
   }
 
-  function updateRow(next: BulkEditRow) {
+  function updateRow(
+    bookingId: number,
+    updater: (current: BulkEditRow) => BulkEditRow,
+  ) {
     setRows((prev) => {
+      const current = prev.find((r) => r.booking_id === bookingId);
+      if (!current) return prev;
+      const next = updater(current);
       setSelectedIds((selected) => {
         const copy = new Set(selected);
         if (!next.selectable) copy.delete(next.booking_id);
-        else {
-          const was = prev.find((r) => r.booking_id === next.booking_id);
-          if (was && !was.selectable && next.selectable) {
-            copy.add(next.booking_id);
-          }
+        else if (!current.selectable && next.selectable) {
+          copy.add(next.booking_id);
         }
         return copy;
       });
-      return prev.map((r) => (r.booking_id === next.booking_id ? next : r));
+      return prev.map((r) => (r.booking_id === bookingId ? next : r));
     });
   }
 
@@ -700,7 +732,7 @@ export default function BulkBookingsEditModal({
                       return next;
                     });
                   }}
-                  onRowChange={updateRow}
+                  onRowChange={(updater) => updateRow(row.booking_id, updater)}
                 />
               ))}
             </tbody>

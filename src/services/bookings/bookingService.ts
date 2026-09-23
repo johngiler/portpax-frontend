@@ -17,6 +17,7 @@ import type {
   BookingStatus,
   BookingStatusFilterValue,
   BookingUpdatePayload,
+  CancellationReason,
   BookingValidationResult,
   PositionSuggestion,
 } from "@/types/booking";
@@ -45,6 +46,7 @@ export type AvailabilityBookingCall = {
   actual_pax: number | null;
   planned_pax: number | null;
   first_arrival?: boolean;
+  cancellation_reason?: string;
 };
 
 export type FetchBookingsParams = {
@@ -78,6 +80,8 @@ export type FetchBookingsParams = {
   conflict_type?: ConflictTypeFilterValue;
   /** Only first-arrival bookings. */
   first_arrival?: boolean;
+  /** Single cancellation reason; only applies with cancelled status. */
+  cancellation_reason?: CancellationReason | "";
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -123,6 +127,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   }
   if (params.first_arrival === true) query.set("first_arrival", "true");
   if (params.first_arrival === false) query.set("first_arrival", "false");
+  if (params.cancellation_reason) {
+    query.set("cancellation_reason", params.cancellation_reason);
+  }
   return query;
 }
 
@@ -411,6 +418,7 @@ export async function fetchAvailabilityReport(params: {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
 }): Promise<AvailabilityReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -442,6 +450,9 @@ export async function fetchAvailabilityReport(params: {
   }
   if (params.first_arrival === true) query.set("first_arrival", "true");
   if (params.first_arrival === false) query.set("first_arrival", "false");
+  if (params.cancellation_reason) {
+    query.set("cancellation_reason", params.cancellation_reason);
+  }
   if (params.ships_per_day != null && params.ships_per_day >= 1) {
     query.set("ships_per_day", String(params.ships_per_day));
   }
@@ -451,6 +462,7 @@ export async function fetchAvailabilityReport(params: {
     params.occupied_only === true ||
     params.has_conflict !== undefined ||
     params.first_arrival !== undefined ||
+    Boolean(params.cancellation_reason) ||
     Boolean(params.conflict_severity) ||
     Boolean(params.conflict_type) ||
     Boolean(params.shipping_line) ||

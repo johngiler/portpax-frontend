@@ -67,6 +67,7 @@ import {
   bookingDetailHref,
   bookingStatusFiltersEqual,
   type BookingStatusFilterValue,
+  type CancellationReason,
 } from "@/types/booking";
 import {
   addDaysIso,
@@ -199,6 +200,12 @@ export default function BookingsView() {
     useState<ConflictFilterValue>("");
   const [firstArrival, setFirstArrival] = useState(false);
   const [appliedFirstArrival, setAppliedFirstArrival] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState<
+    CancellationReason | ""
+  >("");
+  const [appliedCancellationReason, setAppliedCancellationReason] = useState<
+    CancellationReason | ""
+  >("");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [portFilter, setPortFilter] = useState<number[]>([]);
@@ -335,6 +342,7 @@ export default function BookingsView() {
       density: appliedDensity,
       conflict: appliedConflictFilter,
       firstArrival: appliedFirstArrival,
+      cancellationReason: appliedCancellationReason,
       importedDates: availabilityDateAllowlist ?? [],
       ...overrides,
     };
@@ -375,6 +383,8 @@ export default function BookingsView() {
     setAppliedConflictFilter(parsed.conflict);
     setFirstArrival(parsed.firstArrival);
     setAppliedFirstArrival(parsed.firstArrival);
+    setCancellationReason(parsed.cancellationReason);
+    setAppliedCancellationReason(parsed.cancellationReason);
     setSearch(parsed.search);
     setAppliedSearch(parsed.search);
     setPortFilter(ports);
@@ -476,6 +486,7 @@ export default function BookingsView() {
       statuses: appliedStatusFilter,
       ...conflictFilterToApiParams(appliedConflictFilter),
       first_arrival: appliedFirstArrival || undefined,
+      cancellation_reason: appliedCancellationReason || undefined,
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
       shipping_line:
         appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
@@ -502,6 +513,7 @@ export default function BookingsView() {
     appliedStatusFilter,
     appliedConflictFilter,
     appliedFirstArrival,
+    appliedCancellationReason,
     appliedPortFilter,
     appliedShippingLineFilter,
     appliedShippingLineGroupFilter,
@@ -621,6 +633,7 @@ export default function BookingsView() {
         appliedStatusFilter.length > 0 ? appliedStatusFilter : undefined,
       ...conflictFilterToApiParams(appliedConflictFilter),
       first_arrival: appliedFirstArrival || undefined,
+      cancellation_reason: appliedCancellationReason || undefined,
       call_dates: availabilityDateAllowlist?.length
         ? availabilityDateAllowlist
         : undefined,
@@ -636,6 +649,7 @@ export default function BookingsView() {
       appliedStatusFilter,
       appliedConflictFilter,
       appliedFirstArrival,
+      appliedCancellationReason,
       availabilityDateAllowlist,
     ],
   );
@@ -651,6 +665,7 @@ export default function BookingsView() {
     appliedStatusFilter.length > 0 ||
     appliedConflictFilter !== "" ||
     appliedFirstArrival ||
+    Boolean(appliedCancellationReason) ||
     Boolean(availabilityDateAllowlist?.length);
 
   const { firstDate: listFirstOutsideDate } = useFirstMatchingCallDate(
@@ -680,6 +695,8 @@ export default function BookingsView() {
       tab === "availability";
     const nextConflict = conflictTabs ? conflictFilter : "";
     const nextFirstArrival = conflictTabs ? firstArrival : false;
+    const nextCancellationReason =
+      statusFilter.includes("c") ? cancellationReason : "";
 
     setAppliedStatusFilter(statusFilter);
     setAppliedConflictFilter(nextConflict);
@@ -689,6 +706,10 @@ export default function BookingsView() {
     setAppliedFirstArrival(nextFirstArrival);
     if (nextFirstArrival !== firstArrival) {
       setFirstArrival(nextFirstArrival);
+    }
+    setAppliedCancellationReason(nextCancellationReason);
+    if (nextCancellationReason !== cancellationReason) {
+      setCancellationReason(nextCancellationReason);
     }
     setAppliedSearch(tab === "list" ? search.trim() : "");
     if (tab !== "list" && search.trim() !== "") {
@@ -743,6 +764,7 @@ export default function BookingsView() {
         density,
         conflict: nextConflict,
         firstArrival: nextFirstArrival,
+        cancellationReason: nextCancellationReason,
       }),
     );
   }
@@ -792,6 +814,8 @@ export default function BookingsView() {
     setAppliedConflictFilter("");
     setFirstArrival(false);
     setAppliedFirstArrival(false);
+    setCancellationReason("");
+    setAppliedCancellationReason("");
     setSearch("");
     setAppliedSearch("");
     setPortFilter([]);
@@ -839,6 +863,7 @@ export default function BookingsView() {
       density: 0,
       conflict: "",
       firstArrival: false,
+      cancellationReason: "",
       importedDates: [],
     });
   }
@@ -857,6 +882,8 @@ export default function BookingsView() {
     setAppliedConflictFilter(clearedConflict);
     setFirstArrival(false);
     setAppliedFirstArrival(false);
+    setCancellationReason("");
+    setAppliedCancellationReason("");
     setSearch("");
     setAppliedSearch("");
     setPortFilter(ports);
@@ -913,6 +940,7 @@ export default function BookingsView() {
       density: 0,
       conflict: clearedConflict,
       firstArrival: false,
+      cancellationReason: "",
       importedDates: [],
     });
   }
@@ -950,7 +978,8 @@ export default function BookingsView() {
         tab === "calendar" ||
         tab === "availability") &&
         appliedConflictFilter !== "" ||
-        appliedFirstArrival) ||
+        appliedFirstArrival ||
+        Boolean(appliedCancellationReason)) ||
       (tab === "list" && appliedSearch !== "") ||
       (tab !== "proximity" && appliedPortFilter.length > 0) ||
       appliedShippingLineGroupFilter > 0 ||
@@ -975,7 +1004,9 @@ export default function BookingsView() {
       (conflictFilter !== "" ||
         appliedConflictFilter !== "" ||
         firstArrival ||
-        appliedFirstArrival)) ||
+        appliedFirstArrival ||
+        Boolean(cancellationReason) ||
+        Boolean(appliedCancellationReason))) ||
     (tab === "list" && (search.trim() !== "" || appliedSearch !== "")) ||
     (tab !== "proximity" &&
       (portFilter.length > 0 || appliedPortFilter.length > 0)) ||
@@ -1006,7 +1037,8 @@ export default function BookingsView() {
       tab === "calendar" ||
       tab === "availability") &&
       conflictFilter !== appliedConflictFilter ||
-      firstArrival !== appliedFirstArrival) ||
+      firstArrival !== appliedFirstArrival ||
+      cancellationReason !== appliedCancellationReason) ||
     (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && !sameNumberList(portFilter, appliedPortFilter)) ||
     shippingLineGroupFilter !== appliedShippingLineGroupFilter ||
@@ -1328,8 +1360,11 @@ export default function BookingsView() {
     () => ({
       ...conflictFilterToApiParams(appliedConflictFilter),
       ...(appliedFirstArrival ? { first_arrival: true as const } : {}),
+      ...(appliedCancellationReason
+        ? { cancellation_reason: appliedCancellationReason }
+        : {}),
     }),
-    [appliedConflictFilter, appliedFirstArrival],
+    [appliedConflictFilter, appliedFirstArrival, appliedCancellationReason],
   );
 
   const activeFilterChips = useMemo(() => {
@@ -1382,6 +1417,7 @@ export default function BookingsView() {
       statuses: appliedStatusFilter,
       conflict: appliedConflictFilter,
       firstArrival: appliedFirstArrival,
+      cancellationReason: appliedCancellationReason,
       search: appliedSearch,
       datePreset: appliedDatePreset,
       importedDatesCount: availabilityDateAllowlist?.length ?? 0,
@@ -1406,6 +1442,7 @@ export default function BookingsView() {
     appliedStatusFilter,
     appliedConflictFilter,
     appliedFirstArrival,
+    appliedCancellationReason,
     appliedSearch,
     appliedDatePreset,
     availabilityDateAllowlist,
@@ -1558,6 +1595,7 @@ export default function BookingsView() {
           status={statusFilter}
           conflictFilter={conflictFilter}
           firstArrival={firstArrival}
+          cancellationReason={cancellationReason}
           search={search}
           portFilter={portFilter}
           shippingLineGroupFilter={shippingLineGroupFilter}
@@ -1582,9 +1620,15 @@ export default function BookingsView() {
           positionOptions={positionOptions}
           canClear={canClearFilters}
           canApply={canApplyFilters}
-          onStatusChange={setStatusFilter}
+          onStatusChange={(next) => {
+            setStatusFilter(next);
+            if (!next.includes("c")) {
+              setCancellationReason("");
+            }
+          }}
           onConflictFilterChange={setConflictFilter}
           onFirstArrivalChange={setFirstArrival}
+          onCancellationReasonChange={setCancellationReason}
           onSearchChange={setSearch}
           onPortFilterChange={(ids) => {
             setPortFilter(ids);
@@ -1819,6 +1863,9 @@ export default function BookingsView() {
                   ...conflictFilterToApiParams(appliedConflictFilter),
                   ...(appliedFirstArrival
                     ? { first_arrival: true as const }
+                    : {}),
+                  ...(appliedCancellationReason
+                    ? { cancellation_reason: appliedCancellationReason }
                     : {}),
                 }
               : {}

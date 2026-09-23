@@ -33,6 +33,7 @@ function probeKey(filters: FirstMatchProbeFilters): string {
       : filters.first_arrival === false
         ? "0"
         : "",
+    filters.cancellation_reason ?? "",
     (filters.call_dates ?? []).join(","),
   ].join("|");
 }

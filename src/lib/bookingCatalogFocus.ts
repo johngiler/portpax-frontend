@@ -9,6 +9,7 @@ import type {
   BookingListStatusFilter,
   BookingStatus,
   BookingStatusFilterValue,
+  CancellationReason,
 } from "@/types/booking";
 import { bookingTodayIso } from "@/types/booking";
 
@@ -26,6 +27,7 @@ export type CatalogConflictFocus = {
   conflict_severity?: "yellow" | "red" | "green";
   conflict_type?: ConflictTypeFilterValue;
   first_arrival?: boolean;
+  cancellation_reason?: CancellationReason | "";
 };
 
 export type BookingCalendarFocus = CatalogConflictFocus & {
@@ -165,6 +167,13 @@ export function bookingMatchesCalendarFocus(
   }
   if (focus.first_arrival === true && !booking.first_arrival) return false;
   if (focus.first_arrival === false && booking.first_arrival) return false;
+  if (
+    focus.cancellation_reason &&
+    booking.status === "c" &&
+    (booking.cancellation_reason ?? "") !== focus.cancellation_reason
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -181,7 +190,8 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
       focus.has_conflict !== undefined ||
       focus.conflict_severity ||
       focus.conflict_type ||
-      focus.first_arrival !== undefined,
+      focus.first_arrival !== undefined ||
+      Boolean(focus.cancellation_reason),
   );
 }
 
