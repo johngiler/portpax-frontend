@@ -777,6 +777,72 @@ export default function BookingsView() {
     }
   }
 
+  function openTagBookings(tagId: number) {
+    const from = defaultCustomFrom();
+    const to = defaultCustomTo();
+    const week = todayIso();
+    const y = new Date().getFullYear();
+    const m = new Date().getMonth();
+    const tags = [tagId];
+    setTagsModalOpen(false);
+    setTab("list");
+    setStatusFilter([]);
+    setAppliedStatusFilter([]);
+    setConflictFilter("");
+    setAppliedConflictFilter("");
+    setFirstArrival(false);
+    setAppliedFirstArrival(false);
+    setSearch("");
+    setAppliedSearch("");
+    setPortFilter([]);
+    setAppliedPortFilter([]);
+    setShippingLineGroupFilter(0);
+    setAppliedShippingLineGroupFilter(0);
+    setShippingLineFilter(0);
+    setAppliedShippingLineFilter(0);
+    setVesselFilter(0);
+    setAppliedVesselFilter(0);
+    setTagFilter(tags);
+    setAppliedTagFilter(tags);
+    setDatePreset("all");
+    setAppliedDatePreset("all");
+    setCustomDateFrom(from);
+    setCustomDateTo(to);
+    setAppliedCustomDateFrom(from);
+    setAppliedCustomDateTo(to);
+    setPositionFilter(0);
+    setAppliedPositionFilter(0);
+    setHeatMode("availability");
+    setAppliedHeatMode("availability");
+    setDensity(0);
+    setAppliedDensity(0);
+    setAvailabilityDateAllowlist(null);
+    syncToUrl({
+      tab: "list",
+      status: [],
+      search: "",
+      ports: [],
+      group: 0,
+      line: 0,
+      vessel: 0,
+      tags,
+      datePreset: "all",
+      customFrom: from,
+      customTo: to,
+      mode: appliedCalendarMode,
+      season: appliedCalendarSeason,
+      position: 0,
+      week,
+      year: appliedYear,
+      month: appliedMonthIndex,
+      heat: "availability",
+      density: 0,
+      conflict: "",
+      firstArrival: false,
+      importedDates: [],
+    });
+  }
+
   function handleClearFilters() {
     const ports: number[] = [];
     const from = defaultCustomFrom();
@@ -1483,6 +1549,7 @@ export default function BookingsView() {
       <BookingTagsModal
         open={tagsModalOpen}
         onClose={() => setTagsModalOpen(false)}
+        onOpenTagBookings={openTagBookings}
       />
 
       <FilterSidebarContent>

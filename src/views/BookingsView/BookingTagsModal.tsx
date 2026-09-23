@@ -20,6 +20,7 @@ import {
 type BookingTagsModalProps = {
   open: boolean;
   onClose: () => void;
+  onOpenTagBookings?: (tagId: number) => void;
 };
 
 type FormMode = "list" | "create" | "edit";
@@ -38,7 +39,15 @@ function validate(form: FormState): FieldErrors {
   return errors;
 }
 
-export default function BookingTagsModal({ open, onClose }: BookingTagsModalProps) {
+function tagBookingCount(tag: BookingTagOption): number {
+  return tag.booking_count ?? 0;
+}
+
+export default function BookingTagsModal({
+  open,
+  onClose,
+  onOpenTagBookings,
+}: BookingTagsModalProps) {
   const [tags, setTags] = useState<BookingTagOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>("list");
@@ -146,6 +155,15 @@ export default function BookingTagsModal({ open, onClose }: BookingTagsModalProp
   }
 
   async function handleDelete(tag: BookingTagOption) {
+    const bookingCount = tagBookingCount(tag);
+    if (bookingCount > 0) {
+      setListError(
+        `No se puede eliminar: ${bookingCount} ${
+          bookingCount === 1 ? "reserva usa" : "reservas usan"
+        } este tag.`,
+      );
+      return;
+    }
     setListError(null);
     setDeletingId(tag.id);
     try {
@@ -253,6 +271,11 @@ export default function BookingTagsModal({ open, onClose }: BookingTagsModalProp
                       {tag.name}
                     </p>
                   </div>
+                  <TagBookingCountButton
+                    tag={tag}
+                    disabled={deletingId === tag.id}
+                    onOpen={onOpenTagBookings}
+                  />
                   <button
                     type="button"
                     onClick={() => openEdit(tag)}
@@ -277,5 +300,42 @@ export default function BookingTagsModal({ open, onClose }: BookingTagsModalProp
         </>
       )}
     </Modal>
+  );
+}
+
+function TagBookingCountButton({
+  tag,
+  disabled,
+  onOpen,
+}: {
+  tag: BookingTagOption;
+  disabled?: boolean;
+  onOpen?: (tagId: number) => void;
+}) {
+  const count = tagBookingCount(tag);
+  const label = count === 1 ? "1 reserva" : `${count} reservas`;
+  const countClass =
+    "inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-md px-2 text-xs font-semibold tabular-nums";
+  if (count > 0 && onOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(tag.id)}
+        disabled={disabled}
+        className={`${countClass} cursor-pointer bg-[var(--admin-accent)]/10 text-[var(--admin-accent)] transition hover:bg-[var(--admin-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50`}
+        aria-label={`Ver ${label} con ${tag.name}`}
+        title={label}
+      >
+        {count}
+      </button>
+    );
+  }
+  return (
+    <span
+      className={`${countClass} bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400`}
+      title={label}
+    >
+      {count}
+    </span>
   );
 }

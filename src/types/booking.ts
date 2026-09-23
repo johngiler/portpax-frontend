@@ -6,7 +6,8 @@ export type BookingStatus = "nr" | "h" | "co" | "cl" | "lta" | "ltd" | "r" | "c"
 export type CancellationReason =
   | "bad_weather"
   | "shipping_line_decision"
-  | "itm_decision";
+  | "itm_decision"
+  | "lta_claimed";
 
 /** List filter: past open bookings (not a stored status) or real status. */
 export type BookingListStatusFilter =

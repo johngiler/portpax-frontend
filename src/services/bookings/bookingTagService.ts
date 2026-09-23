@@ -6,6 +6,7 @@ const BASE = "api/bookings/tags/";
 export type BookingTagOption = {
   id: number;
   name: string;
+  booking_count?: number;
   created_at?: string;
 };
 

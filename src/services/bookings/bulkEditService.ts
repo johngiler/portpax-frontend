@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/apiClient";
+import type { BulkImportLtaCandidate } from "@/services/bookings/bulkImportService";
 import type { BookingValidationIssue } from "@/types/booking";
 
 const BASE = "api/bookings/";
@@ -21,6 +22,8 @@ export type BulkEditRow = {
   position_code?: string | null;
   status: string;
   notes: string;
+  claim_lta_space?: boolean;
+  lta_space_candidate?: BulkImportLtaCandidate | null;
   blocking_issues: BookingValidationIssue[];
   warnings: BookingValidationIssue[];
   selectable: boolean;
@@ -80,6 +83,8 @@ export async function applyBulkEdit(
         position_id: r.position_id,
         status: r.status,
         notes: r.notes,
+        claim_lta_space: Boolean(r.claim_lta_space),
+        lta_space_candidate: r.lta_space_candidate ?? null,
       })),
     }),
   });
