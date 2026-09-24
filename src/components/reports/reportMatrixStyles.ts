@@ -32,6 +32,22 @@ export const reportMatrix = {
     "border-b border-zinc-100/80 px-2 py-1.5 text-right tabular-nums text-zinc-700 dark:border-zinc-800/80 dark:text-zinc-200",
   dataCellAlt:
     "border-b border-zinc-100/80 bg-zinc-50/30 px-2 py-1.5 text-right tabular-nums text-zinc-700 dark:border-zinc-800/80 dark:bg-zinc-950/20 dark:text-zinc-200",
+  groupRowLabel:
+    "sticky left-0 z-10 border-r border-zinc-200/70 bg-zinc-100/70 px-2.5 py-1.5 text-left text-xs font-semibold text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/45 dark:text-zinc-100",
+  groupRowLabelAlt:
+    "sticky left-0 z-10 border-r border-zinc-200/70 bg-zinc-50/90 px-2.5 py-1.5 text-left text-xs font-semibold text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900/55 dark:text-zinc-100",
+  groupDataCell:
+    "border-b border-zinc-200/50 bg-zinc-100/40 px-2 py-1.5 text-right text-xs font-semibold tabular-nums text-zinc-800 dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100",
+  groupDataCellAlt:
+    "border-b border-zinc-200/50 bg-zinc-50/70 px-2 py-1.5 text-right text-xs font-semibold tabular-nums text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100",
+  nestedRowLabel:
+    "sticky left-0 z-10 border-r border-sky-100/80 border-l-2 border-l-sky-300/80 bg-sky-50/70 py-1 pl-7 pr-2.5 text-left text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:border-l-sky-500/40 dark:bg-sky-950/25 dark:text-zinc-200",
+  nestedRowLabelAlt:
+    "sticky left-0 z-10 border-r border-sky-100/70 border-l-2 border-l-sky-300/60 bg-sky-50/40 py-1 pl-7 pr-2.5 text-left text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:border-l-sky-500/30 dark:bg-sky-950/15 dark:text-zinc-200",
+  nestedDataCell:
+    "border-b border-sky-100/70 bg-sky-50/55 px-2 py-1 text-right text-[11px] font-medium tabular-nums text-zinc-700 dark:border-zinc-800/80 dark:bg-sky-950/20 dark:text-zinc-200",
+  nestedDataCellAlt:
+    "border-b border-sky-100/60 bg-sky-50/30 px-2 py-1 text-right text-[11px] font-medium tabular-nums text-zinc-700 dark:border-zinc-800/80 dark:bg-sky-950/10 dark:text-zinc-200",
   totalRowLabel:
     "sticky left-0 z-10 border-r border-zinc-200/80 bg-zinc-100/70 px-2.5 py-2 text-left text-[11px] font-semibold uppercase text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-100",
   totalDataCell:

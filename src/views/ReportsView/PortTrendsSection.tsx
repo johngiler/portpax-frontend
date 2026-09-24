@@ -90,42 +90,65 @@ function TrendsPaginatedPanel({
   );
 }
 
-function labelClass(alt: boolean, nested = false, total = false): string {
+function labelClass(
+  alt: boolean,
+  nested = false,
+  total = false,
+): string {
   if (total) return reportMatrix.totalRowLabel;
-  const base = alt ? reportMatrix.rowLabelAlt : reportMatrix.rowLabel;
-  return nested ? `${base} pl-8` : base;
+  if (nested) {
+    return alt ? reportMatrix.nestedRowLabelAlt : reportMatrix.nestedRowLabel;
+  }
+  return alt ? reportMatrix.groupRowLabelAlt : reportMatrix.groupRowLabel;
 }
 
-function dataClass(alt: boolean, total = false): string {
+function dataClass(
+  alt: boolean,
+  nested = false,
+  total = false,
+): string {
   if (total) return reportMatrix.totalDataCell;
-  return alt ? reportMatrix.dataCellAlt : reportMatrix.dataCell;
+  if (nested) {
+    return alt ? reportMatrix.nestedDataCellAlt : reportMatrix.nestedDataCell;
+  }
+  return alt ? reportMatrix.groupDataCellAlt : reportMatrix.groupDataCell;
 }
 
 function TrendsShipsCells({
   row,
   alt,
+  nested = false,
   total = false,
 }: {
   row: PortTrendsMetricRow;
   alt: boolean;
+  nested?: boolean;
   total?: boolean;
 }) {
   return (
     <>
       {row.by_year.map((cell) => (
         <Fragment key={`y-${cell.year}`}>
-          <td className={dataClass(alt, total)}>
+          <td className={dataClass(alt, nested, total)}>
             {formatMatrixValue(cell.ships)}
           </td>
-          <td className={dataClass(alt, total)}>
+          <td className={dataClass(alt, nested, total)}>
             {formatMatrixValue(cell.pax, true)}
           </td>
         </Fragment>
       ))}
-      <td className={reportMatrix.totalDataCell}>
+      <td
+        className={
+          nested ? dataClass(alt, true) : reportMatrix.totalDataCell
+        }
+      >
         {formatMatrixValue(row.total_ships)}
       </td>
-      <td className={reportMatrix.totalDataCell}>
+      <td
+        className={
+          nested ? dataClass(alt, true) : reportMatrix.totalDataCell
+        }
+      >
         {formatMatrixValue(row.total_pax, true)}
       </td>
     </>
@@ -135,10 +158,12 @@ function TrendsShipsCells({
 function GrowthCells({
   row,
   alt,
+  nested = false,
   total = false,
 }: {
   row: PortTrendsMetricRow;
   alt: boolean;
+  nested?: boolean;
   total?: boolean;
 }) {
   return (
@@ -156,7 +181,7 @@ function GrowthCells({
         return (
           <td
             key={`g-${cell.year}`}
-            className={`${dataClass(alt, total)} ${tone}`}
+            className={`${dataClass(alt, nested, total)} ${tone}`}
           >
             {formatGrowthPct(pct)}
           </td>
@@ -194,11 +219,7 @@ function GroupNameCell({
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           )}
         </span>
-        <ReportEntityLabel
-          name={name}
-          logo={null}
-          logoKind="shipping_line"
-        />
+        <ReportEntityLabel name={name} logo={null} logoKind="shipping_line" />
       </button>
     </td>
   );
@@ -239,23 +260,13 @@ export default function PortTrendsSection({
   const totals = data.totals;
   const hasRows = groups.length > 0;
 
-  const stripeIndex = useMemo(() => {
-    const map = new Map<string, number>();
-    let i = 0;
-    for (const group of groups) {
-      map.set(`g-${group.shipping_line_group_id}`, i++);
-      if (expandedIds.has(group.shipping_line_group_id)) {
-        for (const line of group.lines) {
-          map.set(`l-${line.shipping_line_id}`, i++);
-        }
-      }
-    }
+  const groupAlt = useMemo(() => {
+    const map = new Map<number, boolean>();
+    groups.forEach((group, index) => {
+      map.set(group.shipping_line_group_id, index % 2 === 1);
+    });
     return map;
-  }, [groups, expandedIds]);
-
-  function isAlt(key: string): boolean {
-    return (stripeIndex.get(key) ?? 0) % 2 === 1;
-  }
+  }, [groups]);
 
   if (totalCount === 0 && !hasRows) {
     return (
@@ -269,8 +280,7 @@ export default function PortTrendsSection({
   function renderGroupBlock(group: PortTrendsGroup, mode: "ships" | "growth") {
     const gid = group.shipping_line_group_id;
     const expanded = expandedIds.has(gid);
-    const gKey = `g-${gid}`;
-    const gAlt = isAlt(gKey);
+    const gAlt = groupAlt.get(gid) ?? false;
 
     return (
       <Fragment key={`${mode}-${gid}`}>
@@ -288,22 +298,27 @@ export default function PortTrendsSection({
           )}
         </tr>
         {expanded
-          ? group.lines.map((line) => {
-              const lKey = `l-${line.shipping_line_id}`;
-              const lAlt = isAlt(lKey);
+          ? group.lines.map((line, lineIndex) => {
+              const lAlt = lineIndex % 2 === 1;
               return (
                 <tr key={`${mode}-line-${line.shipping_line_id}`}>
                   <td className={labelClass(lAlt, true)}>
-                    <ReportEntityLabel
-                      name={line.name}
-                      logo={line.logo}
-                      logoKind="shipping_line"
-                    />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-2 w-2 shrink-0 self-center border-b border-l border-sky-300/80 dark:border-sky-500/40"
+                        aria-hidden
+                      />
+                      <ReportEntityLabel
+                        name={line.name}
+                        logo={line.logo}
+                        logoKind="shipping_line"
+                      />
+                    </div>
                   </td>
                   {mode === "ships" ? (
-                    <TrendsShipsCells row={line} alt={lAlt} />
+                    <TrendsShipsCells row={line} alt={lAlt} nested />
                   ) : (
-                    <GrowthCells row={line} alt={lAlt} />
+                    <GrowthCells row={line} alt={lAlt} nested />
                   )}
                 </tr>
               );
