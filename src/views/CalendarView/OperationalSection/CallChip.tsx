@@ -22,9 +22,11 @@ import {
 import {
   conflictChipClassName,
 } from "@/lib/bookingConflictStyle";
+import ShippingLineCaption, {
+  shippingLineWithGroupLabel,
+} from "@/components/ui/ShippingLineCaption";
 import {
   CORP_CHIP_CLASS,
-  CORP_SHORT_LABEL,
   corpKeyFromShippingLineCode,
 } from "../corpColors";
 
@@ -47,7 +49,10 @@ export default function CallChip({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const corp = corpKeyFromShippingLineCode(booking.shipping_line_code);
-  const corpLabel = CORP_SHORT_LABEL[corp];
+  const lineLabel = shippingLineWithGroupLabel(
+    booking.shipping_line_name,
+    booking.shipping_line_group_name,
+  );
   const positionLabel = booking.position_code || "Sin asignar";
   const highlights = conflictHighlightsFromApi(booking);
   const chips = conflictChipsFromApi(booking);
@@ -70,20 +75,39 @@ export default function CallChip({
         booking.status === "c" ? "opacity-50 line-through" : "",
         !focused ? "opacity-55 hover:opacity-80" : "",
       ].join(" ")}
-      title={`${corpLabel} · ${booking.shipping_line_name} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${booking.first_arrival ? " · Primer arribo" : ""}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
+      title={`${lineLabel} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${booking.first_arrival ? " · Primer arribo" : ""}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <span className="flex min-w-0 items-baseline justify-between gap-1">
-        <span className="truncate font-semibold">{booking.vessel_name}</span>
-        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide opacity-90 sm:text-[10px]">
-          {corpLabel}
+      <span className="flex min-w-0 items-start justify-between gap-1">
+        <span className="min-w-0 truncate font-semibold">
+          {booking.vessel_name}
         </span>
+        <BookingStatusBadge
+          status={booking.status}
+          size="sm"
+          className="shrink-0"
+        />
       </span>
-      <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
-        <BookingStatusBadge status={booking.status} size="sm" />
-        {booking.first_arrival ? <FirstArrivalBadge compact /> : null}
-        <ConflictTypeChips chips={chips} />
-      </span>
+      <ShippingLineCaption
+        name={booking.shipping_line_name}
+        groupName={booking.shipping_line_group_name}
+        nameClassName={
+          compact
+            ? "truncate text-[9px] font-medium opacity-90"
+            : "truncate text-[10px] font-medium opacity-90"
+        }
+        groupClassName={
+          compact
+            ? "truncate text-[9px] opacity-75"
+            : "mt-px truncate text-[10px] opacity-75"
+        }
+      />
+      {booking.first_arrival || chips.length > 0 ? (
+        <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1">
+          {booking.first_arrival ? <FirstArrivalBadge compact /> : null}
+          <ConflictTypeChips chips={chips} />
+        </span>
+      ) : null}
       <BookingMetaRow
         className="mt-0.5"
         compact={compact}
