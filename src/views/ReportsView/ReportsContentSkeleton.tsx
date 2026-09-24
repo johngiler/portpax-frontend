@@ -106,6 +106,51 @@ export function ReportTrendsContentSkeleton() {
   );
 }
 
+export function CarrierPanoramaContentSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="min-h-[130px] rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/80"
+          >
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="mt-3 h-8 w-20 rounded" />
+            <Skeleton className="mt-3 h-3 w-32 rounded" />
+          </div>
+        ))}
+        <div className="min-h-[130px] rounded-2xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+          <Skeleton className="h-3 w-32 rounded" />
+          <div className="mt-2 flex items-center gap-2.5">
+            <Skeleton className="h-[4.5rem] w-[4.5rem] shrink-0 rounded-full" />
+            <div className="flex-1 space-y-1">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-3 w-full rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <ViewSection
+        icon={BarChart3}
+        title="Cargando panorama…"
+        description="Obteniendo arribos y PAX por puerto."
+        bodyClassName={reportViewSectionBody}
+      >
+        <div className={reportMatrix.shell}>
+          <div className="space-y-2 p-3 sm:p-4">
+            <Skeleton className="h-8 w-full rounded-md" />
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-7 w-full rounded-md" />
+            ))}
+          </div>
+        </div>
+      </ViewSection>
+    </div>
+  );
+}
+
 export function WeeklyReportContentSkeleton() {
   return (
     <ViewSection

@@ -194,7 +194,8 @@ export type StructuredReportType =
   | "port_trends"
   | "solicitudes_port"
   | "booking_movements"
-  | "weekly_report";
+  | "weekly_report"
+  | "carrier_panorama";
 
 export type BookingMovementsTypeRow = {
   kind: string;
@@ -650,6 +651,82 @@ export async function fetchWeeklyReport(params: {
   return apiFetch<WeeklyReport>(`${BASE}report-weekly/?${query.toString()}`);
 }
 
+export type CarrierPanoramaYearCell = {
+  year: number;
+  calls: number;
+  pax: number;
+};
+
+export type CarrierPanoramaPortRow = {
+  port_id: number;
+  port_name: string;
+  logo?: string | null;
+  by_year: CarrierPanoramaYearCell[];
+  total_calls: number;
+  total_pax: number;
+};
+
+export type CarrierPanoramaShare = {
+  port_id: number;
+  port_name: string;
+  calls: number;
+  pax: number;
+  share_pct: number;
+};
+
+export type CarrierPanoramaReport = {
+  kind: "carrier_panorama";
+  title: string;
+  matrix_title: string;
+  subtitle: string;
+  subject_name: string;
+  date_from: string;
+  date_to: string;
+  without_lta: boolean;
+  pax_basis?: "planned" | "capacity";
+  years: number[];
+  kpis: {
+    total_calls: number;
+    total_pax: number;
+    ports_with_calls: number;
+    ports_total: number;
+  };
+  port_share: CarrierPanoramaShare[];
+  rows: CarrierPanoramaPortRow[];
+  totals: {
+    by_year: CarrierPanoramaYearCell[];
+    total_calls: number;
+    total_pax: number;
+  };
+  note: string;
+};
+
+export async function fetchCarrierPanoramaReport(params: {
+  date_from: string;
+  date_to: string;
+  without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
+  shipping_line?: number;
+  shipping_line_group?: number;
+}): Promise<CarrierPanoramaReport> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
+  if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
+  return apiFetch<CarrierPanoramaReport>(
+    `${BASE}report-carrier-panorama/?${query.toString()}`,
+  );
+}
+
 export async function exportStructuredReport(params: {
   report_type: StructuredReportType;
   date_from?: string;
@@ -705,6 +782,7 @@ export async function exportStructuredReport(params: {
     solicitudes_port: "Resumen de movimientos",
     booking_movements: "Movimientos de bookings",
     weekly_report: "Reporte Semanal",
+    carrier_panorama: "Panorama Navieras",
     availability: "Availability Chart",
   };
   const fallbackBase =

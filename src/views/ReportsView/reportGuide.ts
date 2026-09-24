@@ -4,7 +4,8 @@ export type ReportGuideId =
   | "port_trends"
   | "solicitudes_port"
   | "booking_movements"
-  | "weekly_report";
+  | "weekly_report"
+  | "carrier_panorama";
 
 export type ReportGuideRow = {
   id: ReportGuideId;
@@ -61,5 +62,13 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
       "Por puerto: totales anuales de PAX (fila azul) y desglose de movimientos de la semana ISO (NEW / CANCEL / SHIP / PAX PROY·REAL).",
     notes:
       "Filtros: Año (pasados + actual) + Semana ISO (por defecto la actual) + Base PAX + Sin LTA. Fila azul = totales PAX del puerto por año de escala (todos los años del rango). Filas = movimientos de la semana. PAX PROY / REAL = proyectado (Base PAX) − PAX real. Exporta PDF / Excel / CSV.",
+  },
+  {
+    id: "carrier_panorama",
+    name: "Panorama Navieras",
+    description:
+      "Arribos y PAX por puerto y año, con KPIs y pastel de participación.",
+    notes:
+      "Filtros: grupo, naviera, Base PAX, Sin LTA y rango de fechas. El pastel reemplaza el KPI de puerto con mayor participación. Exporta PDF / Excel / CSV.",
   },
 ];

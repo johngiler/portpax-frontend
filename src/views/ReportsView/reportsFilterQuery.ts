@@ -10,7 +10,8 @@ export type ReportTab =
   | "port_trends"
   | "solicitudes_port"
   | "booking_movements"
-  | "weekly_report";
+  | "weekly_report"
+  | "carrier_panorama";
 
 /** Basis for passenger totals when actual_pax is missing. */
 export type ReportPaxBasis = "planned" | "capacity";
@@ -41,6 +42,7 @@ const TABS = new Set<ReportTab>([
   "solicitudes_port",
   "booking_movements",
   "weekly_report",
+  "carrier_panorama",
 ]);
 const PAX_BASES = new Set<ReportPaxBasis>(["planned", "capacity"]);
 

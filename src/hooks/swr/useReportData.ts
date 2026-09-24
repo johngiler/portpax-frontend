@@ -53,6 +53,7 @@ function reportFetchEnabled(filters: ReportFilters, ready: boolean): boolean {
   if (filters.tab === "solicitudes_port") return false;
   if (filters.tab === "booking_movements") return false;
   if (filters.tab === "weekly_report") return false;
+  if (filters.tab === "carrier_panorama") return false;
   if (filters.tab === "ports_totals") return true;
   return filters.portFilter > 0;
 }

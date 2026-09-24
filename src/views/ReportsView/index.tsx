@@ -54,6 +54,7 @@ import PortCarrierMatrixSection from "./PortCarrierMatrixSection";
 import PortsTotalsMatrixSection from "./PortsTotalsMatrixSection";
 import PortTrendsSection from "./PortTrendsSection";
 import SolicitudesPortSection from "./SolicitudesPortSection";
+import CarrierPanoramaSection from "./CarrierPanoramaSection";
 import WeeklyReportSection from "./WeeklyReportSection";
 import ReportGuideModal, { ReportGuideToggle } from "./ReportGuideModal";
 import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
@@ -136,11 +137,13 @@ export default function ReportsView() {
   const [reportGuideOpen, setReportGuideOpen] = useState(false);
 
   const { ports, isLoading: portsLoading } = useActivePortsCatalog();
+  const showCarrierFilters =
+    tab === "solicitudes_port" || tab === "carrier_panorama";
   const { lines: shippingLines } = useActiveShippingLinesCatalog(
-    tab === "solicitudes_port",
+    showCarrierFilters,
   );
   const { groups: shippingLineGroups } = useShippingLineGroupsCatalog(
-    tab === "solicitudes_port",
+    showCarrierFilters,
   );
   const ready = !portsLoading;
 
@@ -601,6 +604,23 @@ export default function ReportsView() {
           });
           return;
         }
+        if (appliedTab === "carrier_panorama") {
+          await exportStructuredReport({
+            report_type: "carrier_panorama",
+            date_from: appliedDateFrom,
+            date_to: appliedDateTo,
+            without_lta: appliedWithoutLta,
+            pax_basis: appliedPaxBasis,
+            shipping_line:
+              appliedShippingLineId > 0 ? appliedShippingLineId : undefined,
+            shipping_line_group:
+              appliedShippingLineId <= 0 && appliedShippingLineGroupId > 0
+                ? appliedShippingLineGroupId
+                : undefined,
+            exportFormat: format,
+          });
+          return;
+        }
         if (!appliedPortFilter) {
           setError("Selecciona un puerto para exportar.");
           return;
@@ -633,7 +653,8 @@ export default function ReportsView() {
   const showPortFilter =
     tab !== "ports_totals" &&
     tab !== "booking_movements" &&
-    tab !== "weekly_report";
+    tab !== "weekly_report" &&
+    tab !== "carrier_panorama";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||
@@ -646,6 +667,7 @@ export default function ReportsView() {
     appliedFilters.tab !== "solicitudes_port" &&
     appliedFilters.tab !== "booking_movements" &&
     appliedFilters.tab !== "weekly_report" &&
+    appliedFilters.tab !== "carrier_panorama" &&
     isLoading;
 
   return (
@@ -671,6 +693,10 @@ export default function ReportsView() {
             {
               value: "weekly_report",
               label: "Reporte Semanal",
+            },
+            {
+              value: "carrier_panorama",
+              label: "Panorama Navieras",
             },
           ]}
           compact
@@ -701,7 +727,7 @@ export default function ReportsView() {
             logoKind="port"
           />
         ) : null}
-        {showSolicitudesFilters ? (
+        {showCarrierFilters ? (
           <>
             <FormFieldSelect<number>
               label="Grupo de naviera"
@@ -712,7 +738,11 @@ export default function ReportsView() {
                 setShippingLineId(0);
               }}
               options={shippingLineGroupOptions}
-              optionLabel="Selecciona un grupo"
+              optionLabel={
+                tab === "solicitudes_port"
+                  ? "Selecciona un grupo"
+                  : "Todos los grupos"
+              }
               emptyValue={0}
               compact
             />
@@ -733,6 +763,10 @@ export default function ReportsView() {
               logoKind="shipping_line"
               disabled={shippingLineGroupId <= 0}
             />
+          </>
+        ) : null}
+        {showSolicitudesFilters ? (
+          <>
             <FormFieldMultiSelect<number>
               label="Años"
               name="report_years"
@@ -906,6 +940,16 @@ export default function ReportsView() {
           paxBasis={appliedFilters.paxBasis}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearFilters}
+        />
+      ) : appliedFilters.tab === "carrier_panorama" ? (
+        <CarrierPanoramaSection
+          enabled
+          dateFrom={appliedFilters.dateFrom}
+          dateTo={appliedFilters.dateTo}
+          withoutLta={appliedFilters.withoutLta}
+          paxBasis={appliedFilters.paxBasis}
+          shippingLineGroupId={appliedFilters.shippingLineGroupId}
+          shippingLineId={appliedFilters.shippingLineId}
         />
       ) : appliedFilters.tab === "ports_totals" && portsTotals ? (
         <PortsTotalsMatrixSection

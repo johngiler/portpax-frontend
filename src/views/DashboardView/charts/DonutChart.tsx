@@ -19,6 +19,9 @@ type DonutChartProps = {
   centerValue?: string | number;
   centerHref?: string;
   emptyLabel?: string;
+  tooltipSubtitle?: string;
+  valueLabel?: string;
+  compact?: boolean;
 };
 
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
@@ -65,6 +68,9 @@ export default function DonutChart({
   centerValue,
   centerHref,
   emptyLabel = "Sin datos en el período",
+  tooltipSubtitle = "Estado de reserva",
+  valueLabel = "Cantidad",
+  compact = false,
 }: DonutChartProps) {
   const router = useRouter();
   const gradId = useId().replace(/:/g, "");
@@ -98,8 +104,20 @@ export default function DonutChart({
   const innerR = 30;
 
   return (
-    <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-      <div className="relative h-36 w-36 shrink-0">
+    <div
+      className={[
+        "relative flex items-center",
+        compact
+          ? "gap-2.5"
+          : "flex-col gap-4 sm:flex-row sm:items-start",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "relative shrink-0",
+          compact ? "h-[4.5rem] w-[4.5rem]" : "h-36 w-36",
+        ].join(" ")}
+      >
         <svg viewBox="0 0 100 100" className="h-full w-full">
           <defs>
             {segments.map((slice) => (
@@ -174,30 +192,46 @@ export default function DonutChart({
             centerHref ? (
               <Link
                 href={centerHref}
-                className="pointer-events-auto text-lg font-bold tabular-nums text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
+                className={[
+                  "pointer-events-auto font-bold tabular-nums text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50",
+                  compact ? "text-xs" : "text-lg",
+                ].join(" ")}
                 title="Ver todas las reservas del filtro"
               >
                 {centerValue}
               </Link>
             ) : (
-              <span className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+              <span
+                className={[
+                  "font-bold tabular-nums text-zinc-900 dark:text-zinc-50",
+                  compact ? "text-xs" : "text-lg",
+                ].join(" ")}
+              >
                 {centerValue}
               </span>
             )
           ) : null}
           {centerLabel ? (
-            <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+            <span
+              className={[
+                "font-medium uppercase tracking-wide text-zinc-400",
+                compact ? "max-w-[3.5rem] truncate text-[8px]" : "text-[10px]",
+              ].join(" ")}
+            >
               {centerLabel}
             </span>
           ) : null}
         </div>
       </div>
-      <ul className="w-full space-y-2">
+      <ul className={compact ? "min-w-0 flex-1 space-y-0.5" : "w-full space-y-2"}>
         {slices.map((slice) => {
           const pct = Math.round((slice.value / total) * 100);
           const isActive = hovered === slice.key;
           const rowClass = [
-            "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors",
+            "flex items-center justify-between transition-colors",
+            compact
+              ? "gap-1.5 rounded px-1 py-0.5 text-[10px] leading-tight"
+              : "gap-2 rounded-lg px-2 py-1.5 text-xs",
             isActive
               ? "bg-white/80 shadow-sm dark:bg-zinc-800/80"
               : "hover:bg-white/50 dark:hover:bg-zinc-800/40",
@@ -206,9 +240,13 @@ export default function DonutChart({
 
           const content = (
             <>
-              <span className="flex min-w-0 items-center gap-2 text-zinc-600 dark:text-zinc-300">
+              <span className="flex min-w-0 items-center gap-1.5 text-zinc-600 dark:text-zinc-300">
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  className={
+                    compact
+                      ? "h-1.5 w-1.5 shrink-0 rounded-full"
+                      : "h-2.5 w-2.5 shrink-0 rounded-full"
+                  }
                   style={{
                     background: `linear-gradient(135deg, ${slice.color}, color-mix(in srgb, ${slice.color} 50%, white))`,
                   }}
@@ -216,8 +254,16 @@ export default function DonutChart({
                 <span className="truncate font-medium">{slice.label}</span>
               </span>
               <span className="shrink-0 font-semibold tabular-nums text-zinc-800 dark:text-zinc-100">
-                {slice.value}
-                <span className="ml-1 font-normal text-zinc-400">({pct}%)</span>
+                {compact ? (
+                  `${pct}%`
+                ) : (
+                  <>
+                    {slice.value.toLocaleString("es")}
+                    <span className="ml-1 font-normal text-zinc-400">
+                      ({pct}%)
+                    </span>
+                  </>
+                )}
               </span>
             </>
           );
@@ -251,11 +297,13 @@ export default function DonutChart({
         <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 sm:left-auto sm:right-2 sm:top-0 sm:translate-x-0">
           <ChartTooltip
             title={slices.find((s) => s.key === hovered)?.label ?? ""}
-            subtitle="Estado de reserva"
+            subtitle={tooltipSubtitle}
             rows={[
               {
-                label: "Cantidad",
-                value: String(slices.find((s) => s.key === hovered)?.value ?? 0),
+                label: valueLabel,
+                value: (
+                  slices.find((s) => s.key === hovered)?.value ?? 0
+                ).toLocaleString("es"),
                 color: slices.find((s) => s.key === hovered)?.color,
               },
               {

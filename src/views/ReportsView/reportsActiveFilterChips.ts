@@ -190,6 +190,7 @@ export function reportsHasActiveFilters(input: {
     (input.years?.length ?? 0) > 0 ||
     (input.tagIds?.length ?? 0) > 0 ||
     (input.shippingLineId ?? 0) > 0 ||
+    (input.shippingLineGroupId ?? 0) > 0 ||
     !isDefaultReportDateRange(input.dateFrom, input.dateTo)
   );
 }
