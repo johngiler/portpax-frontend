@@ -79,6 +79,7 @@ type AppliedReportsFilters = ReportFilters & {
   tagIds: number[];
   shippingLineGroupId: number;
   shippingLineId: number;
+  portIds: number[];
 };
 
 function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
@@ -100,6 +101,7 @@ function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
     tagIds: filters.tagIds,
     shippingLineGroupId: filters.shippingLineGroupId,
     shippingLineId: filters.shippingLineId,
+    portIds: filters.portIds,
   };
 }
 
@@ -118,6 +120,7 @@ export default function ReportsView() {
   const [dateFrom, setDateFrom] = useState(initial.dateFrom);
   const [dateTo, setDateTo] = useState(initial.dateTo);
   const [portFilter, setPortFilter] = useState(initial.port);
+  const [portIds, setPortIds] = useState<number[]>(initial.portIds);
   const [withoutLta, setWithoutLta] = useState(initial.withoutLta);
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
   const [years, setYears] = useState<number[]>(initial.years);
@@ -213,6 +216,7 @@ export default function ReportsView() {
       dateFrom,
       dateTo,
       port: portFilter,
+      portIds,
       withoutLta,
       paxBasis,
       years,
@@ -226,6 +230,7 @@ export default function ReportsView() {
       dateFrom,
       dateTo,
       portFilter,
+      portIds,
       withoutLta,
       paxBasis,
       years,
@@ -307,6 +312,7 @@ export default function ReportsView() {
   const hasActiveFilters = reportsHasActiveFilters({
     tab: appliedFilters.tab,
     portFilter: appliedFilters.portFilter,
+    portIds: appliedFilters.portIds,
     dateFrom: appliedFilters.dateFrom,
     dateTo: appliedFilters.dateTo,
     withoutLta: appliedFilters.withoutLta,
@@ -323,9 +329,15 @@ export default function ReportsView() {
       buildReportsActiveFilterChips({
         tab: appliedFilters.tab,
         portLabel:
-          appliedFilters.portFilter > 0
-            ? portsById.get(appliedFilters.portFilter) ?? null
-            : null,
+          appliedFilters.tab === "carrier_panorama"
+            ? appliedFilters.portIds.length === 0
+              ? null
+              : appliedFilters.portIds.length === 1
+                ? (portsById.get(appliedFilters.portIds[0]) ?? null)
+                : `${portsById.get(appliedFilters.portIds[0]) ?? "Puerto"} +${appliedFilters.portIds.length - 1}`
+            : appliedFilters.portFilter > 0
+              ? (portsById.get(appliedFilters.portFilter) ?? null)
+              : null,
         dateFrom: appliedFilters.dateFrom,
         dateTo: appliedFilters.dateTo,
         withoutLta: appliedFilters.withoutLta,
@@ -413,6 +425,7 @@ export default function ReportsView() {
         : dateFrom !== defaultDateFrom ||
           dateTo !== defaultDateTo ||
           portFilter > 0 ||
+          (tab === "carrier_panorama" && portIds.length > 0) ||
           withoutLta ||
           paxBasis !== "planned" ||
           years.length > 0 ||
@@ -424,6 +437,7 @@ export default function ReportsView() {
     dateFrom !== appliedFilters.dateFrom ||
     dateTo !== appliedFilters.dateTo ||
     portFilter !== appliedFilters.portFilter ||
+    portIds.join(",") !== appliedFilters.portIds.join(",") ||
     withoutLta !== appliedFilters.withoutLta ||
     paxBasis !== appliedFilters.paxBasis ||
     tab !== appliedFilters.tab ||
@@ -436,6 +450,7 @@ export default function ReportsView() {
   // Year-driven tabs: don't treat draft date drift as dirty.
   const canApplyYearDriven =
     portFilter !== appliedFilters.portFilter ||
+    portIds.join(",") !== appliedFilters.portIds.join(",") ||
     withoutLta !== appliedFilters.withoutLta ||
     paxBasis !== appliedFilters.paxBasis ||
     tab !== appliedFilters.tab ||
@@ -464,6 +479,7 @@ export default function ReportsView() {
     setDateFrom(next.dateFrom);
     setDateTo(next.dateTo);
     setPortFilter(0);
+    setPortIds([]);
     setWithoutLta(false);
     setPaxBasis("planned");
     setYears(next.years);
@@ -501,6 +517,7 @@ export default function ReportsView() {
     const next = reportsFiltersForTab(draftFilters, value);
     setTab(next.tab);
     setPortFilter(next.port);
+    setPortIds(next.portIds);
     setWithoutLta(next.withoutLta);
     setPaxBasis(next.paxBasis);
     setYears(next.years);
@@ -617,6 +634,10 @@ export default function ReportsView() {
               appliedShippingLineId <= 0 && appliedShippingLineGroupId > 0
                 ? appliedShippingLineGroupId
                 : undefined,
+            ports:
+              appliedFilters.portIds.length > 0
+                ? appliedFilters.portIds
+                : undefined,
             exportFormat: format,
           });
           return;
@@ -722,6 +743,19 @@ export default function ReportsView() {
                 : "Todos los puertos"
             }
             emptyValue={0}
+            compact
+            showLogo
+            logoKind="port"
+          />
+        ) : null}
+        {tab === "carrier_panorama" ? (
+          <FormFieldMultiSelect<number>
+            label="Puerto"
+            name="report_ports"
+            value={portIds}
+            onChange={setPortIds}
+            options={portOptions}
+            placeholder="Todos los puertos"
             compact
             showLogo
             logoKind="port"
@@ -950,6 +984,7 @@ export default function ReportsView() {
           paxBasis={appliedFilters.paxBasis}
           shippingLineGroupId={appliedFilters.shippingLineGroupId}
           shippingLineId={appliedFilters.shippingLineId}
+          portIds={appliedFilters.portIds}
         />
       ) : appliedFilters.tab === "ports_totals" && portsTotals ? (
         <PortsTotalsMatrixSection

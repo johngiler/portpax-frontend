@@ -148,6 +148,7 @@ export function buildReportsActiveFilterChips(input: {
 export function reportsHasActiveFilters(input: {
   tab?: ReportTab;
   portFilter: number;
+  portIds?: number[];
   dateFrom: string;
   dateTo: string;
   withoutLta: boolean;
@@ -185,6 +186,7 @@ export function reportsHasActiveFilters(input: {
   }
   return (
     input.portFilter > 0 ||
+    (input.tab === "carrier_panorama" && (input.portIds?.length ?? 0) > 0) ||
     input.withoutLta ||
     input.paxBasis !== "planned" ||
     (input.years?.length ?? 0) > 0 ||

@@ -21,6 +21,8 @@ export type ReportsWorkspaceFilters = {
   dateFrom: string;
   dateTo: string;
   port: number;
+  /** Multi-port scope for Panorama Navieras. Empty = all ports. */
+  portIds: number[];
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
   /** Calendar years for resumen (multi) or movimientos / semanal (single). */
@@ -177,6 +179,7 @@ export function defaultReportsFilters(): ReportsWorkspaceFilters {
     dateFrom,
     dateTo: defaultReportDateTo(dateFrom),
     port: 0,
+    portIds: [],
     withoutLta: false,
     paxBasis: "planned",
     years: [],
@@ -240,6 +243,7 @@ export function parseReportsFilters(
     dateFrom,
     dateTo,
     port: parseIntId(searchParams.get("port")),
+    portIds: parseIdList(searchParams.get("ports")),
     withoutLta: ["1", "true", "yes"].includes(
       (searchParams.get("without_lta") || "").toLowerCase(),
     ),
@@ -325,6 +329,9 @@ export function serializeReportsFilters(
     }
   }
   if (filters.port > 0) sp.set("port", String(filters.port));
+  if (filters.tab === "carrier_panorama" && filters.portIds.length) {
+    sp.set("ports", filters.portIds.join(","));
+  }
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
   if (

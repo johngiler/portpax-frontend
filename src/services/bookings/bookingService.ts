@@ -708,6 +708,7 @@ export async function fetchCarrierPanoramaReport(params: {
   pax_basis?: "planned" | "capacity";
   shipping_line?: number;
   shipping_line_group?: number;
+  ports?: number[];
 }): Promise<CarrierPanoramaReport> {
   const query = new URLSearchParams();
   query.set("date_from", params.date_from);
@@ -722,6 +723,9 @@ export async function fetchCarrierPanoramaReport(params: {
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
+  if (params.ports?.length) {
+    query.set("ports", params.ports.join(","));
+  }
   return apiFetch<CarrierPanoramaReport>(
     `${BASE}report-carrier-panorama/?${query.toString()}`,
   );
@@ -732,6 +736,7 @@ export async function exportStructuredReport(params: {
   date_from?: string;
   date_to?: string;
   port?: number;
+  ports?: number[];
   shipping_line?: number;
   shipping_line_group?: number;
   vessel?: number;
@@ -753,6 +758,7 @@ export async function exportStructuredReport(params: {
   if (params.date_from) query.set("date_from", params.date_from);
   if (params.date_to) query.set("date_to", params.date_to);
   if (params.port) query.set("port", String(params.port));
+  if (params.ports?.length) query.set("ports", params.ports.join(","));
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));

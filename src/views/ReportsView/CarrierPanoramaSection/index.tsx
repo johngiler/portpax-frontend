@@ -35,6 +35,7 @@ type Props = {
   paxBasis: ReportPaxBasis;
   shippingLineGroupId: number;
   shippingLineId: number;
+  portIds: number[];
 };
 
 export default function CarrierPanoramaSection({
@@ -45,7 +46,9 @@ export default function CarrierPanoramaSection({
   paxBasis,
   shippingLineGroupId,
   shippingLineId,
+  portIds,
 }: Props) {
+  const portsKey = [...portIds].sort((a, b) => a - b).join(",");
   const paramsKey = [
     dateFrom,
     dateTo,
@@ -53,6 +56,7 @@ export default function CarrierPanoramaSection({
     paxBasis,
     shippingLineGroupId,
     shippingLineId,
+    portsKey,
   ].join("|");
 
   const { data, isLoading, error } = useSWR<CarrierPanoramaReport>(
@@ -70,6 +74,7 @@ export default function CarrierPanoramaSection({
           shippingLineId <= 0 && shippingLineGroupId > 0
             ? shippingLineGroupId
             : undefined,
+        ports: portIds.length > 0 ? portIds : undefined,
       }),
     { keepPreviousData: false },
   );
