@@ -311,13 +311,39 @@ function shortPositionCode(code: string): string {
 }
 
 /** Soften stored summaries that still embed full position slugs. */
+const CONFLICT_CODE_LABELS: Record<string, string> = {
+  position_occupied: "Posición",
+  no_position_available: "Posición",
+  combined_position_retired: "Posición",
+  lta_slot_reserved: "LTA",
+  lta_priority_conflict: "LTA",
+  lta_beyond_horizon: "LTA",
+  lta_horizon_denied: "LTA",
+  loa_exceeds_position: "Eslora",
+  loa_overhang: "Eslora",
+  loa_recalc_sum_red: "Eslora",
+  loa_recalc_sum_yellow: "Eslora",
+  loa_recalc_sum_green: "Eslora",
+  eta_close: "Horario",
+  filo_eta_violation: "FILO",
+  filo_etd_violation: "FILO",
+  multi_port_conflict: "Multi-puerto",
+  multi_port_proximity: "Proximidad",
+  draft_too_deep: "Calado",
+  beam_exceeds_position: "Manga",
+};
+
 export function friendlyAuditSummary(summary: string): string {
   const text = summary.trim();
   if (!text) return text;
-  return text.replace(/posición\s+(\S+)/gi, (_match, code: string) => {
+  const withPositions = text.replace(/posición\s+(\S+)/gi, (_match, code: string) => {
     const short = shortPositionCode(String(code));
     return `posición ${short || code}`;
   });
+  return withPositions.replace(
+    /\b[a-z]+(?:_[a-z]+)+\b/g,
+    (code) => CONFLICT_CODE_LABELS[code] ?? code,
+  );
 }
 
 function formatPositionSide(rec: Record<string, unknown>, side: "from" | "to"): string {
@@ -448,14 +474,12 @@ function formatConflictList(value: unknown): string {
     .map((item) => {
       if (!item || typeof item !== "object") return String(item);
       const rec = item as Record<string, unknown>;
-      const code = typeof rec.code === "string" ? rec.code : "";
-      const sev = typeof rec.severity === "string" ? rec.severity : "";
-      const msg = typeof rec.message === "string" ? rec.message : "";
-      if (code && msg) return `${code} (${sev || "?"}): ${msg}`;
-      if (code) return sev ? `${code} (${sev})` : code;
-      return msg || "—";
+      const msg = typeof rec.message === "string" ? rec.message.trim() : "";
+      if (msg) return msg;
+      return "—";
     })
-    .join(" · ");
+    .filter((line) => line && line !== "—")
+    .join(" · ") || "—";
 }
 
 function formatValue(value: unknown, key?: string): string {
@@ -617,6 +641,22 @@ function formatValue(value: unknown, key?: string): string {
       }
     }
     if (typeof value === "string") return formatTimeShort(value);
+  }
+  if (key === "conflict_severity") {
+    const severityLabel = (raw: unknown) => {
+      if (raw === "red") return "Rojo";
+      if (raw === "yellow") return "Amarillo";
+      if (raw === "green") return "Verde";
+      if (raw == null || raw === "") return "—";
+      return String(raw);
+    };
+    if (value != null && typeof value === "object" && !Array.isArray(value)) {
+      const rec = value as Record<string, unknown>;
+      if ("from" in rec || "to" in rec) {
+        return `${severityLabel(rec.from)} → ${severityLabel(rec.to)}`;
+      }
+    }
+    return severityLabel(value);
   }
   if (value == null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Sí" : "No";
