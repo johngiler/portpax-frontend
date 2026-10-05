@@ -64,6 +64,7 @@ export type BookingsActiveFilterChipInput = {
   search: string;
   datePreset: BookingsDatePreset;
   importedDatesCount: number;
+  recapImportedCount?: number;
   heatMode: AvailabilityHeatModeQuery;
   density: number;
   calendarModeLabel?: string | null;
@@ -166,6 +167,15 @@ export function buildBookingsActiveFilterChips(
       id: "search",
       label: q.length > 28 ? `Buscar: ${q.slice(0, 28)}…` : `Buscar: ${q}`,
       icon: "search",
+    });
+  }
+
+  if (tab === "list" && (input.recapImportedCount ?? 0) > 0) {
+    const count = input.recapImportedCount ?? 0;
+    chips.push({
+      id: "booking-recap",
+      label: `Recap reservas importadas · ${count}`,
+      icon: "dates",
     });
   }
 

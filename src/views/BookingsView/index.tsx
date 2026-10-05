@@ -53,12 +53,17 @@ import {
   updateBooking,
 } from "@/services/bookings/bookingService";
 import {
+  matchBookingRecap,
+  matchBookingRecapFromPaste,
   previewAvailabilityListFilter,
   previewAvailabilityListFilterFromPaste,
   previewBulkBookingImport,
   previewBulkBookingImportFromPaste,
+  type BookingRecapResponse,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
+import { recapUnmatchedToPaste } from "./Import/recapUnmatchedPaste";
+import RecapUnmatchedSection from "./Import/RecapUnmatchedSection";
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
 import { fetchBookingTags } from "@/services/bookings/bookingTagService";
@@ -66,6 +71,7 @@ import { portDisplayName } from "@/types/catalog";
 import {
   bookingDetailHref,
   bookingStatusFiltersEqual,
+  isBookingMassEditable,
   type BookingStatusFilterValue,
   type CancellationReason,
 } from "@/types/booking";
@@ -289,6 +295,12 @@ export default function BookingsView() {
   });
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditIds, setBulkEditIds] = useState<number[]>([]);
+  const [bookingRecap, setBookingRecap] = useState<BookingRecapResponse | null>(
+    null,
+  );
+  const [recapCreateBusy, setRecapCreateBusy] = useState(false);
+  const [recapCreateError, setRecapCreateError] = useState<string | null>(null);
+  const recapCreateBridgeRef = useRef(false);
 
   const shippingLineOptions = useMemo(() => {
     const scoped =
@@ -500,10 +512,21 @@ export default function BookingsView() {
         appliedPortFilter.length === 1 && appliedPositionFilter > 0
           ? appliedPositionFilter
           : undefined,
-      call_date_from: dateRange.call_date_from,
-      call_date_to: dateRange.call_date_to,
+      call_date_from:
+        bookingRecap && appliedDatePreset === "all"
+          ? undefined
+          : dateRange.call_date_from,
+      call_date_to:
+        bookingRecap && appliedDatePreset === "all"
+          ? undefined
+          : dateRange.call_date_to,
       call_dates: availabilityDateAllowlist?.length
         ? availabilityDateAllowlist
+        : undefined,
+      ids: bookingRecap
+        ? bookingRecap.matches.length > 0
+          ? bookingRecap.matches.map((row) => row.booking_id)
+          : [0]
         : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
@@ -524,6 +547,7 @@ export default function BookingsView() {
     appliedCustomDateFrom,
     appliedCustomDateTo,
     availabilityDateAllowlist,
+    bookingRecap,
   ]);
 
   const proximityDateRange = useMemo(() => {
@@ -913,6 +937,7 @@ export default function BookingsView() {
     setDensity(0);
     setAppliedDensity(0);
     setAvailabilityDateAllowlist(null);
+    setBookingRecap(null);
     setWeekAnchor(week);
     setYear(y);
     setMonthIndex(m);
@@ -989,6 +1014,7 @@ export default function BookingsView() {
       (tab !== "proximity" && appliedPositionFilter > 0) ||
       appliedDatePreset !== "all" ||
       Boolean(availabilityDateAllowlist?.length) ||
+      (tab === "list" && Boolean(bookingRecap)) ||
       (tab === "availability" && appliedHeatMode !== "availability") ||
       (tab === "availability" && appliedDensity > 0) ||
       (tab === "calendar" && appliedCalendarMode !== "monthly");
@@ -1023,6 +1049,7 @@ export default function BookingsView() {
     datePreset !== "all" ||
     appliedDatePreset !== "all" ||
     Boolean(availabilityDateAllowlist?.length) ||
+    Boolean(bookingRecap) ||
     (tab === "availability" && heatMode !== "availability") ||
     appliedHeatMode !== "availability" ||
     density > 0 ||
@@ -1083,6 +1110,7 @@ export default function BookingsView() {
               appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
             call_date_from: listParams.call_date_from,
             call_date_to: listParams.call_date_to,
+            ids: listParams.ids,
             ordering: listParams.ordering,
           });
           return;
@@ -1275,8 +1303,95 @@ export default function BookingsView() {
     }
   }
 
+  function applyBookingRecap(payload: BookingRecapResponse) {
+    const from = defaultCustomFrom();
+    const to = defaultCustomTo();
+    setBookingRecap(payload);
+    setTab("list");
+    setSearch("");
+    setAppliedSearch("");
+    setStatusFilter([]);
+    setAppliedStatusFilter([]);
+    setConflictFilter("");
+    setAppliedConflictFilter("");
+    setFirstArrival(false);
+    setAppliedFirstArrival(false);
+    setCancellationReason("");
+    setAppliedCancellationReason("");
+    setPortFilter([]);
+    setAppliedPortFilter([]);
+    setShippingLineGroupFilter(0);
+    setAppliedShippingLineGroupFilter(0);
+    setShippingLineFilter(0);
+    setAppliedShippingLineFilter(0);
+    setVesselFilter(0);
+    setAppliedVesselFilter(0);
+    setTagFilter([]);
+    setAppliedTagFilter([]);
+    setPositionFilter(0);
+    setAppliedPositionFilter(0);
+    setDatePreset("all");
+    setAppliedDatePreset("all");
+    setCustomDateFrom(from);
+    setCustomDateTo(to);
+    setAppliedCustomDateFrom(from);
+    setAppliedCustomDateTo(to);
+    setAvailabilityDateAllowlist(null);
+    setBulkEditOpen(false);
+    setBulkEditIds([]);
+    syncToUrl(
+      workspaceState({
+        tab: "list",
+        status: [],
+        search: "",
+        ports: [],
+        group: 0,
+        line: 0,
+        vessel: 0,
+        tags: [],
+        datePreset: "all",
+        customFrom: from,
+        customTo: to,
+        position: 0,
+        conflict: "",
+        firstArrival: false,
+        cancellationReason: "",
+        importedDates: [],
+      }),
+    );
+    setFilterOpen?.(false);
+  }
+
+  async function handleCreateRecapUnmatched() {
+    if (!bookingRecap?.unmatched.length || recapCreateBusy) return;
+    setRecapCreateError(null);
+    setRecapCreateBusy(true);
+    try {
+      const text = recapUnmatchedToPaste(bookingRecap.unmatched);
+      const preview = await previewBulkBookingImportFromPaste(text);
+      if (preview.rows.length === 0) {
+        setRecapCreateError("No se pudo armar la creación con esas filas.");
+        return;
+      }
+      setBulkImportSource("paste");
+      setBulkImportPasteText(text);
+      setBulkImportFileName("Recap sin reserva");
+      setBulkImportRows(preview.rows);
+      recapCreateBridgeRef.current = true;
+      setBulkEditOpen(false);
+      setBulkImportOpen(true);
+    } catch (err) {
+      recapCreateBridgeRef.current = false;
+      setRecapCreateError(
+        getApiErrorMessage(err, "No se pudo preparar la creación."),
+      );
+    } finally {
+      setRecapCreateBusy(false);
+    }
+  }
+
   async function handleImportFile(
-    optionId: "bulk_bookings" | "availability_filter",
+    optionId: "bulk_bookings" | "booking_recap" | "availability_filter",
     file: File,
   ) {
     setViewError(null);
@@ -1286,6 +1401,12 @@ export default function BookingsView() {
       if (optionId === "availability_filter") {
         const payload = await previewAvailabilityListFilter(file);
         await applyAvailabilityFilterPayload(payload);
+        setBulkImportFileName("");
+        return;
+      }
+      if (optionId === "booking_recap") {
+        const payload = await matchBookingRecap(file);
+        applyBookingRecap(payload);
         setBulkImportFileName("");
         return;
       }
@@ -1301,7 +1422,9 @@ export default function BookingsView() {
           err,
           optionId === "availability_filter"
             ? "No se pudo leer el archivo de disponibilidad."
-            : "No se pudo leer el archivo de reservas.",
+            : optionId === "booking_recap"
+              ? "No se pudo leer el recap de reservas."
+              : "No se pudo leer el archivo de reservas.",
         ),
       );
     } finally {
@@ -1310,7 +1433,7 @@ export default function BookingsView() {
   }
 
   async function handleImportPaste(
-    optionId: "bulk_bookings" | "availability_filter",
+    optionId: "bulk_bookings" | "booking_recap" | "availability_filter",
     text: string,
   ) {
     setViewError(null);
@@ -1320,6 +1443,12 @@ export default function BookingsView() {
       if (optionId === "availability_filter") {
         const payload = await previewAvailabilityListFilterFromPaste(text);
         await applyAvailabilityFilterPayload(payload);
+        setBulkImportFileName("");
+        return;
+      }
+      if (optionId === "booking_recap") {
+        const payload = await matchBookingRecapFromPaste(text);
+        applyBookingRecap(payload);
         setBulkImportFileName("");
         return;
       }
@@ -1421,6 +1550,8 @@ export default function BookingsView() {
       search: appliedSearch,
       datePreset: appliedDatePreset,
       importedDatesCount: availabilityDateAllowlist?.length ?? 0,
+      recapImportedCount:
+        tab === "list" ? (bookingRecap?.imported_count ?? 0) : 0,
       heatMode: appliedHeatMode,
       density: appliedDensity,
       calendarModeLabel,
@@ -1446,10 +1577,41 @@ export default function BookingsView() {
     appliedSearch,
     appliedDatePreset,
     availabilityDateAllowlist,
+    bookingRecap,
     appliedHeatMode,
     appliedDensity,
     appliedCalendarMode,
   ]);
+
+  const recapAvisos = useMemo(() => {
+    if (!bookingRecap) return undefined;
+    const entries = bookingRecap.matches
+      .filter((row) => row.avisos.length > 0)
+      .map((row) => [row.booking_id, row.avisos] as const);
+    if (entries.length === 0) return undefined;
+    return Object.fromEntries(entries) as Record<number, string[]>;
+  }, [bookingRecap]);
+
+  const recapMatchPercent = useMemo(() => {
+    if (!bookingRecap) return undefined;
+    const entries = bookingRecap.matches
+      .filter((row) => typeof row.match_percent === "number")
+      .map((row) => [row.booking_id, row.match_percent] as const);
+    if (entries.length === 0) return undefined;
+    return Object.fromEntries(entries) as Record<number, number>;
+  }, [bookingRecap]);
+
+  const recapMatchReason = useMemo(() => {
+    if (!bookingRecap) return undefined;
+    const entries = bookingRecap.matches
+      .filter((row) => row.match_reason)
+      .map((row) => [row.booking_id, row.match_reason] as const);
+    if (entries.length === 0) return undefined;
+    return Object.fromEntries(entries) as Record<number, string>;
+  }, [bookingRecap]);
+
+  const recapMissingCount =
+    tab === "list" ? (bookingRecap?.unmatched.length ?? 0) : 0;
 
   if (!portsReady) return <BookingsViewSkeleton variant="page" />;
 
@@ -1511,6 +1673,29 @@ export default function BookingsView() {
         }}
       />
 
+      <BulkBookingsEditModal
+        open={bulkEditOpen}
+        bookingIds={bulkEditIds}
+        recapAvisos={recapAvisos}
+        recapMatchPercent={recapMatchPercent}
+        recapMatchReason={recapMatchReason}
+        onClose={() => {
+          setBulkEditOpen(false);
+          setBulkEditIds([]);
+        }}
+        onSaved={async ({ updatedCount, failedCount }) => {
+          setViewError(null);
+          await refreshBookings();
+          if (failedCount === 0) {
+            setBulkEditOpen(false);
+            setBulkEditIds([]);
+          }
+          if (failedCount > 0 && updatedCount === 0) {
+            setViewError("No se pudo guardar ninguna de las reservas seleccionadas.");
+          }
+        }}
+      />
+
       <BulkBookingImportModal
         open={bulkImportOpen && !bulkImportLoading}
         rows={bulkImportRows}
@@ -1534,40 +1719,45 @@ export default function BookingsView() {
             : undefined
         }
         onClose={() => {
+          recapCreateBridgeRef.current = false;
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
           setBulkImportPasteText("");
         }}
-        onCreated={async ({ batchId }) => {
+        onCreated={async ({ batchId, failedCount, createdIds }) => {
+          const fromRecap = recapCreateBridgeRef.current;
+          recapCreateBridgeRef.current = false;
           setBulkImportOpen(false);
           setBulkImportRows([]);
           setBulkImportFileName("");
           setBulkImportPasteText("");
           setViewError(null);
+          if (fromRecap) {
+            setBulkEditOpen(false);
+            setBulkEditIds([]);
+            setBookingRecap((prev) => {
+              if (!prev) return prev;
+              const known = new Set(prev.matches.map((row) => row.booking_id));
+              const extra = createdIds
+                .filter((id) => !known.has(id))
+                .map((id) => ({
+                  booking_id: id,
+                  booking_code: "",
+                  match: "exact" as const,
+                  avisos: [] as string[],
+                }));
+              return {
+                ...prev,
+                matched_count: prev.matched_count + extra.length,
+                matches: [...prev.matches, ...extra],
+                unmatched: failedCount === 0 ? [] : prev.unmatched,
+              };
+            });
+          }
           await refreshBookings();
           setHistoryBatchId(batchId);
           setHistoryOpen(true);
-        }}
-      />
-
-      <BulkBookingsEditModal
-        open={bulkEditOpen}
-        bookingIds={bulkEditIds}
-        onClose={() => {
-          setBulkEditOpen(false);
-          setBulkEditIds([]);
-        }}
-        onSaved={async ({ updatedCount, failedCount }) => {
-          setViewError(null);
-          await refreshBookings();
-          if (failedCount === 0) {
-            setBulkEditOpen(false);
-            setBulkEditIds([]);
-          }
-          if (failedCount > 0 && updatedCount === 0) {
-            setViewError("No se pudo guardar ninguna de las reservas seleccionadas.");
-          }
         }}
       />
 
@@ -1651,6 +1841,9 @@ export default function BookingsView() {
           onHeatModeChange={setHeatMode}
           onDensityChange={setDensity}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
+          recapImportedCount={
+            tab === "list" ? (bookingRecap?.imported_count ?? 0) : 0
+          }
           onApply={applyFilters}
           onClear={handleClearFilters}
           onBookingCodePick={(bookingCode) => {
@@ -1710,6 +1903,17 @@ export default function BookingsView() {
         />
       ) : null}
 
+      {recapMissingCount > 0 && bookingRecap ? (
+        <RecapUnmatchedSection
+          rows={bookingRecap.unmatched}
+          creating={recapCreateBusy}
+          error={recapCreateError}
+          onCreate={() => {
+            void handleCreateRecapUnmatched();
+          }}
+        />
+      ) : null}
+
       {viewError && (
         <ViewErrorBanner
           message={viewError}
@@ -1756,7 +1960,20 @@ export default function BookingsView() {
               onMassEdit={
                 canWrite
                   ? (ids) => {
-                      setBulkEditIds(ids);
+                      const matchIds = new Set(
+                        bookingRecap?.matches.map((row) => row.booking_id) ??
+                          [],
+                      );
+                      const byId = new Map(
+                        bookings.map((booking) => [booking.id, booking]),
+                      );
+                      const recapIds = [...matchIds].filter((id) => {
+                        const booking = byId.get(id);
+                        return (
+                          !booking || isBookingMassEditable(booking.status)
+                        );
+                      });
+                      setBulkEditIds(recapIds.length > 0 ? recapIds : ids);
                       setBulkEditOpen(true);
                     }
                   : undefined

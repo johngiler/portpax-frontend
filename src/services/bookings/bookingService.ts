@@ -70,6 +70,8 @@ export type FetchBookingsParams = {
   call_date_to?: string;
   /** Discrete ISO dates (imported list); intersects with from/to when both set. */
   call_dates?: string[];
+  /** Recap (or other) explicit booking ids. */
+  ids?: number[];
   ordering?: string;
   pageSize?: number;
   /** true = only conflicted; false = only clean; omit = all */
@@ -114,6 +116,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.call_date_to) query.set("call_date_to", params.call_date_to);
   if (params.call_dates && params.call_dates.length > 0) {
     query.set("call_dates", params.call_dates.join(","));
+  }
+  if (params.ids) {
+    query.set("ids", params.ids.join(","));
   }
   if (params.ordering) query.set("ordering", params.ordering);
   if (params.pageSize) query.set("page_size", String(params.pageSize));

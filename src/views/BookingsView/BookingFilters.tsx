@@ -132,6 +132,7 @@ type BookingFiltersProps = {
   onHeatModeChange: (mode: AvailabilityHeatModeQuery) => void;
   onDensityChange: (density: number) => void;
   importedDatesCount?: number;
+  recapImportedCount?: number;
   onApply: () => void;
   onClear: () => void;
   /** When user picks a booking code suggestion, open that reservation. */
@@ -189,6 +190,7 @@ export default function BookingFilters({
   onHeatModeChange,
   onDensityChange,
   importedDatesCount = 0,
+  recapImportedCount = 0,
   onApply,
   onClear,
   onBookingCodePick,
@@ -595,6 +597,7 @@ export default function BookingFilters({
           ? importedDatesCount
           : 0
       }
+      recapImportedCount={tab === "list" ? recapImportedCount : 0}
       onDatePresetChange={onDatePresetChange}
       onCustomDateFromChange={onCustomDateFromChange}
       onCustomDateToChange={onCustomDateToChange}

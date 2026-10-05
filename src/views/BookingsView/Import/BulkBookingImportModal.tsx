@@ -32,6 +32,7 @@ type BulkBookingImportModalProps = {
     batchId: number;
     createdCount: number;
     failedCount: number;
+    createdIds: number[];
   }) => void;
 };
 
@@ -309,6 +310,7 @@ export default function BulkBookingImportModal({
         batchId: result.batch_id,
         createdCount: result.created_count,
         failedCount: result.failed_count,
+        createdIds: result.created.map((row) => row.booking_id),
       });
     } catch (err) {
       setError(

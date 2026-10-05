@@ -175,6 +175,52 @@ export async function previewAvailabilityListFilter(
   );
 }
 
+export type BookingRecapMatch = {
+  booking_id: number;
+  booking_code: string;
+  match: "exact" | "approx";
+  match_percent?: number;
+  match_reason?: string;
+  avisos: string[];
+};
+
+export type BookingRecapUnmatched = {
+  row_number: number | null;
+  ship: string;
+  port: string;
+  call_date: string | null;
+  eta?: string | null;
+  etd?: string | null;
+  reason: string;
+};
+
+export type BookingRecapResponse = {
+  imported_count: number;
+  matched_count: number;
+  matches: BookingRecapMatch[];
+  unmatched: BookingRecapUnmatched[];
+};
+
+export async function matchBookingRecap(
+  file: File,
+): Promise<BookingRecapResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<BookingRecapResponse>(`${BASE}bulk-import/booking-recap/`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+export async function matchBookingRecapFromPaste(
+  text: string,
+): Promise<BookingRecapResponse> {
+  return apiFetch<BookingRecapResponse>(`${BASE}bulk-import/booking-recap/`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+
 export async function previewAvailabilityListFilterFromPaste(
   text: string,
 ): Promise<AvailabilityListFilterResponse> {

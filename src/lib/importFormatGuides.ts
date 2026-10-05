@@ -27,6 +27,15 @@ export const BULK_BOOKING_PASTE_COLUMNS = [
   "Posición",
 ] as const;
 
+/** Recap paste grid — same idea as mass import, without position. */
+export const BOOKING_RECAP_PASTE_COLUMNS = [
+  "Ship",
+  "Port",
+  "Berth Date",
+  "Arrive Time",
+  "Depart Time",
+] as const;
+
 /** Mass booking ITM columns (Excel / paste). */
 export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
@@ -71,6 +80,48 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
     "Solo se usan Ship, Port, Arrival, Departure y Posición. Cualquier otra columna del pegado (Vendor Name, Call Type, etc.) se descarta. Posición vacía o no encontrada → se sugiere en el siguiente paso. Filas sin Ship ni Port se omiten.",
 };
 
+export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
+  id: "booking_recap",
+  title: "Formatos aceptados — recap de reservas",
+  summary:
+    "Contrasta filas ya existentes. No crea reservas. Encabezados Ship, Port, Berth Date, Arrive Time y Depart Time. También vale Ship, Port, Arrival y Departure (sin posición).",
+  rows: [
+    {
+      field: "Ship",
+      required: true,
+      accepted: "Ship o Ship Name",
+      notes: "Nombre del barco en catálogo.",
+    },
+    {
+      field: "Port",
+      required: true,
+      accepted: "Port o Port Name",
+      notes: "Nombre, comercial o código. Se ignoran acentos.",
+    },
+    {
+      field: "Berth Date",
+      required: true,
+      accepted: "Berth Date, Arrival o fecha",
+      notes:
+        "12/02/26 · 05/11/2026 · 2026-11-05. Si la escala en PortPax cae ±1 día, igual entra al filtro y el aviso indica la fecha.",
+    },
+    {
+      field: "Arrive Time",
+      required: false,
+      accepted: "Arrive Time o Arrival con hora",
+      notes: "08:00. Si difiere de la llegada en PortPax, queda en avisos.",
+    },
+    {
+      field: "Depart Time",
+      required: false,
+      accepted: "Depart Time o Departure con hora",
+      notes: "17:00. Si difiere de la salida en PortPax, queda en avisos.",
+    },
+  ],
+  footer:
+    "Sin posición. La lista queda filtrada con las reservas encontradas. La modificación masiva no se abre sola.",
+};
+
 /** Availability date list (Excel / paste). */
 export const AVAILABILITY_IMPORT_GUIDE: ImportFormatGuide = {
   id: "availability_filter",
@@ -92,6 +143,7 @@ export const AVAILABILITY_IMPORT_GUIDE: ImportFormatGuide = {
 
 export const IMPORT_FORMAT_GUIDES: Record<string, ImportFormatGuide> = {
   bulk_bookings: BULK_BOOKINGS_IMPORT_GUIDE,
+  booking_recap: BOOKING_RECAP_IMPORT_GUIDE,
   availability_filter: AVAILABILITY_IMPORT_GUIDE,
 };
 

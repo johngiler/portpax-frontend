@@ -31,9 +31,33 @@ import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService
 type BulkBookingsEditModalProps = {
   open: boolean;
   bookingIds: number[];
+  /** Recap diffs keyed by booking id. Warnings only — rows stay editable. */
+  recapAvisos?: Record<number, string[]>;
+  /** Recap schedule agreement, 0–100. Only set for a recap-driven edit. */
+  recapMatchPercent?: Record<number, number>;
+  /** Same keys: sentence that explains the percent. */
+  recapMatchReason?: Record<number, string>;
   onClose: () => void;
   onSaved: (result: { updatedCount: number; failedCount: number }) => void;
 };
+
+function attachRecapAvisos(
+  row: BulkEditRow,
+  recapAvisos: Record<number, string[]> | undefined,
+): BulkEditRow {
+  const extra = recapAvisos?.[row.booking_id] ?? [];
+  if (extra.length === 0) return row;
+  const existing = new Set((row.warnings ?? []).map((issue) => issue.message));
+  const added = extra
+    .filter((message) => message && !existing.has(message))
+    .map((message) => ({
+      level: "warning" as const,
+      code: "recap_mismatch",
+      message,
+    }));
+  if (added.length === 0) return row;
+  return { ...row, warnings: [...(row.warnings ?? []), ...added] };
+}
 
 const STATUS_OPTIONS: { value: BookingStatus; label: string }[] = [
   { value: "nr", label: BOOKING_STATUS_LABELS.nr },
@@ -87,6 +111,8 @@ function EditRow({
   checked,
   disabled,
   saveError,
+  matchPercent,
+  matchReason,
   onToggle,
   onRowChange,
 }: {
@@ -94,6 +120,8 @@ function EditRow({
   checked: boolean;
   disabled?: boolean;
   saveError?: string | null;
+  matchPercent?: number;
+  matchReason?: string;
   onToggle: () => void;
   onRowChange: (updater: (current: BulkEditRow) => BulkEditRow) => void;
 }) {
@@ -388,13 +416,23 @@ function EditRow({
         )}
       </td>
       <td className="min-w-[7rem] px-2 py-2 align-top">
-        <p className="mb-1 truncate text-[10px] font-medium text-zinc-400">
-          {row.booking_code}
-        </p>
+        {matchPercent != null ? (
+          <p
+            className={`mb-1 text-[11px] font-semibold tabular-nums ${
+              matchPercent >= 100
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-amber-700 dark:text-amber-300"
+            }`}
+            title="Coincidencia con el recap"
+          >
+            {matchPercent}%
+          </p>
+        ) : null}
         <BulkImportRowIssuesCell
           row={toPositionRow(row)}
           revalidating={revalidating}
-          modalTitle={`Avisos · ${row.booking_code}`}
+          modalTitle={`Avisos · ${[row.vessel_name, row.port_name].filter(Boolean).join(" · ") || "reserva"}`}
+          matchReason={matchReason}
           onRefreshAvisos={() => revalidate(row)}
           onClaimLtaSpace={
             row.lta_space_candidate
@@ -421,6 +459,9 @@ function EditRow({
 export default function BulkBookingsEditModal({
   open,
   bookingIds,
+  recapAvisos,
+  recapMatchPercent,
+  recapMatchReason,
   onClose,
   onSaved,
 }: BulkBookingsEditModalProps) {
@@ -443,7 +484,7 @@ export default function BulkBookingsEditModal({
     void previewBulkEdit(bookingIds)
       .then((res) => {
         if (cancelled) return;
-        setRows(res.rows);
+        setRows(res.rows.map((row) => attachRecapAvisos(row, recapAvisos)));
         setSelectedIds(
           new Set(res.rows.filter((r) => r.selectable).map((r) => r.booking_id)),
         );
@@ -461,7 +502,7 @@ export default function BulkBookingsEditModal({
     return () => {
       cancelled = true;
     };
-  }, [open, bookingIds]);
+  }, [open, bookingIds, recapAvisos]);
 
   useNavigationLock(
     open && saving,
@@ -511,9 +552,12 @@ export default function BulkBookingsEditModal({
         prev.map((row) => {
           const incoming = byId.get(row.booking_id);
           if (!incoming) return row;
-          return mergeEditRowAfterRevalidate(
-            row.claim_lta_space ? row : incoming,
-            incoming,
+          return attachRecapAvisos(
+            mergeEditRowAfterRevalidate(
+              row.claim_lta_space ? row : incoming,
+              incoming,
+            ),
+            recapAvisos,
           );
         }),
       );
@@ -529,7 +573,7 @@ export default function BulkBookingsEditModal({
     setRows((prev) => {
       const current = prev.find((r) => r.booking_id === bookingId);
       if (!current) return prev;
-      const next = updater(current);
+      const next = attachRecapAvisos(updater(current), recapAvisos);
       setSelectedIds((selected) => {
         const copy = new Set(selected);
         if (!next.selectable) copy.delete(next.booking_id);
@@ -723,6 +767,8 @@ export default function BulkBookingsEditModal({
                   checked={selectedIds.has(row.booking_id)}
                   disabled={tableBusy}
                   saveError={rowErrors[row.booking_id] ?? null}
+                  matchPercent={recapMatchPercent?.[row.booking_id]}
+                  matchReason={recapMatchReason?.[row.booking_id]}
                   onToggle={() => {
                     if (!row.selectable) return;
                     setSelectedIds((prev) => {

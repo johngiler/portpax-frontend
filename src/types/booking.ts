@@ -404,6 +404,11 @@ export function bookingStatusLabel(status: BookingStatus): string {
   return BOOKING_STATUS_LABELS[status] ?? status;
 }
 
+/** Closed calls and cancellations stay visible, but are not mass-edited. */
+export function isBookingMassEditable(status: BookingStatus): boolean {
+  return status !== "r" && status !== "c";
+}
+
 export function bookingNextStatuses(status: BookingStatus): BookingStatus[] {
   switch (status) {
     case "nr":

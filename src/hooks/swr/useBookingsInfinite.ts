@@ -36,6 +36,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
     params.vessel ?? 0,
     params.call_date_from ?? "",
     params.call_date_to ?? "",
+    (params.ids ?? []).join(","),
     params.ordering ?? "",
     params.pageSize ?? 20,
   ].join("|");

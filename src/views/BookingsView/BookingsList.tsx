@@ -31,6 +31,7 @@ import {
   canBulkDeleteBookings,
   commonBulkNextStatuses,
   getBookingBadgeStatus,
+  isBookingMassEditable,
   type BookingListItem,
   type BookingStatus,
   type BookingUpdatePayload,
@@ -171,10 +172,11 @@ export default function BookingsList({
   const selectionEnabled = Boolean(
     canWrite && (onBulkDelete || onBulkStatus || onMassEdit),
   );
+  const massEditableSelected = selectedBookings.filter((booking) =>
+    isBookingMassEditable(booking.status),
+  );
   const canMassEdit =
-    Boolean(onMassEdit) &&
-    selectedBookings.length > 0 &&
-    selectedBookings.every((b) => b.status !== "c");
+    Boolean(onMassEdit) && massEditableSelected.length > 0;
 
   function toggleOne(id: number, checked: boolean) {
     setSelectedIds((prev) => {
@@ -255,7 +257,7 @@ export default function BookingsList({
           onStatusAction={handleStatusAction}
           onMassEdit={
             canMassEdit && onMassEdit
-              ? () => onMassEdit([...selectedIds])
+              ? () => onMassEdit(massEditableSelected.map((booking) => booking.id))
               : undefined
           }
         />

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarSearch, FileSpreadsheet, type LucideIcon } from "lucide-react";
+import { CalendarSearch, FileSpreadsheet, ListChecks, type LucideIcon } from "lucide-react";
 import ImportOptionDropCard from "@/components/ui/ImportOptionDropCard";
 import Modal from "@/components/ui/Modal";
 import ImportPasteModal from "./ImportPasteModal";
-import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
+import {
+  BOOKING_RECAP_PASTE_COLUMNS,
+  BULK_BOOKING_PASTE_COLUMNS,
+} from "@/lib/importFormatGuides";
 
-export type BookingImportOptionId = "bulk_bookings" | "availability_filter";
+export type BookingImportOptionId =
+  | "bulk_bookings"
+  | "booking_recap"
+  | "availability_filter";
 
 type ImportOptionDef = {
   id: BookingImportOptionId;
@@ -29,6 +35,16 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     allowPaste: true,
     pasteTitle: "Pegar reservas masivas",
     pasteColumns: [...BULK_BOOKING_PASTE_COLUMNS],
+  },
+  {
+    id: "booking_recap",
+    title: "Recap de reservas",
+    description:
+      "Excel o pegado (barco, puerto, fecha y horarios) — filtra la lista contra lo que ya existe.",
+    icon: ListChecks,
+    allowPaste: true,
+    pasteTitle: "Pegar recap de reservas",
+    pasteColumns: [...BOOKING_RECAP_PASTE_COLUMNS],
   },
   {
     id: "availability_filter",

@@ -24,6 +24,8 @@ type BulkImportRowIssuesCellProps = {
   onClaimLtaSpace?: () => void | Promise<void>;
   /** Overrides default title `Avisos · fila {n}`. */
   modalTitle?: string;
+  /** Recap score sentence, e.g. why the row is 83%. */
+  matchReason?: string;
 };
 
 /** Narrative twin of the occupancy card — same fact, drop when card is shown. */
@@ -41,6 +43,7 @@ export default function BulkImportRowIssuesCell({
   onRefreshAvisos,
   onClaimLtaSpace,
   modalTitle,
+  matchReason,
 }: BulkImportRowIssuesCellProps) {
   const [open, setOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -192,6 +195,9 @@ export default function BulkImportRowIssuesCell({
               </span>
             ) : null}
           </p>
+          {matchReason ? (
+            <NoticeAlert variant="warning" messages={[matchReason]} />
+          ) : null}
           {busyRefresh ? (
             <p className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

@@ -25,6 +25,8 @@ type BookingsDateFiltersProps = {
   showAllRangeHint?: boolean;
   /** Discrete dates from Excel/paste import (not a continuous range). */
   importedDatesCount?: number;
+  /** Booking recap import: list is limited to matched rows. */
+  recapImportedCount?: number;
   onDatePresetChange: (preset: BookingsDatePreset) => void;
   onCustomDateFromChange: (value: string) => void;
   onCustomDateToChange: (value: string) => void;
@@ -63,14 +65,29 @@ export default function BookingsDateFilters({
   timeRange,
   showAllRangeHint = false,
   importedDatesCount = 0,
+  recapImportedCount = 0,
   onDatePresetChange,
   onCustomDateFromChange,
   onCustomDateToChange,
 }: BookingsDateFiltersProps) {
   const hasImportedDates = importedDatesCount > 0;
+  const hasRecap = recapImportedCount > 0;
+  const recapOwnsDates = hasRecap && datePreset === "all";
 
   return (
     <div className="space-y-4">
+      {hasRecap ? (
+        <div className="rounded-lg border border-[var(--admin-accent)]/30 bg-[var(--admin-accent)]/10 px-3 py-2.5">
+          <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+            Recap de reservas
+          </p>
+          <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-300">
+            Se filtraron {recapImportedCount} reserva
+            {recapImportedCount === 1 ? "" : "s"} desde el recap
+          </p>
+        </div>
+      ) : null}
+
       <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
         Fecha de escala
       </p>
@@ -101,7 +118,7 @@ export default function BookingsDateFilters({
               type="button"
               onClick={() => onDatePresetChange(preset)}
               className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                !hasImportedDates && datePreset === preset
+                !hasImportedDates && !recapOwnsDates && datePreset === preset
                   ? "border-[var(--admin-accent)] bg-[var(--admin-accent)]/15 text-[var(--admin-accent)]"
                   : "border-[var(--admin-border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               }`}
@@ -114,7 +131,7 @@ export default function BookingsDateFilters({
           <input
             type="radio"
             name="bookingsDatePreset"
-            checked={!hasImportedDates && datePreset === "custom"}
+            checked={!hasImportedDates && !recapOwnsDates && datePreset === "custom"}
             onChange={() => onDatePresetChange("custom")}
             className="h-4 w-4 cursor-pointer border-[var(--admin-border)] text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
           />
@@ -146,7 +163,7 @@ export default function BookingsDateFilters({
             </div>
           </div>
         )}
-        {!hasImportedDates && datePreset !== "custom" ? (
+        {!hasImportedDates && !recapOwnsDates && datePreset !== "custom" ? (
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             {datePreset === "all" && !showAllRangeHint
               ? `${formatIsoAsDmy(timeRange.date_from)} → …`
