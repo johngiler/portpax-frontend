@@ -188,6 +188,7 @@ export type BookingRecapUnmatched = {
   row_number: number | null;
   ship: string;
   port: string;
+  group?: string | null;
   call_date: string | null;
   eta?: string | null;
   etd?: string | null;

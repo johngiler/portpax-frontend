@@ -1,23 +1,29 @@
 import type { BookingRecapUnmatched } from "@/services/bookings/bulkImportService";
+import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 
-function clockDate(iso: string | null, clock: string | null | undefined): string {
-  if (!iso) return (clock || "").trim();
+function formatPasteDate(iso: string | null): string {
+  if (!iso) return "";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  const label = match ? `${match[3]}/${match[2]}/${match[1]}` : iso;
-  const time = (clock || "").trim();
-  return time ? `${label} ${time}` : label;
+  if (!match) return iso;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-/** Mass-create paste (Ship / Port / Arrival / Departure / Posición) from recap misses. */
+function formatPasteTime(clock: string | null | undefined): string {
+  return (clock || "").trim().slice(0, 5);
+}
+
+/** Mass-create paste from recap misses (Group…Assignment). */
 export function recapUnmatchedToPaste(rows: BookingRecapUnmatched[]): string {
-  const lines = ["Ship\tPort\tArrival\tDeparture\tPosición"];
+  const lines = [[...BULK_BOOKING_PASTE_COLUMNS].join("\t")];
   for (const row of rows) {
     lines.push(
       [
+        row.group || "",
         row.ship,
         row.port,
-        clockDate(row.call_date, row.eta),
-        clockDate(row.call_date, row.etd),
+        formatPasteDate(row.call_date),
+        formatPasteTime(row.eta),
+        formatPasteTime(row.etd),
         "",
       ].join("\t"),
     );

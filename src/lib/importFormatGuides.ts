@@ -1,6 +1,6 @@
 /**
  * Accepted formats / normalization rules for view data imports.
- * Keep in sync with backend `apps.bookings.services.import_mass`.
+ * Keep in sync with backend `apps.bookings.services.import_mass` + booking_recap.
  */
 
 export type ImportFormatGuideRow = {
@@ -18,36 +18,46 @@ export type ImportFormatGuide = {
   footer?: string;
 };
 
-/** Mass booking paste grid columns (Excel file may still include extra ITM fields). */
+/** Mass booking paste grid (homologated with recap; Assignment = posición). */
 export const BULK_BOOKING_PASTE_COLUMNS = [
+  "Group",
   "Ship",
   "Port",
-  "Arrival",
-  "Departure",
-  "Posición",
+  "Arrival Date",
+  "ETA",
+  "ETD",
+  "Assignment",
 ] as const;
 
-/** Recap paste grid — same idea as mass import, without position. */
+/** Recap paste grid — same as mass create, without Assignment. */
 export const BOOKING_RECAP_PASTE_COLUMNS = [
+  "Group",
   "Ship",
   "Port",
-  "Berth Date",
-  "Arrive Time",
-  "Depart Time",
+  "Arrival Date",
+  "ETA",
+  "ETD",
 ] as const;
 
-/** Mass booking ITM columns (Excel / paste). */
+/** Mass booking columns (Excel / paste). */
 export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
   title: "Formatos aceptados — reservas masivas",
   summary:
-    "Encabezados Ship, Port, Arrival, Departure. Posición es opcional. Excel: una fila por reserva (tab o ;). Correo/Outlook: también un campo por línea (cabeceras y luego bloques de valores).",
+    "Encabezados Group, Ship, Port, Arrival Date, ETA, ETD y Assignment (posición, opcional). La fecha va separada de los horarios. Group fuerza la búsqueda del barco por grupo de naviera (homónimos).",
   rows: [
+    {
+      field: "Group",
+      required: false,
+      accepted: "Group, Grupo o NAVIERA",
+      notes:
+        "Nombre o código del grupo de naviera. Si hay varios barcos con el mismo nombre, acota la búsqueda a ese grupo.",
+    },
     {
       field: "Ship",
       required: true,
       accepted: "Nombre del barco",
-      notes: "Debe existir en catálogo (exacto o coincidencia única).",
+      notes: "Debe existir en catálogo (exacto o coincidencia).",
     },
     {
       field: "Port",
@@ -56,36 +66,48 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
       notes: "Ej. Roatán, Puerto Plata, POP. Se ignoran acentos y «País» tras la coma.",
     },
     {
-      field: "Arrival",
+      field: "Arrival Date",
       required: true,
-      accepted: "Fecha u hora de llegada",
-      notes:
-        "ISO 2026-08-05 08:00 · 05/08/2026 · 5 ago 2026 · Aug 5, 2026 · 16-Feb-2028 8:00",
+      accepted: "Fecha de escala",
+      notes: "12/02/26 · 05/11/2026 · 2026-11-05. Sin hora (la hora va en ETA).",
     },
     {
-      field: "Departure",
+      field: "ETA",
       required: true,
-      accepted: "Fecha u hora de salida",
-      notes: "Mismos formatos que Arrival. Define el día de escala (call_date).",
+      accepted: "Hora de llegada",
+      notes: "08:00 · 8:00",
     },
     {
-      field: "Posición",
+      field: "ETD",
+      required: true,
+      accepted: "Hora de salida",
+      notes: "17:00 · 17:30",
+    },
+    {
+      field: "Assignment",
       required: false,
-      accepted: "Código corto o completo (P1, E2…)",
+      accepted: "Assignment, Posición, P1, E2…",
       notes:
         "Opcional. Si se resuelve en el puerto, prevalece. Si falta o no se encuentra, se usa la posición sugerida.",
     },
   ],
   footer:
-    "Solo se usan Ship, Port, Arrival, Departure y Posición. Cualquier otra columna del pegado (Vendor Name, Call Type, etc.) se descarta. Posición vacía o no encontrada → se sugiere en el siguiente paso. Filas sin Ship ni Port se omiten.",
+    "También se acepta el formato legacy Ship, Port, Arrival, Departure. Filas sin Ship ni Port se omiten.",
 };
 
 export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
   id: "booking_recap",
   title: "Formatos aceptados — recap de reservas",
   summary:
-    "Contrasta filas ya existentes. No crea reservas. Encabezados Ship, Port, Berth Date, Arrive Time y Depart Time. También vale Ship, Port, Arrival y Departure (sin posición).",
+    "Mismo formato que creación masiva, sin Assignment. Contrasta filas ya existentes; no crea reservas. Group fuerza la búsqueda por grupo de naviera.",
   rows: [
+    {
+      field: "Group",
+      required: false,
+      accepted: "Group, Grupo o NAVIERA",
+      notes:
+        "Grupo de naviera. Evita «la reserva no existe» cuando hay barcos homónimos en distintos grupos.",
+    },
     {
       field: "Ship",
       required: true,
@@ -99,22 +121,22 @@ export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
       notes: "Nombre, comercial o código. Se ignoran acentos.",
     },
     {
-      field: "Berth Date",
+      field: "Arrival Date",
       required: true,
-      accepted: "Berth Date, Arrival o fecha",
+      accepted: "Arrival Date, Berth Date o fecha",
       notes:
         "12/02/26 · 05/11/2026 · 2026-11-05. Si la escala en PortPax cae ±1 día, igual entra al filtro y el aviso indica la fecha.",
     },
     {
-      field: "Arrive Time",
+      field: "ETA",
       required: false,
-      accepted: "Arrive Time o Arrival con hora",
+      accepted: "ETA o Arrive Time",
       notes: "08:00. Si difiere de la llegada en PortPax, queda en avisos.",
     },
     {
-      field: "Depart Time",
+      field: "ETD",
       required: false,
-      accepted: "Depart Time o Departure con hora",
+      accepted: "ETD o Depart Time",
       notes: "17:00. Si difiere de la salida en PortPax, queda en avisos.",
     },
   ],

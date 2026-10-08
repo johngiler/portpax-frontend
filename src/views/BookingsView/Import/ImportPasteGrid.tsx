@@ -21,20 +21,32 @@ export function parseClipboardMatrix(text: string): string[][] {
 }
 
 const VERTICAL_ITM_HEADER_ALIASES: Record<string, string> = {
+  group: "Group",
+  grupo: "Group",
+  naviera: "Group",
+  "shipping line group": "Group",
   ship: "Ship",
   port: "Port",
+  "arrival date": "Arrival Date",
+  "berth date": "Arrival Date",
+  fecha: "Arrival Date",
+  eta: "ETA",
+  "arrive time": "ETA",
+  etd: "ETD",
+  "depart time": "ETD",
+  assignment: "Assignment",
   arrival: "Arrival",
   departure: "Departure",
   // Still detect these so vertical email paste keeps block width;
   // normalizePasteMatrix drops them from the grid.
   "vendor name": "Vendor Name",
   "call type": "Call Type",
-  position: "Posición",
-  posición: "Posición",
-  posicion: "Posición",
-  "position code": "Posición",
-  berth: "Posición",
-  pos: "Posición",
+  position: "Assignment",
+  posición: "Assignment",
+  posicion: "Assignment",
+  "position code": "Assignment",
+  berth: "Assignment",
+  pos: "Assignment",
 };
 
 const VERTICAL_ITM_HEADER_KEYS = new Set(Object.keys(VERTICAL_ITM_HEADER_ALIASES));
@@ -62,11 +74,14 @@ export function reshapeVerticalItmLines(lines: string[]): string[][] | null {
     headerCount += 1;
   }
 
-  // Need at least Ship, Port, Arrival, Departure as first four header labels.
   if (headerCount < 4) return null;
-  const required = ["ship", "port", "arrival", "departure"];
   const headerKeys = headers.map((h) => h.toLowerCase());
-  if (!required.every((r) => headerKeys.includes(r))) return null;
+  const hasShipPort = headerKeys.includes("ship") && headerKeys.includes("port");
+  const hasSplit =
+    headerKeys.includes("arrival date") || headerKeys.includes("berth date");
+  const hasLegacy =
+    headerKeys.includes("arrival") && headerKeys.includes("departure");
+  if (!hasShipPort || (!hasSplit && !hasLegacy)) return null;
 
   const width = headers.length;
   const data = trimmed.slice(headerCount);
@@ -95,7 +110,13 @@ function rowLooksLikeHeader(row: string[], expected: string[]): boolean {
   const expectedLower = expected.map((c) => c.toLowerCase());
   if (expectedLower.some((h) => lower.includes(h))) return true;
   const first = lower[0] ?? "";
-  if (/^(ship|port|fecha|fechas|date|arrival|barco|position|posici[oó]n)/.test(first)) return true;
+  if (
+    /^(group|grupo|naviera|ship|port|fecha|fechas|date|arrival|eta|etd|barco|assignment|position|posici[oó]n)/.test(
+      first,
+    )
+  ) {
+    return true;
+  }
   // Classic ITM paste often starts with Vendor Name when Ship…Departure were skipped.
   if (lower.includes("vendor name") || lower.includes("call type")) return true;
   return false;
@@ -118,20 +139,39 @@ function mapPasteHeaderToColumn(
     return null;
   }
   const aliases: Record<string, string> = {
+    group: "Group",
+    grupo: "Group",
+    naviera: "Group",
+    "shipping line group": "Group",
+    "line group": "Group",
     ship: "Ship",
     barco: "Ship",
     port: "Port",
     puerto: "Port",
-    arrival: "Arrival",
-    llegada: "Arrival",
-    departure: "Departure",
-    salida: "Departure",
-    position: "Posición",
-    posición: "Posición",
-    posicion: "Posición",
-    "position code": "Posición",
-    berth: "Posición",
-    pos: "Posición",
+    "arrival date": "Arrival Date",
+    "berth date": "Arrival Date",
+    "call date": "Arrival Date",
+    "fecha de escala": "Arrival Date",
+    fecha: "Arrival Date",
+    date: "Arrival Date",
+    eta: "ETA",
+    "arrive time": "ETA",
+    "hora llegada": "ETA",
+    etd: "ETD",
+    "depart time": "ETD",
+    "hora salida": "ETD",
+    assignment: "Assignment",
+    position: "Assignment",
+    posición: "Assignment",
+    posicion: "Assignment",
+    "position code": "Assignment",
+    berth: "Assignment",
+    pos: "Assignment",
+    // Legacy combined datetime columns → map into split grid when present.
+    arrival: "Arrival Date",
+    llegada: "Arrival Date",
+    departure: "ETD",
+    salida: "ETD",
   };
   const mapped = aliases[key];
   if (mapped && fallbackColumns.includes(mapped)) return mapped;
@@ -142,8 +182,8 @@ function mapPasteHeaderToColumn(
 
 /**
  * Normalize clipboard matrix onto the paste grid columns.
- * Always keeps `fallbackColumns` order (Ship…Posición); drops Vendor Name /
- * Call Type; fills empty Posición when the sheet had no position column.
+ * Always keeps `fallbackColumns` order (Group…Assignment); drops Vendor Name /
+ * Call Type; fills empty Assignment when the sheet had no position column.
  */
 export function normalizePasteMatrix(
   matrix: string[][],
@@ -173,21 +213,29 @@ export function normalizePasteMatrix(
 
   const mappedCount = sourceIndexByTarget.filter((i) => i >= 0).length;
   if (mappedCount === 0) {
-    // No usable headers: classic ITM row is Ship Port Arrival Departure
-    // [Vendor Name] [Call Type] [Position?].
+    // No usable headers: prefer Group Ship Port ArrivalDate ETA ETD [Assignment].
     const maxW = Math.max(0, ...body.map((r) => r.length));
-    sourceIndexByTarget[0] = maxW > 0 ? 0 : -1;
-    sourceIndexByTarget[1] = maxW > 1 ? 1 : -1;
-    sourceIndexByTarget[2] = maxW > 2 ? 2 : -1;
-    sourceIndexByTarget[3] = maxW > 3 ? 3 : -1;
-    if (maxW >= 7) {
-      // … Vendor Call Position
-      sourceIndexByTarget[4] = 6;
-    } else if (maxW === 5) {
-      // Ship… + Position (or trailing vendor — prefer Position for our grid)
-      sourceIndexByTarget[4] = 4;
+    const colCount = headers.length;
+    if (colCount >= 6 && maxW >= 6) {
+      for (let i = 0; i < Math.min(colCount, maxW, 7); i += 1) {
+        sourceIndexByTarget[i] = i;
+      }
+    } else {
+      // Legacy 4-col Ship Port Arrival Departure → Ship/Port/Arrival Date/ETD.
+      const shipIdx = headers.indexOf("Ship");
+      const portIdx = headers.indexOf("Port");
+      const dateIdx = headers.indexOf("Arrival Date");
+      const etdIdx = headers.indexOf("ETD");
+      const assignIdx = headers.indexOf("Assignment");
+      if (shipIdx >= 0) sourceIndexByTarget[shipIdx] = maxW > 0 ? 0 : -1;
+      if (portIdx >= 0) sourceIndexByTarget[portIdx] = maxW > 1 ? 1 : -1;
+      if (dateIdx >= 0) sourceIndexByTarget[dateIdx] = maxW > 2 ? 2 : -1;
+      if (etdIdx >= 0) sourceIndexByTarget[etdIdx] = maxW > 3 ? 3 : -1;
+      if (assignIdx >= 0) {
+        if (maxW >= 7) sourceIndexByTarget[assignIdx] = 6;
+        else if (maxW === 5) sourceIndexByTarget[assignIdx] = 4;
+      }
     }
-    // maxW === 6 → Vendor/Call only after Departure; leave Posición empty
   }
 
   const rows = body

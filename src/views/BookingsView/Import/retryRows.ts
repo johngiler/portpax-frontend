@@ -2,45 +2,33 @@ import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-export function formatItmDateTime(
-  callDate: string | null,
-  time: string | null,
-): string {
+function formatPasteDate(callDate: string | null): string {
   if (!callDate) return "";
-  const [year, month, day] = callDate.split("-").map(Number);
-  if (!year || !month || !day) return callDate;
-  const mon = MONTHS[month - 1] ?? "Jan";
-  const raw = (time || "0:00").slice(0, 5);
-  const [h, m] = raw.split(":");
-  return `${String(day).padStart(2, "0")}-${mon}-${year} ${Number(h)}:${m || "00"}`;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(callDate);
+  if (!match) return callDate;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-/** Rebuild ITM TSV so preview can re-resolve catalog/LTA for pending rows. */
+function formatPasteTime(time: string | null): string {
+  if (!time) return "";
+  return time.slice(0, 5);
+}
+
+/** Rebuild paste TSV so preview can re-resolve catalog/LTA for pending rows. */
 export function buildItmTsvFromRetryRows(
   rows: Array<ImportBatchRetryRow | BulkImportPreviewRow>,
 ): string {
-  const header = "Ship\tPort\tArrival\tDeparture\tPosición";
+  const header = [...BULK_BOOKING_PASTE_COLUMNS].join("\t");
   const lines = rows.map((row) =>
     [
+      ("shipping_line_group_name" in row && row.shipping_line_group_name) ||
+        row.vendor_name ||
+        "",
       row.ship || row.vessel_name || "",
       row.port_raw || row.port_name || "",
-      formatItmDateTime(row.call_date, row.eta),
-      formatItmDateTime(row.call_date, row.etd),
+      formatPasteDate(row.call_date),
+      formatPasteTime(row.eta),
+      formatPasteTime(row.etd),
       row.position_code || "",
     ].join("\t"),
   );
@@ -95,10 +83,14 @@ export function retryRowsToPasteMatrix(
   return {
     headers: [...ITM_PASTE_HEADERS],
     rows: rows.map((row) => [
+      ("shipping_line_group_name" in row && row.shipping_line_group_name) ||
+        row.vendor_name ||
+        "",
       row.ship || row.vessel_name || "",
       row.port_raw || row.port_name || "",
-      formatItmDateTime(row.call_date, row.eta),
-      formatItmDateTime(row.call_date, row.etd),
+      formatPasteDate(row.call_date),
+      formatPasteTime(row.eta),
+      formatPasteTime(row.etd),
       row.position_code || "",
     ]),
   };
