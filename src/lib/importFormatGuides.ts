@@ -20,7 +20,7 @@ export type ImportFormatGuide = {
 
 /** Mass booking paste grid (homologated with recap; Assignment = posición). */
 export const BULK_BOOKING_PASTE_COLUMNS = [
-  "Group",
+  "Naviera",
   "Ship",
   "Port",
   "Arrival Date",
@@ -31,7 +31,7 @@ export const BULK_BOOKING_PASTE_COLUMNS = [
 
 /** Recap paste grid — same as mass create, without Assignment. */
 export const BOOKING_RECAP_PASTE_COLUMNS = [
-  "Group",
+  "Naviera",
   "Ship",
   "Port",
   "Arrival Date",
@@ -44,14 +44,14 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
   title: "Formatos aceptados — reservas masivas",
   summary:
-    "Encabezados Group, Ship, Port, Arrival Date, ETA, ETD y Assignment (posición, opcional). La fecha va separada de los horarios. Group fuerza la búsqueda del barco por grupo de naviera (homónimos).",
+    "Encabezados Naviera, Ship, Port, Arrival Date, ETA, ETD y Assignment (posición, opcional). La fecha va separada de los horarios. Naviera acota el barco a esa línea (homónimos).",
   rows: [
     {
-      field: "Group",
+      field: "Naviera",
       required: false,
-      accepted: "Group, Grupo o NAVIERA",
+      accepted: "Naviera, Shipping Line, Group o Carrier",
       notes:
-        "Nombre o código del grupo de naviera. Si hay varios barcos con el mismo nombre, acota la búsqueda a ese grupo.",
+        "Nombre o código de la naviera (no del grupo corporativo). Si hay barcos homónimos, acota la búsqueda a esa línea.",
     },
     {
       field: "Ship",
@@ -99,14 +99,14 @@ export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
   id: "booking_recap",
   title: "Formatos aceptados — recap de reservas",
   summary:
-    "Mismo formato que creación masiva, sin Assignment. Contrasta filas ya existentes; no crea reservas. Group fuerza la búsqueda por grupo de naviera.",
+    "Mismo formato que creación masiva, sin Assignment. Contrasta filas ya existentes; no crea reservas. Naviera acota la búsqueda por línea (homónimos).",
   rows: [
     {
-      field: "Group",
+      field: "Naviera",
       required: false,
-      accepted: "Group, Grupo o NAVIERA",
+      accepted: "Naviera, Shipping Line, Group o Carrier",
       notes:
-        "Grupo de naviera. Evita «la reserva no existe» cuando hay barcos homónimos en distintos grupos.",
+        "Naviera (línea), no grupo corporativo. Evita «la reserva no existe» cuando hay barcos homónimos.",
     },
     {
       field: "Ship",

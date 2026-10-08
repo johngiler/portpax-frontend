@@ -21,10 +21,11 @@ export function parseClipboardMatrix(text: string): string[][] {
 }
 
 const VERTICAL_ITM_HEADER_ALIASES: Record<string, string> = {
-  group: "Group",
-  grupo: "Group",
-  naviera: "Group",
-  "shipping line group": "Group",
+  naviera: "Naviera",
+  group: "Naviera",
+  grupo: "Naviera",
+  "shipping line": "Naviera",
+  carrier: "Naviera",
   ship: "Ship",
   port: "Port",
   "arrival date": "Arrival Date",
@@ -38,7 +39,7 @@ const VERTICAL_ITM_HEADER_ALIASES: Record<string, string> = {
   arrival: "Arrival",
   departure: "Departure",
   // Still detect these so vertical email paste keeps block width;
-  // normalizePasteMatrix drops them from the grid.
+  // normalizePasteMatrix drops them from the grid / maps Vendor → Naviera.
   "vendor name": "Vendor Name",
   "call type": "Call Type",
   position: "Assignment",
@@ -111,7 +112,7 @@ function rowLooksLikeHeader(row: string[], expected: string[]): boolean {
   if (expectedLower.some((h) => lower.includes(h))) return true;
   const first = lower[0] ?? "";
   if (
-    /^(group|grupo|naviera|ship|port|fecha|fechas|date|arrival|eta|etd|barco|assignment|position|posici[oó]n)/.test(
+    /^(naviera|group|grupo|ship|port|fecha|fechas|date|arrival|eta|etd|barco|assignment|position|posici[oó]n|carrier)/.test(
       first,
     )
   ) {
@@ -129,21 +130,20 @@ function mapPasteHeaderToColumn(
 ): string | null {
   const key = raw.trim().toLowerCase();
   if (!key) return null;
-  // Drop legacy ITM columns from the paste grid.
-  if (
-    key === "vendor name" ||
-    key === "call type" ||
-    key === "vendor" ||
-    key === "calltype"
-  ) {
+  // Drop Call Type; Vendor Name maps to Naviera below.
+  if (key === "call type" || key === "calltype") {
     return null;
   }
   const aliases: Record<string, string> = {
-    group: "Group",
-    grupo: "Group",
-    naviera: "Group",
-    "shipping line group": "Group",
-    "line group": "Group",
+    naviera: "Naviera",
+    group: "Naviera",
+    grupo: "Naviera",
+    "shipping line": "Naviera",
+    shipping_line: "Naviera",
+    line: "Naviera",
+    carrier: "Naviera",
+    "vendor name": "Naviera",
+    vendor: "Naviera",
     ship: "Ship",
     barco: "Ship",
     port: "Port",
@@ -182,8 +182,8 @@ function mapPasteHeaderToColumn(
 
 /**
  * Normalize clipboard matrix onto the paste grid columns.
- * Always keeps `fallbackColumns` order (Group…Assignment); drops Vendor Name /
- * Call Type; fills empty Assignment when the sheet had no position column.
+ * Always keeps `fallbackColumns` order (Naviera…Assignment); maps Vendor Name →
+ * Naviera; drops Call Type; fills empty Assignment when the sheet had no position.
  */
 export function normalizePasteMatrix(
   matrix: string[][],
@@ -213,7 +213,7 @@ export function normalizePasteMatrix(
 
   const mappedCount = sourceIndexByTarget.filter((i) => i >= 0).length;
   if (mappedCount === 0) {
-    // No usable headers: prefer Group Ship Port ArrivalDate ETA ETD [Assignment].
+    // No usable headers: prefer Naviera Ship Port ArrivalDate ETA ETD [Assignment].
     const maxW = Math.max(0, ...body.map((r) => r.length));
     const colCount = headers.length;
     if (colCount >= 6 && maxW >= 6) {

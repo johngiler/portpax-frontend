@@ -21,7 +21,7 @@ export function buildItmTsvFromRetryRows(
   const header = [...BULK_BOOKING_PASTE_COLUMNS].join("\t");
   const lines = rows.map((row) =>
     [
-      ("shipping_line_group_name" in row && row.shipping_line_group_name) ||
+      ("shipping_line_name" in row && row.shipping_line_name) ||
         row.vendor_name ||
         "",
       row.ship || row.vessel_name || "",
@@ -83,7 +83,7 @@ export function retryRowsToPasteMatrix(
   return {
     headers: [...ITM_PASTE_HEADERS],
     rows: rows.map((row) => [
-      ("shipping_line_group_name" in row && row.shipping_line_group_name) ||
+      ("shipping_line_name" in row && row.shipping_line_name) ||
         row.vendor_name ||
         "",
       row.ship || row.vessel_name || "",
