@@ -12,7 +12,7 @@ function formatPasteTime(clock: string | null | undefined): string {
   return (clock || "").trim().slice(0, 5);
 }
 
-/** Mass-create paste from recap misses (Naviera…Assignment). */
+/** Mass-create paste from recap misses (Naviera…Posición). */
 export function recapUnmatchedToPaste(rows: BookingRecapUnmatched[]): string {
   const lines = [[...BULK_BOOKING_PASTE_COLUMNS].join("\t")];
   for (const row of rows) {

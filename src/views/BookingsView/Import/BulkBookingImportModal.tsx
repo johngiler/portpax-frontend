@@ -474,12 +474,12 @@ export default function BulkBookingImportModal({
           <thead className="sticky top-0 z-[1] bg-[var(--admin-surface-muted)] text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
             <tr>
               <th className="w-10 px-2 py-2" />
+              <th className="px-2 py-2">Naviera</th>
               <th className="px-2 py-2">Barco</th>
               <th className="px-2 py-2">Puerto</th>
               <th className="px-2 py-2">Fecha</th>
               <th className="px-2 py-2">ETA–ETD</th>
               <th className="px-2 py-2">Posición</th>
-              <th className="px-2 py-2">Naviera</th>
               <th className="px-2 py-2">Estado</th>
               <th
                 className="px-2 py-2"

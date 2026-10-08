@@ -30,7 +30,7 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     id: "bulk_bookings",
     title: "Reservas masivas",
     description:
-      "Naviera, Ship, Port, Arrival Date, ETA, ETD y Assignment — revisa y crea en lote.",
+      "Naviera, Barco, Puerto, Fecha, ETA, ETD y Posición — revisa y crea en lote.",
     icon: FileSpreadsheet,
     allowPaste: true,
     pasteTitle: "Pegar reservas masivas",
@@ -40,7 +40,7 @@ const IMPORT_OPTIONS: ImportOptionDef[] = [
     id: "booking_recap",
     title: "Recap de reservas",
     description:
-      "Mismo formato (sin Assignment) — filtra la lista contra lo que ya existe.",
+      "Mismo formato (sin Posición) — filtra la lista contra lo que ya existe.",
     icon: ListChecks,
     allowPaste: true,
     pasteTitle: "Pegar recap de reservas",

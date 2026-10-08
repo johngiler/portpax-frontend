@@ -1,6 +1,7 @@
 /**
  * Accepted formats / normalization rules for view data imports.
  * Keep in sync with backend `apps.bookings.services.import_mass` + booking_recap.
+ * Paste-grid headers are Spanish (same language as the rest of the UI).
  */
 
 export type ImportFormatGuideRow = {
@@ -18,23 +19,23 @@ export type ImportFormatGuide = {
   footer?: string;
 };
 
-/** Mass booking paste grid (homologated with recap; Assignment = posición). */
+/** Mass booking paste grid (homologated with recap; Posición = slot). */
 export const BULK_BOOKING_PASTE_COLUMNS = [
   "Naviera",
-  "Ship",
-  "Port",
-  "Arrival Date",
+  "Barco",
+  "Puerto",
+  "Fecha",
   "ETA",
   "ETD",
-  "Assignment",
+  "Posición",
 ] as const;
 
-/** Recap paste grid — same as mass create, without Assignment. */
+/** Recap paste grid — same as mass create, without Posición. */
 export const BOOKING_RECAP_PASTE_COLUMNS = [
   "Naviera",
-  "Ship",
-  "Port",
-  "Arrival Date",
+  "Barco",
+  "Puerto",
+  "Fecha",
   "ETA",
   "ETD",
 ] as const;
@@ -44,7 +45,7 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
   id: "bulk_bookings",
   title: "Formatos aceptados — reservas masivas",
   summary:
-    "Encabezados Naviera, Ship, Port, Arrival Date, ETA, ETD y Assignment (posición, opcional). La fecha va separada de los horarios. Naviera acota el barco a esa línea (homónimos).",
+    "Encabezados Naviera, Barco, Puerto, Fecha, ETA, ETD y Posición (opcional). La fecha va separada de los horarios. Naviera acota el barco a esa línea (homónimos).",
   rows: [
     {
       field: "Naviera",
@@ -54,21 +55,21 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
         "Nombre o código de la naviera (no del grupo corporativo). Si hay barcos homónimos, acota la búsqueda a esa línea.",
     },
     {
-      field: "Ship",
+      field: "Barco",
       required: true,
-      accepted: "Nombre del barco",
+      accepted: "Barco, Ship o Ship Name",
       notes: "Debe existir en catálogo (exacto o coincidencia).",
     },
     {
-      field: "Port",
+      field: "Puerto",
       required: true,
-      accepted: "Nombre, comercial o código",
+      accepted: "Puerto, Port o Port Name",
       notes: "Ej. Roatán, Puerto Plata, POP. Se ignoran acentos y «País» tras la coma.",
     },
     {
-      field: "Arrival Date",
+      field: "Fecha",
       required: true,
-      accepted: "Fecha de escala",
+      accepted: "Fecha, Arrival Date o Berth Date",
       notes: "12/02/26 · 05/11/2026 · 2026-11-05. Sin hora (la hora va en ETA).",
     },
     {
@@ -84,22 +85,22 @@ export const BULK_BOOKINGS_IMPORT_GUIDE: ImportFormatGuide = {
       notes: "17:00 · 17:30",
     },
     {
-      field: "Assignment",
+      field: "Posición",
       required: false,
-      accepted: "Assignment, Posición, P1, E2…",
+      accepted: "Posición, Position, P1, E2…",
       notes:
         "Opcional. Si se resuelve en el puerto, prevalece. Si falta o no se encuentra, se usa la posición sugerida.",
     },
   ],
   footer:
-    "También se acepta el formato legacy Ship, Port, Arrival, Departure. Filas sin Ship ni Port se omiten.",
+    "También se acepta el formato legacy Ship, Port, Arrival, Departure (o equivalentes en español). Filas sin Barco ni Puerto se omiten.",
 };
 
 export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
   id: "booking_recap",
   title: "Formatos aceptados — recap de reservas",
   summary:
-    "Mismo formato que creación masiva, sin Assignment. Contrasta filas ya existentes; no crea reservas. Naviera acota la búsqueda por línea (homónimos).",
+    "Mismo formato que creación masiva, sin Posición. Contrasta filas ya existentes; no crea reservas. Naviera acota la búsqueda por línea (homónimos).",
   rows: [
     {
       field: "Naviera",
@@ -109,21 +110,21 @@ export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
         "Naviera (línea), no grupo corporativo. Evita «la reserva no existe» cuando hay barcos homónimos.",
     },
     {
-      field: "Ship",
+      field: "Barco",
       required: true,
-      accepted: "Ship o Ship Name",
+      accepted: "Barco, Ship o Ship Name",
       notes: "Nombre del barco en catálogo.",
     },
     {
-      field: "Port",
+      field: "Puerto",
       required: true,
-      accepted: "Port o Port Name",
+      accepted: "Puerto, Port o Port Name",
       notes: "Nombre, comercial o código. Se ignoran acentos.",
     },
     {
-      field: "Arrival Date",
+      field: "Fecha",
       required: true,
-      accepted: "Arrival Date, Berth Date o fecha",
+      accepted: "Fecha, Arrival Date o Berth Date",
       notes:
         "12/02/26 · 05/11/2026 · 2026-11-05. Si la escala en PortPax cae ±1 día, igual entra al filtro y el aviso indica la fecha.",
     },

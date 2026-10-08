@@ -208,6 +208,36 @@ function EditRow({
           className="mt-2 h-4 w-4 rounded border-zinc-300"
         />
       </td>
+      <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
+        <FormFieldSelect<number>
+          label=""
+          name={`edit_line_${row.booking_id}`}
+          value={row.shipping_line_id}
+          compact
+          disabled={fieldLock}
+          loadOptions={loadLineOptions}
+          logoKind="shipping_line"
+          options={[
+            {
+              value: row.shipping_line_id,
+              label: row.shipping_line_name || "Naviera",
+            },
+          ]}
+          onChange={(id, option) => {
+            const draft = {
+              ...row,
+              shipping_line_id: id,
+              shipping_line_name: option?.label ?? row.shipping_line_name,
+              position_id: null,
+              position_code: null,
+              claim_lta_space: false,
+              lta_space_candidate: null,
+            };
+            onRowChange(() => draft);
+            void revalidate(draft);
+          }}
+        />
+      </td>
       <td className="min-w-[10rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <FormFieldSelect<number>
           label=""
@@ -332,36 +362,6 @@ function EditRow({
               void revalidate(draft);
               return draft;
             });
-          }}
-        />
-      </td>
-      <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
-        <FormFieldSelect<number>
-          label=""
-          name={`edit_line_${row.booking_id}`}
-          value={row.shipping_line_id}
-          compact
-          disabled={fieldLock}
-          loadOptions={loadLineOptions}
-          logoKind="shipping_line"
-          options={[
-            {
-              value: row.shipping_line_id,
-              label: row.shipping_line_name || "Naviera",
-            },
-          ]}
-          onChange={(id, option) => {
-            const draft = {
-              ...row,
-              shipping_line_id: id,
-              shipping_line_name: option?.label ?? row.shipping_line_name,
-              position_id: null,
-              position_code: null,
-              claim_lta_space: false,
-              lta_space_candidate: null,
-            };
-            onRowChange(() => draft);
-            void revalidate(draft);
           }}
         />
       </td>
@@ -726,12 +726,12 @@ export default function BulkBookingsEditModal({
             <thead className="sticky top-0 bg-zinc-50 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-900">
               <tr>
                 <th className="px-2 py-2" />
+                <th className="px-2 py-2">Naviera</th>
                 <th className="px-2 py-2">Barco</th>
                 <th className="px-2 py-2">Puerto</th>
                 <th className="px-2 py-2">Fecha</th>
                 <th className="px-2 py-2">ETA—ETD</th>
                 <th className="px-2 py-2">Posición</th>
-                <th className="px-2 py-2">Naviera</th>
                 <th className="px-2 py-2">Estado</th>
                 <th
                   className="px-2 py-2"

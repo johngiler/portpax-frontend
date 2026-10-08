@@ -190,7 +190,7 @@ export type BookingRecapUnmatched = {
   port: string;
   /** Shipping line name from the Naviera paste column. */
   line?: string | null;
-  /** @deprecated Prefer `line` (Naviera). Kept for older API payloads. */
+  /** @deprecated Prefer `line`. Kept for older API payloads. */
   group?: string | null;
   call_date: string | null;
   eta?: string | null;

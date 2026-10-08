@@ -154,6 +154,62 @@ export default function BulkImportEditableRow({
       <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
         <FormFieldSelect<number>
           label=""
+          name={`bulk_line_${row.id}`}
+          value={row.shipping_line_id ?? 0}
+          emptyValue={0}
+          optionLabel={row.shipping_line_name || "Buscar naviera…"}
+          compact
+          disabled={fieldLock}
+          loadOptions={loadLineOptions}
+          logoKind="shipping_line"
+          options={
+            row.shipping_line_id
+              ? [
+                  {
+                    value: row.shipping_line_id,
+                    label: row.shipping_line_name || "Naviera",
+                  },
+                ]
+              : []
+          }
+          onChange={(id) => {
+            const shipName = (row.ship || row.vessel_name || "").trim();
+            const draft: BulkImportPreviewRow = id
+              ? {
+                  ...row,
+                  shipping_line_id: id,
+                  vessel_id: null,
+                  vessel_name: shipName || null,
+                  ship: shipName,
+                  position_id: null,
+                  position_code: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
+                }
+              : {
+                  ...row,
+                  shipping_line_id: null,
+                  shipping_line_name: null,
+                  vessel_id: null,
+                  vessel_name: shipName || null,
+                  ship: shipName,
+                  position_id: null,
+                  position_code: null,
+                  position_occupancy_hint: null,
+                  position_occupant: null,
+                  claim_lta_space: false,
+                  lta_space_candidate: null,
+                };
+            onRowChange(draft);
+            void revalidate(draft);
+          }}
+        />
+      </td>
+      <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
+        <FormFieldSelect<number>
+          label=""
           name={`bulk_vessel_${row.id}`}
           value={row.vessel_id ?? 0}
           emptyValue={0}
@@ -295,62 +351,6 @@ export default function BulkImportEditableRow({
           reloadKey={occupancyReloadKey}
           onChange={onRowChange}
           onCommit={(draft) => void revalidate(draft)}
-        />
-      </td>
-      <td className="min-w-[11rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">
-        <FormFieldSelect<number>
-          label=""
-          name={`bulk_line_${row.id}`}
-          value={row.shipping_line_id ?? 0}
-          emptyValue={0}
-          optionLabel={row.shipping_line_name || "Buscar naviera…"}
-          compact
-          disabled={fieldLock}
-          loadOptions={loadLineOptions}
-          logoKind="shipping_line"
-          options={
-            row.shipping_line_id
-              ? [
-                  {
-                    value: row.shipping_line_id,
-                    label: row.shipping_line_name || "Naviera",
-                  },
-                ]
-              : []
-          }
-          onChange={(id) => {
-            const shipName = (row.ship || row.vessel_name || "").trim();
-            const draft: BulkImportPreviewRow = id
-              ? {
-                  ...row,
-                  shipping_line_id: id,
-                  vessel_id: null,
-                  vessel_name: shipName || null,
-                  ship: shipName,
-                  position_id: null,
-                  position_code: null,
-                  position_occupancy_hint: null,
-                  position_occupant: null,
-                  claim_lta_space: false,
-                  lta_space_candidate: null,
-                }
-              : {
-                  ...row,
-                  shipping_line_id: null,
-                  shipping_line_name: null,
-                  vessel_id: null,
-                  vessel_name: shipName || null,
-                  ship: shipName,
-                  position_id: null,
-                  position_code: null,
-                  position_occupancy_hint: null,
-                  position_occupant: null,
-                  claim_lta_space: false,
-                  lta_space_candidate: null,
-                };
-            onRowChange(draft);
-            void revalidate(draft);
-          }}
         />
       </td>
       <td className="min-w-[10rem] px-2 py-1.5 align-top [&_.mb-3]:mb-0">

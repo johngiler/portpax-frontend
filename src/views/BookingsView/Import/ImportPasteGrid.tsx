@@ -22,32 +22,42 @@ export function parseClipboardMatrix(text: string): string[][] {
 
 const VERTICAL_ITM_HEADER_ALIASES: Record<string, string> = {
   naviera: "Naviera",
+  "shipping line": "Naviera",
+  shipping_line: "Naviera",
   group: "Naviera",
   grupo: "Naviera",
-  "shipping line": "Naviera",
   carrier: "Naviera",
-  ship: "Ship",
-  port: "Port",
-  "arrival date": "Arrival Date",
-  "berth date": "Arrival Date",
-  fecha: "Arrival Date",
+  line: "Naviera",
+  barco: "Barco",
+  ship: "Barco",
+  "ship name": "Barco",
+  vessel: "Barco",
+  puerto: "Puerto",
+  port: "Puerto",
+  "port name": "Puerto",
+  fecha: "Fecha",
+  "arrival date": "Fecha",
+  "berth date": "Fecha",
+  "call date": "Fecha",
+  "fecha de escala": "Fecha",
+  date: "Fecha",
   eta: "ETA",
   "arrive time": "ETA",
   etd: "ETD",
   "depart time": "ETD",
-  assignment: "Assignment",
+  posición: "Posición",
+  posicion: "Posición",
+  position: "Posición",
+  assignment: "Posición",
   arrival: "Arrival",
   departure: "Departure",
   // Still detect these so vertical email paste keeps block width;
-  // normalizePasteMatrix drops them from the grid / maps Vendor → Naviera.
+  // normalizePasteMatrix drops them / maps Vendor → Naviera.
   "vendor name": "Vendor Name",
   "call type": "Call Type",
-  position: "Assignment",
-  posición: "Assignment",
-  posicion: "Assignment",
-  "position code": "Assignment",
-  berth: "Assignment",
-  pos: "Assignment",
+  "position code": "Posición",
+  berth: "Posición",
+  pos: "Posición",
 };
 
 const VERTICAL_ITM_HEADER_KEYS = new Set(Object.keys(VERTICAL_ITM_HEADER_ALIASES));
@@ -112,7 +122,7 @@ function rowLooksLikeHeader(row: string[], expected: string[]): boolean {
   if (expectedLower.some((h) => lower.includes(h))) return true;
   const first = lower[0] ?? "";
   if (
-    /^(naviera|group|grupo|ship|port|fecha|fechas|date|arrival|eta|etd|barco|assignment|position|posici[oó]n|carrier)/.test(
+    /^(naviera|shipping line|group|grupo|barco|ship|puerto|port|fecha|fechas|date|arrival|eta|etd|assignment|position|posici[oó]n|carrier)/.test(
       first,
     )
   ) {
@@ -136,40 +146,43 @@ function mapPasteHeaderToColumn(
   }
   const aliases: Record<string, string> = {
     naviera: "Naviera",
-    group: "Naviera",
-    grupo: "Naviera",
     "shipping line": "Naviera",
     shipping_line: "Naviera",
+    group: "Naviera",
+    grupo: "Naviera",
     line: "Naviera",
     carrier: "Naviera",
     "vendor name": "Naviera",
     vendor: "Naviera",
-    ship: "Ship",
-    barco: "Ship",
-    port: "Port",
-    puerto: "Port",
-    "arrival date": "Arrival Date",
-    "berth date": "Arrival Date",
-    "call date": "Arrival Date",
-    "fecha de escala": "Arrival Date",
-    fecha: "Arrival Date",
-    date: "Arrival Date",
+    barco: "Barco",
+    ship: "Barco",
+    "ship name": "Barco",
+    vessel: "Barco",
+    puerto: "Puerto",
+    port: "Puerto",
+    "port name": "Puerto",
+    fecha: "Fecha",
+    "arrival date": "Fecha",
+    "berth date": "Fecha",
+    "call date": "Fecha",
+    "fecha de escala": "Fecha",
+    date: "Fecha",
     eta: "ETA",
     "arrive time": "ETA",
     "hora llegada": "ETA",
     etd: "ETD",
     "depart time": "ETD",
     "hora salida": "ETD",
-    assignment: "Assignment",
-    position: "Assignment",
-    posición: "Assignment",
-    posicion: "Assignment",
-    "position code": "Assignment",
-    berth: "Assignment",
-    pos: "Assignment",
+    posición: "Posición",
+    posicion: "Posición",
+    position: "Posición",
+    assignment: "Posición",
+    "position code": "Posición",
+    berth: "Posición",
+    pos: "Posición",
     // Legacy combined datetime columns → map into split grid when present.
-    arrival: "Arrival Date",
-    llegada: "Arrival Date",
+    arrival: "Fecha",
+    llegada: "Fecha",
     departure: "ETD",
     salida: "ETD",
   };
@@ -182,8 +195,8 @@ function mapPasteHeaderToColumn(
 
 /**
  * Normalize clipboard matrix onto the paste grid columns.
- * Always keeps `fallbackColumns` order (Naviera…Assignment); maps Vendor Name →
- * Naviera; drops Call Type; fills empty Assignment when the sheet had no position.
+ * Always keeps `fallbackColumns` order (Naviera…Posición); maps Vendor Name →
+ * Naviera; drops Call Type; fills empty Posición when the sheet had no slot.
  */
 export function normalizePasteMatrix(
   matrix: string[][],
@@ -213,7 +226,7 @@ export function normalizePasteMatrix(
 
   const mappedCount = sourceIndexByTarget.filter((i) => i >= 0).length;
   if (mappedCount === 0) {
-    // No usable headers: prefer Naviera Ship Port ArrivalDate ETA ETD [Assignment].
+    // No usable headers: prefer Naviera Barco Puerto Fecha ETA ETD [Posición].
     const maxW = Math.max(0, ...body.map((r) => r.length));
     const colCount = headers.length;
     if (colCount >= 6 && maxW >= 6) {
@@ -221,19 +234,19 @@ export function normalizePasteMatrix(
         sourceIndexByTarget[i] = i;
       }
     } else {
-      // Legacy 4-col Ship Port Arrival Departure → Ship/Port/Arrival Date/ETD.
-      const shipIdx = headers.indexOf("Ship");
-      const portIdx = headers.indexOf("Port");
-      const dateIdx = headers.indexOf("Arrival Date");
+      // Legacy 4-col Ship Port Arrival Departure → Barco/Puerto/Fecha/ETD.
+      const shipIdx = headers.indexOf("Barco");
+      const portIdx = headers.indexOf("Puerto");
+      const dateIdx = headers.indexOf("Fecha");
       const etdIdx = headers.indexOf("ETD");
-      const assignIdx = headers.indexOf("Assignment");
+      const positionIdx = headers.indexOf("Posición");
       if (shipIdx >= 0) sourceIndexByTarget[shipIdx] = maxW > 0 ? 0 : -1;
       if (portIdx >= 0) sourceIndexByTarget[portIdx] = maxW > 1 ? 1 : -1;
       if (dateIdx >= 0) sourceIndexByTarget[dateIdx] = maxW > 2 ? 2 : -1;
       if (etdIdx >= 0) sourceIndexByTarget[etdIdx] = maxW > 3 ? 3 : -1;
-      if (assignIdx >= 0) {
-        if (maxW >= 7) sourceIndexByTarget[assignIdx] = 6;
-        else if (maxW === 5) sourceIndexByTarget[assignIdx] = 4;
+      if (positionIdx >= 0) {
+        if (maxW >= 7) sourceIndexByTarget[positionIdx] = 6;
+        else if (maxW === 5) sourceIndexByTarget[positionIdx] = 4;
       }
     }
   }
