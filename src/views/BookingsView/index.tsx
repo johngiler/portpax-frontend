@@ -1583,31 +1583,29 @@ export default function BookingsView() {
     appliedCalendarMode,
   ]);
 
-  const recapAvisos = useMemo(() => {
+  const recapSchedule = useMemo(() => {
     if (!bookingRecap) return undefined;
     const entries = bookingRecap.matches
-      .filter((row) => row.avisos.length > 0)
-      .map((row) => [row.booking_id, row.avisos] as const);
+      .filter(
+        (row) =>
+          row.recap_call_date || row.recap_eta || row.recap_etd,
+      )
+      .map(
+        (row) =>
+          [
+            row.booking_id,
+            {
+              call_date: row.recap_call_date ?? null,
+              eta: row.recap_eta ?? null,
+              etd: row.recap_etd ?? null,
+            },
+          ] as const,
+      );
     if (entries.length === 0) return undefined;
-    return Object.fromEntries(entries) as Record<number, string[]>;
-  }, [bookingRecap]);
-
-  const recapMatchPercent = useMemo(() => {
-    if (!bookingRecap) return undefined;
-    const entries = bookingRecap.matches
-      .filter((row) => typeof row.match_percent === "number")
-      .map((row) => [row.booking_id, row.match_percent] as const);
-    if (entries.length === 0) return undefined;
-    return Object.fromEntries(entries) as Record<number, number>;
-  }, [bookingRecap]);
-
-  const recapMatchReason = useMemo(() => {
-    if (!bookingRecap) return undefined;
-    const entries = bookingRecap.matches
-      .filter((row) => row.match_reason)
-      .map((row) => [row.booking_id, row.match_reason] as const);
-    if (entries.length === 0) return undefined;
-    return Object.fromEntries(entries) as Record<number, string>;
+    return Object.fromEntries(entries) as Record<
+      number,
+      { call_date: string | null; eta: string | null; etd: string | null }
+    >;
   }, [bookingRecap]);
 
   const recapMissingCount =
@@ -1676,9 +1674,7 @@ export default function BookingsView() {
       <BulkBookingsEditModal
         open={bulkEditOpen}
         bookingIds={bulkEditIds}
-        recapAvisos={recapAvisos}
-        recapMatchPercent={recapMatchPercent}
-        recapMatchReason={recapMatchReason}
+        recapSchedule={recapSchedule}
         onClose={() => {
           setBulkEditOpen(false);
           setBulkEditIds([]);

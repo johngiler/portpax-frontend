@@ -27,36 +27,49 @@ import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
 import BulkBookingsEditSkeleton from "./BulkBookingsEditSkeleton";
 import BulkEtaEtdInputs from "./BulkEtaEtdInputs";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
+import {
+  scoreDraftAgainstRecap,
+  type RecapScheduleRef,
+} from "./recapScheduleScore";
 
 type BulkBookingsEditModalProps = {
   open: boolean;
   bookingIds: number[];
-  /** Recap diffs keyed by booking id. Warnings only — rows stay editable. */
-  recapAvisos?: Record<number, string[]>;
-  /** Recap schedule agreement, 0–100. Only set for a recap-driven edit. */
-  recapMatchPercent?: Record<number, number>;
-  /** Same keys: sentence that explains the percent. */
-  recapMatchReason?: Record<number, string>;
+  /** Recap schedule per booking — live score vs draft Fecha/ETA/ETD. */
+  recapSchedule?: Record<number, RecapScheduleRef>;
   onClose: () => void;
   onSaved: (result: { updatedCount: number; failedCount: number }) => void;
 };
 
-function attachRecapAvisos(
+function stripRecapWarnings(row: BulkEditRow): BulkEditRow {
+  const warnings = (row.warnings ?? []).filter(
+    (issue) => issue.code !== "recap_mismatch",
+  );
+  if (warnings.length === (row.warnings ?? []).length) return row;
+  return { ...row, warnings };
+}
+
+/** Recompute recap avisos from the current draft (not the frozen first match). */
+function attachLiveRecap(
   row: BulkEditRow,
-  recapAvisos: Record<number, string[]> | undefined,
+  recapSchedule: Record<number, RecapScheduleRef> | undefined,
 ): BulkEditRow {
-  const extra = recapAvisos?.[row.booking_id] ?? [];
-  if (extra.length === 0) return row;
-  const existing = new Set((row.warnings ?? []).map((issue) => issue.message));
-  const added = extra
+  const cleaned = stripRecapWarnings(row);
+  const score = scoreDraftAgainstRecap(
+    cleaned,
+    recapSchedule?.[cleaned.booking_id],
+  );
+  if (!score || score.avisos.length === 0) return cleaned;
+  const existing = new Set((cleaned.warnings ?? []).map((issue) => issue.message));
+  const added = score.avisos
     .filter((message) => message && !existing.has(message))
     .map((message) => ({
       level: "warning" as const,
       code: "recap_mismatch",
       message,
     }));
-  if (added.length === 0) return row;
-  return { ...row, warnings: [...(row.warnings ?? []), ...added] };
+  if (added.length === 0) return cleaned;
+  return { ...cleaned, warnings: [...(cleaned.warnings ?? []), ...added] };
 }
 
 const STATUS_OPTIONS: { value: BookingStatus; label: string }[] = [
@@ -459,9 +472,7 @@ function EditRow({
 export default function BulkBookingsEditModal({
   open,
   bookingIds,
-  recapAvisos,
-  recapMatchPercent,
-  recapMatchReason,
+  recapSchedule,
   onClose,
   onSaved,
 }: BulkBookingsEditModalProps) {
@@ -484,7 +495,7 @@ export default function BulkBookingsEditModal({
     void previewBulkEdit(bookingIds)
       .then((res) => {
         if (cancelled) return;
-        setRows(res.rows.map((row) => attachRecapAvisos(row, recapAvisos)));
+        setRows(res.rows.map((row) => attachLiveRecap(row, recapSchedule)));
         setSelectedIds(
           new Set(res.rows.filter((r) => r.selectable).map((r) => r.booking_id)),
         );
@@ -502,7 +513,7 @@ export default function BulkBookingsEditModal({
     return () => {
       cancelled = true;
     };
-  }, [open, bookingIds, recapAvisos]);
+  }, [open, bookingIds, recapSchedule]);
 
   useNavigationLock(
     open && saving,
@@ -552,12 +563,12 @@ export default function BulkBookingsEditModal({
         prev.map((row) => {
           const incoming = byId.get(row.booking_id);
           if (!incoming) return row;
-          return attachRecapAvisos(
+          return attachLiveRecap(
             mergeEditRowAfterRevalidate(
               row.claim_lta_space ? row : incoming,
               incoming,
             ),
-            recapAvisos,
+            recapSchedule,
           );
         }),
       );
@@ -573,7 +584,7 @@ export default function BulkBookingsEditModal({
     setRows((prev) => {
       const current = prev.find((r) => r.booking_id === bookingId);
       if (!current) return prev;
-      const next = attachRecapAvisos(updater(current), recapAvisos);
+      const next = attachLiveRecap(updater(current), recapSchedule);
       setSelectedIds((selected) => {
         const copy = new Set(selected);
         if (!next.selectable) copy.delete(next.booking_id);
@@ -760,15 +771,20 @@ export default function BulkBookingsEditModal({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const recapScore = scoreDraftAgainstRecap(
+                  row,
+                  recapSchedule?.[row.booking_id],
+                );
+                return (
                 <EditRow
                   key={row.booking_id}
                   row={row}
                   checked={selectedIds.has(row.booking_id)}
                   disabled={tableBusy}
                   saveError={rowErrors[row.booking_id] ?? null}
-                  matchPercent={recapMatchPercent?.[row.booking_id]}
-                  matchReason={recapMatchReason?.[row.booking_id]}
+                  matchPercent={recapScore?.matchPercent}
+                  matchReason={recapScore?.matchReason}
                   onToggle={() => {
                     if (!row.selectable) return;
                     setSelectedIds((prev) => {
@@ -780,7 +796,8 @@ export default function BulkBookingsEditModal({
                   }}
                   onRowChange={(updater) => updateRow(row.booking_id, updater)}
                 />
-              ))}
+                );
+              })}
             </tbody>
           </table>
           {rows.length === 0 ? (

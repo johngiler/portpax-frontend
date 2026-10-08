@@ -182,6 +182,10 @@ export type BookingRecapMatch = {
   match_percent?: number;
   match_reason?: string;
   avisos: string[];
+  /** Recap schedule — FE re-scores draft ETA/ETD/date against these. */
+  recap_call_date?: string | null;
+  recap_eta?: string | null;
+  recap_etd?: string | null;
 };
 
 export type BookingRecapUnmatched = {
