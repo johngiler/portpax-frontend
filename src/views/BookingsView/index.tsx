@@ -128,9 +128,8 @@ function defaultCustomFrom(): string {
 }
 
 function defaultCustomTo(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 29);
-  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+  // End of the same calendar year as defaultCustomFrom (hoy → 31/12).
+  return toIsoDate(new Date().getFullYear(), 11, 31);
 }
 
 function todayIso(): string {
@@ -1287,9 +1286,10 @@ export default function BookingsView() {
 
   function handleCustomDateFromChange(value: string) {
     setCustomDateFrom(value);
+    // Full calendar year of Desde (e.g. 2027-01-01 → 2027-12-31).
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const { year, monthIndex, day } = parseIsoDate(value);
-      setCustomDateTo(toIsoDate(year + 1, monthIndex, day));
+      const { year } = parseIsoDate(value);
+      setCustomDateTo(toIsoDate(year, 11, 31));
     }
     if (availabilityDateAllowlist?.length) {
       setAvailabilityDateAllowlist(null);
