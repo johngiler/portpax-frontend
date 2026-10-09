@@ -1,4 +1,9 @@
-import { apiFetch, type ApiListResponse } from "@/services/apiClient";
+import {
+  apiDownload,
+  apiFetch,
+  triggerBrowserDownload,
+  type ApiListResponse,
+} from "@/services/apiClient";
 import type {
   LongTermAgreement,
   LongTermAgreementDetail,
@@ -194,5 +199,19 @@ export async function regenerateLongTermAgreementBookings(
   return apiFetch<GenerateLtaBookingsResult>(
     `${BASE}${id}/regenerate-bookings/`,
     { method: "POST" },
+  );
+}
+
+export async function exportLongTermAgreementBookings(
+  id: number,
+  exportFormat: "xlsx" | "csv" = "xlsx",
+): Promise<void> {
+  const query = new URLSearchParams({ export_format: exportFormat });
+  const { blob, filename } = await apiDownload(
+    `${BASE}${id}/export-bookings/?${query.toString()}`,
+  );
+  triggerBrowserDownload(
+    blob,
+    filename || `lta-reservas.${exportFormat}`,
   );
 }

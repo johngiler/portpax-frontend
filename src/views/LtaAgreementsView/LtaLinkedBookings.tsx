@@ -1,15 +1,24 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Anchor, CalendarRange, ExternalLink, Gauge, Scale } from "lucide-react";
+import {
+  Anchor,
+  CalendarRange,
+  Download,
+  ExternalLink,
+  Gauge,
+  Scale,
+} from "lucide-react";
 import Link from "next/link";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormFieldSelect } from "@/components/ui/FormField";
+import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useLtaLinkedBookings } from "@/hooks/swr/useLtaLinkedBookings";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
+import { exportLongTermAgreementBookings } from "@/services/bookings/ltaService";
 import {
   BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
@@ -102,6 +111,8 @@ export default function LtaLinkedBookings({
 }: LtaLinkedBookingsProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const {
     bookings,
     totalCount,
@@ -111,6 +122,21 @@ export default function LtaLinkedBookings({
     error,
     loadMore,
   } = useLtaLinkedBookings(agreement.id, active);
+
+  async function handleExport() {
+    if (exportBusy) return;
+    setExportError(null);
+    setExportBusy(true);
+    try {
+      await exportLongTermAgreementBookings(agreement.id, "xlsx");
+    } catch (err) {
+      setExportError(
+        getApiErrorMessage(err, "No se pudo exportar las reservas del acuerdo."),
+      );
+    } finally {
+      setExportBusy(false);
+    }
+  }
 
   const extras = useMemo(
     () => extraDateSet(agreement.date_exceptions),
@@ -153,6 +179,8 @@ export default function LtaLinkedBookings({
 
   const countLabel =
     !isLoading && !errorMessage ? ` (${totalCount})` : "";
+  const linkedCountHint = agreement.linked_bookings_count ?? totalCount;
+  const canExport = linkedCountHint > 0 || totalCount > 0;
 
   return (
     <div className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/30">
@@ -169,46 +197,65 @@ export default function LtaLinkedBookings({
             <LtaRuleSetChips agreement={agreement} />
           </div>
         </div>
-        {canWrite ? (
-          <div className="flex shrink-0 flex-wrap gap-3 sm:ml-auto">
-            <button
-              type="button"
-              disabled={!onOpenExceptions}
-              onClick={onOpenExceptions}
-              className={[
-                "inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
-                !onOpenExceptions
-                  ? "cursor-not-allowed opacity-40 shadow-none"
-                  : "cursor-pointer hover:bg-zinc-50 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.35)] dark:hover:bg-zinc-800",
-              ].join(" ")}
-            >
-              Excepciones
-              {exceptionCount > 0 ? (
-                <span className="rounded-full bg-[var(--admin-accent)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--admin-accent)]">
-                  {exceptionCount}
-                </span>
-              ) : null}
-            </button>
-            {!hasGenerated ? (
-              <DefaultButton
+        <div className="flex shrink-0 flex-wrap gap-3 sm:ml-auto">
+          <button
+            type="button"
+            disabled={exportBusy || !canExport}
+            onClick={() => void handleExport()}
+            className={[
+              "inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
+              exportBusy || !canExport
+                ? "cursor-not-allowed opacity-40 shadow-none"
+                : "cursor-pointer hover:bg-zinc-50 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.35)] dark:hover:bg-zinc-800",
+            ].join(" ")}
+          >
+            <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+            {exportBusy ? "Exportando…" : "Exportar"}
+          </button>
+          {canWrite ? (
+            <>
+              <button
                 type="button"
-                disabled={generateBusy || !onGenerate}
-                onClick={onGenerate}
+                disabled={!onOpenExceptions}
+                onClick={onOpenExceptions}
+                className={[
+                  "inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
+                  !onOpenExceptions
+                    ? "cursor-not-allowed opacity-40 shadow-none"
+                    : "cursor-pointer hover:bg-zinc-50 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.35)] dark:hover:bg-zinc-800",
+                ].join(" ")}
               >
-                {generateBusy ? "En cola…" : "Generar"}
-              </DefaultButton>
-            ) : (
-              <DefaultButton
-                type="button"
-                disabled={generateBusy || !onRegenerate}
-                onClick={onRegenerate}
-              >
-                {generateBusy ? "En cola…" : "Regenerar"}
-              </DefaultButton>
-            )}
-          </div>
-        ) : null}
+                Excepciones
+                {exceptionCount > 0 ? (
+                  <span className="rounded-full bg-[var(--admin-accent)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--admin-accent)]">
+                    {exceptionCount}
+                  </span>
+                ) : null}
+              </button>
+              {!hasGenerated ? (
+                <DefaultButton
+                  type="button"
+                  disabled={generateBusy || !onGenerate}
+                  onClick={onGenerate}
+                >
+                  {generateBusy ? "En cola…" : "Generar"}
+                </DefaultButton>
+              ) : (
+                <DefaultButton
+                  type="button"
+                  disabled={generateBusy || !onRegenerate}
+                  onClick={onRegenerate}
+                >
+                  {generateBusy ? "En cola…" : "Regenerar"}
+                </DefaultButton>
+              )}
+            </>
+          ) : null}
+        </div>
       </div>
+      {exportError ? (
+        <FormErrorAlert message={exportError} className="mb-3" />
+      ) : null}
 
       <div className="mb-4 space-y-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
