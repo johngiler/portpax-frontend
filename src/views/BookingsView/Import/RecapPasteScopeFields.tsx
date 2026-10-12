@@ -72,11 +72,10 @@ export default function RecapPasteScopeFields({
             });
           }}
           options={groupOptions}
-          optionLabel="Selecciona un grupo"
+          optionLabel="Todos los grupos"
           emptyValue={0}
           compact
           disabled={disabled}
-          required
           error={errors?.groups}
         />
         <FormFieldMultiSelect<number>
@@ -93,12 +92,12 @@ export default function RecapPasteScopeFields({
           placeholder={
             primaryGroupId > 0
               ? "Todas las navieras del grupo"
-              : "Elige un grupo primero"
+              : "Todas las navieras"
           }
           compact
           showLogo
           logoKind="shipping_line"
-          disabled={disabled || primaryGroupId <= 0}
+          disabled={disabled}
           error={errors?.lines}
         />
       </div>
@@ -116,7 +115,6 @@ export default function RecapPasteScopeFields({
           }
           compact
           disabled={disabled}
-          required
           error={errors?.dateFrom}
         />
         <FormField
@@ -132,7 +130,6 @@ export default function RecapPasteScopeFields({
           }
           compact
           disabled={disabled}
-          required
           error={errors?.dateTo}
         />
       </div>
@@ -149,23 +146,14 @@ export function emptyRecapScope(): BookingRecapScope {
   };
 }
 
+/** Optional delimiters — only validate range order when both dates are set. */
 export function validateRecapScope(scope: BookingRecapScope): {
   ok: boolean;
   errors: NonNullable<RecapPasteScopeFieldsProps["errors"]>;
 } {
   const errors: NonNullable<RecapPasteScopeFieldsProps["errors"]> = {};
-  const groups = scope.shipping_line_group_ids ?? [];
   const from = (scope.date_from ?? "").trim();
   const to = (scope.date_to ?? "").trim();
-  if (groups.length === 0) {
-    errors.groups = "Selecciona un grupo de naviera.";
-  }
-  if (!from) {
-    errors.dateFrom = "Indica la fecha desde.";
-  }
-  if (!to) {
-    errors.dateTo = "Indica la fecha hasta.";
-  }
   if (from && to && from > to) {
     errors.dateTo = "Hasta debe ser posterior o igual a Desde.";
   }

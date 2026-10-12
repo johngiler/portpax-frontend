@@ -100,15 +100,21 @@ export default function ImportPasteModal({
       const check = validateRecapScope(recapScope);
       setScopeErrors(check.errors);
       if (!check.ok) {
-        setFormError("Completa los delimitantes de búsqueda del recap.");
+        setFormError("Revisa el rango de fechas del recap.");
         return;
       }
-      scope = {
-        shipping_line_group_ids: recapScope.shipping_line_group_ids,
-        shipping_line_ids: recapScope.shipping_line_ids,
-        date_from: recapScope.date_from,
-        date_to: recapScope.date_to,
-      };
+      const groups = recapScope.shipping_line_group_ids ?? [];
+      const lines = recapScope.shipping_line_ids ?? [];
+      const from = (recapScope.date_from ?? "").trim();
+      const to = (recapScope.date_to ?? "").trim();
+      if (groups.length || lines.length || from || to) {
+        scope = {
+          shipping_line_group_ids: groups.length ? groups : undefined,
+          shipping_line_ids: lines.length ? lines : undefined,
+          date_from: from || undefined,
+          date_to: to || undefined,
+        };
+      }
     }
     const dataRows = rows.filter((row) => row.some((cell) => cell.trim() !== ""));
     let text = matrixToTsv(headers.length ? headers : columns, dataRows);
