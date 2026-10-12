@@ -75,6 +75,7 @@ import {
   type BookingStatusFilterValue,
   type CancellationReason,
 } from "@/types/booking";
+import type { VesselSizeCategory } from "@/types/cruise";
 import {
   addDaysIso,
   monthBounds,
@@ -119,6 +120,13 @@ function sameNumberList(a: number[], b: number[]): boolean {
   if (a.length !== b.length) return false;
   const sa = [...a].sort((x, y) => x - y);
   const sb = [...b].sort((x, y) => x - y);
+  return sa.every((v, i) => v === sb[i]);
+}
+
+function sameStringList(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
   return sa.every((v, i) => v === sb[i]);
 }
 
@@ -218,10 +226,18 @@ export default function BookingsView() {
   const [shippingLineGroupFilter, setShippingLineGroupFilter] = useState(0);
   const [appliedShippingLineGroupFilter, setAppliedShippingLineGroupFilter] =
     useState(0);
-  const [shippingLineFilter, setShippingLineFilter] = useState(0);
-  const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState(0);
+  const [shippingLineFilter, setShippingLineFilter] = useState<number[]>([]);
+  const [appliedShippingLineFilter, setAppliedShippingLineFilter] = useState<
+    number[]
+  >([]);
   const [vesselFilter, setVesselFilter] = useState(0);
   const [appliedVesselFilter, setAppliedVesselFilter] = useState(0);
+  const [sizeCategoryFilter, setSizeCategoryFilter] = useState<
+    VesselSizeCategory[]
+  >([]);
+  const [appliedSizeCategoryFilter, setAppliedSizeCategoryFilter] = useState<
+    VesselSizeCategory[]
+  >([]);
   const [tagFilter, setTagFilter] = useState<number[]>([]);
   const [appliedTagFilter, setAppliedTagFilter] = useState<number[]>([]);
   const [tagOptions, setTagOptions] = useState<
@@ -315,7 +331,7 @@ export default function BookingsView() {
   }, [lines, shippingLineGroupFilter]);
 
   const { vessels } = useActiveVesselsCatalog(
-    shippingLineFilter > 0 ? shippingLineFilter : null,
+    shippingLineFilter.length > 0 ? shippingLineFilter : null,
   );
   const vesselOptions = useMemo(
     () =>
@@ -337,8 +353,9 @@ export default function BookingsView() {
       search: appliedSearch,
       ports: appliedPortFilter,
       group: appliedShippingLineGroupFilter,
-      line: appliedShippingLineFilter,
+      lines: appliedShippingLineFilter,
       vessel: appliedVesselFilter,
+      sizeCategories: appliedSizeCategoryFilter,
       tags: appliedTagFilter,
       datePreset: appliedDatePreset,
       customFrom: appliedCustomDateFrom,
@@ -379,10 +396,7 @@ export default function BookingsView() {
     }
     const parsed = parseBookingsWorkspaceFilters(searchParams, navDefaults);
     const tab =
-      parsed.tab === "proximity" &&
-      (parsed.line <= 0 || parsed.vessel <= 0)
-        ? "list"
-        : parsed.tab;
+      parsed.tab === "proximity" && parsed.vessel <= 0 ? "list" : parsed.tab;
     const ports = parsed.ports.filter((id) =>
       portOptions.some((p) => p.value === id),
     );
@@ -401,15 +415,18 @@ export default function BookingsView() {
     setPortFilter(ports);
     setAppliedPortFilter(ports);
     let nextGroup = parsed.group;
-    if (nextGroup <= 0 && parsed.line > 0) {
-      nextGroup = lines.find((line) => line.id === parsed.line)?.group ?? 0;
+    if (nextGroup <= 0 && parsed.lines.length > 0) {
+      const first = lines.find((line) => line.id === parsed.lines[0]);
+      if (first?.group) nextGroup = first.group;
     }
     setShippingLineGroupFilter(nextGroup);
     setAppliedShippingLineGroupFilter(nextGroup);
-    setShippingLineFilter(parsed.line);
-    setAppliedShippingLineFilter(parsed.line);
+    setShippingLineFilter(parsed.lines);
+    setAppliedShippingLineFilter(parsed.lines);
     setVesselFilter(parsed.vessel);
     setAppliedVesselFilter(parsed.vessel);
+    setSizeCategoryFilter(parsed.sizeCategories);
+    setAppliedSizeCategoryFilter(parsed.sizeCategories);
     setTagFilter(parsed.tags);
     setAppliedTagFilter(parsed.tags);
     setDatePreset(parsed.datePreset as BookingsDatePreset);
@@ -499,13 +516,20 @@ export default function BookingsView() {
       first_arrival: appliedFirstArrival || undefined,
       cancellation_reason: appliedCancellationReason || undefined,
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
-      shipping_line:
-        appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      shipping_lines:
+        appliedShippingLineFilter.length > 0
+          ? appliedShippingLineFilter
+          : undefined,
       shipping_line_group:
-        appliedShippingLineFilter <= 0 && appliedShippingLineGroupFilter > 0
+        appliedShippingLineFilter.length === 0 &&
+        appliedShippingLineGroupFilter > 0
           ? appliedShippingLineGroupFilter
           : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      size_categories:
+        appliedSizeCategoryFilter.length > 0
+          ? appliedSizeCategoryFilter
+          : undefined,
       tags: appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
       position:
         appliedPortFilter.length === 1 && appliedPositionFilter > 0
@@ -540,6 +564,7 @@ export default function BookingsView() {
     appliedShippingLineFilter,
     appliedShippingLineGroupFilter,
     appliedVesselFilter,
+    appliedSizeCategoryFilter,
     appliedTagFilter,
     appliedPositionFilter,
     appliedDatePreset,
@@ -640,13 +665,20 @@ export default function BookingsView() {
     () => ({
       search: appliedSearch || undefined,
       ports: appliedPortFilter.length > 0 ? appliedPortFilter : undefined,
-      shipping_line:
-        appliedShippingLineFilter > 0 ? appliedShippingLineFilter : undefined,
+      shipping_lines:
+        appliedShippingLineFilter.length > 0
+          ? appliedShippingLineFilter
+          : undefined,
       shipping_line_group:
-        appliedShippingLineFilter <= 0 && appliedShippingLineGroupFilter > 0
+        appliedShippingLineFilter.length === 0 &&
+        appliedShippingLineGroupFilter > 0
           ? appliedShippingLineGroupFilter
           : undefined,
       vessel: appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+      size_categories:
+        appliedSizeCategoryFilter.length > 0
+          ? appliedSizeCategoryFilter
+          : undefined,
       tags: appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
       position:
         appliedPortFilter.length === 1 && appliedPositionFilter > 0
@@ -667,6 +699,7 @@ export default function BookingsView() {
       appliedShippingLineFilter,
       appliedShippingLineGroupFilter,
       appliedVesselFilter,
+      appliedSizeCategoryFilter,
       appliedTagFilter,
       appliedPositionFilter,
       appliedStatusFilter,
@@ -681,8 +714,9 @@ export default function BookingsView() {
     Boolean(appliedSearch) ||
     appliedPortFilter.length > 0 ||
     appliedShippingLineGroupFilter > 0 ||
-    appliedShippingLineFilter > 0 ||
+    appliedShippingLineFilter.length > 0 ||
     appliedVesselFilter > 0 ||
+    appliedSizeCategoryFilter.length > 0 ||
     appliedTagFilter.length > 0 ||
     appliedPositionFilter > 0 ||
     appliedStatusFilter.length > 0 ||
@@ -748,6 +782,7 @@ export default function BookingsView() {
     setAppliedShippingLineGroupFilter(shippingLineGroupFilter);
     setAppliedShippingLineFilter(shippingLineFilter);
     setAppliedVesselFilter(vesselFilter);
+    setAppliedSizeCategoryFilter(sizeCategoryFilter);
     setAppliedTagFilter(tagFilter);
     setAppliedDatePreset(datePreset);
     setAppliedCustomDateFrom(customDateFrom);
@@ -771,8 +806,9 @@ export default function BookingsView() {
         search: nextSearch,
         ports: portFilter,
         group: shippingLineGroupFilter,
-        line: shippingLineFilter,
+        lines: shippingLineFilter,
         vessel: vesselFilter,
+        sizeCategories: sizeCategoryFilter,
         tags: tagFilter,
         datePreset,
         customFrom: customDateFrom,
@@ -845,10 +881,12 @@ export default function BookingsView() {
     setAppliedPortFilter([]);
     setShippingLineGroupFilter(0);
     setAppliedShippingLineGroupFilter(0);
-    setShippingLineFilter(0);
-    setAppliedShippingLineFilter(0);
+    setShippingLineFilter([]);
+    setAppliedShippingLineFilter([]);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
+    setSizeCategoryFilter([]);
+    setAppliedSizeCategoryFilter([]);
     setTagFilter(tags);
     setAppliedTagFilter(tags);
     setDatePreset("all");
@@ -870,8 +908,9 @@ export default function BookingsView() {
       search: "",
       ports: [],
       group: 0,
-      line: 0,
+      lines: [],
       vessel: 0,
+      sizeCategories: [],
       tags,
       datePreset: "all",
       customFrom: from,
@@ -913,10 +952,12 @@ export default function BookingsView() {
     setAppliedPortFilter(ports);
     setShippingLineGroupFilter(0);
     setAppliedShippingLineGroupFilter(0);
-    setShippingLineFilter(0);
-    setAppliedShippingLineFilter(0);
+    setShippingLineFilter([]);
+    setAppliedShippingLineFilter([]);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
+    setSizeCategoryFilter([]);
+    setAppliedSizeCategoryFilter([]);
     setTagFilter([]);
     setAppliedTagFilter([]);
     setDatePreset("all");
@@ -948,8 +989,9 @@ export default function BookingsView() {
       search: "",
       ports,
       group: 0,
-      line: 0,
+      lines: [],
       vessel: 0,
+      sizeCategories: [],
       tags: [],
       datePreset: "all",
       customFrom: from,
@@ -970,10 +1012,7 @@ export default function BookingsView() {
   }
 
   function handleTabChange(next: BookingsTabQuery) {
-    if (
-      next === "proximity" &&
-      (appliedShippingLineFilter <= 0 || appliedVesselFilter <= 0)
-    ) {
+    if (next === "proximity" && appliedVesselFilter <= 0) {
       return;
     }
     setTab(next);
@@ -1007,8 +1046,9 @@ export default function BookingsView() {
       (tab === "list" && appliedSearch !== "") ||
       (tab !== "proximity" && appliedPortFilter.length > 0) ||
       appliedShippingLineGroupFilter > 0 ||
-      appliedShippingLineFilter > 0 ||
+      appliedShippingLineFilter.length > 0 ||
       appliedVesselFilter > 0 ||
+      (tab === "list" && appliedSizeCategoryFilter.length > 0) ||
       appliedTagFilter.length > 0 ||
       (tab !== "proximity" && appliedPositionFilter > 0) ||
       appliedDatePreset !== "all" ||
@@ -1037,10 +1077,12 @@ export default function BookingsView() {
       (portFilter.length > 0 || appliedPortFilter.length > 0)) ||
     shippingLineGroupFilter > 0 ||
     appliedShippingLineGroupFilter > 0 ||
-    shippingLineFilter > 0 ||
-    appliedShippingLineFilter > 0 ||
+    shippingLineFilter.length > 0 ||
+    appliedShippingLineFilter.length > 0 ||
     vesselFilter > 0 ||
     appliedVesselFilter > 0 ||
+    sizeCategoryFilter.length > 0 ||
+    appliedSizeCategoryFilter.length > 0 ||
     tagFilter.length > 0 ||
     appliedTagFilter.length > 0 ||
     positionFilter > 0 ||
@@ -1068,8 +1110,9 @@ export default function BookingsView() {
     (tab === "list" && search.trim() !== appliedSearch) ||
     (tab !== "proximity" && !sameNumberList(portFilter, appliedPortFilter)) ||
     shippingLineGroupFilter !== appliedShippingLineGroupFilter ||
-    shippingLineFilter !== appliedShippingLineFilter ||
+    !sameNumberList(shippingLineFilter, appliedShippingLineFilter) ||
     vesselFilter !== appliedVesselFilter ||
+    !sameStringList(sizeCategoryFilter, appliedSizeCategoryFilter) ||
     !sameNumberList(tagFilter, appliedTagFilter) ||
     datePreset !== appliedDatePreset ||
     customDateFrom !== appliedCustomDateFrom ||
@@ -1094,17 +1137,21 @@ export default function BookingsView() {
             statuses: listParams.statuses,
             ports: listParams.ports,
             position: listParams.position,
-            shipping_line:
-              appliedShippingLineFilter > 0
+            shipping_lines:
+              appliedShippingLineFilter.length > 0
                 ? appliedShippingLineFilter
                 : undefined,
             shipping_line_group:
-              appliedShippingLineFilter <= 0 &&
+              appliedShippingLineFilter.length === 0 &&
               appliedShippingLineGroupFilter > 0
                 ? appliedShippingLineGroupFilter
                 : undefined,
             vessel:
               appliedVesselFilter > 0 ? appliedVesselFilter : undefined,
+            size_categories:
+              appliedSizeCategoryFilter.length > 0
+                ? appliedSizeCategoryFilter
+                : undefined,
             tags:
               appliedTagFilter.length > 0 ? appliedTagFilter : undefined,
             call_date_from: listParams.call_date_from,
@@ -1126,12 +1173,12 @@ export default function BookingsView() {
             date_from: availabilityRange.from,
             date_to: availabilityRange.to,
             port: appliedPortFilter[0],
-            shipping_line:
-              appliedShippingLineFilter > 0
+            shipping_lines:
+              appliedShippingLineFilter.length > 0
                 ? appliedShippingLineFilter
                 : undefined,
             shipping_line_group:
-              appliedShippingLineFilter <= 0 &&
+              appliedShippingLineFilter.length === 0 &&
               appliedShippingLineGroupFilter > 0
                 ? appliedShippingLineGroupFilter
                 : undefined,
@@ -1175,9 +1222,14 @@ export default function BookingsView() {
           ports: exportPorts,
           call_date_from: from,
           call_date_to: to,
-          shipping_line:
-            appliedShippingLineFilter > 0
+          shipping_lines:
+            appliedShippingLineFilter.length > 0
               ? appliedShippingLineFilter
+              : undefined,
+          shipping_line_group:
+            appliedShippingLineFilter.length === 0 &&
+            appliedShippingLineGroupFilter > 0
+              ? appliedShippingLineGroupFilter
               : undefined,
           statuses:
             appliedStatusFilter.length > 0
@@ -1201,6 +1253,8 @@ export default function BookingsView() {
       appliedShippingLineFilter,
       appliedShippingLineGroupFilter,
       appliedVesselFilter,
+      appliedSizeCategoryFilter,
+      appliedTagFilter,
       appliedPositionFilter,
       appliedStatusFilter,
       portOptions,
@@ -1322,10 +1376,12 @@ export default function BookingsView() {
     setAppliedPortFilter([]);
     setShippingLineGroupFilter(0);
     setAppliedShippingLineGroupFilter(0);
-    setShippingLineFilter(0);
-    setAppliedShippingLineFilter(0);
+    setShippingLineFilter([]);
+    setAppliedShippingLineFilter([]);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
+    setSizeCategoryFilter([]);
+    setAppliedSizeCategoryFilter([]);
     setTagFilter([]);
     setAppliedTagFilter([]);
     setPositionFilter(0);
@@ -1346,8 +1402,9 @@ export default function BookingsView() {
         search: "",
         ports: [],
         group: 0,
-        line: 0,
+        lines: [],
         vessel: 0,
+        sizeCategories: [],
         tags: [],
         datePreset: "all",
         customFrom: from,
@@ -1499,19 +1556,27 @@ export default function BookingsView() {
   const activeFilterChips = useMemo(() => {
     const groupLabel =
       appliedShippingLineGroupFilter > 0
-        ? shippingLineGroupOptions.find(
+        ? (shippingLineGroupOptions.find(
             (o) => o.value === appliedShippingLineGroupFilter,
-          )?.label
+          )?.label ?? null)
         : null;
     const lineLabel =
-      appliedShippingLineFilter > 0
-        ? shippingLineOptions.find((o) => o.value === appliedShippingLineFilter)
-            ?.label
-        : null;
+      appliedShippingLineFilter.length === 0
+        ? null
+        : appliedShippingLineFilter.length === 1
+          ? (shippingLineOptions.find(
+              (o) => o.value === appliedShippingLineFilter[0],
+            )?.label ?? null)
+          : `${
+              shippingLineOptions.find(
+                (o) => o.value === appliedShippingLineFilter[0],
+              )?.label ?? "Naviera"
+            } +${appliedShippingLineFilter.length - 1}`;
     const vesselLabel =
       appliedVesselFilter > 0
         ? vesselOptions.find((o) => o.value === appliedVesselFilter)?.label
         : null;
+    const sizeCategoryLabels = appliedSizeCategoryFilter;
     const tagLabels = appliedTagFilter
       .map(
         (id) =>
@@ -1542,6 +1607,7 @@ export default function BookingsView() {
       groupLabel: groupLabel ?? null,
       lineLabel: lineLabel ?? null,
       vesselLabel: vesselLabel ?? null,
+      sizeCategoryLabels,
       tagLabels,
       statuses: appliedStatusFilter,
       conflict: appliedConflictFilter,
@@ -1568,6 +1634,7 @@ export default function BookingsView() {
     shippingLineOptions,
     appliedVesselFilter,
     vesselOptions,
+    appliedSizeCategoryFilter,
     appliedTagFilter,
     tagOptions,
     appliedStatusFilter,
@@ -1787,6 +1854,7 @@ export default function BookingsView() {
           shippingLineGroupFilter={shippingLineGroupFilter}
           shippingLineFilter={shippingLineFilter}
           vesselFilter={vesselFilter}
+          sizeCategoryFilter={sizeCategoryFilter}
           tagFilter={tagFilter}
           tagOptions={tagOptions}
           datePreset={datePreset}
@@ -1825,6 +1893,7 @@ export default function BookingsView() {
           onShippingLineGroupFilterChange={setShippingLineGroupFilter}
           onShippingLineFilterChange={setShippingLineFilter}
           onVesselFilterChange={setVesselFilter}
+          onSizeCategoryFilterChange={setSizeCategoryFilter}
           onTagFilterChange={setTagFilter}
           onDatePresetChange={handleDatePresetChange}
           onCustomDateFromChange={handleCustomDateFromChange}
@@ -1887,9 +1956,7 @@ export default function BookingsView() {
       <BookingsTabs
         value={tab}
         onChange={handleTabChange}
-        proximityEnabled={
-          appliedShippingLineFilter > 0 && appliedVesselFilter > 0
-        }
+        proximityEnabled={appliedVesselFilter > 0}
       />
 
       {hasActiveFilters ? (
@@ -2000,7 +2067,7 @@ export default function BookingsView() {
           portIds={appliedPortFilter}
           portLabel={calendarPortLabel}
           shippingLineGroupId={appliedShippingLineGroupFilter}
-          shippingLineId={appliedShippingLineFilter}
+          shippingLineIds={appliedShippingLineFilter}
           vesselId={appliedVesselFilter}
           tagIds={appliedTagFilter}
           statuses={appliedStatusFilter}
@@ -2047,12 +2114,12 @@ export default function BookingsView() {
           filters={
             appliedHeatMode === "occupancy"
               ? {
-                  shipping_line:
-                    appliedShippingLineFilter > 0
+                  shipping_lines:
+                    appliedShippingLineFilter.length > 0
                       ? appliedShippingLineFilter
                       : undefined,
                   shipping_line_group:
-                    appliedShippingLineFilter <= 0 &&
+                    appliedShippingLineFilter.length === 0 &&
                     appliedShippingLineGroupFilter > 0
                       ? appliedShippingLineGroupFilter
                       : undefined,
@@ -2092,7 +2159,12 @@ export default function BookingsView() {
 
       {tab === "proximity" ? (
         <BookingsVesselProximityPanel
-          shippingLineId={appliedShippingLineFilter}
+          shippingLineId={
+            appliedShippingLineFilter.length === 1
+              ? appliedShippingLineFilter[0]
+              : (vessels.find((v) => v.id === appliedVesselFilter)
+                  ?.shipping_line ?? 0)
+          }
           vesselId={appliedVesselFilter}
           dateFrom={proximityDateRange.from}
           dateTo={proximityDateRange.to}

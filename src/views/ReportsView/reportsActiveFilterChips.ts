@@ -4,7 +4,9 @@ import { isDefaultReportDateRange } from "./reportsFilterDefaults";
 import {
   defaultMovementYear,
   defaultWeeklyYearWeek,
+  REPORT_SEASON_OPTIONS,
   type ReportPaxBasis,
+  type ReportSeason,
   type ReportTab,
 } from "./reportsFilterQuery";
 
@@ -15,6 +17,7 @@ export function buildReportsActiveFilterChips(input: {
   dateTo: string;
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
+  season?: ReportSeason;
   years?: number[];
   week?: number;
   tagLabels?: string[];
@@ -142,6 +145,21 @@ export function buildReportsActiveFilterChips(input: {
     });
   }
 
+  if (
+    input.tab === "carrier_panorama" &&
+    input.season &&
+    input.season !== "natural"
+  ) {
+    const seasonLabel =
+      REPORT_SEASON_OPTIONS.find((opt) => opt.value === input.season)?.label ??
+      input.season;
+    chips.push({
+      id: "season",
+      label: seasonLabel,
+      icon: "calendar",
+    });
+  }
+
   return chips;
 }
 
@@ -153,6 +171,7 @@ export function reportsHasActiveFilters(input: {
   dateTo: string;
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
+  season?: ReportSeason;
   years?: number[];
   week?: number;
   tagIds?: number[];
@@ -189,6 +208,8 @@ export function reportsHasActiveFilters(input: {
     (input.tab === "carrier_panorama" && (input.portIds?.length ?? 0) > 0) ||
     input.withoutLta ||
     input.paxBasis !== "planned" ||
+    (input.tab === "carrier_panorama" &&
+      Boolean(input.season && input.season !== "natural")) ||
     (input.years?.length ?? 0) > 0 ||
     (input.tagIds?.length ?? 0) > 0 ||
     (input.shippingLineId ?? 0) > 0 ||

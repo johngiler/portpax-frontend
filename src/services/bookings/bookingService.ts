@@ -57,9 +57,13 @@ export type FetchBookingsParams = {
   ports?: number[];
   position?: number;
   shipping_line?: number;
-  /** When set without shipping_line, filters by all lines in the group. */
+  /** Multi shipping-line filter (CSV on `shipping_line`). Wins over single / group. */
+  shipping_lines?: number[];
+  /** When set without shipping_line(s), filters by all lines in the group. */
   shipping_line_group?: number;
   vessel?: number;
+  /** Multi size_category filter (CSV on `size_category` query param). */
+  size_categories?: string[];
   long_term_agreement?: number;
   /** Multi-tag filter (CSV on `tags` query param). */
   tags?: number[];
@@ -96,11 +100,18 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
     query.set("port", String(params.port));
   }
   if (params.position) query.set("position", String(params.position));
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
+  if (params.size_categories && params.size_categories.length > 0) {
+    query.set("size_category", params.size_categories.join(","));
+  }
   if (params.long_term_agreement) {
     query.set("long_term_agreement", String(params.long_term_agreement));
   }
@@ -170,6 +181,8 @@ export async function exportCalendarReport(
     call_date_from: string;
     call_date_to: string;
     shipping_line?: number;
+    shipping_lines?: number[];
+    shipping_line_group?: number;
     status?: BookingListStatusFilter;
     statuses?: BookingStatusFilterValue[];
     exportFormat: "xlsx" | "csv";
@@ -180,7 +193,14 @@ export async function exportCalendarReport(
   query.set("call_date_from", params.call_date_from);
   query.set("call_date_to", params.call_date_to);
   query.set("export_format", params.exportFormat);
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
+  if (params.shipping_line_group) {
+    query.set("shipping_line_group", String(params.shipping_line_group));
+  }
   const statusCsv =
     params.statuses && params.statuses.length > 0
       ? serializeBookingStatusFilters(params.statuses)
@@ -408,6 +428,7 @@ export async function fetchAvailabilityReport(params: {
   date_to: string;
   port: number;
   shipping_line?: number;
+  shipping_lines?: number[];
   shipping_line_group?: number;
   vessel?: number;
   position?: number;
@@ -430,7 +451,9 @@ export async function fetchAvailabilityReport(params: {
   query.set("date_from", params.date_from);
   query.set("date_to", params.date_to);
   query.set("port", String(params.port));
-  if (params.shipping_line) {
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
   if (params.shipping_line_group) {
@@ -471,6 +494,7 @@ export async function fetchAvailabilityReport(params: {
     Boolean(params.cancellation_reason) ||
     Boolean(params.conflict_severity) ||
     Boolean(params.conflict_type) ||
+    Boolean(params.shipping_lines?.length) ||
     Boolean(params.shipping_line) ||
     Boolean(params.shipping_line_group) ||
     Boolean(params.vessel) ||
@@ -689,6 +713,7 @@ export type CarrierPanoramaReport = {
   date_to: string;
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "summer" | "winter";
   years: number[];
   kpis: {
     total_calls: number;
@@ -711,6 +736,7 @@ export async function fetchCarrierPanoramaReport(params: {
   date_to: string;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "summer" | "winter";
   shipping_line?: number;
   shipping_line_group?: number;
   ports?: number[];
@@ -721,6 +747,9 @@ export async function fetchCarrierPanoramaReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.season && params.season !== "natural") {
+    query.set("season", params.season);
   }
   if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
@@ -743,6 +772,7 @@ export async function exportStructuredReport(params: {
   port?: number;
   ports?: number[];
   shipping_line?: number;
+  shipping_lines?: number[];
   shipping_line_group?: number;
   vessel?: number;
   position?: number;
@@ -750,6 +780,7 @@ export async function exportStructuredReport(params: {
   statuses?: string[];
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "summer" | "winter";
   years?: number[];
   year?: number;
   week?: number;
@@ -764,7 +795,11 @@ export async function exportStructuredReport(params: {
   if (params.date_to) query.set("date_to", params.date_to);
   if (params.port) query.set("port", String(params.port));
   if (params.ports?.length) query.set("ports", params.ports.join(","));
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
@@ -773,6 +808,9 @@ export async function exportStructuredReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.season && params.season !== "natural") {
+    query.set("season", params.season);
   }
   if (params.year) query.set("year", String(params.year));
   if (params.week) query.set("week", String(params.week));
@@ -1011,6 +1049,8 @@ export type FetchDashboardStatsParams = {
   ports?: number[];
   shipping_line?: number;
   shipping_line_group?: number;
+  without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
 };
 
 export async function fetchDashboardStats(
@@ -1025,6 +1065,10 @@ export async function fetchDashboardStats(
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
+  }
+  if (params.without_lta) query.set("without_lta", "true");
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
   }
   return apiFetch(`${BASE}dashboard-stats/?${query.toString()}`);
 }

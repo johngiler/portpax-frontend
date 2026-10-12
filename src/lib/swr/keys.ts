@@ -31,8 +31,14 @@ export const swrKeys = {
 
   shippingLineGroups: ["shipping-line-groups"] as const,
 
-  vesselsCatalog: (shippingLineId?: number) =>
-    ["vessels", "catalog", shippingLineId ?? 0] as const,
+  vesselsCatalog: (shippingLineIds?: number | number[]) => {
+    const ids = Array.isArray(shippingLineIds)
+      ? shippingLineIds.filter((id) => id > 0).sort((a, b) => a - b)
+      : shippingLineIds && shippingLineIds > 0
+        ? [shippingLineIds]
+        : [];
+    return ["vessels", "catalog", ids.join(",") || "0"] as const;
+  },
 
   usersPage: (page: number, search: string, pageSize: number) =>
     ["users", "page", page, search, pageSize] as const,

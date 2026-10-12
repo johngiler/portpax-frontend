@@ -49,8 +49,8 @@ type UnifiedCalendarCardProps = {
   /** Empty = all ports in one card. */
   portIds: number[];
   portLabel: string;
-  shippingLineGroupId: number;
-  shippingLineId: number;
+  shippingLineGroupId?: number;
+  shippingLineIds?: number[];
   vesselId: number;
   tagIds?: number[];
   statuses: BookingStatusFilterValue[];
@@ -76,8 +76,8 @@ export default function UnifiedCalendarCard({
   onModeChange,
   portIds,
   portLabel,
-  shippingLineGroupId,
-  shippingLineId,
+  shippingLineGroupId = 0,
+  shippingLineIds = [],
   vesselId,
   tagIds = [],
   statuses,
@@ -122,7 +122,7 @@ export default function UnifiedCalendarCard({
     () => ({
       statuses,
       vesselId,
-      shippingLineId,
+      shippingLineIds,
       shippingLineGroupId,
       positionId: multiPort ? 0 : positionId,
       tagIds: tagIds.length > 0 ? tagIds : undefined,
@@ -136,7 +136,7 @@ export default function UnifiedCalendarCard({
     [
       statuses,
       vesselId,
-      shippingLineId,
+      shippingLineIds,
       shippingLineGroupId,
       multiPort,
       positionId,
@@ -159,9 +159,10 @@ export default function UnifiedCalendarCard({
   const firstMatchProbe = useMemo(
     () => ({
       ports: portIds.length > 0 ? portIds : undefined,
-      shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
+      shipping_lines:
+        shippingLineIds.length > 0 ? shippingLineIds : undefined,
       shipping_line_group:
-        shippingLineId <= 0 && shippingLineGroupId > 0
+        shippingLineIds.length === 0 && shippingLineGroupId > 0
           ? shippingLineGroupId
           : undefined,
       vessel: vesselId > 0 ? vesselId : undefined,
@@ -177,7 +178,7 @@ export default function UnifiedCalendarCard({
     }),
     [
       portIds,
-      shippingLineId,
+      shippingLineIds,
       shippingLineGroupId,
       vesselId,
       multiPort,

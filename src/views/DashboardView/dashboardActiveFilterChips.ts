@@ -1,6 +1,7 @@
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
 import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilterChips";
+import type { ReportPaxBasis } from "@/views/ReportsView/reportsFilterQuery";
 
 export function buildDashboardActiveFilterChips(input: {
   portLabel: string | null;
@@ -10,6 +11,8 @@ export function buildDashboardActiveFilterChips(input: {
   dateTo: string;
   defaultDateFrom: string;
   defaultDateTo: string;
+  withoutLta?: boolean;
+  paxBasis?: ReportPaxBasis;
 }): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
@@ -48,6 +51,22 @@ export function buildDashboardActiveFilterChips(input: {
     });
   }
 
+  if (input.withoutLta) {
+    chips.push({
+      id: "without-lta",
+      label: "Sin LTA",
+      icon: "lta",
+    });
+  }
+
+  if (input.paxBasis === "capacity") {
+    chips.push({
+      id: "pax-basis",
+      label: "Base PAX: Cap. máx.",
+      icon: "dates",
+    });
+  }
+
   return chips;
 }
 
@@ -58,12 +77,16 @@ export function dashboardHasActiveFilters(input: {
   dateTo: string;
   defaultDateFrom: string;
   defaultDateTo: string;
+  withoutLta?: boolean;
+  paxBasis?: ReportPaxBasis;
 }): boolean {
   return (
     input.portIds.length > 0 ||
     input.carrier.type !== "all" ||
     input.dateFrom !== input.defaultDateFrom ||
-    input.dateTo !== input.defaultDateTo
+    input.dateTo !== input.defaultDateTo ||
+    Boolean(input.withoutLta) ||
+    input.paxBasis === "capacity"
   );
 }
 

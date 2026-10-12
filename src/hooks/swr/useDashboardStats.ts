@@ -10,6 +10,8 @@ export type DashboardStatsParams = {
   dateTo: string;
   portIds: number[];
   carrier: DashboardCarrierFilter;
+  withoutLta?: boolean;
+  paxBasis?: "planned" | "capacity";
 };
 
 function statsParamsKey(params: DashboardStatsParams): string {
@@ -18,9 +20,14 @@ function statsParamsKey(params: DashboardStatsParams): string {
       ? "all"
       : `${params.carrier.type}:${params.carrier.id}`;
   const portsPart = [...params.portIds].sort((a, b) => a - b).join(",");
-  return [params.dateFrom, params.dateTo, portsPart || "0", carrierPart].join(
-    "|",
-  );
+  return [
+    params.dateFrom,
+    params.dateTo,
+    portsPart || "0",
+    carrierPart,
+    params.withoutLta ? "1" : "0",
+    params.paxBasis ?? "planned",
+  ].join("|");
 }
 
 export function useDashboardStats(params: DashboardStatsParams, enabled = true) {
@@ -38,6 +45,8 @@ export function useDashboardStats(params: DashboardStatsParams, enabled = true) 
           params.carrier.type === "line" ? params.carrier.id : undefined,
         shipping_line_group:
           params.carrier.type === "group" ? params.carrier.id : undefined,
+        without_lta: params.withoutLta || undefined,
+        pax_basis: params.paxBasis,
       }),
   );
 

@@ -39,6 +39,7 @@ import {
   clampIsoWeek,
   parseReportsFilters,
   REPORT_PAX_BASIS_OPTIONS,
+  REPORT_SEASON_OPTIONS,
   reportsFiltersForTab,
   serializeReportsFilters,
   solicitudesYearOptions,
@@ -46,6 +47,7 @@ import {
   auditOpsYearOptions,
   yearsInReportRange,
   type ReportPaxBasis,
+  type ReportSeason,
   type ReportTab,
   type ReportsWorkspaceFilters,
 } from "./reportsFilterQuery";
@@ -80,6 +82,7 @@ type AppliedReportsFilters = ReportFilters & {
   shippingLineGroupId: number;
   shippingLineId: number;
   portIds: number[];
+  season: ReportSeason;
 };
 
 function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
@@ -102,6 +105,7 @@ function toApplied(filters: ReportsWorkspaceFilters): AppliedReportsFilters {
     shippingLineGroupId: filters.shippingLineGroupId,
     shippingLineId: filters.shippingLineId,
     portIds: filters.portIds,
+    season: filters.season,
   };
 }
 
@@ -123,6 +127,7 @@ export default function ReportsView() {
   const [portIds, setPortIds] = useState<number[]>(initial.portIds);
   const [withoutLta, setWithoutLta] = useState(initial.withoutLta);
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>(initial.paxBasis);
+  const [season, setSeason] = useState<ReportSeason>(initial.season);
   const [years, setYears] = useState<number[]>(initial.years);
   const [week, setWeek] = useState<number>(initial.week);
   const [tagIds, setTagIds] = useState<number[]>(initial.tagIds);
@@ -219,6 +224,7 @@ export default function ReportsView() {
       portIds,
       withoutLta,
       paxBasis,
+      season,
       years,
       week,
       tagIds,
@@ -233,6 +239,7 @@ export default function ReportsView() {
       portIds,
       withoutLta,
       paxBasis,
+      season,
       years,
       week,
       tagIds,
@@ -317,6 +324,7 @@ export default function ReportsView() {
     dateTo: appliedFilters.dateTo,
     withoutLta: appliedFilters.withoutLta,
     paxBasis: appliedFilters.paxBasis,
+    season: appliedFilters.season,
     years: appliedFilters.years,
     week: appliedFilters.week,
     tagIds: appliedFilters.tagIds,
@@ -342,6 +350,7 @@ export default function ReportsView() {
         dateTo: appliedFilters.dateTo,
         withoutLta: appliedFilters.withoutLta,
         paxBasis: appliedFilters.paxBasis,
+        season: appliedFilters.season,
         years: appliedFilters.years,
         week: appliedFilters.week,
         tagLabels: appliedFilters.tagIds
@@ -428,6 +437,7 @@ export default function ReportsView() {
           (tab === "carrier_panorama" && portIds.length > 0) ||
           withoutLta ||
           paxBasis !== "planned" ||
+          (tab === "carrier_panorama" && season !== "natural") ||
           years.length > 0 ||
           tagIds.length > 0 ||
           shippingLineGroupId > 0 ||
@@ -440,6 +450,7 @@ export default function ReportsView() {
     portIds.join(",") !== appliedFilters.portIds.join(",") ||
     withoutLta !== appliedFilters.withoutLta ||
     paxBasis !== appliedFilters.paxBasis ||
+    season !== appliedFilters.season ||
     tab !== appliedFilters.tab ||
     years.join(",") !== appliedFilters.years.join(",") ||
     week !== appliedFilters.week ||
@@ -482,6 +493,7 @@ export default function ReportsView() {
     setPortIds([]);
     setWithoutLta(false);
     setPaxBasis("planned");
+    setSeason("natural");
     setYears(next.years);
     setWeek(next.week);
     setTagIds([]);
@@ -520,6 +532,7 @@ export default function ReportsView() {
     setPortIds(next.portIds);
     setWithoutLta(next.withoutLta);
     setPaxBasis(next.paxBasis);
+    setSeason(next.season);
     setYears(next.years);
     setWeek(next.week);
     setTagIds(next.tagIds);
@@ -628,6 +641,7 @@ export default function ReportsView() {
             date_to: appliedDateTo,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
+            season: appliedFilters.season,
             shipping_line:
               appliedShippingLineId > 0 ? appliedShippingLineId : undefined,
             shipping_line_group:
@@ -798,6 +812,16 @@ export default function ReportsView() {
               disabled={shippingLineGroupId <= 0}
             />
           </>
+        ) : null}
+        {tab === "carrier_panorama" ? (
+          <FormFieldSelect<ReportSeason>
+            label="Temporada"
+            name="report_season"
+            value={season}
+            onChange={setSeason}
+            options={REPORT_SEASON_OPTIONS}
+            compact
+          />
         ) : null}
         {showSolicitudesFilters ? (
           <>
@@ -982,6 +1006,7 @@ export default function ReportsView() {
           dateTo={appliedFilters.dateTo}
           withoutLta={appliedFilters.withoutLta}
           paxBasis={appliedFilters.paxBasis}
+          season={appliedFilters.season}
           shippingLineGroupId={appliedFilters.shippingLineGroupId}
           shippingLineId={appliedFilters.shippingLineId}
           portIds={appliedFilters.portIds}

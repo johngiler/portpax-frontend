@@ -15,7 +15,7 @@ import {
 import DonutChart from "@/views/DashboardView/charts/DonutChart";
 import { formatCompactNumber } from "@/views/DashboardView/formatDashboardKpi";
 import { CarrierPanoramaContentSkeleton } from "../ReportsContentSkeleton";
-import type { ReportPaxBasis } from "../reportsFilterQuery";
+import type { ReportPaxBasis, ReportSeason } from "../reportsFilterQuery";
 import PanoramaYearMatrix from "./PanoramaYearMatrix";
 
 const PORT_SHARE_COLORS = [
@@ -33,6 +33,7 @@ type Props = {
   dateTo: string;
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
+  season: ReportSeason;
   shippingLineGroupId: number;
   shippingLineId: number;
   portIds: number[];
@@ -44,6 +45,7 @@ export default function CarrierPanoramaSection({
   dateTo,
   withoutLta,
   paxBasis,
+  season,
   shippingLineGroupId,
   shippingLineId,
   portIds,
@@ -54,6 +56,7 @@ export default function CarrierPanoramaSection({
     dateTo,
     withoutLta ? 1 : 0,
     paxBasis,
+    season,
     shippingLineGroupId,
     shippingLineId,
     portsKey,
@@ -69,6 +72,7 @@ export default function CarrierPanoramaSection({
         date_to: dateTo,
         without_lta: withoutLta,
         pax_basis: paxBasis,
+        season,
         shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
         shipping_line_group:
           shippingLineId <= 0 && shippingLineGroupId > 0
@@ -84,7 +88,8 @@ export default function CarrierPanoramaSection({
       (data.date_from !== dateFrom ||
         data.date_to !== dateTo ||
         data.without_lta !== withoutLta ||
-        (data.pax_basis ?? "planned") !== paxBasis),
+        (data.pax_basis ?? "planned") !== paxBasis ||
+        (data.season ?? "natural") !== season),
   );
   if (error && !data) {
     return (

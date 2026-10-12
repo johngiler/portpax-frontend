@@ -1,4 +1,5 @@
 import { toIsoDate } from "@/lib/bookingDates";
+import type { CalendarSeasonQuery } from "@/lib/viewFilterQuery";
 import {
   defaultReportDateFrom,
   defaultReportDateTo,
@@ -16,6 +17,9 @@ export type ReportTab =
 /** Basis for passenger totals when actual_pax is missing. */
 export type ReportPaxBasis = "planned" | "capacity";
 
+/** Same windows as bookings calendar annual season. */
+export type ReportSeason = CalendarSeasonQuery;
+
 export type ReportsWorkspaceFilters = {
   tab: ReportTab;
   dateFrom: string;
@@ -25,6 +29,8 @@ export type ReportsWorkspaceFilters = {
   portIds: number[];
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
+  /** Panorama Navieras: natural / summer / winter month window. */
+  season: ReportSeason;
   /** Calendar years for resumen (multi) or movimientos / semanal (single). */
   years: number[];
   /** ISO week for Reporte Semanal (1–53). */
@@ -47,6 +53,7 @@ const TABS = new Set<ReportTab>([
   "carrier_panorama",
 ]);
 const PAX_BASES = new Set<ReportPaxBasis>(["planned", "capacity"]);
+const SEASONS = new Set<ReportSeason>(["natural", "summer", "winter"]);
 
 export const MIN_REPORT_YEAR = 2025;
 
@@ -182,6 +189,7 @@ export function defaultReportsFilters(): ReportsWorkspaceFilters {
     portIds: [],
     withoutLta: false,
     paxBasis: "planned",
+    season: "natural",
     years: [],
     week: weekly.week,
     tagIds: [],
@@ -206,6 +214,11 @@ export function parseReportsFilters(
     paxRaw && PAX_BASES.has(paxRaw as ReportPaxBasis)
       ? (paxRaw as ReportPaxBasis)
       : defaults.paxBasis;
+  const seasonRaw = (searchParams.get("season") || "").trim().toLowerCase();
+  const season =
+    seasonRaw && SEASONS.has(seasonRaw as ReportSeason)
+      ? (seasonRaw as ReportSeason)
+      : defaults.season;
   const yearChoices =
     tab === "weekly_report" || tab === "booking_movements"
       ? new Set(auditOpsYearOptions())
@@ -248,6 +261,7 @@ export function parseReportsFilters(
       (searchParams.get("without_lta") || "").toLowerCase(),
     ),
     paxBasis,
+    season,
     years,
     week,
     tagIds: parseIdList(searchParams.get("tags")),
@@ -334,6 +348,9 @@ export function serializeReportsFilters(
   }
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
+  if (filters.tab === "carrier_panorama" && filters.season !== "natural") {
+    sp.set("season", filters.season);
+  }
   if (
     (filters.tab === "booking_movements" || filters.tab === "weekly_report") &&
     filters.years[0]
@@ -361,4 +378,13 @@ export const REPORT_PAX_BASIS_OPTIONS: {
 }[] = [
   { value: "planned", label: "Planificado" },
   { value: "capacity", label: "Cap. máx." },
+];
+
+export const REPORT_SEASON_OPTIONS: {
+  value: ReportSeason;
+  label: string;
+}[] = [
+  { value: "natural", label: "Año natural" },
+  { value: "summer", label: "Summer (may–oct)" },
+  { value: "winter", label: "Winter (nov–abr)" },
 ];

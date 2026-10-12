@@ -220,6 +220,8 @@ export type DashboardStats = {
   date_from: string;
   date_to: string;
   day_count: number;
+  without_lta?: boolean;
+  pax_basis?: "planned" | "capacity";
   kpis: DashboardKpis;
   conflicts: DashboardConflicts;
   pending_confirm?: DashboardPendingConfirm;

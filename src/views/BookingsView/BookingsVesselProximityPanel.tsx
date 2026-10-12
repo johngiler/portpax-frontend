@@ -55,7 +55,7 @@ export default function BookingsVesselProximityPanel({
   onClearFilters,
 }: BookingsVesselProximityPanelProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
-  const filtersReady = shippingLineId > 0 && vesselId > 0;
+  const filtersReady = vesselId > 0;
 
   const listFilters = useMemo(
     (): VesselProximityListFilters => ({

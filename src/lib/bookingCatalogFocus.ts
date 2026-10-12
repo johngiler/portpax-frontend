@@ -33,7 +33,10 @@ export type CatalogConflictFocus = {
 export type BookingCalendarFocus = CatalogConflictFocus & {
   statuses?: BookingStatusFilterValue[];
   vesselId?: number;
+  /** @deprecated Prefer shippingLineIds. */
   shippingLineId?: number;
+  shippingLineIds?: number[];
+  /** Single group soft-focus (0 / omit = none). */
   shippingLineGroupId?: number;
   positionId?: number;
   /** Soft-focus: booking must have one of these tag IDs. */
@@ -42,17 +45,38 @@ export type BookingCalendarFocus = CatalogConflictFocus & {
   callDates?: string[];
 };
 
+function focusLineIds(focus: BookingCalendarFocus): number[] {
+  if (focus.shippingLineIds && focus.shippingLineIds.length > 0) {
+    return focus.shippingLineIds;
+  }
+  if (focus.shippingLineId && focus.shippingLineId > 0) {
+    return [focus.shippingLineId];
+  }
+  return [];
+}
+
+function focusGroupId(focus: BookingCalendarFocus): number {
+  return focus.shippingLineGroupId && focus.shippingLineGroupId > 0
+    ? focus.shippingLineGroupId
+    : 0;
+}
+
 /** Soft focus for vessel / shipping-line filters (neighbors stay visible). */
 export function bookingMatchesCatalogFocus(
   booking: Pick<BookingListItem, "vessel" | "shipping_line" | "shipping_line_group">,
   vesselId: number,
-  shippingLineId: number,
+  shippingLineIds: number[] | number,
   shippingLineGroupId = 0,
 ): boolean {
   if (vesselId > 0) return booking.vessel === vesselId;
-  if (shippingLineId > 0) return booking.shipping_line === shippingLineId;
+  const lines = Array.isArray(shippingLineIds)
+    ? shippingLineIds
+    : shippingLineIds > 0
+      ? [shippingLineIds]
+      : [];
+  if (lines.length > 0) return lines.includes(booking.shipping_line);
   if (shippingLineGroupId > 0) {
-    return booking.shipping_line_group === shippingLineGroupId;
+    return (booking.shipping_line_group ?? 0) === shippingLineGroupId;
   }
   return true;
 }
@@ -135,24 +159,13 @@ export function bookingMatchesCalendarFocus(
   }
   const vesselId = focus.vesselId && focus.vesselId > 0 ? focus.vesselId : 0;
   if (vesselId > 0 && booking.vessel !== vesselId) return false;
-  const lineId =
-    focus.shippingLineId && focus.shippingLineId > 0
-      ? focus.shippingLineId
-      : 0;
-  if (vesselId <= 0 && lineId > 0 && booking.shipping_line !== lineId) {
-    return false;
+  const lineIds = focusLineIds(focus);
+  if (vesselId <= 0 && lineIds.length > 0) {
+    if (!lineIds.includes(booking.shipping_line)) return false;
   }
-  const groupId =
-    focus.shippingLineGroupId && focus.shippingLineGroupId > 0
-      ? focus.shippingLineGroupId
-      : 0;
-  if (
-    vesselId <= 0 &&
-    lineId <= 0 &&
-    groupId > 0 &&
-    booking.shipping_line_group !== groupId
-  ) {
-    return false;
+  const groupId = focusGroupId(focus);
+  if (vesselId <= 0 && lineIds.length === 0 && groupId > 0) {
+    if ((booking.shipping_line_group ?? 0) !== groupId) return false;
   }
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
@@ -182,8 +195,8 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
   return Boolean(
     (focus.statuses && focus.statuses.length > 0) ||
       (focus.vesselId && focus.vesselId > 0) ||
-      (focus.shippingLineId && focus.shippingLineId > 0) ||
-      (focus.shippingLineGroupId && focus.shippingLineGroupId > 0) ||
+      focusLineIds(focus).length > 0 ||
+      focusGroupId(focus) > 0 ||
       (focus.positionId && focus.positionId > 0) ||
       (focus.tagIds && focus.tagIds.length > 0) ||
       (focus.callDates && focus.callDates.length > 0) ||

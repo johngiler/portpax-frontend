@@ -5,6 +5,10 @@ import {
   type BookingStatusFilterValue,
   type CancellationReason,
 } from "@/types/booking";
+import {
+  parseVesselSizeCategoryFilters,
+  type VesselSizeCategory,
+} from "@/types/cruise";
 
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 
@@ -59,10 +63,13 @@ export type BookingsWorkspaceFilters = {
   search: string;
   /** Empty = all ports. One or more for lista / calendario / disponibilidad. */
   ports: number[];
-  /** Shipping line group (0 = all). */
+  /** Shipping line group (0 = all). Single select. */
   group: number;
-  line: number;
+  /** Shipping lines (empty = all). Wins over group when set. */
+  lines: number[];
   vessel: number;
+  /** Vessel.size_category multi-filter (list / export). */
+  sizeCategories: VesselSizeCategory[];
   datePreset: BookingsDatePresetQuery;
   customFrom: string;
   customTo: string;
@@ -206,15 +213,25 @@ export function parseBookingsWorkspaceFilters(
     .map((p) => parseIntId(p.trim()))
     .filter((id) => id > 0);
   const status = parseBookingStatusFilters(statusRaw);
+  // Group is single; lines may be multi (`lines` CSV). Legacy `line` still accepted.
+  const group = parseIntId(
+    sp.get("group") || sp.get("groups")?.split(",")[0] || null,
+  );
+  const linesCsv = sp.get("lines") || sp.get("line");
+  const lines = (linesCsv ?? "")
+    .split(",")
+    .map((p) => parseIntId(p.trim()))
+    .filter((id) => id > 0);
 
   return {
     tab,
     status,
     search: sp.get("q")?.trim() ?? "",
     ports,
-    group: parseIntId(sp.get("group")),
-    line: parseIntId(sp.get("line")),
+    group,
+    lines,
     vessel: parseIntId(sp.get("vessel")),
+    sizeCategories: parseVesselSizeCategoryFilters(sp.get("size")),
     datePreset: isDatePreset(dateRaw) ? dateRaw : "all",
     customFrom: sp.get("from") || defaults.customFrom,
     customTo: sp.get("to") || defaults.customTo,
@@ -262,8 +279,11 @@ export function buildBookingsWorkspaceQuery(
   if (state.search) sp.set("q", state.search);
   if (state.ports.length > 0) sp.set("ports", state.ports.join(","));
   if (state.group > 0) sp.set("group", String(state.group));
-  if (state.line > 0) sp.set("line", String(state.line));
+  if (state.lines.length > 0) sp.set("lines", state.lines.join(","));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
+  if (state.sizeCategories.length > 0) {
+    sp.set("size", state.sizeCategories.join(","));
+  }
   if (state.tags.length > 0) sp.set("tags", state.tags.join(","));
   if (
     state.conflict === "yes" ||

@@ -89,7 +89,12 @@ export default function AvailabilityPortCard({
     () => ({
       statuses: statusFilters,
       vesselId: filters.vessel ?? 0,
-      shippingLineId: filters.shipping_line ?? 0,
+      shippingLineIds:
+        filters.shipping_lines && filters.shipping_lines.length > 0
+          ? filters.shipping_lines
+          : filters.shipping_line && filters.shipping_line > 0
+            ? [filters.shipping_line]
+            : undefined,
       shippingLineGroupId: filters.shipping_line_group ?? 0,
       positionId: filters.position ?? 0,
       tagIds: filters.tags?.length ? filters.tags : undefined,
@@ -101,6 +106,7 @@ export default function AvailabilityPortCard({
       statusFilters,
       filters.vessel,
       filters.shipping_line,
+      filters.shipping_lines,
       filters.shipping_line_group,
       filters.position,
       filters.tags,
@@ -306,7 +312,13 @@ export default function AvailabilityPortCard({
       titlePrefix={isOccupancy ? "Ocupación" : "Disponibilidad"}
       statusFilter={statusFilters}
       vesselFocusId={filters.vessel ?? 0}
-      shippingLineFocusId={filters.shipping_line ?? 0}
+      shippingLineFocusIds={
+        filters.shipping_lines && filters.shipping_lines.length > 0
+          ? filters.shipping_lines
+          : filters.shipping_line && filters.shipping_line > 0
+            ? [filters.shipping_line]
+            : undefined
+      }
       shippingLineGroupFocusId={filters.shipping_line_group ?? 0}
       positionFocusId={filters.position ?? 0}
       tagFocusIds={filters.tags}

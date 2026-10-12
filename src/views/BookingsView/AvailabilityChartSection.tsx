@@ -64,6 +64,7 @@ type Props = {
   vesselFocusId?: number;
   /** Shipping-line focus when no vessel is selected. */
   shippingLineFocusId?: number;
+  shippingLineFocusIds?: number[];
   /** Group focus when no line/vessel is selected. */
   shippingLineGroupFocusId?: number;
   /** Position focus: other berths stay visible (muted). */
@@ -223,6 +224,7 @@ export default function AvailabilityChartSection({
   statusFilter,
   vesselFocusId = 0,
   shippingLineFocusId = 0,
+  shippingLineFocusIds,
   shippingLineGroupFocusId = 0,
   positionFocusId = 0,
   tagFocusIds,
@@ -237,7 +239,12 @@ export default function AvailabilityChartSection({
   const focus = {
     statuses: statusFilter,
     vesselId: vesselFocusId,
-    shippingLineId: shippingLineFocusId,
+    shippingLineIds:
+      shippingLineFocusIds && shippingLineFocusIds.length > 0
+        ? shippingLineFocusIds
+        : shippingLineFocusId > 0
+          ? [shippingLineFocusId]
+          : undefined,
     shippingLineGroupId: shippingLineGroupFocusId,
     positionId: positionFocusId,
     tagIds: tagFocusIds?.length ? tagFocusIds : undefined,

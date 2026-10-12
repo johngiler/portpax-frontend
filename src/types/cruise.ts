@@ -96,6 +96,38 @@ export type VesselPayload = {
   is_active: boolean;
 };
 
+/** Catalog Vessel.size_category values used by bookings list filter. */
+export const VESSEL_SIZE_CATEGORY_OPTIONS = [
+  { value: "Pequeño", label: "Pequeño" },
+  { value: "Mediano", label: "Mediano" },
+  { value: "Grande", label: "Grande" },
+  { value: "MegaBarco", label: "MegaBarco" },
+] as const;
+
+export type VesselSizeCategory =
+  (typeof VESSEL_SIZE_CATEGORY_OPTIONS)[number]["value"];
+
+const VESSEL_SIZE_CATEGORY_SET = new Set<string>(
+  VESSEL_SIZE_CATEGORY_OPTIONS.map((o) => o.value),
+);
+
+export function parseVesselSizeCategoryFilters(
+  raw: string | null | undefined,
+): VesselSizeCategory[] {
+  if (!raw) return [];
+  const seen = new Set<VesselSizeCategory>();
+  const out: VesselSizeCategory[] = [];
+  for (const part of raw.split(",")) {
+    const value = part.trim();
+    if (!VESSEL_SIZE_CATEGORY_SET.has(value)) continue;
+    const typed = value as VesselSizeCategory;
+    if (seen.has(typed)) continue;
+    seen.add(typed);
+    out.push(typed);
+  }
+  return out;
+}
+
 export function shippingLineDisplayName(line: ShippingLine): string {
   if (line.group_name && line.group_name !== line.name) {
     return `${line.name} · ${line.group_name}`;

@@ -9,6 +9,7 @@ import {
   Filter,
   LayoutGrid,
   MapPin,
+  Scaling,
   Search,
   Ship,
   Tag,
@@ -34,6 +35,7 @@ const CHIP_ICONS: Record<ActiveFilterChipIcon, LucideIcon> = {
   calendar: CalendarRange,
   lta: Tag,
   tag: Tag,
+  size: Scaling,
 };
 
 type ViewFilteredBannerProps = {

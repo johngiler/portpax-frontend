@@ -41,7 +41,8 @@ export type ActiveFilterChipIcon =
   | "density"
   | "calendar"
   | "lta"
-  | "tag";
+  | "tag"
+  | "size";
 
 export type ActiveFilterChip = {
   id: string;
@@ -56,6 +57,7 @@ export type BookingsActiveFilterChipInput = {
   groupLabel?: string | null;
   lineLabel?: string | null;
   vesselLabel?: string | null;
+  sizeCategoryLabels?: string[];
   tagLabels?: string[];
   statuses: BookingStatusFilterValue[];
   conflict: ConflictFilterValue;
@@ -116,6 +118,15 @@ export function buildBookingsActiveFilterChips(
         label: input.vesselLabel,
         icon: "vessel",
       });
+    }
+    if (tab === "list") {
+      for (const [index, label] of (input.sizeCategoryLabels ?? []).entries()) {
+        chips.push({
+          id: `size-${index}`,
+          label,
+          icon: "size",
+        });
+      }
     }
     for (const [index, label] of (input.tagLabels ?? []).entries()) {
       chips.push({

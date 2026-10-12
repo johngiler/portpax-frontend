@@ -14,6 +14,8 @@ export type FetchVesselsParams = {
   page?: number;
   search?: string;
   shipping_line?: number;
+  /** Multi shipping-line filter (CSV on `shipping_line`). */
+  shipping_lines?: number[];
   shipping_line_group?: number;
   pageSize?: number;
 };
@@ -35,7 +37,11 @@ export async function fetchVessels(
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
   if (params.search?.trim()) query.set("search", params.search.trim());
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
+    query.set("shipping_line", String(params.shipping_line));
+  }
   if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }

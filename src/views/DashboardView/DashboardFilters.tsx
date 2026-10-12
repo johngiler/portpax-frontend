@@ -1,12 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import FilterActions from "@/components/layout/FilterActions";
 import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/ui/FormField";
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
 import type { DashboardCarrierFilter } from "@/types/dashboard";
+import {
+  REPORT_PAX_BASIS_OPTIONS,
+  type ReportPaxBasis,
+} from "@/views/ReportsView/reportsFilterQuery";
 
 type DashboardFiltersProps = {
   ports: Port[];
@@ -20,6 +25,10 @@ type DashboardFiltersProps = {
   onDateToChange: (value: string) => void;
   carrierFilter: DashboardCarrierFilter;
   onCarrierChange: (filter: DashboardCarrierFilter) => void;
+  paxBasis: ReportPaxBasis;
+  onPaxBasisChange: (value: ReportPaxBasis) => void;
+  withoutLta: boolean;
+  onWithoutLtaChange: (value: boolean) => void;
   defaultDateFrom: string;
   defaultDateTo: string;
   canApply: boolean;
@@ -54,6 +63,10 @@ export default function DashboardFilters({
   onDateToChange,
   carrierFilter,
   onCarrierChange,
+  paxBasis,
+  onPaxBasisChange,
+  withoutLta,
+  onWithoutLtaChange,
   defaultDateFrom,
   defaultDateTo,
   canApply,
@@ -101,7 +114,9 @@ export default function DashboardFilters({
     selectedPortIds.length > 0 ||
     carrierFilter.type !== "all" ||
     dateFrom !== defaultDateFrom ||
-    dateTo !== defaultDateTo;
+    dateTo !== defaultDateTo ||
+    paxBasis !== "planned" ||
+    withoutLta;
 
   function handleFromChange(value: string) {
     onDateFromChange(value);
@@ -179,6 +194,15 @@ export default function DashboardFilters({
         emptyValue={0}
         disabled={shippingLineGroupId <= 0}
       />
+      <FormFieldSelect<ReportPaxBasis>
+        label="Base PAX"
+        name="dashboard_pax_basis"
+        compact
+        value={paxBasis}
+        onChange={onPaxBasisChange}
+        options={REPORT_PAX_BASIS_OPTIONS}
+        labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
+      />
       <FormField
         label="Desde"
         name="dashboard_date_from"
@@ -195,6 +219,15 @@ export default function DashboardFilters({
         value={dateTo}
         onChange={(value) => handleToChange(String(value))}
       />
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700 dark:text-zinc-200">
+        <input
+          type="checkbox"
+          checked={withoutLta}
+          onChange={(e) => onWithoutLtaChange(e.target.checked)}
+          className="rounded border-zinc-300"
+        />
+        Sin LTA
+      </label>
       <FilterActions
         onApply={onApply}
         onClear={onClear}

@@ -32,6 +32,7 @@ import {
 } from "./dashboardActiveFilterChips";
 import { dashboardBookingsHref } from "./dashboardBookingsHref";
 import { formatCompactNumber, formatYoyBadge } from "./formatDashboardKpi";
+import type { ReportPaxBasis } from "@/views/ReportsView/reportsFilterQuery";
 
 function defaultYearRange(): { from: string; to: string } {
   const year = new Date().getFullYear();
@@ -67,6 +68,8 @@ export default function DashboardView() {
   const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
     type: "all",
   });
+  const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>("planned");
+  const [withoutLta, setWithoutLta] = useState(false);
   const [appliedSelectedPortIds, setAppliedSelectedPortIds] = useState<number[]>(
     [],
   );
@@ -74,6 +77,9 @@ export default function DashboardView() {
   const [appliedDateTo, setAppliedDateTo] = useState(defaults.to);
   const [appliedCarrierFilter, setAppliedCarrierFilter] =
     useState<DashboardCarrierFilter>({ type: "all" });
+  const [appliedPaxBasis, setAppliedPaxBasis] =
+    useState<ReportPaxBasis>("planned");
+  const [appliedWithoutLta, setAppliedWithoutLta] = useState(false);
   const [viewError, setViewError] = useState<string | null>(null);
 
   const { stats, isLoading, error: statsError } = useDashboardStats(
@@ -82,6 +88,8 @@ export default function DashboardView() {
       dateTo: appliedDateTo,
       portIds: appliedSelectedPortIds,
       carrier: appliedCarrierFilter,
+      withoutLta: appliedWithoutLta,
+      paxBasis: appliedPaxBasis,
     },
     catalogReady,
   );
@@ -104,6 +112,8 @@ export default function DashboardView() {
     dateTo: appliedDateTo,
     defaultDateFrom: defaults.from,
     defaultDateTo: defaults.to,
+    withoutLta: appliedWithoutLta,
+    paxBasis: appliedPaxBasis,
   });
 
   const activeFilterChips = useMemo(() => {
@@ -137,12 +147,16 @@ export default function DashboardView() {
       dateTo: appliedDateTo,
       defaultDateFrom: defaults.from,
       defaultDateTo: defaults.to,
+      withoutLta: appliedWithoutLta,
+      paxBasis: appliedPaxBasis,
     });
   }, [
     appliedSelectedPortIds,
     appliedCarrierFilter,
     appliedDateFrom,
     appliedDateTo,
+    appliedWithoutLta,
+    appliedPaxBasis,
     defaults.from,
     defaults.to,
     portsById,
@@ -190,6 +204,8 @@ export default function DashboardView() {
     setAppliedDateFrom(dateFrom);
     setAppliedDateTo(dateTo);
     setAppliedCarrierFilter(carrierFilter);
+    setAppliedPaxBasis(paxBasis);
+    setAppliedWithoutLta(withoutLta);
     setViewError(null);
   }
 
@@ -199,10 +215,14 @@ export default function DashboardView() {
     setDateFrom(defaults.from);
     setDateTo(defaults.to);
     setCarrierFilter(allCarriers);
+    setPaxBasis("planned");
+    setWithoutLta(false);
     setAppliedSelectedPortIds([]);
     setAppliedDateFrom(defaults.from);
     setAppliedDateTo(defaults.to);
     setAppliedCarrierFilter(allCarriers);
+    setAppliedPaxBasis("planned");
+    setAppliedWithoutLta(false);
     setViewError(null);
   }
 
@@ -213,7 +233,9 @@ export default function DashboardView() {
     carrierFilter.type !== appliedCarrierFilter.type ||
     (carrierFilter.type !== "all" &&
       appliedCarrierFilter.type !== "all" &&
-      carrierFilter.id !== appliedCarrierFilter.id);
+      carrierFilter.id !== appliedCarrierFilter.id) ||
+    paxBasis !== appliedPaxBasis ||
+    withoutLta !== appliedWithoutLta;
 
   return (
     <>
@@ -230,6 +252,10 @@ export default function DashboardView() {
           onDateToChange={setDateTo}
           carrierFilter={carrierFilter}
           onCarrierChange={setCarrierFilter}
+          paxBasis={paxBasis}
+          onPaxBasisChange={setPaxBasis}
+          withoutLta={withoutLta}
+          onWithoutLtaChange={setWithoutLta}
           defaultDateFrom={defaults.from}
           defaultDateTo={defaults.to}
           canApply={canApplyFilters}
@@ -269,12 +295,18 @@ export default function DashboardView() {
             href={bookingsListHref}
           />
           <ViewStatCard
-            label="PAX planificados"
+            label={
+              appliedPaxBasis === "capacity" ? "PAX cap. máx." : "PAX planificados"
+            }
             value={formatCompactNumber(kpis.planned_pax)}
             description={
               kpis.actual_pax > 0
-                ? `${kpis.actual_pax.toLocaleString("es")} reales / ${kpis.planned_pax.toLocaleString("es")} planificados`
-                : `${kpis.planned_pax.toLocaleString("es")} planificados`
+                ? `${kpis.actual_pax.toLocaleString("es")} reales / ${kpis.planned_pax.toLocaleString("es")} ${
+                    appliedPaxBasis === "capacity" ? "cap. máx." : "planificados"
+                  }`
+                : `${kpis.planned_pax.toLocaleString("es")} ${
+                    appliedPaxBasis === "capacity" ? "cap. máx." : "planificados"
+                  }`
             }
             icon={Users}
             accentColor="#0d9488"

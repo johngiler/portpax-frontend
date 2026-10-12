@@ -56,15 +56,23 @@ export function useActiveShippingLinesCatalog(enabled = true) {
 }
 
 export function useActiveVesselsCatalog(
-  shippingLineId?: number | null,
+  shippingLineIds?: number | number[] | null,
   enabled = true,
 ) {
-  const lineId = shippingLineId && shippingLineId > 0 ? shippingLineId : null;
+  const lineIds = (
+    Array.isArray(shippingLineIds)
+      ? shippingLineIds
+      : shippingLineIds && shippingLineIds > 0
+        ? [shippingLineIds]
+        : []
+  )
+    .filter((id) => id > 0)
+    .sort((a, b) => a - b);
   const { data, error, isLoading, mutate } = useSWR(
-    enabled && lineId ? swrKeys.vesselsCatalog(lineId) : null,
+    enabled && lineIds.length > 0 ? swrKeys.vesselsCatalog(lineIds) : null,
     async () => {
       const vessels = await fetchAllVessels({
-        shipping_line: lineId!,
+        shipping_lines: lineIds,
         pageSize: 100,
       });
       return vessels.filter((vessel) => vessel.is_active);
@@ -73,7 +81,7 @@ export function useActiveVesselsCatalog(
   return {
     vessels: (data ?? []) as Vessel[],
     error,
-    isLoading: Boolean(enabled && lineId && isLoading),
+    isLoading: Boolean(enabled && lineIds.length > 0 && isLoading),
     mutate,
   };
 }
