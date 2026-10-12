@@ -31,7 +31,7 @@ export function dashboardBookingsHref(
     status: overrides?.status ?? [],
     search: "",
     ports: overrides?.portIds ?? base.portIds,
-    group: base.carrier.type === "group" ? base.carrier.id : 0,
+    groups: base.carrier.type === "group" ? [base.carrier.id] : [],
     lines: base.carrier.type === "line" ? [base.carrier.id] : [],
     vessel: 0,
     sizeCategories: [],

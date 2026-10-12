@@ -91,7 +91,7 @@ type BookingFiltersProps = {
   search: string;
   /** Empty = all ports. */
   portFilter: number[];
-  shippingLineGroupFilter: number;
+  shippingLineGroupFilter: number[];
   shippingLineFilter: number[];
   vesselFilter: number;
   sizeCategoryFilter: VesselSizeCategory[];
@@ -120,7 +120,7 @@ type BookingFiltersProps = {
   onCancellationReasonChange: (value: CancellationReason | "") => void;
   onSearchChange: (search: string) => void;
   onPortFilterChange: (portIds: number[]) => void;
-  onShippingLineGroupFilterChange: (groupId: number) => void;
+  onShippingLineGroupFilterChange: (groupIds: number[]) => void;
   onShippingLineFilterChange: (lineIds: number[]) => void;
   onVesselFilterChange: (vesselId: number) => void;
   onSizeCategoryFilterChange: (values: VesselSizeCategory[]) => void;
@@ -245,7 +245,7 @@ export default function BookingFilters({
     isOccupancyHeat;
 
   const hasLineSelection = shippingLineFilter.length > 0;
-  const hasGroupSelection = shippingLineGroupFilter > 0;
+  const hasGroupSelection = shippingLineGroupFilter.length > 0;
 
   const loadVesselOptions = useCallback(
     async (input: string) => {
@@ -299,7 +299,7 @@ export default function BookingFilters({
           suggestion.entityId
         ) {
           if (suggestion.shippingLineGroupId) {
-            onShippingLineGroupFilterChange(suggestion.shippingLineGroupId);
+            onShippingLineGroupFilterChange([suggestion.shippingLineGroupId]);
           }
           onShippingLineFilterChange([suggestion.entityId]);
           onVesselFilterChange(0);
@@ -312,7 +312,7 @@ export default function BookingFilters({
           suggestion.shippingLineId
         ) {
           if (suggestion.shippingLineGroupId) {
-            onShippingLineGroupFilterChange(suggestion.shippingLineGroupId);
+            onShippingLineGroupFilterChange([suggestion.shippingLineGroupId]);
           }
           onShippingLineFilterChange([suggestion.shippingLineId]);
           onVesselFilterChange(suggestion.entityId);
@@ -426,18 +426,17 @@ export default function BookingFilters({
   ) : null;
 
   const groupField = showLine ? (
-    <FormFieldSelect<number>
+    <FormFieldMultiSelect<number>
       label="Grupo de naviera"
       name="booking_group_filter"
       value={shippingLineGroupFilter}
-      onChange={(groupId) => {
-        onShippingLineGroupFilterChange(groupId);
+      onChange={(groupIds) => {
+        onShippingLineGroupFilterChange(groupIds);
         onShippingLineFilterChange([]);
         onVesselFilterChange(0);
       }}
       options={shippingLineGroupOptions}
-      optionLabel="Todos los grupos"
-      emptyValue={0}
+      placeholder="Todos los grupos"
       compact
     />
   ) : null;

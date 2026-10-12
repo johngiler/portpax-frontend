@@ -49,7 +49,7 @@ type UnifiedCalendarCardProps = {
   /** Empty = all ports in one card. */
   portIds: number[];
   portLabel: string;
-  shippingLineGroupId?: number;
+  shippingLineGroupIds?: number[];
   shippingLineIds?: number[];
   vesselId: number;
   tagIds?: number[];
@@ -76,7 +76,7 @@ export default function UnifiedCalendarCard({
   onModeChange,
   portIds,
   portLabel,
-  shippingLineGroupId = 0,
+  shippingLineGroupIds = [],
   shippingLineIds = [],
   vesselId,
   tagIds = [],
@@ -123,7 +123,7 @@ export default function UnifiedCalendarCard({
       statuses,
       vesselId,
       shippingLineIds,
-      shippingLineGroupId,
+      shippingLineGroupIds,
       positionId: multiPort ? 0 : positionId,
       tagIds: tagIds.length > 0 ? tagIds : undefined,
       has_conflict: conflictFilters.has_conflict,
@@ -137,7 +137,7 @@ export default function UnifiedCalendarCard({
       statuses,
       vesselId,
       shippingLineIds,
-      shippingLineGroupId,
+      shippingLineGroupIds,
       multiPort,
       positionId,
       tagIds,
@@ -161,9 +161,9 @@ export default function UnifiedCalendarCard({
       ports: portIds.length > 0 ? portIds : undefined,
       shipping_lines:
         shippingLineIds.length > 0 ? shippingLineIds : undefined,
-      shipping_line_group:
-        shippingLineIds.length === 0 && shippingLineGroupId > 0
-          ? shippingLineGroupId
+      shipping_line_groups:
+        shippingLineIds.length === 0 && shippingLineGroupIds.length > 0
+          ? shippingLineGroupIds
           : undefined,
       vessel: vesselId > 0 ? vesselId : undefined,
       position: !multiPort && positionId > 0 ? positionId : undefined,
@@ -179,7 +179,7 @@ export default function UnifiedCalendarCard({
     [
       portIds,
       shippingLineIds,
-      shippingLineGroupId,
+      shippingLineGroupIds,
       vesselId,
       multiPort,
       positionId,

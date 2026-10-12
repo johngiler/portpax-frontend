@@ -33,7 +33,9 @@ function listParamsKey(params: BookingsListFilterParams): string {
     (params.ports ?? []).join(","),
     params.position ?? 0,
     (params.shipping_lines ?? []).join(",") || params.shipping_line || 0,
-    params.shipping_line_group ?? 0,
+    (params.shipping_line_groups ?? []).join(",") ||
+      params.shipping_line_group ||
+      0,
     params.vessel ?? 0,
     (params.size_categories ?? []).join(","),
     (params.tags ?? []).join(","),

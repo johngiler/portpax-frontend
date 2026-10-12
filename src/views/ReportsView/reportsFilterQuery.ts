@@ -1,5 +1,4 @@
 import { toIsoDate } from "@/lib/bookingDates";
-import type { CalendarSeasonQuery } from "@/lib/viewFilterQuery";
 import {
   defaultReportDateFrom,
   defaultReportDateTo,
@@ -17,8 +16,13 @@ export type ReportTab =
 /** Basis for passenger totals when actual_pax is missing. */
 export type ReportPaxBasis = "planned" | "capacity";
 
-/** Same windows as bookings calendar annual season. */
-export type ReportSeason = CalendarSeasonQuery;
+/**
+ * Panorama Navieras axis:
+ * - natural: calendar-year columns
+ * - seasons: Summer / Winter columns detected in the date range
+ * - summer / winter: legacy single-kind season columns (still accepted in URL)
+ */
+export type ReportSeason = "natural" | "seasons" | "summer" | "winter";
 
 export type ReportsWorkspaceFilters = {
   tab: ReportTab;
@@ -29,7 +33,7 @@ export type ReportsWorkspaceFilters = {
   portIds: number[];
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
-  /** Panorama Navieras: natural / summer / winter month window. */
+  /** Panorama Navieras: natural years vs Summer/Winter period columns. */
   season: ReportSeason;
   /** Calendar years for resumen (multi) or movimientos / semanal (single). */
   years: number[];
@@ -37,10 +41,10 @@ export type ReportsWorkspaceFilters = {
   week: number;
   /** Booking tag IDs (OR). */
   tagIds: number[];
-  /** Shipping line group — filters alone or scopes the naviera select. 0 = none. */
-  shippingLineGroupId: number;
-  /** Single shipping line — optional when a group is selected. 0 = none. */
-  shippingLineId: number;
+  /** Shipping line groups (multi). Empty = none / all depending on report. */
+  shippingLineGroupIds: number[];
+  /** Shipping lines (multi). Wins over groups when set. */
+  shippingLineIds: number[];
 };
 
 const TABS = new Set<ReportTab>([
@@ -53,7 +57,12 @@ const TABS = new Set<ReportTab>([
   "carrier_panorama",
 ]);
 const PAX_BASES = new Set<ReportPaxBasis>(["planned", "capacity"]);
-const SEASONS = new Set<ReportSeason>(["natural", "summer", "winter"]);
+const SEASONS = new Set<ReportSeason>([
+  "natural",
+  "seasons",
+  "summer",
+  "winter",
+]);
 
 export const MIN_REPORT_YEAR = 2025;
 
@@ -193,8 +202,8 @@ export function defaultReportsFilters(): ReportsWorkspaceFilters {
     years: [],
     week: weekly.week,
     tagIds: [],
-    shippingLineGroupId: 0,
-    shippingLineId: 0,
+    shippingLineGroupIds: [],
+    shippingLineIds: [],
   };
 }
 
@@ -215,9 +224,14 @@ export function parseReportsFilters(
       ? (paxRaw as ReportPaxBasis)
       : defaults.paxBasis;
   const seasonRaw = (searchParams.get("season") || "").trim().toLowerCase();
+  // Legacy summer/winter exclusive filters → Temporadas axis (both kinds).
+  const seasonNormalized =
+    seasonRaw === "summer" || seasonRaw === "winter"
+      ? "seasons"
+      : seasonRaw;
   const season =
-    seasonRaw && SEASONS.has(seasonRaw as ReportSeason)
-      ? (seasonRaw as ReportSeason)
+    seasonNormalized && SEASONS.has(seasonNormalized as ReportSeason)
+      ? (seasonNormalized as ReportSeason)
       : defaults.season;
   const yearChoices =
     tab === "weekly_report" || tab === "booking_movements"
@@ -265,10 +279,12 @@ export function parseReportsFilters(
     years,
     week,
     tagIds: parseIdList(searchParams.get("tags")),
-    shippingLineGroupId: parseIntId(searchParams.get("group")),
-    shippingLineId: parseIntId(
-      searchParams.get("shipping_line") ||
-        searchParams.get("shipping_lines") ||
+    shippingLineGroupIds: parseIdList(
+      searchParams.get("groups") || searchParams.get("group"),
+    ),
+    shippingLineIds: parseIdList(
+      searchParams.get("shipping_lines") ||
+        searchParams.get("shipping_line") ||
         searchParams.get("lines"),
     ),
   };
@@ -288,8 +304,8 @@ export function reportsFiltersForTab(
       years: [allowed.has(y) ? y : defaultMovementYear()],
       port: 0,
       tagIds: [],
-      shippingLineGroupId: 0,
-      shippingLineId: 0,
+      shippingLineGroupIds: [],
+      shippingLineIds: [],
       withoutLta: false,
       paxBasis: "planned",
     };
@@ -312,8 +328,8 @@ export function reportsFiltersForTab(
       week,
       port: 0,
       tagIds: [],
-      shippingLineGroupId: 0,
-      shippingLineId: 0,
+      shippingLineGroupIds: [],
+      shippingLineIds: [],
       // Keep Sin LTA + Base PAX when switching into weekly (Beto).
     };
   }
@@ -363,11 +379,11 @@ export function serializeReportsFilters(
     sp.set("week", String(filters.week));
   }
   if (filters.tagIds.length) sp.set("tags", filters.tagIds.join(","));
-  if (filters.shippingLineGroupId > 0) {
-    sp.set("group", String(filters.shippingLineGroupId));
+  if (filters.shippingLineGroupIds.length) {
+    sp.set("groups", filters.shippingLineGroupIds.join(","));
   }
-  if (filters.shippingLineId > 0) {
-    sp.set("shipping_line", String(filters.shippingLineId));
+  if (filters.shippingLineIds.length) {
+    sp.set("shipping_lines", filters.shippingLineIds.join(","));
   }
   return sp;
 }
@@ -385,6 +401,5 @@ export const REPORT_SEASON_OPTIONS: {
   label: string;
 }[] = [
   { value: "natural", label: "Año natural" },
-  { value: "summer", label: "Summer (may–oct)" },
-  { value: "winter", label: "Winter (nov–abr)" },
+  { value: "seasons", label: "Temporadas (Summer / Winter)" },
 ];

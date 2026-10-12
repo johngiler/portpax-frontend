@@ -61,6 +61,7 @@ export type FetchBookingsParams = {
   shipping_lines?: number[];
   /** When set without shipping_line(s), filters by all lines in the group. */
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   vessel?: number;
   /** Multi size_category filter (CSV on `size_category` query param). */
   size_categories?: string[];
@@ -105,7 +106,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
@@ -183,6 +186,7 @@ export async function exportCalendarReport(
     shipping_line?: number;
     shipping_lines?: number[];
     shipping_line_group?: number;
+  shipping_line_groups?: number[];
     status?: BookingListStatusFilter;
     statuses?: BookingStatusFilterValue[];
     exportFormat: "xlsx" | "csv";
@@ -198,7 +202,9 @@ export async function exportCalendarReport(
   } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   const statusCsv =
@@ -305,12 +311,16 @@ export type SolicitudesPortReport = {
   shipping_line_names: string[];
   shipping_line_label: string;
   shipping_line_group_id?: number | null;
+  shipping_line_group_ids?: number[];
   shipping_line_group_name?: string | null;
+  shipping_line_group_names?: string[];
   year_blocks: SolicitudesPortYearBlock[];
   nuevas_solicitadas: SolicitudesPortYearPax[];
   nuevas_total: number;
   port_by_year: SolicitudesPortYearPax[];
   carrier_by_year: SolicitudesPortYearPax[];
+  /** Present when a carrier filter is applied (port − selection). */
+  others_by_year?: SolicitudesPortYearPax[];
 };
 
 export type MatrixYearRow = {
@@ -430,6 +440,7 @@ export async function fetchAvailabilityReport(params: {
   shipping_line?: number;
   shipping_lines?: number[];
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   vessel?: number;
   position?: number;
   tags?: number[];
@@ -456,7 +467,9 @@ export async function fetchAvailabilityReport(params: {
   } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
@@ -496,6 +509,7 @@ export async function fetchAvailabilityReport(params: {
     Boolean(params.conflict_type) ||
     Boolean(params.shipping_lines?.length) ||
     Boolean(params.shipping_line) ||
+    Boolean(params.shipping_line_groups?.length) ||
     Boolean(params.shipping_line_group) ||
     Boolean(params.vessel) ||
     Boolean(params.position) ||
@@ -599,7 +613,9 @@ export async function fetchSolicitudesPortReport(params: {
   years?: number[];
   tags?: number[];
   shipping_line?: number;
+  shipping_lines?: number[];
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
 }): Promise<SolicitudesPortReport> {
@@ -609,10 +625,14 @@ export async function fetchSolicitudesPortReport(params: {
   query.set("port", String(params.port));
   if (params.years?.length) query.set("years", params.years.join(","));
   if (params.tags?.length) query.set("tags", params.tags.join(","));
-  if (params.shipping_line) {
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.without_lta) query.set("without_lta", "true");
@@ -680,16 +700,37 @@ export async function fetchWeeklyReport(params: {
   return apiFetch<WeeklyReport>(`${BASE}report-weekly/?${query.toString()}`);
 }
 
+export type CarrierPanoramaPeriod = {
+  key: string;
+  kind: "natural" | "summer" | "winter";
+  year: number;
+  label: string;
+  date_from?: string;
+  date_to?: string;
+};
+
+export type CarrierPanoramaPeriodCell = {
+  period_key: string;
+  label: string;
+  year: number;
+  calls: number;
+  pax: number;
+};
+
+/** @deprecated Prefer CarrierPanoramaPeriodCell / by_period. */
 export type CarrierPanoramaYearCell = {
   year: number;
   calls: number;
   pax: number;
+  period_key?: string;
+  label?: string;
 };
 
 export type CarrierPanoramaPortRow = {
   port_id: number;
   port_name: string;
   logo?: string | null;
+  by_period?: CarrierPanoramaPeriodCell[];
   by_year: CarrierPanoramaYearCell[];
   total_calls: number;
   total_pax: number;
@@ -713,7 +754,8 @@ export type CarrierPanoramaReport = {
   date_to: string;
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
-  season?: "natural" | "summer" | "winter";
+  season?: "natural" | "seasons" | "summer" | "winter";
+  periods?: CarrierPanoramaPeriod[];
   years: number[];
   kpis: {
     total_calls: number;
@@ -721,9 +763,12 @@ export type CarrierPanoramaReport = {
     ports_with_calls: number;
     ports_total: number;
   };
+  /** Set when a carrier filter is applied; market outside the selection. */
+  others?: { total_calls: number; total_pax: number } | null;
   port_share: CarrierPanoramaShare[];
   rows: CarrierPanoramaPortRow[];
   totals: {
+    by_period?: CarrierPanoramaPeriodCell[];
     by_year: CarrierPanoramaYearCell[];
     total_calls: number;
     total_pax: number;
@@ -736,9 +781,11 @@ export async function fetchCarrierPanoramaReport(params: {
   date_to: string;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
-  season?: "natural" | "summer" | "winter";
+  season?: "natural" | "seasons" | "summer" | "winter";
   shipping_line?: number;
+  shipping_lines?: number[];
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   ports?: number[];
 }): Promise<CarrierPanoramaReport> {
   const query = new URLSearchParams();
@@ -751,10 +798,14 @@ export async function fetchCarrierPanoramaReport(params: {
   if (params.season && params.season !== "natural") {
     query.set("season", params.season);
   }
-  if (params.shipping_line) {
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.ports?.length) {
@@ -774,13 +825,14 @@ export async function exportStructuredReport(params: {
   shipping_line?: number;
   shipping_lines?: number[];
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   vessel?: number;
   position?: number;
   status?: string;
   statuses?: string[];
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
-  season?: "natural" | "summer" | "winter";
+  season?: "natural" | "seasons" | "summer" | "winter";
   years?: number[];
   year?: number;
   week?: number;
@@ -800,7 +852,9 @@ export async function exportStructuredReport(params: {
   } else if (params.shipping_line) {
     query.set("shipping_line", String(params.shipping_line));
   }
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.vessel) query.set("vessel", String(params.vessel));
@@ -1049,6 +1103,7 @@ export type FetchDashboardStatsParams = {
   ports?: number[];
   shipping_line?: number;
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
 };
@@ -1063,7 +1118,9 @@ export async function fetchDashboardStats(
     query.set("port", params.ports.join(","));
   }
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
-  if (params.shipping_line_group) {
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
+  } else if (params.shipping_line_group) {
     query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.without_lta) query.set("without_lta", "true");

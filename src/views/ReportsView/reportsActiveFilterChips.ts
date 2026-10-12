@@ -152,7 +152,11 @@ export function buildReportsActiveFilterChips(input: {
   ) {
     const seasonLabel =
       REPORT_SEASON_OPTIONS.find((opt) => opt.value === input.season)?.label ??
-      input.season;
+      (input.season === "summer"
+        ? "Summer (may–oct)"
+        : input.season === "winter"
+          ? "Winter (nov–abr)"
+          : input.season);
     chips.push({
       id: "season",
       label: seasonLabel,
@@ -175,8 +179,8 @@ export function reportsHasActiveFilters(input: {
   years?: number[];
   week?: number;
   tagIds?: number[];
-  shippingLineGroupId?: number;
-  shippingLineId?: number;
+  shippingLineGroupIds?: number[];
+  shippingLineIds?: number[];
 }): boolean {
   if (input.tab === "booking_movements") {
     const year = input.years?.[0];
@@ -199,8 +203,8 @@ export function reportsHasActiveFilters(input: {
       input.paxBasis !== "planned" ||
       (input.years?.length ?? 0) > 0 ||
       (input.tagIds?.length ?? 0) > 0 ||
-      (input.shippingLineGroupId ?? 0) > 0 ||
-      (input.shippingLineId ?? 0) > 0
+      (input.shippingLineGroupIds?.length ?? 0) > 0 ||
+      (input.shippingLineIds?.length ?? 0) > 0
     );
   }
   return (
@@ -212,8 +216,8 @@ export function reportsHasActiveFilters(input: {
       Boolean(input.season && input.season !== "natural")) ||
     (input.years?.length ?? 0) > 0 ||
     (input.tagIds?.length ?? 0) > 0 ||
-    (input.shippingLineId ?? 0) > 0 ||
-    (input.shippingLineGroupId ?? 0) > 0 ||
+    (input.shippingLineIds?.length ?? 0) > 0 ||
+    (input.shippingLineGroupIds?.length ?? 0) > 0 ||
     !isDefaultReportDateRange(input.dateFrom, input.dateTo)
   );
 }

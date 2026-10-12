@@ -22,8 +22,8 @@ type SolicitudesPortSectionProps = {
   portId: number;
   years: number[];
   tagIds: number[];
-  shippingLineGroupId: number;
-  shippingLineId: number;
+  shippingLineGroupIds: number[];
+  shippingLineIds: number[];
   withoutLta: boolean;
   paxBasis: "planned" | "capacity";
   hasActiveFilters?: boolean;
@@ -58,6 +58,7 @@ function PortCarrierSummary({
   carrierScope,
   carrierRows,
   portRows,
+  othersRows,
 }: {
   portName: string;
   carrierName: string;
@@ -65,28 +66,38 @@ function PortCarrierSummary({
   carrierScope: "line" | "group";
   carrierRows: SolicitudesPortYearPax[];
   portRows: SolicitudesPortYearPax[];
+  othersRows?: SolicitudesPortYearPax[];
 }) {
-  const { years, carrierMap, portMap, carrierTotal, portTotal } = useMemo(() => {
-    const nextCarrier = paxByYearMap(carrierRows);
-    const nextPort = paxByYearMap(portRows);
-    const nextYears = Array.from(
-      new Set([...nextCarrier.keys(), ...nextPort.keys()]),
-    ).sort((a, b) => a - b);
-    return {
-      years: nextYears,
-      carrierMap: nextCarrier,
-      portMap: nextPort,
-      carrierTotal: carrierRows.reduce((sum, row) => sum + row.pax, 0),
-      portTotal: portRows.reduce((sum, row) => sum + row.pax, 0),
-    };
-  }, [carrierRows, portRows]);
+  const showOthers = (othersRows?.length ?? 0) > 0;
+  const { years, carrierMap, portMap, othersMap, carrierTotal, portTotal, othersTotal } =
+    useMemo(() => {
+      const nextCarrier = paxByYearMap(carrierRows);
+      const nextPort = paxByYearMap(portRows);
+      const nextOthers = paxByYearMap(othersRows ?? []);
+      const nextYears = Array.from(
+        new Set([
+          ...nextCarrier.keys(),
+          ...nextPort.keys(),
+          ...nextOthers.keys(),
+        ]),
+      ).sort((a, b) => a - b);
+      return {
+        years: nextYears,
+        carrierMap: nextCarrier,
+        portMap: nextPort,
+        othersMap: nextOthers,
+        carrierTotal: carrierRows.reduce((sum, row) => sum + row.pax, 0),
+        portTotal: portRows.reduce((sum, row) => sum + row.pax, 0),
+        othersTotal: (othersRows ?? []).reduce((sum, row) => sum + row.pax, 0),
+      };
+    }, [carrierRows, portRows, othersRows]);
 
   const compareLabel =
     carrierScope === "group" ? "Grupo vs total" : "Naviera vs total";
   const compareHint =
     carrierScope === "group"
-      ? "Grupo seleccionado vs total del puerto"
-      : "Naviera seleccionada vs total del puerto";
+      ? "Grupo(s) seleccionado(s) vs total del puerto"
+      : "Naviera(s) seleccionada(s) vs total del puerto";
 
   return (
     <div className="h-fit w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
@@ -118,12 +129,22 @@ function PortCarrierSummary({
                 <InfoTooltip content={compareHint} label={compareLabel} />
               </span>
             </th>
+            {showOthers ? (
+              <th
+                className={cellBorder(
+                  "px-3 py-1.5 text-right font-semibold",
+                )}
+              >
+                Otros
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {years.map((year) => {
             const carrierPax = carrierMap.get(year) ?? 0;
             const portPax = portMap.get(year) ?? 0;
+            const othersPax = othersMap.get(year) ?? 0;
             return (
               <tr key={year} className="bg-white dark:bg-zinc-950/40">
                 <td
@@ -143,6 +164,15 @@ function PortCarrierSummary({
                     ({formatPct(carrierPax, portPax)})
                   </span>
                 </td>
+                {showOthers ? (
+                  <td
+                    className={cellBorder(
+                      "px-3 py-1.5 text-right tabular-nums",
+                    )}
+                  >
+                    {formatPax(othersPax)}
+                  </td>
+                ) : null}
               </tr>
             );
           })}
@@ -158,6 +188,15 @@ function PortCarrierSummary({
                 ({formatPct(carrierTotal, portTotal)})
               </span>
             </td>
+            {showOthers ? (
+              <td
+                className={cellBorder(
+                  "px-3 py-1.5 text-right tabular-nums",
+                )}
+              >
+                {formatPax(othersTotal)}
+              </td>
+            ) : null}
           </tr>
         </tbody>
       </table>
@@ -172,23 +211,23 @@ export default function SolicitudesPortSection({
   portId,
   years,
   tagIds,
-  shippingLineGroupId,
-  shippingLineId,
+  shippingLineGroupIds,
+  shippingLineIds,
   withoutLta,
   paxBasis,
   hasActiveFilters = false,
   onClearFilters,
 }: SolicitudesPortSectionProps) {
   const hasCarrier =
-    shippingLineId > 0 || shippingLineGroupId > 0;
+    shippingLineIds.length > 0 || shippingLineGroupIds.length > 0;
   const paramsKey = [
     dateFrom,
     dateTo,
     portId,
     years.join(","),
     tagIds.join(","),
-    shippingLineGroupId,
-    shippingLineId,
+    shippingLineGroupIds.join(","),
+    shippingLineIds.join(","),
     withoutLta ? 1 : 0,
     paxBasis,
   ].join("|");
@@ -204,10 +243,11 @@ export default function SolicitudesPortSection({
         port: portId,
         years,
         tags: tagIds,
-        shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
-        shipping_line_group:
-          shippingLineId <= 0 && shippingLineGroupId > 0
-            ? shippingLineGroupId
+        shipping_lines:
+          shippingLineIds.length > 0 ? shippingLineIds : undefined,
+        shipping_line_groups:
+          shippingLineIds.length === 0 && shippingLineGroupIds.length > 0
+            ? shippingLineGroupIds
             : undefined,
         without_lta: withoutLta,
         pax_basis: paxBasis,
@@ -347,6 +387,7 @@ export default function SolicitudesPortSection({
             carrierScope={carrierScope}
             carrierRows={carrierRows}
             portRows={data.port_by_year}
+            othersRows={data.others_by_year}
           />
         ) : null}
       </div>

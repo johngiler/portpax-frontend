@@ -36,8 +36,9 @@ export type BookingCalendarFocus = CatalogConflictFocus & {
   /** @deprecated Prefer shippingLineIds. */
   shippingLineId?: number;
   shippingLineIds?: number[];
-  /** Single group soft-focus (0 / omit = none). */
+  /** @deprecated Prefer shippingLineGroupIds. */
   shippingLineGroupId?: number;
+  shippingLineGroupIds?: number[];
   positionId?: number;
   /** Soft-focus: booking must have one of these tag IDs. */
   tagIds?: number[];
@@ -55,10 +56,14 @@ function focusLineIds(focus: BookingCalendarFocus): number[] {
   return [];
 }
 
-function focusGroupId(focus: BookingCalendarFocus): number {
-  return focus.shippingLineGroupId && focus.shippingLineGroupId > 0
-    ? focus.shippingLineGroupId
-    : 0;
+function focusGroupIds(focus: BookingCalendarFocus): number[] {
+  if (focus.shippingLineGroupIds && focus.shippingLineGroupIds.length > 0) {
+    return focus.shippingLineGroupIds;
+  }
+  if (focus.shippingLineGroupId && focus.shippingLineGroupId > 0) {
+    return [focus.shippingLineGroupId];
+  }
+  return [];
 }
 
 /** Soft focus for vessel / shipping-line filters (neighbors stay visible). */
@@ -66,7 +71,7 @@ export function bookingMatchesCatalogFocus(
   booking: Pick<BookingListItem, "vessel" | "shipping_line" | "shipping_line_group">,
   vesselId: number,
   shippingLineIds: number[] | number,
-  shippingLineGroupId = 0,
+  shippingLineGroupIds: number[] | number = 0,
 ): boolean {
   if (vesselId > 0) return booking.vessel === vesselId;
   const lines = Array.isArray(shippingLineIds)
@@ -75,8 +80,13 @@ export function bookingMatchesCatalogFocus(
       ? [shippingLineIds]
       : [];
   if (lines.length > 0) return lines.includes(booking.shipping_line);
-  if (shippingLineGroupId > 0) {
-    return (booking.shipping_line_group ?? 0) === shippingLineGroupId;
+  const groups = Array.isArray(shippingLineGroupIds)
+    ? shippingLineGroupIds
+    : shippingLineGroupIds > 0
+      ? [shippingLineGroupIds]
+      : [];
+  if (groups.length > 0) {
+    return groups.includes(booking.shipping_line_group ?? 0);
   }
   return true;
 }
@@ -163,9 +173,9 @@ export function bookingMatchesCalendarFocus(
   if (vesselId <= 0 && lineIds.length > 0) {
     if (!lineIds.includes(booking.shipping_line)) return false;
   }
-  const groupId = focusGroupId(focus);
-  if (vesselId <= 0 && lineIds.length === 0 && groupId > 0) {
-    if ((booking.shipping_line_group ?? 0) !== groupId) return false;
+  const groupIds = focusGroupIds(focus);
+  if (vesselId <= 0 && lineIds.length === 0 && groupIds.length > 0) {
+    if (!groupIds.includes(booking.shipping_line_group ?? 0)) return false;
   }
   const positionId =
     focus.positionId && focus.positionId > 0 ? focus.positionId : 0;
@@ -196,7 +206,7 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
     (focus.statuses && focus.statuses.length > 0) ||
       (focus.vesselId && focus.vesselId > 0) ||
       focusLineIds(focus).length > 0 ||
-      focusGroupId(focus) > 0 ||
+      focusGroupIds(focus).length > 0 ||
       (focus.positionId && focus.positionId > 0) ||
       (focus.tagIds && focus.tagIds.length > 0) ||
       (focus.callDates && focus.callDates.length > 0) ||

@@ -95,7 +95,12 @@ export default function AvailabilityPortCard({
           : filters.shipping_line && filters.shipping_line > 0
             ? [filters.shipping_line]
             : undefined,
-      shippingLineGroupId: filters.shipping_line_group ?? 0,
+      shippingLineGroupIds:
+        filters.shipping_line_groups && filters.shipping_line_groups.length > 0
+          ? filters.shipping_line_groups
+          : filters.shipping_line_group && filters.shipping_line_group > 0
+            ? [filters.shipping_line_group]
+            : undefined,
       positionId: filters.position ?? 0,
       tagIds: filters.tags?.length ? filters.tags : undefined,
       has_conflict: filters.has_conflict,
@@ -108,6 +113,7 @@ export default function AvailabilityPortCard({
       filters.shipping_line,
       filters.shipping_lines,
       filters.shipping_line_group,
+      filters.shipping_line_groups,
       filters.position,
       filters.tags,
       filters.has_conflict,
@@ -319,7 +325,13 @@ export default function AvailabilityPortCard({
             ? [filters.shipping_line]
             : undefined
       }
-      shippingLineGroupFocusId={filters.shipping_line_group ?? 0}
+      shippingLineGroupFocusIds={
+        filters.shipping_line_groups && filters.shipping_line_groups.length > 0
+          ? filters.shipping_line_groups
+          : filters.shipping_line_group && filters.shipping_line_group > 0
+            ? [filters.shipping_line_group]
+            : undefined
+      }
       positionFocusId={filters.position ?? 0}
       tagFocusIds={filters.tags}
       conflictFocus={{

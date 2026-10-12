@@ -52,6 +52,7 @@ export type AvailabilityFocusFilters = CatalogConflictFocus & {
   shippingLineId?: number;
   shippingLineIds?: number[];
   shippingLineGroupId?: number;
+  shippingLineGroupIds?: number[];
   positionId?: number;
   tagIds?: number[];
 };
@@ -66,10 +67,14 @@ function focusLineIds(focus: AvailabilityFocusFilters): number[] {
   return [];
 }
 
-function focusGroupId(focus: AvailabilityFocusFilters): number {
-  return focus.shippingLineGroupId && focus.shippingLineGroupId > 0
-    ? focus.shippingLineGroupId
-    : 0;
+function focusGroupIds(focus: AvailabilityFocusFilters): number[] {
+  if (focus.shippingLineGroupIds && focus.shippingLineGroupIds.length > 0) {
+    return focus.shippingLineGroupIds;
+  }
+  if (focus.shippingLineGroupId && focus.shippingLineGroupId > 0) {
+    return [focus.shippingLineGroupId];
+  }
+  return [];
 }
 
 function matchesOneStatus(
@@ -165,12 +170,12 @@ export function availabilityCallMatchesFocus(
   ) {
     return false;
   }
-  const groupId = focusGroupId(focus);
+  const groupIds = focusGroupIds(focus);
   if (
     vesselId <= 0 &&
     lineIds.length === 0 &&
-    groupId > 0 &&
-    (call.shipping_line_group_id ?? 0) !== groupId
+    groupIds.length > 0 &&
+    !groupIds.includes(call.shipping_line_group_id ?? 0)
   ) {
     return false;
   }
@@ -233,12 +238,12 @@ export function availabilityFocusNeighborTitle(
   ) {
     return `${call.booking_code} · otra naviera (vecino)`;
   }
-  const groupId = focusGroupId(focus);
+  const groupIds = focusGroupIds(focus);
   if (
     vesselId <= 0 &&
     lineIds.length === 0 &&
-    groupId > 0 &&
-    (call.shipping_line_group_id ?? 0) !== groupId
+    groupIds.length > 0 &&
+    !groupIds.includes(call.shipping_line_group_id ?? 0)
   ) {
     return `${call.booking_code} · otro grupo (vecino)`;
   }
@@ -265,7 +270,7 @@ export function availabilityFocusIsActive(
     statuses.length > 0 ||
       (focus.vesselId && focus.vesselId > 0) ||
       focusLineIds(focus).length > 0 ||
-      focusGroupId(focus) > 0 ||
+      focusGroupIds(focus).length > 0 ||
       (focus.positionId && focus.positionId > 0) ||
       (focus.tagIds && focus.tagIds.length > 0) ||
       focus.has_conflict !== undefined ||

@@ -63,9 +63,9 @@ export type BookingsWorkspaceFilters = {
   search: string;
   /** Empty = all ports. One or more for lista / calendario / disponibilidad. */
   ports: number[];
-  /** Shipping line group (0 = all). Single select. */
-  group: number;
-  /** Shipping lines (empty = all). Wins over group when set. */
+  /** Shipping line groups (empty = all). Multi select. */
+  groups: number[];
+  /** Shipping lines (empty = all). Wins over groups when set. */
   lines: number[];
   vessel: number;
   /** Vessel.size_category multi-filter (list / export). */
@@ -213,10 +213,12 @@ export function parseBookingsWorkspaceFilters(
     .map((p) => parseIntId(p.trim()))
     .filter((id) => id > 0);
   const status = parseBookingStatusFilters(statusRaw);
-  // Group is single; lines may be multi (`lines` CSV). Legacy `line` still accepted.
-  const group = parseIntId(
-    sp.get("group") || sp.get("groups")?.split(",")[0] || null,
-  );
+  // Groups + lines as CSV. Legacy `group` / `line` still accepted.
+  const groupsCsv = sp.get("groups") || sp.get("group");
+  const groups = (groupsCsv ?? "")
+    .split(",")
+    .map((p) => parseIntId(p.trim()))
+    .filter((id) => id > 0);
   const linesCsv = sp.get("lines") || sp.get("line");
   const lines = (linesCsv ?? "")
     .split(",")
@@ -228,7 +230,7 @@ export function parseBookingsWorkspaceFilters(
     status,
     search: sp.get("q")?.trim() ?? "",
     ports,
-    group,
+    groups,
     lines,
     vessel: parseIntId(sp.get("vessel")),
     sizeCategories: parseVesselSizeCategoryFilters(sp.get("size")),
@@ -278,7 +280,7 @@ export function buildBookingsWorkspaceQuery(
   if (statusCsv) sp.set("status", statusCsv);
   if (state.search) sp.set("q", state.search);
   if (state.ports.length > 0) sp.set("ports", state.ports.join(","));
-  if (state.group > 0) sp.set("group", String(state.group));
+  if (state.groups.length > 0) sp.set("groups", state.groups.join(","));
   if (state.lines.length > 0) sp.set("lines", state.lines.join(","));
   if (state.vessel > 0) sp.set("vessel", String(state.vessel));
   if (state.sizeCategories.length > 0) {

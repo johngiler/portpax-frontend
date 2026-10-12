@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { Anchor, MapPinned, Ship, Users } from "lucide-react";
+import { Anchor, Layers, MapPinned, Ship, Users } from "lucide-react";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewSection from "@/components/layout/ViewSection";
 import ViewStatCard from "@/components/layout/ViewStatCard";
@@ -34,8 +34,8 @@ type Props = {
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
   season: ReportSeason;
-  shippingLineGroupId: number;
-  shippingLineId: number;
+  shippingLineGroupIds: number[];
+  shippingLineIds: number[];
   portIds: number[];
 };
 
@@ -46,8 +46,8 @@ export default function CarrierPanoramaSection({
   withoutLta,
   paxBasis,
   season,
-  shippingLineGroupId,
-  shippingLineId,
+  shippingLineGroupIds,
+  shippingLineIds,
   portIds,
 }: Props) {
   const portsKey = [...portIds].sort((a, b) => a - b).join(",");
@@ -57,8 +57,8 @@ export default function CarrierPanoramaSection({
     withoutLta ? 1 : 0,
     paxBasis,
     season,
-    shippingLineGroupId,
-    shippingLineId,
+    shippingLineGroupIds.join(","),
+    shippingLineIds.join(","),
     portsKey,
   ].join("|");
 
@@ -73,10 +73,11 @@ export default function CarrierPanoramaSection({
         without_lta: withoutLta,
         pax_basis: paxBasis,
         season,
-        shipping_line: shippingLineId > 0 ? shippingLineId : undefined,
-        shipping_line_group:
-          shippingLineId <= 0 && shippingLineGroupId > 0
-            ? shippingLineGroupId
+        shipping_lines:
+          shippingLineIds.length > 0 ? shippingLineIds : undefined,
+        shipping_line_groups:
+          shippingLineIds.length === 0 && shippingLineGroupIds.length > 0
+            ? shippingLineGroupIds
             : undefined,
         ports: portIds.length > 0 ? portIds : undefined,
       }),
@@ -103,7 +104,7 @@ export default function CarrierPanoramaSection({
     return <CarrierPanoramaContentSkeleton />;
   }
 
-  const { kpis, port_share: share, subtitle } = data;
+  const { kpis, port_share: share, subtitle, others } = data;
   const topShare = share[0];
   const slices = share.map((item, index) => ({
     key: String(item.port_id),
@@ -111,10 +112,17 @@ export default function CarrierPanoramaSection({
     value: item.pax > 0 ? item.pax : item.calls,
     color: PORT_SHARE_COLORS[index % PORT_SHARE_COLORS.length],
   }));
+  const showOthers = Boolean(
+    others && (others.total_calls > 0 || others.total_pax > 0),
+  );
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div
+        className={`grid gap-4 md:grid-cols-2 ${
+          showOthers ? "xl:grid-cols-5" : "xl:grid-cols-4"
+        }`}
+      >
         <ViewStatCard
           label="Arribos totales"
           value={kpis.total_calls.toLocaleString("es")}
@@ -139,6 +147,16 @@ export default function CarrierPanoramaSection({
           accentColor="#7c3aed"
           gradient="linear-gradient(160deg, rgba(124, 58, 237, 0.14) 0%, var(--background) 55%)"
         />
+        {showOthers && others ? (
+          <ViewStatCard
+            label="Otros"
+            value={formatCompactNumber(others.total_pax)}
+            description={`${others.total_calls.toLocaleString("es")} arribos fuera de la selección`}
+            icon={Layers}
+            accentColor="#64748b"
+            gradient="linear-gradient(160deg, rgba(100, 116, 139, 0.14) 0%, var(--background) 55%)"
+          />
+        ) : null}
         <div
           className="relative flex h-full min-h-[130px] items-start overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80"
           style={{

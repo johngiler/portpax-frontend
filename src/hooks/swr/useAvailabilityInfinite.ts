@@ -18,6 +18,7 @@ export type AvailabilityListFilters = {
   shipping_line?: number;
   shipping_lines?: number[];
   shipping_line_group?: number;
+  shipping_line_groups?: number[];
   vessel?: number;
   position?: number;
   tags?: number[];
@@ -60,7 +61,9 @@ function pageDateRange(
 function filtersKey(filters: AvailabilityListFilters): string {
   return [
     (filters.shipping_lines ?? []).join(",") || filters.shipping_line || 0,
-    filters.shipping_line_group ?? 0,
+    (filters.shipping_line_groups ?? []).join(",") ||
+      filters.shipping_line_group ||
+      0,
     filters.vessel ?? 0,
     filters.position ?? 0,
     (filters.tags ?? []).join(","),
@@ -97,10 +100,12 @@ export function useAvailabilityInfinite(
       : filters.shipping_line && filters.shipping_line > 0
         ? [filters.shipping_line]
         : undefined;
-  const group =
-    filters.shipping_line_group && filters.shipping_line_group > 0
-      ? filters.shipping_line_group
-      : undefined;
+  const groups =
+    filters.shipping_line_groups && filters.shipping_line_groups.length > 0
+      ? filters.shipping_line_groups
+      : filters.shipping_line_group && filters.shipping_line_group > 0
+        ? [filters.shipping_line_group]
+        : undefined;
   const vessel = filters.vessel;
   const position = filters.position;
   const tags = filters.tags;
@@ -118,7 +123,7 @@ export function useAvailabilityInfinite(
   const occupiedOnly = Boolean(filters.occupied_only);
   const softFocusMode = Boolean(
     (lines != null && lines.length > 0) ||
-      (group != null && group > 0) ||
+      (groups != null && groups.length > 0) ||
       (vessel != null && vessel > 0) ||
       (position != null && position > 0) ||
       (tags != null && tags.length > 0) ||
@@ -165,7 +170,7 @@ export function useAvailabilityInfinite(
           date_from: dateFrom,
           date_to: dateTo,
           shipping_lines: lines,
-          shipping_line_group: group,
+          shipping_line_groups: groups,
           vessel,
           position,
           tags,
@@ -188,7 +193,7 @@ export function useAvailabilityInfinite(
         date_from: from,
         date_to: to,
         shipping_lines: lines,
-        shipping_line_group: group,
+        shipping_line_groups: groups,
         vessel,
         position,
         tags,
