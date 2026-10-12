@@ -54,13 +54,15 @@ export default function ViewFilteredBanner({
   const layout = useMainLayoutOptional();
   const filterOpen = layout?.filterOpen ?? false;
   const isMobile = layout?.isMobile ?? false;
+  const setFilterOpen = layout?.setFilterOpen;
+  const setSidebarMobileOpen = layout?.setSidebarMobileOpen;
 
-  // Desktop: only when the filter panel is collapsed. Mobile has no panel → always show.
-  if (filterOpen && !isMobile) return null;
+  // Hide while the filter panel / mobile drawer is open.
+  if (filterOpen) return null;
 
   return (
     <div
-      className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--admin-accent)]/25 bg-[var(--admin-accent)]/8 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-200"
+      className="mb-6 flex flex-col gap-3 rounded-xl border border-[var(--admin-accent)]/25 bg-[var(--admin-accent)]/8 px-3 py-3 text-sm text-zinc-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 dark:text-zinc-200"
       role="status"
     >
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
@@ -101,13 +103,27 @@ export default function ViewFilteredBanner({
           ) : null}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onClear}
-        className="shrink-0 cursor-pointer rounded-lg border border-[var(--admin-accent)]/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-white dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
-      >
-        Limpiar filtros
-      </button>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 self-stretch sm:self-center">
+        {isMobile && setFilterOpen ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSidebarMobileOpen?.(false);
+              setFilterOpen(true);
+            }}
+            className="flex-1 cursor-pointer rounded-lg border border-[var(--admin-accent)]/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-white sm:flex-none dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
+          >
+            Editar filtros
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onClear}
+          className="flex-1 cursor-pointer rounded-lg border border-[var(--admin-accent)]/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-white sm:flex-none dark:bg-zinc-900/60 dark:hover:bg-zinc-900"
+        >
+          Limpiar filtros
+        </button>
+      </div>
     </div>
   );
 }

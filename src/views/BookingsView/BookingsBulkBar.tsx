@@ -47,7 +47,7 @@ export default function BookingsBulkBar({
       : `${selectedCount} reservas canceladas`;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
+    <div className="mb-3 flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 shadow-[var(--admin-card-shadow)] sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 dark:border-zinc-800 dark:bg-zinc-900/80">
       <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">
         <input
           type="checkbox"
@@ -61,7 +61,7 @@ export default function BookingsBulkBar({
       </label>
 
       {selectedCount > 0 ? (
-        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
           <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {selectedCount} seleccionada{selectedCount === 1 ? "" : "s"}
           </span>

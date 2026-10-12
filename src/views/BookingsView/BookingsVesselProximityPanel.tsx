@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { Ship } from "lucide-react";
+import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import ViewSection from "@/components/layout/ViewSection";
 import EmptyState from "@/components/ui/EmptyState";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
@@ -55,6 +56,9 @@ export default function BookingsVesselProximityPanel({
   onClearFilters,
 }: BookingsVesselProximityPanelProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMainLayoutOptional()?.isMobile ?? false;
+  const dateColPx = isMobile ? 96 : 136;
+  const dayColPx = isMobile ? 168 : 208;
   const filtersReady = vesselId > 0;
 
   const listFilters = useMemo(
@@ -213,17 +217,19 @@ export default function BookingsVesselProximityPanel({
       <div ref={scrollRootRef} className={matrixScrollClassName}>
         <table
           className="w-full table-fixed border-separate border-spacing-0 text-left"
-          style={{ minWidth: `${136 + data.ports.length * 208}px` }}
+          style={{
+            minWidth: `${dateColPx + data.ports.length * dayColPx}px`,
+          }}
         >
           <colgroup>
-            <col style={{ width: "136px" }} />
+            <col style={{ width: `${dateColPx}px` }} />
             {data.ports.map((port) => (
-              <col key={port.id} style={{ width: "208px" }} />
+              <col key={port.id} style={{ width: `${dayColPx}px` }} />
             ))}
           </colgroup>
           <thead className="sticky top-0 z-30">
             <tr>
-              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-2 py-2.5 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-950">
                 <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Fecha
                 </span>
@@ -251,7 +257,7 @@ export default function BookingsVesselProximityPanel({
           <tbody>
             {data.dates.map((isoDate) => (
               <tr key={isoDate} className="group">
-                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-3 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
+                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-2 py-2.5 align-top group-last:border-b-0 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900">
                   <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                     {formatIsoDateLabel(isoDate, "short")}
                   </span>

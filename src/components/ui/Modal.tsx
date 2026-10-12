@@ -92,7 +92,7 @@ export default function Modal({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-6 ${isAnimatingOut ? "pointer-events-none" : ""}`}
+      className={`fixed inset-0 z-50 flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-6 ${isAnimatingOut ? "pointer-events-none" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -105,14 +105,14 @@ export default function Modal({
         aria-hidden
       />
       <div
-        className={`relative w-full max-h-[90vh] flex flex-col ${panelClassName} overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow-hover)] dark:border-zinc-700/70 dark:bg-zinc-900 ${isAnimatingOut ? "modal-panel-exit" : "modal-panel-enter"}`}
+        className={`relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow-hover)] sm:max-h-[90vh] sm:rounded-xl dark:border-zinc-700/70 dark:bg-zinc-900 ${panelClassName} ${isAnimatingOut ? "modal-panel-exit" : "modal-panel-enter"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-[var(--admin-accent)]/8 via-transparent to-[var(--admin-accent)]/10" />
-        <div className="relative flex shrink-0 items-center justify-between border-b border-zinc-200/70 p-4 dark:border-zinc-700/70">
+        <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200/70 p-3 sm:p-4 dark:border-zinc-700/70">
           <h2
             id="modal-title"
-            className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+            className="min-w-0 truncate text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50"
           >
             {title}
           </h2>
@@ -129,11 +129,11 @@ export default function Modal({
             <span className="h-8 w-8 shrink-0" aria-hidden />
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pt-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-3 pt-4 sm:p-4 sm:pt-5">
           {children}
         </div>
         {footer != null && (
-          <div className="flex shrink-0 justify-end gap-3 border-t border-zinc-200/70 bg-zinc-50/80 p-4 dark:border-zinc-700/70 dark:bg-zinc-900">
+          <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-zinc-200/70 bg-zinc-50/80 p-3 sm:gap-3 sm:p-4 dark:border-zinc-700/70 dark:bg-zinc-900">
             {footer}
           </div>
         )}

@@ -28,7 +28,7 @@ export default function ViewStatCard({
   const card = (
     <div
       className={[
-        "relative flex h-full min-h-[130px] items-start justify-between gap-4 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80",
+        "relative flex h-full min-h-[110px] items-start justify-between gap-3 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[var(--admin-card-shadow)] sm:min-h-[130px] sm:gap-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/80",
         href
           ? "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
           : "",
@@ -43,7 +43,7 @@ export default function ViewStatCard({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           {label}
         </p>
-        <p className="mt-1.5 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+        <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-50">
           {value}
         </p>
         {badge ? <div className="mt-2">{badge}</div> : null}

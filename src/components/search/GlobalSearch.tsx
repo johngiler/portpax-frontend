@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import Link from "next/link";
 import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
 import { useAuthOptional } from "@/contexts/AuthContext";
@@ -14,7 +20,8 @@ import type { GlobalSearchResult } from "@/types/search";
 
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
-const EXPANDED_WIDTH = 420;
+const EXPANDED_WIDTH_DESKTOP = 420;
+const EXPANDED_WIDTH_MOBILE_MAX = 280;
 
 function formatScaleDate(d: string | null): string {
   if (!d) return "—";
@@ -29,6 +36,24 @@ function formatScaleDate(d: string | null): string {
   }
 }
 
+function useSearchPanelWidth(): number {
+  const [width, setWidth] = useState(EXPANDED_WIDTH_DESKTOP);
+  useEffect(() => {
+    const sync = () => {
+      const vw = window.innerWidth;
+      if (vw < 640) {
+        setWidth(Math.min(EXPANDED_WIDTH_MOBILE_MAX, Math.max(200, vw - 120)));
+      } else {
+        setWidth(Math.min(EXPANDED_WIDTH_DESKTOP, vw - 48));
+      }
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+  return width;
+}
+
 export default function GlobalSearch() {
   const auth = useAuthOptional();
   const showCatalogResults = canBrowseCatalogs(auth?.user?.role);
@@ -36,6 +61,7 @@ export default function GlobalSearch() {
   const [results, setResults] = useState<GlobalSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const panelWidth = useSearchPanelWidth();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,7 +132,7 @@ export default function GlobalSearch() {
           expanded ? "border border-zinc-200/60 dark:border-zinc-600/60" : "border-0"
         }`}
         style={{
-          width: expanded ? EXPANDED_WIDTH : 40,
+          width: expanded ? panelWidth : 40,
           background: "transparent",
           boxShadow: expanded ? "0 2px 10px rgba(0,0,0,.06)" : "none",
         }}
@@ -114,7 +140,7 @@ export default function GlobalSearch() {
         <button
           type="button"
           onClick={handleExpand}
-          className={`relative z-10 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 ${!expanded ? "cursor-pointer" : "pointer-events-none"}`}
+          className={`relative z-10 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-700 sm:h-10 sm:w-10 dark:text-zinc-400 dark:hover:text-zinc-200 ${!expanded ? "cursor-pointer" : "pointer-events-none"}`}
           style={{ background: "none" }}
           aria-label="Abrir buscador"
           tabIndex={expanded ? -1 : 0}
@@ -127,12 +153,12 @@ export default function GlobalSearch() {
             expanded
               ? {
                   position: "absolute",
-                  left: 40,
+                  left: 36,
                   top: 0,
-                  width: EXPANDED_WIDTH - 40,
-                  height: 40,
+                  width: panelWidth - 36,
+                  height: 36,
                 }
-              : { width: 0, height: 40, overflow: "hidden" }
+              : { width: 0, height: 36, overflow: "hidden" }
           }
         >
           <input
@@ -158,7 +184,7 @@ export default function GlobalSearch() {
                 ? "Reserva, puerto, naviera, barco..."
                 : "Buscar reservas..."
             }
-            className="h-10 w-full cursor-pointer bg-transparent pr-4 pl-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            className="h-9 w-full cursor-pointer bg-transparent pr-3 pl-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none sm:h-10 sm:pr-4 sm:pl-3 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             aria-label="Buscador global"
             aria-expanded={expanded && (loading || results !== null)}
             aria-autocomplete="list"
@@ -170,11 +196,13 @@ export default function GlobalSearch() {
         query.trim().length >= MIN_QUERY_LENGTH &&
         (loading || results !== null) && (
           <div
-            className="absolute left-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
-            style={{
-              width: EXPANDED_WIDTH,
-              maxHeight: "min(70vh, 440px)",
-            }}
+            className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-1.5rem,var(--search-panel-w))] overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xl sm:left-0 sm:right-auto dark:border-zinc-700 dark:bg-zinc-900"
+            style={
+              {
+                ["--search-panel-w" as string]: `${panelWidth}px`,
+                maxHeight: "min(70vh, 440px)",
+              } as CSSProperties
+            }
             role="listbox"
           >
             <div className="max-h-[min(70vh,440px)] overflow-y-auto">

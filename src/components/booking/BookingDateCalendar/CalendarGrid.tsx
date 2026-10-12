@@ -40,13 +40,13 @@ export default function CalendarGrid({
 
   return (
     <>
-      <div className="grid grid-cols-7 gap-2 px-5 pb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
+      <div className="grid grid-cols-7 gap-1 px-2 pb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-400 sm:gap-2 sm:px-5 sm:text-xs">
         {WEEKDAY_LABELS.map((label) => (
           <span key={label}>{label}</span>
         ))}
       </div>
 
-      <div className="relative min-h-[22rem] px-5 pb-4">
+      <div className="relative min-h-[18rem] px-2 pb-4 sm:min-h-[22rem] sm:px-5">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={`${viewYear}-${viewMonth}`}
@@ -55,7 +55,7 @@ export default function CalendarGrid({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction >= 0 ? -24 : 24 }}
             transition={transition}
-            className="grid grid-cols-7 gap-2"
+            className="grid grid-cols-7 gap-1 sm:gap-2"
           >
             {weeks.flat().map((cell) => {
               const dayBookings = occupancyByDate[cell.iso] ?? [];
@@ -86,7 +86,7 @@ export default function CalendarGrid({
                   onClick={() => onDayClick(cell)}
                   whileTap={isPast ? undefined : { scale: 0.97 }}
                   className={[
-                    "group relative flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-between rounded-2xl border px-1 pb-1.5 pt-2 text-left transition-all duration-200",
+                    "group relative flex min-h-[3.75rem] cursor-pointer flex-col items-center justify-between rounded-xl border px-0.5 pb-1 pt-1.5 text-left transition-all duration-200 sm:min-h-[4.75rem] sm:rounded-2xl sm:px-1 sm:pb-1.5 sm:pt-2",
                     !cell.isCurrentMonth && !isSelected && !isPast ? "opacity-35" : "",
                     isPast
                       ? "cursor-not-allowed border-zinc-100/60 bg-zinc-50/40 opacity-55 dark:border-zinc-800/40 dark:bg-zinc-900/15"

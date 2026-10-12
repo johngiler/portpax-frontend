@@ -34,7 +34,7 @@ export function MainTableHeader({ children }: { children: React.ReactNode }) {
 export function MainTableTh({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <th
-      className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 ${className}`}
+      className={`px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 sm:px-5 sm:py-4 dark:text-zinc-400 ${className}`}
     >
       {children}
     </th>
@@ -72,7 +72,7 @@ export function MainTableTd({
 }) {
   return (
     <td
-      className={`px-5 py-3.5 text-sm text-zinc-700 dark:text-zinc-200 ${className}`}
+      className={`px-3 py-3 text-sm text-zinc-700 sm:px-5 sm:py-3.5 dark:text-zinc-200 ${className}`}
       title={title}
     >
       {children}

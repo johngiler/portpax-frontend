@@ -9,6 +9,7 @@ import { useDataActivity } from "@/lib/dataActivityStore";
 import { useDataExport, type DataExportFormat } from "@/lib/dataExportStore";
 import { useDataImport } from "@/lib/dataImportStore";
 import ExportOptionsModal from "@/components/ui/ExportOptionsModal";
+import { MOBILE_FILTER_DRAWER_ID } from "@/components/layout/filterSidebarIds";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,6 +17,7 @@ import {
   Filter,
   History,
   Upload,
+  X,
 } from "lucide-react";
 
 type FilterSidebarProps = {
@@ -42,11 +44,13 @@ export function FilterSidebarContent({
 /**
  * Sidebar de filtros espejo del sidebar principal (lado derecho).
  * Incluye sección Datos: Importar / Exportar / Historial.
+ * En móvil: drawer overlay (igual patrón que el menú izquierdo).
  */
 export default function FilterSidebar({ children }: FilterSidebarProps) {
   const layout = useMainLayoutOptional();
   const open = layout?.filterOpen ?? false;
   const setFilterOpen = layout?.setFilterOpen;
+  const isMobile = layout?.isMobile ?? false;
   const { canExport, formats, runExport } = useDataExport();
   const { canImport, runImport } = useDataImport();
   const { canOpenActivity, runActivity } = useDataActivity();
@@ -121,6 +125,114 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
   const dataActionClass =
     "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200";
 
+  const filterBody = (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
+      <div className="flex flex-col gap-3 [&>*]:!mb-0">{children}</div>
+
+      <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
+        <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+          Datos
+        </span>
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            disabled={importDisabled}
+            onClick={handleImportClick}
+            className={dataActionClass}
+            aria-label="Importar desde Excel/CSV"
+            title={importTitle}
+          >
+            <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span>{importing ? "Abriendo…" : "Importar"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={exportDisabled}
+            onClick={handleExportClick}
+            className={dataActionClass}
+            aria-label="Exportar"
+            title={exportTitle}
+          >
+            <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span>{exporting ? "Exportando…" : "Exportar"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={activityDisabled}
+            onClick={() => void handleActivityClick()}
+            className={dataActionClass}
+            aria-label="Historial de movimientos"
+            title={activityTitle}
+          >
+            <History className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span>{openingActivity ? "Abriendo…" : "Historial"}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const desktopExpanded = (
+    <>
+      <span className="mb-4 shrink-0 px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+        Filtros
+      </span>
+      {filterBody}
+    </>
+  );
+
+  const exportModal = (
+    <ExportOptionsModal
+      open={exportModalOpen}
+      onClose={() => !exporting && setExportModalOpen(false)}
+      onExport={handleExportOption}
+      formats={formats}
+      disabled={!canExport}
+      exporting={exporting}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        {open ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-pointer bg-black/40 transition-opacity duration-200 md:hidden"
+            aria-label="Cerrar filtros"
+            onClick={() => setFilterOpen(false)}
+          />
+        ) : null}
+        <aside
+          id={MOBILE_FILTER_DRAWER_ID}
+          className={`fixed right-0 top-0 z-50 flex h-full w-[min(100vw-2.5rem,22rem)] flex-col border-l border-[var(--admin-border)] bg-[var(--admin-sidebar)]/95 shadow-[var(--admin-card-shadow-hover)] backdrop-blur-md transition-transform duration-200 ease-out md:hidden ${
+            open ? "translate-x-0" : "pointer-events-none translate-x-full"
+          }`}
+          aria-hidden={!open}
+          inert={!open || undefined}
+        >
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--admin-border)] px-4 py-3">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              <Filter className="h-4 w-4 text-[var(--admin-accent)]" strokeWidth={2} />
+              Filtros
+            </span>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(false)}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+              aria-label="Cerrar filtros"
+              title="Cerrar"
+            >
+              <X className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </header>
+          <nav className="flex min-h-0 flex-1 flex-col p-4">{filterBody}</nav>
+        </aside>
+        {exportModal}
+      </>
+    );
+  }
+
   return (
     <>
       <aside
@@ -134,57 +246,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
           className={`flex min-h-0 flex-1 flex-col ${open ? "p-4" : "px-2 pt-2"}`}
         >
           {open ? (
-            <>
-              <span className="shrink-0 mb-4 px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                Filtros
-              </span>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
-                <div className="flex flex-col gap-3 [&>*]:!mb-0">{children}</div>
-
-                <div className="mt-4 border-t border-[var(--admin-border)] pt-4">
-                  <span className="mb-3 block px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                    Datos
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      type="button"
-                      disabled={importDisabled}
-                      onClick={handleImportClick}
-                      className={dataActionClass}
-                      aria-label="Importar desde Excel/CSV"
-                      title={importTitle}
-                    >
-                      <Upload className="h-4 w-4 shrink-0" strokeWidth={2} />
-                      <span>{importing ? "Abriendo…" : "Importar"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={exportDisabled}
-                      onClick={handleExportClick}
-                      className={dataActionClass}
-                      aria-label="Exportar"
-                      title={exportTitle}
-                    >
-                      <Download className="h-4 w-4 shrink-0" strokeWidth={2} />
-                      <span>{exporting ? "Exportando…" : "Exportar"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={activityDisabled}
-                      onClick={() => void handleActivityClick()}
-                      className={dataActionClass}
-                      aria-label="Historial de movimientos"
-                      title={activityTitle}
-                    >
-                      <History className="h-4 w-4 shrink-0" strokeWidth={2} />
-                      <span>
-                        {openingActivity ? "Abriendo…" : "Historial"}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
+            desktopExpanded
           ) : (
             <div className="flex flex-col gap-5">
               <button
@@ -263,14 +325,7 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
         </button>
       </aside>
 
-      <ExportOptionsModal
-        open={exportModalOpen}
-        onClose={() => !exporting && setExportModalOpen(false)}
-        onExport={handleExportOption}
-        formats={formats}
-        disabled={!canExport}
-        exporting={exporting}
-      />
+      {exportModal}
     </>
   );
 }

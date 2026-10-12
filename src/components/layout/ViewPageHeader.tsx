@@ -15,11 +15,11 @@ export default function ViewPageHeader({
   actions,
 }: ViewPageHeaderProps) {
   return (
-    <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-50">
           <Icon
-            className="h-7 w-7 shrink-0 text-[var(--admin-accent)]"
+            className="h-6 w-6 shrink-0 text-[var(--admin-accent)] sm:h-7 sm:w-7"
             strokeWidth={1.5}
             aria-hidden
           />
@@ -30,7 +30,7 @@ export default function ViewPageHeader({
         </p>
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
           {actions}
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Filter,
   LogOut,
   Menu,
   Moon,
@@ -19,6 +20,7 @@ import GlobalSearch from "@/components/search/GlobalSearch";
 import { userRoleLabel } from "@/types/accounts";
 import { userDisplayName } from "@/types/auth";
 import { roleHomePath } from "@/lib/navAccess";
+import { HEADER_MOBILE_FILTERS_ID } from "@/components/layout/filterSidebarIds";
 import NotificationDropdown from "./NotificationDropdown";
 import OnlineUsersDropdown from "./OnlineUsersDropdown";
 import PortPaxLogo from "./PortPaxLogo";
@@ -34,7 +36,15 @@ export default function Header() {
   >(null);
 
   const { resolvedTheme, toggleTheme } = useTheme();
-  const { isMobile, sidebarMobileOpen, setSidebarMobileOpen } = useMainLayout();
+  const {
+    isMobile,
+    sidebarMobileOpen,
+    setSidebarMobileOpen,
+    filterOpen,
+    setFilterOpen,
+    filterContent,
+  } = useMainLayout();
+  const hasFilterSidebar = filterContent != null;
   const homeHref = roleHomePath(user?.role);
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "online" | "notifications" | "user") =>
@@ -46,8 +56,18 @@ export default function Header() {
     router.push("/login");
   };
 
+  const toggleMobileNav = () => {
+    if (!sidebarMobileOpen) setFilterOpen(false);
+    setSidebarMobileOpen(!sidebarMobileOpen);
+  };
+
+  const toggleMobileFilters = () => {
+    if (!filterOpen) setSidebarMobileOpen(false);
+    setFilterOpen(!filterOpen);
+  };
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 overflow-visible px-4 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:h-16 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 overflow-visible px-3 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:h-16 sm:px-6">
       <span
         className="pointer-events-none absolute inset-0 -z-10 dark:hidden"
         style={{ background: "var(--admin-gradient-header)" }}
@@ -67,14 +87,14 @@ export default function Header() {
         <span className="header-square header-square-3" />
         <span className="header-square header-square-4" />
       </div>
-      <div className="relative flex min-w-0 shrink items-center gap-2 sm:gap-3">
+      <div className="relative flex min-w-0 shrink items-center gap-1.5 sm:gap-3">
         {isMobile && (
           <button
             type="button"
             className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100 md:hidden"
             aria-label={sidebarMobileOpen ? "Cerrar menú" : "Abrir menú"}
             title={sidebarMobileOpen ? "Cerrar menú" : "Abrir menú"}
-            onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
+            onClick={toggleMobileNav}
           >
             <Menu className="h-5 w-5" strokeWidth={1.5} />
           </button>
@@ -87,13 +107,11 @@ export default function Header() {
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
       </div>
-      <div className="relative z-10 flex shrink-0 items-center gap-1 sm:gap-2">
-        <div className="hidden sm:block">
-          <GlobalSearch />
-        </div>
+      <div className="relative z-10 flex shrink-0 items-center gap-0.5 sm:gap-2">
+        <GlobalSearch />
         <button
           type="button"
-          className={iconBtnClass}
+          className={`${iconBtnClass} hidden md:flex`}
           aria-label={
             resolvedTheme === "dark" ? "Usar tema claro" : "Usar tema oscuro"
           }
@@ -106,11 +124,13 @@ export default function Header() {
             <Moon className="h-5 w-5" strokeWidth={1.5} />
           )}
         </button>
-        <OnlineUsersDropdown
-          open={openMenu === "online"}
-          onToggle={() => toggle("online")}
-          onClose={closeAll}
-        />
+        <div className="hidden md:contents">
+          <OnlineUsersDropdown
+            open={openMenu === "online"}
+            onToggle={() => toggle("online")}
+            onClose={closeAll}
+          />
+        </div>
         <NotificationDropdown
           open={openMenu === "notifications"}
           onToggle={() => toggle("notifications")}
@@ -187,6 +207,22 @@ export default function Header() {
             </div>
           </div>
         </DropdownMenu>
+        {isMobile && hasFilterSidebar ? (
+          <button
+            type="button"
+            id={HEADER_MOBILE_FILTERS_ID}
+            className={`${iconBtnClass} md:hidden ${
+              filterOpen
+                ? "bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]"
+                : ""
+            }`}
+            aria-label={filterOpen ? "Cerrar filtros" : "Abrir filtros"}
+            title={filterOpen ? "Cerrar filtros" : "Filtros"}
+            onClick={toggleMobileFilters}
+          >
+            <Filter className="h-5 w-5" strokeWidth={1.5} />
+          </button>
+        ) : null}
       </div>
     </header>
   );

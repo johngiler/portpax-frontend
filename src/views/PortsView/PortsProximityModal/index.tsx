@@ -787,7 +787,7 @@ export default function PortsProximityModal({
 
             {selectedPort ? (
               <aside
-                className="absolute inset-y-2 right-2 z-20 w-[350px] max-w-[calc(100%-1rem)] overflow-hidden rounded-xl border border-zinc-200/90 bg-white/95 p-3 shadow-xl backdrop-blur dark:border-zinc-700/60 dark:bg-zinc-900/90"
+                className="absolute inset-x-2 bottom-2 top-auto z-20 max-h-[min(50%,22rem)] w-auto overflow-y-auto rounded-xl border border-zinc-200/90 bg-white/95 p-3 shadow-xl backdrop-blur sm:inset-y-2 sm:left-auto sm:right-2 sm:top-2 sm:max-h-none sm:w-[350px] sm:overflow-hidden dark:border-zinc-700/60 dark:bg-zinc-900/90"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex flex-col gap-3">

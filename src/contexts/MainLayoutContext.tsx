@@ -2,11 +2,17 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
+import {
+  HEADER_MOBILE_FILTERS_ID,
+  MOBILE_FILTER_DRAWER_ID,
+} from "@/components/layout/filterSidebarIds";
 
 const SIDEBAR_MOBILE_BREAKPOINT = 768;
 
@@ -32,6 +38,7 @@ const SetFilterOpenContext = createContext<
 >(null);
 
 export function MainLayoutProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterContent, setFilterContent] = useState<React.ReactNode | null>(
     null,
@@ -49,21 +56,49 @@ export function MainLayoutProvider({ children }: { children: React.ReactNode }) 
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  const setFilterOpenSafe = useCallback((next: boolean) => {
+    if (!next && typeof document !== "undefined") {
+      const active = document.activeElement;
+      const drawer = document.getElementById(MOBILE_FILTER_DRAWER_ID);
+      // Blur before aria-hidden/inert so the browser does not warn.
+      if (active instanceof HTMLElement && drawer?.contains(active)) {
+        active.blur();
+        setFilterOpen(false);
+        requestAnimationFrame(() => {
+          document.getElementById(HEADER_MOBILE_FILTERS_ID)?.focus();
+        });
+        return;
+      }
+    }
+    setFilterOpen(next);
+  }, []);
+
+  // Close mobile overlays on navigation (desktop filter rail stays as-is).
+  useEffect(() => {
+    setSidebarMobileOpen(false);
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth < SIDEBAR_MOBILE_BREAKPOINT
+    ) {
+      setFilterOpenSafe(false);
+    }
+  }, [pathname, setFilterOpenSafe]);
+
   const value = useMemo<MainLayoutContextValue>(
     () => ({
       filterOpen,
-      setFilterOpen,
+      setFilterOpen: setFilterOpenSafe,
       filterContent,
       setFilterContent,
       sidebarMobileOpen,
       setSidebarMobileOpen,
       isMobile,
     }),
-    [filterOpen, filterContent, sidebarMobileOpen, isMobile],
+    [filterOpen, filterContent, sidebarMobileOpen, isMobile, setFilterOpenSafe],
   );
 
   return (
-    <SetFilterOpenContext.Provider value={setFilterOpen}>
+    <SetFilterOpenContext.Provider value={setFilterOpenSafe}>
       <MainLayoutContext.Provider value={value}>
         {children}
       </MainLayoutContext.Provider>

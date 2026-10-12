@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import ViewSection from "@/components/layout/ViewSection";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
@@ -236,6 +237,9 @@ export default function AvailabilityChartSection({
   onStartDateChange,
 }: Props) {
   const todayIso = todayIsoLocal();
+  const isMobile = useMainLayoutOptional()?.isMobile ?? false;
+  const dateColPx = isMobile ? 96 : 136;
+  const dayColPx = isMobile ? 168 : 208;
   const focus = {
     statuses: statusFilter,
     vesselId: vesselFocusId,
@@ -272,17 +276,19 @@ export default function AvailabilityChartSection({
       >
         <table
           className="w-full table-fixed border-separate border-spacing-0 text-left"
-          style={{ minWidth: `${136 + data.columns.length * 208}px` }}
+          style={{
+            minWidth: `${dateColPx + data.columns.length * dayColPx}px`,
+          }}
         >
           <colgroup>
-            <col style={{ width: "136px" }} />
+            <col style={{ width: `${dateColPx}px` }} />
             {data.columns.map((column) => (
-              <col key={column.id} style={{ width: "208px" }} />
+              <col key={column.id} style={{ width: `${dayColPx}px` }} />
             ))}
           </colgroup>
           <thead className="sticky top-0 z-30">
             <tr>
-              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-2 py-2.5 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-950">
                 <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Fecha
                 </span>
@@ -318,7 +324,7 @@ export default function AvailabilityChartSection({
                 rowIndex === 0 && Boolean(onStartDateChange);
               return (
                 <tr key={row.date} className="group">
-                  <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-3 py-3 align-top group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-900">
+                  <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-2 py-2.5 align-top group-last:border-b-0 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900">
                     {isFirstEditable ? (
                       <AvailabilityStartDateCell
                         date={row.date}
