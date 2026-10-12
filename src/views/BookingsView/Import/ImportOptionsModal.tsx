@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarSearch, FileSpreadsheet, ListChecks, type LucideIcon } from "lucide-react";
 import ImportOptionDropCard from "@/components/ui/ImportOptionDropCard";
 import Modal from "@/components/ui/Modal";
+import type { BookingRecapScope } from "@/services/bookings/bulkImportService";
 import ImportPasteModal from "./ImportPasteModal";
 import {
   BOOKING_RECAP_PASTE_COLUMNS,
@@ -62,7 +63,11 @@ type ImportOptionsModalProps = {
   open: boolean;
   onClose: () => void;
   onImportFile: (optionId: BookingImportOptionId, file: File) => void;
-  onImportPaste?: (optionId: BookingImportOptionId, text: string) => void;
+  onImportPaste?: (
+    optionId: BookingImportOptionId,
+    text: string,
+    scope?: BookingRecapScope,
+  ) => void;
   disabled?: boolean;
 };
 
@@ -124,15 +129,17 @@ export default function ImportOptionsModal({
         title={pasteOption?.pasteTitle ?? "Pegar celdas"}
         columns={pasteOption?.pasteColumns ?? ["Columna"]}
         formatGuideId={pasteOption?.id ?? null}
+        showRecapScope={pasteOption?.id === "booking_recap"}
         disabled={disabled}
         onClose={() => setPasteOption(null)}
-        onApply={(text) => {
+        onApply={(text, scope) => {
           if (!pasteOption || !onImportPaste) return;
           const id = pasteOption.id;
           setPasteOption(null);
           onClose();
-          onImportPaste(id, text);
+          onImportPaste(id, text, scope);
         }}
-      />    </>
+      />
+    </>
   );
 }

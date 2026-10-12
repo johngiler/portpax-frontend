@@ -10,14 +10,20 @@ import {
 type BookingsBulkBarProps = {
   selectedCount: number;
   visibleCount: number;
+  /** Total matching current filters (API count). */
+  totalCount?: number;
+  /** Show “Seleccionar todas” only when list filters are active. */
+  showSelectAllMatching?: boolean;
   allVisibleSelected: boolean;
+  allMatchingSelected?: boolean;
   busy: boolean;
   commonNextStatuses: BookingStatus[];
   canDelete: boolean;
   /** True when selection has no shared transition (and cannot delete). */
   noSharedActions: boolean;
   canMassEdit?: boolean;
-  onToggleSelectAll: () => void;
+  onToggleSelectVisible: () => void;
+  onToggleSelectAllMatching?: () => void;
   onClear: () => void;
   onDelete: () => void;
   onStatusAction: (status: BookingStatus) => void;
@@ -27,13 +33,17 @@ type BookingsBulkBarProps = {
 export default function BookingsBulkBar({
   selectedCount,
   visibleCount,
+  totalCount = 0,
+  showSelectAllMatching = false,
   allVisibleSelected,
+  allMatchingSelected = false,
   busy,
   commonNextStatuses,
   canDelete,
   noSharedActions,
   canMassEdit = false,
-  onToggleSelectAll,
+  onToggleSelectVisible,
+  onToggleSelectAllMatching,
   onClear,
   onDelete,
   onStatusAction,
@@ -46,19 +56,48 @@ export default function BookingsBulkBar({
       ? "1 reserva cancelada"
       : `${selectedCount} reservas canceladas`;
 
+  const matchingTotal = Math.max(totalCount, visibleCount);
+  const canSelectMatching =
+    showSelectAllMatching &&
+    Boolean(onToggleSelectAllMatching) &&
+    matchingTotal > 0;
+
   return (
     <div className="mb-3 flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 shadow-[var(--admin-card-shadow)] sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 dark:border-zinc-800 dark:bg-zinc-900/80">
-      <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">
-        <input
-          type="checkbox"
-          className="h-4 w-4 rounded border-zinc-300 text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
-          checked={allVisibleSelected && visibleCount > 0}
-          disabled={visibleCount === 0 || busy}
-          onChange={onToggleSelectAll}
-          aria-label="Seleccionar todas las reservas visibles"
-        />
-        Seleccionar visibles ({visibleCount})
-      </label>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {canSelectMatching ? (
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-zinc-300 text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+                checked={allMatchingSelected}
+                disabled={busy || matchingTotal === 0}
+                onChange={onToggleSelectAllMatching}
+                aria-label={`Seleccionar todas las ${matchingTotal} reservas del filtro`}
+              />
+              Seleccionar todas ({matchingTotal})
+            </label>
+            <span
+              className="hidden text-zinc-300 sm:inline dark:text-zinc-600"
+              aria-hidden
+            >
+              |
+            </span>
+          </>
+        ) : null}
+        <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-300 text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+            checked={allVisibleSelected && visibleCount > 0}
+            disabled={visibleCount === 0 || busy}
+            onChange={onToggleSelectVisible}
+            aria-label="Seleccionar todas las reservas visibles"
+          />
+          Seleccionar visibles ({visibleCount})
+        </label>
+      </div>
 
       {selectedCount > 0 ? (
         <div className="flex max-w-full flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">

@@ -209,11 +209,35 @@ export type BookingRecapResponse = {
   unmatched: BookingRecapUnmatched[];
 };
 
+/** Search delimiters for recap match (group / lines / date range). */
+export type BookingRecapScope = {
+  shipping_line_group_ids?: number[];
+  shipping_line_ids?: number[];
+  date_from?: string;
+  date_to?: string;
+};
+
+function appendRecapScope(form: FormData, scope?: BookingRecapScope) {
+  if (!scope) return;
+  const groups = scope.shipping_line_group_ids ?? [];
+  const lines = scope.shipping_line_ids ?? [];
+  if (groups.length > 0) {
+    form.append("shipping_line_group", groups.join(","));
+  }
+  if (lines.length > 0) {
+    form.append("shipping_line", lines.join(","));
+  }
+  if (scope.date_from) form.append("date_from", scope.date_from);
+  if (scope.date_to) form.append("date_to", scope.date_to);
+}
+
 export async function matchBookingRecap(
   file: File,
+  scope?: BookingRecapScope,
 ): Promise<BookingRecapResponse> {
   const form = new FormData();
   form.append("file", file);
+  appendRecapScope(form, scope);
   return apiFetch<BookingRecapResponse>(`${BASE}bulk-import/booking-recap/`, {
     method: "POST",
     body: form,
@@ -222,10 +246,21 @@ export async function matchBookingRecap(
 
 export async function matchBookingRecapFromPaste(
   text: string,
+  scope?: BookingRecapScope,
 ): Promise<BookingRecapResponse> {
   return apiFetch<BookingRecapResponse>(`${BASE}bulk-import/booking-recap/`, {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      text,
+      shipping_line_group: scope?.shipping_line_group_ids?.length
+        ? scope.shipping_line_group_ids.join(",")
+        : undefined,
+      shipping_line: scope?.shipping_line_ids?.length
+        ? scope.shipping_line_ids.join(",")
+        : undefined,
+      date_from: scope?.date_from || undefined,
+      date_to: scope?.date_to || undefined,
+    }),
   });
 }
 

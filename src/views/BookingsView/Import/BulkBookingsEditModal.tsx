@@ -6,6 +6,7 @@ import BookingTagField from "@/components/ui/BookingTagField";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
+import TablePagination from "@/components/tables/TablePagination";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { useNavigationLock } from "@/lib/useNavigationLock";
 import { fetchPorts } from "@/services/catalogs/portService";
@@ -13,7 +14,6 @@ import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
 import { fetchVessels } from "@/services/catalogs/vesselService";
 import {
   applyBulkEdit,
-  previewBulkEdit,
   revalidateBulkEditRow,
   type BulkEditRow,
 } from "@/services/bookings/bulkEditService";
@@ -31,6 +31,7 @@ import {
   scoreDraftAgainstRecap,
   type RecapScheduleRef,
 } from "./recapScheduleScore";
+import { useBulkEditPagedRows } from "./useBulkEditPagedRows";
 
 type BulkBookingsEditModalProps = {
   open: boolean;
@@ -40,37 +41,6 @@ type BulkBookingsEditModalProps = {
   onClose: () => void;
   onSaved: (result: { updatedCount: number; failedCount: number }) => void;
 };
-
-function stripRecapWarnings(row: BulkEditRow): BulkEditRow {
-  const warnings = (row.warnings ?? []).filter(
-    (issue) => issue.code !== "recap_mismatch",
-  );
-  if (warnings.length === (row.warnings ?? []).length) return row;
-  return { ...row, warnings };
-}
-
-/** Recompute recap avisos from the current draft (not the frozen first match). */
-function attachLiveRecap(
-  row: BulkEditRow,
-  recapSchedule: Record<number, RecapScheduleRef> | undefined,
-): BulkEditRow {
-  const cleaned = stripRecapWarnings(row);
-  const score = scoreDraftAgainstRecap(
-    cleaned,
-    recapSchedule?.[cleaned.booking_id],
-  );
-  if (!score || score.avisos.length === 0) return cleaned;
-  const existing = new Set((cleaned.warnings ?? []).map((issue) => issue.message));
-  const added = score.avisos
-    .filter((message) => message && !existing.has(message))
-    .map((message) => ({
-      level: "warning" as const,
-      code: "recap_mismatch",
-      message,
-    }));
-  if (added.length === 0) return cleaned;
-  return { ...cleaned, warnings: [...(cleaned.warnings ?? []), ...added] };
-}
 
 const STATUS_OPTIONS: { value: BookingStatus; label: string }[] = [
   { value: "nr", label: BOOKING_STATUS_LABELS.nr },
@@ -476,71 +446,65 @@ export default function BulkBookingsEditModal({
   onClose,
   onSaved,
 }: BulkBookingsEditModalProps) {
-  const [rows, setRows] = useState<BulkEditRow[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(false);
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalCount,
+    pageRows,
+    allRows,
+    selectableRows,
+    selectedIds,
+    setSelectedIds,
+    selectAllValidIntent,
+    setSelectAllValidIntent,
+    loadingPage,
+    error,
+    setError,
+    updateRow,
+    setRows,
+    ensureSelectedLoaded,
+    ensureAllLoaded,
+    loadedCount,
+  } = useBulkEditPagedRows({ open, bookingIds, recapSchedule });
+
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
   const [tagName, setTagName] = useState("");
   const [claimingAllLta, setClaimingAllLta] = useState(false);
 
   useEffect(() => {
-    if (!open || bookingIds.length === 0) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setRowErrors({});
+    if (!open) return;
     setTagName("");
-    void previewBulkEdit(bookingIds)
-      .then((res) => {
-        if (cancelled) return;
-        setRows(res.rows.map((row) => attachLiveRecap(row, recapSchedule)));
-        setSelectedIds(
-          new Set(res.rows.filter((r) => r.selectable).map((r) => r.booking_id)),
-        );
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(
-          getApiErrorMessage(err, "No se pudieron cargar las reservas."),
-        );
-        setRows([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, bookingIds, recapSchedule]);
+    setRowErrors({});
+  }, [open, bookingIds]);
 
   useNavigationLock(
     open && saving,
     "Se están guardando los cambios. No cambies de sección ni cierres la ventana.",
   );
 
-  const selectableRows = useMemo(
-    () => rows.filter((r) => r.selectable),
-    [rows],
-  );
   const claimableLtaRows = useMemo(
-    () => rows.filter((r) => Boolean(r.lta_space_candidate)),
-    [rows],
+    () => allRows.filter((r) => Boolean(r.lta_space_candidate)),
+    [allRows],
   );
   const allLtaClaimed =
     claimableLtaRows.length > 0 &&
     claimableLtaRows.every((r) => Boolean(r.claim_lta_space));
   const someLtaClaimed = claimableLtaRows.some((r) => Boolean(r.claim_lta_space));
   const selectedCount = selectedIds.size;
-  const tableBusy = saving || loading || claimingAllLta;
+  const tableBusy = saving || loadingPage || claimingAllLta;
+  const allValidSelected =
+    selectableRows.length > 0 &&
+    selectableRows.every((r) => selectedIds.has(r.booking_id)) &&
+    (selectAllValidIntent || loadedCount >= totalCount);
 
   async function toggleAllLtaClaims(claim: boolean) {
     if (claimableLtaRows.length === 0 || tableBusy) return;
-    const nextRows = rows.map((row) =>
+    const nextRows = allRows.map((row) =>
       row.lta_space_candidate ? applyEditLtaSpaceClaim(row, claim) : row,
     );
-    setRows(nextRows);
+    setRows(() => nextRows);
     setClaimingAllLta(true);
     setError(null);
     try {
@@ -563,12 +527,9 @@ export default function BulkBookingsEditModal({
         prev.map((row) => {
           const incoming = byId.get(row.booking_id);
           if (!incoming) return row;
-          return attachLiveRecap(
-            mergeEditRowAfterRevalidate(
-              row.claim_lta_space ? row : incoming,
-              incoming,
-            ),
-            recapSchedule,
+          return mergeEditRowAfterRevalidate(
+            row.claim_lta_space ? row : incoming,
+            incoming,
           );
         }),
       );
@@ -577,38 +538,30 @@ export default function BulkBookingsEditModal({
     }
   }
 
-  function updateRow(
-    bookingId: number,
-    updater: (current: BulkEditRow) => BulkEditRow,
-  ) {
-    setRows((prev) => {
-      const current = prev.find((r) => r.booking_id === bookingId);
-      if (!current) return prev;
-      const next = attachLiveRecap(updater(current), recapSchedule);
-      setSelectedIds((selected) => {
-        const copy = new Set(selected);
-        if (!next.selectable) copy.delete(next.booking_id);
-        else if (!current.selectable && next.selectable) {
-          copy.add(next.booking_id);
-        }
-        return copy;
-      });
-      return prev.map((r) => (r.booking_id === bookingId ? next : r));
-    });
+  async function handleToggleSelectAllValid(checked: boolean) {
+    setSelectAllValidIntent(checked);
+    if (!checked) {
+      setSelectedIds(new Set());
+      return;
+    }
+    try {
+      const valid = await ensureAllLoaded();
+      setSelectedIds(new Set(valid.map((row) => row.booking_id)));
+    } catch {
+      /* error already set */
+    }
   }
 
   async function handleSave() {
     setError(null);
     setRowErrors({});
-    const selected = rows.filter(
-      (r) => selectedIds.has(r.booking_id) && r.selectable,
-    );
-    if (selected.length === 0) {
-      setError("Selecciona al menos una reserva válida para guardar.");
-      return;
-    }
     setSaving(true);
     try {
+      const selected = await ensureSelectedLoaded();
+      if (selected.length === 0) {
+        setError("Selecciona al menos una reserva válida para guardar.");
+        return;
+      }
       const result = await applyBulkEdit(selected, { tagName });
       onSaved({
         updatedCount: result.updated_count,
@@ -631,6 +584,7 @@ export default function BulkBookingsEditModal({
         const failedIds = new Set(result.failed.map((f) => f.booking_id));
         setRows((prev) => prev.filter((r) => failedIds.has(r.booking_id)));
         setSelectedIds(failedIds);
+        setPage(1);
       } else {
         onClose();
       }
@@ -663,7 +617,7 @@ export default function BulkBookingsEditModal({
           </button>
           <DefaultButton
             type="button"
-            disabled={saving || loading || selectedCount === 0}
+            disabled={saving || loadingPage || selectedCount === 0}
             onClick={() => void handleSave()}
           >
             {saving
@@ -674,12 +628,16 @@ export default function BulkBookingsEditModal({
       }
     >
       <div className="space-y-3">
-        {loading ? (
+        {loadingPage && pageRows.length === 0 ? (
           <BulkBookingsEditSkeleton />
         ) : (
           <>
         <p className="text-xs text-zinc-500">
-          {`${rows.length} reservas · ${selectedCount} seleccionadas. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
+          {`${totalCount} reservas · ${selectedCount} seleccionadas${
+            loadedCount < totalCount
+              ? ` · ${loadedCount} cargadas`
+              : ""
+          }. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
         </p>
         <div className="flex justify-end">
           <div className="w-full min-w-[12rem] max-w-xs sm:w-72">
@@ -687,7 +645,7 @@ export default function BulkBookingsEditModal({
               name="bulk_edit_tag"
               value={tagName}
               onChange={setTagName}
-              disabled={saving || loading}
+              disabled={saving || loadingPage}
               compact
             />
           </div>
@@ -697,20 +655,9 @@ export default function BulkBookingsEditModal({
         <label className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600">
           <input
             type="checkbox"
-            checked={
-              selectableRows.length > 0 &&
-              selectableRows.every((r) => selectedIds.has(r.booking_id))
-            }
-            disabled={tableBusy || selectableRows.length === 0}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedIds(
-                  new Set(selectableRows.map((r) => r.booking_id)),
-                );
-              } else {
-                setSelectedIds(new Set());
-              }
-            }}
+            checked={allValidSelected}
+            disabled={tableBusy || totalCount === 0}
+            onChange={(e) => void handleToggleSelectAllValid(e.target.checked)}
           />
           Seleccionar todas las válidas
         </label>
@@ -771,7 +718,9 @@ export default function BulkBookingsEditModal({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {loadingPage && pageRows.length === 0
+                ? null
+                : pageRows.map((row) => {
                 const recapScore = scoreDraftAgainstRecap(
                   row,
                   recapSchedule?.[row.booking_id],
@@ -787,6 +736,7 @@ export default function BulkBookingsEditModal({
                   matchReason={recapScore?.matchReason}
                   onToggle={() => {
                     if (!row.selectable) return;
+                    setSelectAllValidIntent(false);
                     setSelectedIds((prev) => {
                       const next = new Set(prev);
                       if (next.has(row.booking_id)) next.delete(row.booking_id);
@@ -800,12 +750,26 @@ export default function BulkBookingsEditModal({
               })}
             </tbody>
           </table>
-          {rows.length === 0 ? (
+          {loadingPage && pageRows.length > 0 ? (
+            <p className="border-t border-zinc-100 px-4 py-2 text-xs text-zinc-400 dark:border-zinc-800">
+              Cargando página…
+            </p>
+          ) : null}
+          {!loadingPage && pageRows.length === 0 ? (
             <p className="px-4 py-6 text-sm text-zinc-500">
-              No hay reservas editables en la selección.
+              No hay reservas editables en esta página.
             </p>
           ) : null}
         </div>
+        {totalCount > pageSize ? (
+          <TablePagination
+            page={page}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            label="reservas"
+          />
+        ) : null}
           </>
         )}
       </div>

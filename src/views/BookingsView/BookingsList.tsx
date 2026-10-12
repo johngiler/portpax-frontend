@@ -48,8 +48,14 @@ export type BulkStatusPayload = Pick<
 
 type BookingsListProps = {
   bookings: BookingListItem[];
+  /** API total for the current filter set (may be > loaded rows). */
+  totalCount?: number;
   hasActiveFilters?: boolean;
+  /** Changes when list filters change — clears selection. */
+  selectionResetKey?: string;
   onClearFilters?: () => void;
+  /** Load every page matching filters into the list (for select-all). */
+  onLoadAllMatching?: () => Promise<BookingListItem[]>;
   canWrite?: boolean;
   onBulkDelete?: (ids: number[]) => Promise<void>;
   onBulkStatus?: (ids: number[], payload: BulkStatusPayload) => Promise<void>;
@@ -107,8 +113,11 @@ function CodeActions({
 
 export default function BookingsList({
   bookings,
+  totalCount = 0,
   hasActiveFilters = false,
+  selectionResetKey = "",
   onClearFilters,
+  onLoadAllMatching,
   canWrite = false,
   onBulkDelete,
   onBulkStatus,
@@ -129,17 +138,10 @@ export default function BookingsList({
   }, [bookings]);
 
   const visibleIds = useMemo(() => bookings.map((b) => b.id), [bookings]);
-  const visibleIdSet = useMemo(() => new Set(visibleIds), [visibleIds]);
 
   useEffect(() => {
-    setSelectedIds((prev) => {
-      const next = new Set<number>();
-      for (const id of prev) {
-        if (visibleIdSet.has(id)) next.add(id);
-      }
-      return next.size === prev.size ? prev : next;
-    });
-  }, [visibleIdSet]);
+    setSelectedIds(new Set());
+  }, [selectionResetKey]);
 
   const selectedBookings = useMemo(
     () =>
@@ -167,11 +169,19 @@ export default function BookingsList({
   }
 
   const selectedCount = selectedIds.size;
+  const matchingTotal = Math.max(totalCount, visibleIds.length);
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const allMatchingSelected =
+    matchingTotal > 0 &&
+    selectedCount >= matchingTotal &&
+    visibleIds.length >= matchingTotal &&
+    visibleIds.every((id) => selectedIds.has(id));
   const selectionEnabled = Boolean(
     canWrite && (onBulkDelete || onBulkStatus || onMassEdit),
   );
+  const showSelectAllMatching =
+    hasActiveFilters && matchingTotal > 0 && Boolean(onLoadAllMatching);
   const massEditableSelected = selectedBookings.filter((booking) =>
     isBookingMassEditable(booking.status),
   );
@@ -187,11 +197,26 @@ export default function BookingsList({
     });
   }
 
-  function toggleSelectAll() {
+  function toggleSelectVisible() {
     setSelectedIds((prev) => {
       if (allVisibleSelected) return new Set();
       return new Set([...prev, ...visibleIds]);
     });
+  }
+
+  async function toggleSelectAllMatching() {
+    if (!onLoadAllMatching) return;
+    if (allMatchingSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setBusy(true);
+    try {
+      const all = await onLoadAllMatching();
+      setSelectedIds(new Set(all.map((booking) => booking.id)));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function runBulk(action: () => Promise<void>) {
@@ -242,13 +267,19 @@ export default function BookingsList({
         <BookingsBulkBar
           selectedCount={selectedCount}
           visibleCount={visibleIds.length}
+          totalCount={matchingTotal}
+          showSelectAllMatching={showSelectAllMatching}
           allVisibleSelected={allVisibleSelected}
+          allMatchingSelected={allMatchingSelected}
           busy={busy}
           commonNextStatuses={commonNext}
           canDelete={canDelete}
           noSharedActions={noSharedActions}
           canMassEdit={canMassEdit}
-          onToggleSelectAll={toggleSelectAll}
+          onToggleSelectVisible={toggleSelectVisible}
+          onToggleSelectAllMatching={
+            showSelectAllMatching ? () => void toggleSelectAllMatching() : undefined
+          }
           onClear={() => setSelectedIds(new Set())}
           onDelete={() => {
             if (!onBulkDelete || selectedIds.size === 0) return;

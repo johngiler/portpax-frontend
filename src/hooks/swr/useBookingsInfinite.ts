@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import type { ApiListResponse } from "@/services/apiClient";
 import {
+  fetchAllBookings,
   fetchBookings,
   type FetchBookingsParams,
 } from "@/services/bookings/bookingService";
@@ -82,6 +83,41 @@ export function useBookingsInfinite(
     void setSize(size + 1);
   }, [enabled, loadingMore, hasMore, isLoading, setSize, size]);
 
+  /**
+   * Load every page matching the current filters into the infinite cache
+   * (for “Seleccionar todas”). Returns the full list.
+   */
+  const loadAll = useCallback(async (): Promise<BookingListItem[]> => {
+    if (!enabled) return bookings;
+    if (!hasMore && bookings.length > 0) return bookings;
+    const all = await fetchAllBookings({ ...params, pageSize: 100 });
+    const pages: ApiListResponse<BookingListItem>[] = [];
+    for (let i = 0; i < all.length; i += pageSize) {
+      const chunk = all.slice(i, i + pageSize);
+      const pageIndex = pages.length;
+      pages.push({
+        count: all.length,
+        next:
+          i + pageSize < all.length
+            ? `page=${pageIndex + 2}`
+            : null,
+        previous: pageIndex > 0 ? `page=${pageIndex}` : null,
+        results: chunk,
+      });
+    }
+    if (pages.length === 0) {
+      pages.push({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      });
+    }
+    await mutate(pages, { revalidate: false });
+    await setSize(pages.length);
+    return all;
+  }, [enabled, hasMore, bookings, params, pageSize, mutate, setSize]);
+
   const refresh = useCallback(async () => {
     await setSize(1);
     await mutate();
@@ -96,6 +132,7 @@ export function useBookingsInfinite(
     loadingMore,
     error,
     loadMore,
+    loadAll,
     refresh,
     mutate,
   };

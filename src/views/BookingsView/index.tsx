@@ -60,6 +60,7 @@ import {
   previewBulkBookingImport,
   previewBulkBookingImportFromPaste,
   type BookingRecapResponse,
+  type BookingRecapScope,
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
 import { recapUnmatchedToPaste } from "./Import/recapUnmatchedPaste";
@@ -661,6 +662,7 @@ export default function BookingsView() {
     loadingMore,
     error: bookingsError,
     loadMore,
+    loadAll: loadAllBookings,
     refresh: refreshBookings,
   } = useBookingsInfinite(listParams, tab === "list" && portsReady);
 
@@ -1360,13 +1362,23 @@ export default function BookingsView() {
     }
   }
 
-  function applyBookingRecap(payload: BookingRecapResponse) {
-    const from = defaultCustomFrom();
-    const to = defaultCustomTo();
+  function applyBookingRecap(
+    payload: BookingRecapResponse,
+    scope?: BookingRecapScope,
+  ) {
+    const scopeGroups = scope?.shipping_line_group_ids ?? [];
+    const scopeLines = scope?.shipping_line_ids ?? [];
+    const scopeFrom = (scope?.date_from ?? "").trim();
+    const scopeTo = (scope?.date_to ?? "").trim();
+    const hasScopeDates = Boolean(scopeFrom && scopeTo);
+    const from = hasScopeDates ? scopeFrom : defaultCustomFrom();
+    const to = hasScopeDates ? scopeTo : defaultCustomTo();
+    const datePreset = hasScopeDates ? ("custom" as const) : ("all" as const);
     setBookingRecap(payload);
     setTab("list");
     setSearch("");
     setAppliedSearch("");
+    // Empty status = all statuses, including Cancelada (recap ops decisions).
     setStatusFilter([]);
     setAppliedStatusFilter([]);
     setConflictFilter("");
@@ -1377,10 +1389,10 @@ export default function BookingsView() {
     setAppliedCancellationReason("");
     setPortFilter([]);
     setAppliedPortFilter([]);
-    setShippingLineGroupFilter([]);
-    setAppliedShippingLineGroupFilter([]);
-    setShippingLineFilter([]);
-    setAppliedShippingLineFilter([]);
+    setShippingLineGroupFilter(scopeGroups);
+    setAppliedShippingLineGroupFilter(scopeGroups);
+    setShippingLineFilter(scopeLines);
+    setAppliedShippingLineFilter(scopeLines);
     setVesselFilter(0);
     setAppliedVesselFilter(0);
     setSizeCategoryFilter([]);
@@ -1389,8 +1401,8 @@ export default function BookingsView() {
     setAppliedTagFilter([]);
     setPositionFilter(0);
     setAppliedPositionFilter(0);
-    setDatePreset("all");
-    setAppliedDatePreset("all");
+    setDatePreset(datePreset);
+    setAppliedDatePreset(datePreset);
     setCustomDateFrom(from);
     setCustomDateTo(to);
     setAppliedCustomDateFrom(from);
@@ -1404,12 +1416,12 @@ export default function BookingsView() {
         status: [],
         search: "",
         ports: [],
-        groups: [],
-        lines: [],
+        groups: scopeGroups,
+        lines: scopeLines,
         vessel: 0,
         sizeCategories: [],
         tags: [],
-        datePreset: "all",
+        datePreset,
         customFrom: from,
         customTo: to,
         position: 0,
@@ -1495,6 +1507,7 @@ export default function BookingsView() {
   async function handleImportPaste(
     optionId: "bulk_bookings" | "booking_recap" | "availability_filter",
     text: string,
+    scope?: BookingRecapScope,
   ) {
     setViewError(null);
     setBulkImportFileName("Pegado desde Excel");
@@ -1507,8 +1520,8 @@ export default function BookingsView() {
         return;
       }
       if (optionId === "booking_recap") {
-        const payload = await matchBookingRecapFromPaste(text);
-        applyBookingRecap(payload);
+        const payload = await matchBookingRecapFromPaste(text, scope);
+        applyBookingRecap(payload, scope);
         setBulkImportFileName("");
         return;
       }
@@ -1714,8 +1727,8 @@ export default function BookingsView() {
         onImportFile={(optionId, file) => {
           void handleImportFile(optionId, file);
         }}
-        onImportPaste={(optionId, text) => {
-          void handleImportPaste(optionId, text);
+        onImportPaste={(optionId, text, scope) => {
+          void handleImportPaste(optionId, text, scope);
         }}
       />
 
@@ -2024,8 +2037,13 @@ export default function BookingsView() {
             ) : null}
             <BookingsList
               bookings={bookings}
+              totalCount={totalCount}
               hasActiveFilters={hasActiveFilters}
+              selectionResetKey={JSON.stringify(listParams)}
               onClearFilters={handleClearFilters}
+              onLoadAllMatching={
+                hasActiveFilters ? loadAllBookings : undefined
+              }
               canWrite={canWrite}
               onBulkDelete={canWrite ? handleBulkDeleteCancelled : undefined}
               onBulkStatus={canWrite ? handleBulkStatusChange : undefined}

@@ -233,6 +233,13 @@ export function normalizePasteMatrix(
       for (let i = 0; i < Math.min(colCount, maxW, 7); i += 1) {
         sourceIndexByTarget[i] = i;
       }
+    } else if (maxW <= 1) {
+      // Single-column paste (e.g. availability dates) → Fecha, else first col.
+      const dateIdx = headers.indexOf("Fecha");
+      if (dateIdx >= 0) sourceIndexByTarget[dateIdx] = 0;
+      else if (colCount > 0) sourceIndexByTarget[0] = 0;
+    } else if (colCount === 1 && maxW >= 1) {
+      sourceIndexByTarget[0] = 0;
     } else {
       // Legacy 4-col Ship Port Arrival Departure → Barco/Puerto/Fecha/ETD.
       const shipIdx = headers.indexOf("Barco");

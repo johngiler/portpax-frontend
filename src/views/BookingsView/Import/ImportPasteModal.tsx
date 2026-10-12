@@ -6,14 +6,20 @@ import ImportFormatGuideTable, {
   ImportFormatGuideToggle,
 } from "@/components/import/ImportFormatGuideTable";
 import Modal from "@/components/ui/Modal";
+import ModalFormError from "@/components/ui/ModalFormError";
 import {
   getImportFormatGuide,
   type ImportFormatGuide,
 } from "@/lib/importFormatGuides";
+import type { BookingRecapScope } from "@/services/bookings/bulkImportService";
 import ImportPasteGrid, {
   canonicalizeBulkBookingPaste,
   matrixToTsv,
 } from "./ImportPasteGrid";
+import RecapPasteScopeFields, {
+  emptyRecapScope,
+  validateRecapScope,
+} from "./RecapPasteScopeFields";
 
 type ImportPasteModalProps = {
   open: boolean;
@@ -28,9 +34,11 @@ type ImportPasteModalProps = {
   /** Guide id from `importFormatGuides` or a full guide object. */
   formatGuideId?: string | null;
   formatGuide?: ImportFormatGuide | null;
+  /** Recap: show group / line / date delimiters above the grid. */
+  showRecapScope?: boolean;
   disabled?: boolean;
   onClose: () => void;
-  onApply: (text: string) => void;
+  onApply: (text: string, scope?: BookingRecapScope) => void;
 };
 
 export default function ImportPasteModal({
@@ -42,6 +50,7 @@ export default function ImportPasteModal({
   initialRows,
   formatGuideId = null,
   formatGuide = null,
+  showRecapScope = false,
   disabled = false,
   onClose,
   onApply,
@@ -49,6 +58,11 @@ export default function ImportPasteModal({
   const [headers, setHeaders] = useState<string[]>(columns);
   const [rows, setRows] = useState<string[][]>([]);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [recapScope, setRecapScope] = useState<BookingRecapScope>(emptyRecapScope);
+  const [scopeErrors, setScopeErrors] = useState<
+    ReturnType<typeof validateRecapScope>["errors"]
+  >({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const guide =
     formatGuide ?? getImportFormatGuide(formatGuideId);
@@ -58,6 +72,9 @@ export default function ImportPasteModal({
       setHeaders(columns);
       setRows([]);
       setGuideOpen(false);
+      setRecapScope(emptyRecapScope());
+      setScopeErrors({});
+      setFormError(null);
       return;
     }
     if (initialRows && initialRows.length > 0) {
@@ -77,6 +94,22 @@ export default function ImportPasteModal({
 
   function submit() {
     if (!hasContent || disabled) return;
+    setFormError(null);
+    let scope: BookingRecapScope | undefined;
+    if (showRecapScope) {
+      const check = validateRecapScope(recapScope);
+      setScopeErrors(check.errors);
+      if (!check.ok) {
+        setFormError("Completa los delimitantes de búsqueda del recap.");
+        return;
+      }
+      scope = {
+        shipping_line_group_ids: recapScope.shipping_line_group_ids,
+        shipping_line_ids: recapScope.shipping_line_ids,
+        date_from: recapScope.date_from,
+        date_to: recapScope.date_to,
+      };
+    }
     const dataRows = rows.filter((row) => row.some((cell) => cell.trim() !== ""));
     let text = matrixToTsv(headers.length ? headers : columns, dataRows);
     // Bulk bookings: strip any columns outside the allowed paste set.
@@ -84,7 +117,7 @@ export default function ImportPasteModal({
       text = canonicalizeBulkBookingPaste(text);
       if (!text.trim()) return;
     }
-    onApply(text);
+    onApply(text, scope);
   }
 
   return (
@@ -115,6 +148,21 @@ export default function ImportPasteModal({
     >
       {hint ? (
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-300">{hint}</p>
+      ) : null}
+
+      <ModalFormError message={formError} />
+
+      {showRecapScope ? (
+        <RecapPasteScopeFields
+          value={recapScope}
+          onChange={(next) => {
+            setRecapScope(next);
+            setScopeErrors({});
+            setFormError(null);
+          }}
+          disabled={disabled}
+          errors={scopeErrors}
+        />
       ) : null}
 
       <ImportPasteGrid
