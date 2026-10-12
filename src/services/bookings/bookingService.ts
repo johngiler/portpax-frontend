@@ -586,6 +586,8 @@ export async function fetchPortTrendsReport(params: {
   port: number;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  shipping_lines?: number[];
+  shipping_line_groups?: number[];
   page?: number;
   page_size?: number;
 }): Promise<PortTrendsReport> {
@@ -596,6 +598,12 @@ export async function fetchPortTrendsReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  }
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
   }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {

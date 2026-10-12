@@ -155,7 +155,9 @@ export default function ReportsView() {
 
   const { ports, isLoading: portsLoading } = useActivePortsCatalog();
   const showCarrierFilters =
-    tab === "solicitudes_port" || tab === "carrier_panorama";
+    tab === "solicitudes_port" ||
+    tab === "carrier_panorama" ||
+    tab === "port_trends";
   const { lines: shippingLines } = useActiveShippingLinesCatalog(
     showCarrierFilters,
   );
@@ -707,6 +709,15 @@ export default function ReportsView() {
           port: appliedPortFilter,
           without_lta: appliedWithoutLta,
           pax_basis: appliedPaxBasis,
+          shipping_lines:
+            appliedShippingLineIds.length > 0
+              ? appliedShippingLineIds
+              : undefined,
+          shipping_line_groups:
+            appliedShippingLineIds.length === 0 &&
+            appliedShippingLineGroupIds.length > 0
+              ? appliedShippingLineGroupIds
+              : undefined,
           exportFormat: format,
         });
       } catch (err) {

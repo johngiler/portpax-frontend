@@ -24,6 +24,8 @@ export type ReportFilters = {
   portFilter: number;
   withoutLta: boolean;
   paxBasis: "planned" | "capacity";
+  shippingLineGroupIds?: number[];
+  shippingLineIds?: number[];
 };
 
 function reportParamsKey(filters: ReportFilters): string {
@@ -34,6 +36,8 @@ function reportParamsKey(filters: ReportFilters): string {
     filters.portFilter,
     filters.withoutLta ? 1 : 0,
     filters.paxBasis,
+    (filters.shippingLineGroupIds ?? []).join(","),
+    (filters.shippingLineIds ?? []).join(","),
   ].join("|");
 }
 
@@ -83,9 +87,14 @@ async function fetchReportPage(
       page_size: REPORT_MATRIX_SECTION_PAGE_SIZE,
     });
   }
+  const lineIds = filters.shippingLineIds ?? [];
+  const groupIds = filters.shippingLineGroupIds ?? [];
   return fetchPortTrendsReport({
     ...base,
     port: filters.portFilter,
+    shipping_lines: lineIds.length > 0 ? lineIds : undefined,
+    shipping_line_groups:
+      lineIds.length === 0 && groupIds.length > 0 ? groupIds : undefined,
     page_size: REPORT_TRENDS_LINE_PAGE_SIZE,
   });
 }
