@@ -64,6 +64,7 @@ import {
   type BulkImportPreviewRow,
 } from "@/services/bookings/bulkImportService";
 import { recapUnmatchedToPaste } from "./Import/recapUnmatchedPaste";
+import RecapPortPaxOnlySection from "./Import/RecapPortPaxOnlySection";
 import RecapUnmatchedSection from "./Import/RecapUnmatchedSection";
 import type { ImportBatchRetryRow } from "@/services/bookings/bookingActivityService";
 import { fetchPositions } from "@/services/catalogs/positionService";
@@ -551,9 +552,14 @@ export default function BookingsView() {
         ? availabilityDateAllowlist
         : undefined,
       ids: bookingRecap
-        ? bookingRecap.matches.length > 0
-          ? bookingRecap.matches.map((row) => row.booking_id)
-          : [0]
+        ? (() => {
+            const matchedIds = bookingRecap.matches.map((row) => row.booking_id);
+            const onlyIds = (bookingRecap.portpax_only ?? []).map(
+              (row) => row.booking_id,
+            );
+            const merged = [...matchedIds, ...onlyIds];
+            return merged.length > 0 ? merged : [0];
+          })()
         : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
@@ -1996,6 +2002,15 @@ export default function BookingsView() {
           onCreate={() => {
             void handleCreateRecapUnmatched();
           }}
+        />
+      ) : null}
+
+      {tab === "list" &&
+      bookingRecap &&
+      (bookingRecap.portpax_only?.length ?? 0) > 0 ? (
+        <RecapPortPaxOnlySection
+          rows={bookingRecap.portpax_only ?? []}
+          returnTo={bookingsReturnTo()}
         />
       ) : null}
 

@@ -202,11 +202,27 @@ export type BookingRecapUnmatched = {
   reason: string;
 };
 
+/** In PortPax (port + date range) but not paired to any recap row. */
+export type BookingRecapPortPaxOnly = {
+  booking_id: number;
+  booking_code: string;
+  vessel_name: string;
+  port_name: string;
+  shipping_line_name: string;
+  call_date: string | null;
+  eta?: string | null;
+  etd?: string | null;
+  status: string;
+  status_display: string;
+};
+
 export type BookingRecapResponse = {
   imported_count: number;
   matched_count: number;
   matches: BookingRecapMatch[];
   unmatched: BookingRecapUnmatched[];
+  portpax_only_count?: number;
+  portpax_only?: BookingRecapPortPaxOnly[];
 };
 
 /** Search delimiters for recap match (group / lines / date range). */
