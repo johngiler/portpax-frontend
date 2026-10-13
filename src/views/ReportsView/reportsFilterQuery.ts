@@ -368,7 +368,9 @@ export function serializeReportsFilters(
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
   if (
-    (filters.tab === "carrier_panorama" || filters.tab === "ports_totals") &&
+    (filters.tab === "carrier_panorama" ||
+      filters.tab === "ports_totals" ||
+      filters.tab === "port_carrier") &&
     filters.season !== "natural"
   ) {
     sp.set("season", filters.season);

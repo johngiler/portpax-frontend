@@ -766,7 +766,10 @@ export default function ReportsView() {
     tab !== "carrier_panorama";
   const showMultiPortFilter =
     tab === "ports_totals" || tab === "carrier_panorama";
-  const showSeasonFilter = tab === "ports_totals" || tab === "carrier_panorama";
+  const showSeasonFilter =
+    tab === "ports_totals" ||
+    tab === "carrier_panorama" ||
+    tab === "port_carrier";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||

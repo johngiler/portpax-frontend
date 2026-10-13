@@ -136,7 +136,13 @@ function reportPayloadMatchesFilters(
   if (payload.tab === "ports_totals") {
     return (payload.data.season ?? "natural") === (filters.season ?? "natural");
   }
-  if (payload.tab === "port_carrier" || payload.tab === "port_trends") {
+  if (payload.tab === "port_carrier") {
+    return (
+      payload.data.port.id === filters.portFilter &&
+      (payload.data.season ?? "natural") === (filters.season ?? "natural")
+    );
+  }
+  if (payload.tab === "port_trends") {
     return payload.data.port.id === filters.portFilter;
   }
   return true;
