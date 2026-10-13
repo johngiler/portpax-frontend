@@ -391,7 +391,8 @@ export function FormFieldSelect<T extends string | number>({
       {loadOptions ? (
         <AsyncSelect<CatalogSelectOption<T>, false>
           {...sharedSelectProps}
-          defaultOptions
+          // Seed known options only — never loadOptions('') on mount (table rows).
+          defaultOptions={options}
           cacheOptions
           loadOptions={async (inputValue) => {
             const remote = await loadOptions(inputValue);

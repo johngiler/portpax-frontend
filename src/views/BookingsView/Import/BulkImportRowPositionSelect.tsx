@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
 import { suggestBookingPositions } from "@/services/bookings/bookingService";
@@ -12,7 +12,7 @@ type BulkImportRowPositionSelectProps = {
   disabled?: boolean;
   onChange: (draft: BulkImportPreviewRow) => void;
   onCommit: (draft: BulkImportPreviewRow) => void;
-  /** Bump to refetch suggestions / occupancy (e.g. after editing booking in another tab). */
+  /** Bump to invalidate cached suggestions (e.g. after revalidate). */
   reloadKey?: number;
 };
 
@@ -50,6 +50,19 @@ function occupancyFields(
   };
 }
 
+function mapPositionOptions(positions: PositionSuggestion[]) {
+  return positions.map((position) => {
+    const tags: string[] = [];
+    if (position.recommended) tags.push("sugerida");
+    if (position.occupied) tags.push("ocupada");
+    const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
+    return {
+      value: position.id,
+      label: `${position.code}${suffix}`,
+    };
+  });
+}
+
 export async function fetchRowPositionOccupancy(
   row: BulkImportPreviewRow,
 ): Promise<{
@@ -82,104 +95,93 @@ export default function BulkImportRowPositionSelect({
   onCommit,
   reloadKey = 0,
 }: BulkImportRowPositionSelectProps) {
-  const [options, setOptions] = useState<PositionSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  const optionsRef = useRef<PositionSuggestion[]>([]);
+  const cacheKeyRef = useRef("");
+  const rowRef = useRef(row);
+  rowRef.current = row;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const catalogKey = `${row.port_id}|${row.vessel_id}|${row.call_date}|${reloadKey}`;
 
   useEffect(() => {
-    if (!row.port_id || !row.vessel_id || !row.call_date) {
-      setOptions([]);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    suggestBookingPositions({
-      port: row.port_id,
-      vessel: row.vessel_id,
-      call_date: row.call_date,
-    })
-      .then((data) => {
-        if (cancelled) return;
-        setOptions(data.positions);
-        const next = occupancyFields(
-          data.positions,
-          row.position_id ?? null,
-          row.call_date,
-        );
-        if (
-          next.position_occupancy_hint !== (row.position_occupancy_hint ?? null) ||
-          next.position_occupant?.booking_id !== row.position_occupant?.booking_id ||
-          next.position_occupant?.status !== row.position_occupant?.status ||
-          next.position_occupant?.eta !== row.position_occupant?.eta ||
-          next.position_occupant?.etd !== row.position_occupant?.etd ||
-          Boolean(next.position_occupant) !== Boolean(row.position_occupant)
-        ) {
-          onChange({ ...row, ...next });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh when catalog keys / reload change
-  }, [row.port_id, row.vessel_id, row.call_date, row.position_id, reloadKey]);
+    optionsRef.current = [];
+    cacheKeyRef.current = "";
+  }, [catalogKey]);
 
-  const selectOptions = options.map((position) => {
-    const tags: string[] = [];
-    if (position.recommended) tags.push("sugerida");
-    if (position.occupied) tags.push("ocupada");
-    const suffix = tags.length > 0 ? ` (${tags.join(", ")})` : "";
-    return {
-      value: position.id,
-      label: `${position.code}${suffix}`,
-    };
-  });
-
-  if (
-    row.position_id != null &&
-    row.position_code &&
-    !selectOptions.some((o) => o.value === row.position_id)
-  ) {
-    selectOptions.unshift({
-      value: row.position_id,
-      label: row.position_code,
-    });
-  }
+  const seedOptions =
+    row.position_id != null && row.position_code
+      ? [{ value: row.position_id, label: row.position_code }]
+      : [];
 
   return (
     <FormFieldSelect<number>
+      key={catalogKey}
       label=""
       name={`bulk_position_${row.id}`}
       value={row.position_id ?? 0}
       emptyValue={0}
-      optionLabel={loading ? "Cargando…" : "Sin posición"}
+      optionLabel="Sin posición"
       compact
       disabled={
-        disabled || loading || !row.port_id || !row.vessel_id || !row.call_date
+        disabled || !row.port_id || !row.vessel_id || !row.call_date
       }
-      options={selectOptions}
+      options={seedOptions}
+      loadOptions={async (inputValue) => {
+        if (!row.port_id || !row.vessel_id || !row.call_date) return seedOptions;
+        if (cacheKeyRef.current !== catalogKey) {
+          const data = await suggestBookingPositions({
+            port: row.port_id,
+            vessel: row.vessel_id,
+            call_date: row.call_date,
+          });
+          optionsRef.current = data.positions;
+          cacheKeyRef.current = catalogKey;
+          const current = rowRef.current;
+          const next = occupancyFields(
+            data.positions,
+            current.position_id ?? null,
+            current.call_date,
+          );
+          if (
+            next.position_occupancy_hint !==
+              (current.position_occupancy_hint ?? null) ||
+            next.position_occupant?.booking_id !==
+              current.position_occupant?.booking_id ||
+            next.position_occupant?.status !==
+              current.position_occupant?.status ||
+            next.position_occupant?.eta !== current.position_occupant?.eta ||
+            next.position_occupant?.etd !== current.position_occupant?.etd ||
+            Boolean(next.position_occupant) !==
+              Boolean(current.position_occupant)
+          ) {
+            onChangeRef.current({ ...current, ...next });
+          }
+        }
+        const mapped = mapPositionOptions(optionsRef.current);
+        const q = inputValue.trim().toLowerCase();
+        if (!q) return mapped;
+        return mapped.filter((opt) => opt.label.toLowerCase().includes(q));
+      }}
       onChange={(id) => {
+        const cached = optionsRef.current;
         if (!id) {
           const draft = {
             ...row,
             position_id: null,
             position_code: null,
-            ...occupancyFields(options, null, row.call_date),
+            ...occupancyFields(cached, null, row.call_date),
           };
           onChange(draft);
           onCommit(draft);
           return;
         }
-        const match = options.find((p) => p.id === id);
+        const match = cached.find((p) => p.id === id);
         const draft = {
           ...row,
           position_id: id,
           position_code: match?.code ?? row.position_code ?? String(id),
-          ...occupancyFields(options, id, row.call_date),
+          ...occupancyFields(cached, id, row.call_date),
         };
         onChange(draft);
         onCommit(draft);

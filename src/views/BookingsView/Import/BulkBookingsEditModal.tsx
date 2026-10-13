@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
 import { FormFieldSelect } from "@/components/ui/FormField";
@@ -89,7 +96,7 @@ function toPositionRow(row: BulkEditRow): BulkImportPreviewRow {
   };
 }
 
-function EditRow({
+const EditRow = memo(function EditRow({
   row,
   checked,
   disabled,
@@ -437,7 +444,14 @@ function EditRow({
       </td>
     </tr>
   );
-}
+}, (prev, next) => (
+  prev.row === next.row &&
+  prev.checked === next.checked &&
+  prev.disabled === next.disabled &&
+  prev.saveError === next.saveError &&
+  prev.matchPercent === next.matchPercent &&
+  prev.matchReason === next.matchReason
+));
 
 export default function BulkBookingsEditModal({
   open,
@@ -452,6 +466,7 @@ export default function BulkBookingsEditModal({
     pageSize,
     totalCount,
     pageRows,
+    pageReady,
     allRows,
     selectableRows,
     selectedIds,
@@ -493,7 +508,9 @@ export default function BulkBookingsEditModal({
     claimableLtaRows.every((r) => Boolean(r.claim_lta_space));
   const someLtaClaimed = claimableLtaRows.some((r) => Boolean(r.claim_lta_space));
   const selectedCount = selectedIds.size;
-  const tableBusy = saving || loadingPage || claimingAllLta;
+  // Do not tie row disables to page fetch — skeleton already covers nav load;
+  // only block fields when a visible-table load (ensure* / save prep) runs.
+  const tableBusy = saving || claimingAllLta || (loadingPage && pageReady);
   const allValidSelected =
     selectableRows.length > 0 &&
     selectableRows.every((r) => selectedIds.has(r.booking_id)) &&
@@ -628,7 +645,7 @@ export default function BulkBookingsEditModal({
       }
     >
       <div className="space-y-3">
-        {loadingPage && pageRows.length === 0 ? (
+        {!pageReady ? (
           <BulkBookingsEditSkeleton />
         ) : (
           <>
@@ -718,9 +735,7 @@ export default function BulkBookingsEditModal({
               </tr>
             </thead>
             <tbody>
-              {loadingPage && pageRows.length === 0
-                ? null
-                : pageRows.map((row) => {
+              {pageRows.map((row) => {
                 const recapScore = scoreDraftAgainstRecap(
                   row,
                   recapSchedule?.[row.booking_id],
@@ -750,12 +765,7 @@ export default function BulkBookingsEditModal({
               })}
             </tbody>
           </table>
-          {loadingPage && pageRows.length > 0 ? (
-            <p className="border-t border-zinc-100 px-4 py-2 text-xs text-zinc-400 dark:border-zinc-800">
-              Cargando página…
-            </p>
-          ) : null}
-          {!loadingPage && pageRows.length === 0 ? (
+          {pageRows.length === 0 ? (
             <p className="px-4 py-6 text-sm text-zinc-500">
               No hay reservas editables en esta página.
             </p>

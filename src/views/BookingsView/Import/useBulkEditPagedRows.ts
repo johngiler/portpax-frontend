@@ -79,6 +79,8 @@ export function useBulkEditPagedRows({
   const [loadingPage, setLoadingPage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadGenRef = useRef(0);
+  /** True while open-hydrate (pages 1–2) is in flight — skips nav fetch race. */
+  const hydratingRef = useRef(false);
 
   const totalCount = stableIds.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / BULK_EDIT_PAGE_SIZE));
@@ -120,7 +122,7 @@ export function useBulkEditPagedRows({
   const rowsByIdRef = useRef(rowsById);
   rowsByIdRef.current = rowsById;
 
-  // Reset + load first page when modal opens / selection changes.
+  // Reset + load page 1 (and page 2 in parallel) when modal opens / selection changes.
   useEffect(() => {
     if (!open || stableIds.length === 0) {
       setPage(1);
@@ -141,11 +143,21 @@ export function useBulkEditPagedRows({
     setSelectAllValidIntent(true);
     setError(null);
     setLoadingPage(true);
+    hydratingRef.current = true;
     const first = stableIds.slice(0, BULK_EDIT_PAGE_SIZE);
-    void previewBulkEdit(first)
-      .then((res) => {
+    const second = stableIds.slice(
+      BULK_EDIT_PAGE_SIZE,
+      BULK_EDIT_PAGE_SIZE * 2,
+    );
+    void Promise.all([
+      previewBulkEdit(first),
+      second.length > 0
+        ? previewBulkEdit(second).catch(() => ({ rows: [] as BulkEditRow[] }))
+        : Promise.resolve({ rows: [] as BulkEditRow[] }),
+    ])
+      .then(([firstRes, secondRes]) => {
         if (gen !== loadGenRef.current) return;
-        const mapped = res.rows.map((row) =>
+        const mapped = [...firstRes.rows, ...secondRes.rows].map((row) =>
           attachLiveRecap(row, recapSchedule),
         );
         setRowsById(
@@ -153,7 +165,9 @@ export function useBulkEditPagedRows({
         );
         setLoadedIdSet(new Set(mapped.map((row) => row.booking_id)));
         setSelectedIds(
-          new Set(mapped.filter((r) => r.selectable).map((r) => r.booking_id)),
+          new Set(
+            mapped.filter((r) => r.selectable).map((r) => r.booking_id),
+          ),
         );
       })
       .catch((err) => {
@@ -163,10 +177,14 @@ export function useBulkEditPagedRows({
         );
       })
       .finally(() => {
-        if (gen === loadGenRef.current) setLoadingPage(false);
+        if (gen === loadGenRef.current) {
+          hydratingRef.current = false;
+          setLoadingPage(false);
+        }
       });
     return () => {
       loadGenRef.current += 1;
+      hydratingRef.current = false;
     };
   }, [open, stableIds, recapSchedule]);
 
@@ -174,9 +192,10 @@ export function useBulkEditPagedRows({
   const selectAllValidIntentRef = useRef(selectAllValidIntent);
   selectAllValidIntentRef.current = selectAllValidIntent;
 
-  // Load current page on navigation (lazy). Initial page 1 is handled above.
+  // Load current page on navigation (lazy). Initial pages 1–2 handled above.
   useEffect(() => {
     if (!open || pageIds.length === 0) return;
+    if (hydratingRef.current) return;
     const missing = pageIds.filter((id) => !loadedIdSetRef.current.has(id));
     if (missing.length === 0) return;
     let cancelled = false;
@@ -201,9 +220,9 @@ export function useBulkEditPagedRows({
     };
   }, [open, page, pageIdsKey, pageIds, mergeRows]);
 
-  // Prefetch next page in the background.
+  // Prefetch next page in the background (do not wait for loadingPage).
   useEffect(() => {
-    if (!open || loadingPage) return;
+    if (!open || hydratingRef.current) return;
     const nextPage = page + 1;
     if (nextPage > totalPages) return;
     const start = (nextPage - 1) * BULK_EDIT_PAGE_SIZE;
@@ -222,15 +241,30 @@ export function useBulkEditPagedRows({
     return () => {
       cancelled = true;
     };
-  }, [open, page, totalPages, stableIds, loadingPage, mergeRows]);
+  }, [open, page, totalPages, stableIds, mergeRows]);
 
-  const pageRows = useMemo(
-    () =>
-      pageIds
-        .map((id) => rowsById[id])
-        .filter((row): row is BulkEditRow => Boolean(row)),
-    [pageIds, rowsById],
-  );
+  const pageReady =
+    pageIds.length === 0 || pageIds.every((id) => loadedIdSet.has(id));
+
+  const pageRowsCacheRef = useRef<BulkEditRow[]>([]);
+  const pageRows = (() => {
+    if (!pageReady) {
+      pageRowsCacheRef.current = [];
+      return pageRowsCacheRef.current;
+    }
+    const next = pageIds
+      .map((id) => rowsById[id])
+      .filter((row): row is BulkEditRow => Boolean(row));
+    const prev = pageRowsCacheRef.current;
+    if (
+      prev.length === next.length &&
+      prev.every((row, index) => row === next[index])
+    ) {
+      return prev;
+    }
+    pageRowsCacheRef.current = next;
+    return next;
+  })();
 
   const allRows = useMemo(
     () =>
@@ -348,6 +382,7 @@ export function useBulkEditPagedRows({
     totalCount,
     totalPages,
     pageRows,
+    pageReady,
     allRows,
     selectableRows,
     selectedIds,
