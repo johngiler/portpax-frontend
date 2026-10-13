@@ -242,6 +242,8 @@ export default function AvailabilityChartSection({
   const isMobile = useMainLayoutOptional()?.isMobile ?? false;
   const dateColPx = isMobile ? 96 : 136;
   const dayColPx = isMobile ? 168 : 208;
+  /** Hide carrier identity on cards (photo-safe: only LOA / PAX / schedule readable). */
+  const [hideCarrierIdentity, setHideCarrierIdentity] = useState(false);
   const focus = {
     statuses: statusFilter,
     vesselId: vesselFocusId,
@@ -274,6 +276,17 @@ export default function AvailabilityChartSection({
         canBook
           ? "Clic en Disponible para reservar, o en una reserva para editarla."
           : "Matriz día × posición: libre, pasado u ocupada. Clic en una reserva para verla o editarla."
+      }
+      actions={
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            checked={hideCarrierIdentity}
+            onChange={(e) => setHideCarrierIdentity(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-zinc-300 text-[var(--admin-accent)] focus:ring-[var(--admin-accent)]"
+          />
+          Navieras
+        </label>
       }
     >
       <AvailabilityColorLegend />
@@ -426,18 +439,32 @@ export default function AvailabilityChartSection({
                                     : "border-zinc-200/80 opacity-55 hover:opacity-80 dark:border-zinc-700/80",
                                 ].join(" ")}
                                 title={
-                                  matchesFilter
-                                    ? `Editar ${call.booking_code}${chipTitle ? ` · ${chipTitle}` : ""}`
-                                    : availabilityFocusNeighborTitle(
-                                        call,
-                                        row.date,
-                                        focus,
-                                        todayIso,
-                                      )
+                                  hideCarrierIdentity
+                                    ? undefined
+                                    : matchesFilter
+                                      ? `Editar ${call.booking_code}${chipTitle ? ` · ${chipTitle}` : ""}`
+                                      : availabilityFocusNeighborTitle(
+                                          call,
+                                          row.date,
+                                          focus,
+                                          todayIso,
+                                        )
                                 }
-                                aria-label={`Abrir reserva ${call.booking_code}`}
+                                aria-label={
+                                  hideCarrierIdentity
+                                    ? "Abrir reserva"
+                                    : `Abrir reserva ${call.booking_code}`
+                                }
                               >
-                                <div className="flex min-w-0 items-start gap-2">
+                                <div
+                                  className={[
+                                    "flex min-w-0 items-start gap-2",
+                                    hideCarrierIdentity
+                                      ? "pointer-events-none select-none blur-[6px]"
+                                      : "",
+                                  ].join(" ")}
+                                  aria-hidden={hideCarrierIdentity || undefined}
+                                >
                                   <CatalogLogoThumb
                                     src={call.vessel_logo}
                                     alt=""
