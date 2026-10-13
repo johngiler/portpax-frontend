@@ -2068,13 +2068,22 @@ export default function BookingsView() {
                       const byId = new Map(
                         bookings.map((booking) => [booking.id, booking]),
                       );
+                      // Recap: include cancelled matches (reactivate in modal);
+                      // still exclude Real. Outside recap: mass-editable only.
                       const recapIds = [...matchIds].filter((id) => {
+                        const booking = byId.get(id);
+                        if (!booking) return true;
+                        return booking.status !== "r";
+                      });
+                      const fallbackIds = ids.filter((id) => {
                         const booking = byId.get(id);
                         return (
                           !booking || isBookingMassEditable(booking.status)
                         );
                       });
-                      setBulkEditIds(recapIds.length > 0 ? recapIds : ids);
+                      setBulkEditIds(
+                        recapIds.length > 0 ? recapIds : fallbackIds,
+                      );
                       setBulkEditOpen(true);
                     }
                   : undefined
