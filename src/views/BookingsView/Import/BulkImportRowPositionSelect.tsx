@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormFieldSelect } from "@/components/ui/FormField";
 import { positionOccupancyHint } from "@/lib/positionOccupancyHint";
 import { suggestBookingPositions } from "@/services/bookings/bookingService";
@@ -73,10 +73,15 @@ export async function fetchRowPositionOccupancy(
     return { position_occupancy_hint: null, position_occupant: null };
   }
   try {
+    const exclude =
+      typeof row.row_number === "number" && row.row_number > 0
+        ? row.row_number
+        : undefined;
     const data = await suggestBookingPositions({
       port: row.port_id,
       vessel: row.vessel_id,
       call_date: row.call_date,
+      exclude_booking: exclude,
     });
     return occupancyFields(
       data.positions,
@@ -95,93 +100,120 @@ export default function BulkImportRowPositionSelect({
   onCommit,
   reloadKey = 0,
 }: BulkImportRowPositionSelectProps) {
-  const optionsRef = useRef<PositionSuggestion[]>([]);
-  const cacheKeyRef = useRef("");
+  const [suggestions, setSuggestions] = useState<PositionSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const fetchedKeyRef = useRef("");
+  const inflightRef = useRef<string | null>(null);
   const rowRef = useRef(row);
   rowRef.current = row;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
   const catalogKey = `${row.port_id}|${row.vessel_id}|${row.call_date}|${reloadKey}`;
+  const catalogKeyRef = useRef(catalogKey);
+  catalogKeyRef.current = catalogKey;
 
   useEffect(() => {
-    optionsRef.current = [];
-    cacheKeyRef.current = "";
+    setSuggestions([]);
+    fetchedKeyRef.current = "";
+    inflightRef.current = null;
   }, [catalogKey]);
 
-  const seedOptions =
-    row.position_id != null && row.position_code
-      ? [{ value: row.position_id, label: row.position_code }]
-      : [];
+  const ensureLoaded = async () => {
+    if (!row.port_id || !row.vessel_id || !row.call_date) return;
+    if (fetchedKeyRef.current === catalogKey) return;
+    if (inflightRef.current === catalogKey) return;
+    const requestKey = catalogKey;
+    inflightRef.current = requestKey;
+    setLoading(true);
+    try {
+      const exclude =
+        typeof row.row_number === "number" && row.row_number > 0
+          ? row.row_number
+          : undefined;
+      const data = await suggestBookingPositions({
+        port: row.port_id,
+        vessel: row.vessel_id,
+        call_date: row.call_date,
+        exclude_booking: exclude,
+      });
+      if (requestKey !== catalogKeyRef.current) return;
+      fetchedKeyRef.current = requestKey;
+      setSuggestions(data.positions);
+      const current = rowRef.current;
+      const next = occupancyFields(
+        data.positions,
+        current.position_id ?? null,
+        current.call_date,
+      );
+      if (
+        next.position_occupancy_hint !==
+          (current.position_occupancy_hint ?? null) ||
+        next.position_occupant?.booking_id !==
+          current.position_occupant?.booking_id ||
+        next.position_occupant?.status !== current.position_occupant?.status ||
+        next.position_occupant?.eta !== current.position_occupant?.eta ||
+        next.position_occupant?.etd !== current.position_occupant?.etd ||
+        Boolean(next.position_occupant) !== Boolean(current.position_occupant)
+      ) {
+        onChangeRef.current({ ...current, ...next });
+      }
+    } catch {
+      if (requestKey === catalogKeyRef.current) {
+        fetchedKeyRef.current = requestKey;
+        setSuggestions([]);
+      }
+    } finally {
+      if (inflightRef.current === requestKey) inflightRef.current = null;
+      if (requestKey === catalogKeyRef.current) setLoading(false);
+    }
+  };
+
+  const selectOptions = mapPositionOptions(suggestions);
+  if (
+    row.position_id != null &&
+    row.position_code &&
+    !selectOptions.some((o) => o.value === row.position_id)
+  ) {
+    selectOptions.unshift({
+      value: row.position_id,
+      label: row.position_code,
+    });
+  }
 
   return (
     <FormFieldSelect<number>
-      key={catalogKey}
       label=""
       name={`bulk_position_${row.id}`}
       value={row.position_id ?? 0}
       emptyValue={0}
-      optionLabel="Sin posición"
+      optionLabel={loading ? "Cargando…" : "Sin posición"}
       compact
       disabled={
         disabled || !row.port_id || !row.vessel_id || !row.call_date
       }
-      options={seedOptions}
-      loadOptions={async (inputValue) => {
-        if (!row.port_id || !row.vessel_id || !row.call_date) return seedOptions;
-        if (cacheKeyRef.current !== catalogKey) {
-          const data = await suggestBookingPositions({
-            port: row.port_id,
-            vessel: row.vessel_id,
-            call_date: row.call_date,
-          });
-          optionsRef.current = data.positions;
-          cacheKeyRef.current = catalogKey;
-          const current = rowRef.current;
-          const next = occupancyFields(
-            data.positions,
-            current.position_id ?? null,
-            current.call_date,
-          );
-          if (
-            next.position_occupancy_hint !==
-              (current.position_occupancy_hint ?? null) ||
-            next.position_occupant?.booking_id !==
-              current.position_occupant?.booking_id ||
-            next.position_occupant?.status !==
-              current.position_occupant?.status ||
-            next.position_occupant?.eta !== current.position_occupant?.eta ||
-            next.position_occupant?.etd !== current.position_occupant?.etd ||
-            Boolean(next.position_occupant) !==
-              Boolean(current.position_occupant)
-          ) {
-            onChangeRef.current({ ...current, ...next });
-          }
-        }
-        const mapped = mapPositionOptions(optionsRef.current);
-        const q = inputValue.trim().toLowerCase();
-        if (!q) return mapped;
-        return mapped.filter((opt) => opt.label.toLowerCase().includes(q));
+      options={selectOptions}
+      onMenuOpen={() => {
+        void ensureLoaded();
       }}
       onChange={(id) => {
-        const cached = optionsRef.current;
         if (!id) {
           const draft = {
             ...row,
             position_id: null,
             position_code: null,
-            ...occupancyFields(cached, null, row.call_date),
+            ...occupancyFields(suggestions, null, row.call_date),
           };
           onChange(draft);
           onCommit(draft);
           return;
         }
-        const match = cached.find((p) => p.id === id);
+        const match = suggestions.find((p) => p.id === id);
         const draft = {
           ...row,
           position_id: id,
           position_code: match?.code ?? row.position_code ?? String(id),
-          ...occupancyFields(cached, id, row.call_date),
+          ...occupancyFields(suggestions, id, row.call_date),
         };
         onChange(draft);
         onCommit(draft);

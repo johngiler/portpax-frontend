@@ -288,6 +288,7 @@ export function FormFieldSelect<T extends string | number>({
   logoKind,
   labelEnd,
   loadOptions,
+  onMenuOpen,
 }: {
   label: string;
   name: string;
@@ -312,6 +313,8 @@ export function FormFieldSelect<T extends string | number>({
    * filters remotely. `options` resolve the current value label.
    */
   loadOptions?: (inputValue: string) => Promise<CatalogSelectOption<T>[]>;
+  /** Lazy hydrate (e.g. position list) without fetching every table row on mount. */
+  onMenuOpen?: () => void;
 }) {
   const handleChange = (selected: CatalogSelectOption<T> | null) => {
     if (!selected) {
@@ -358,6 +361,7 @@ export function FormFieldSelect<T extends string | number>({
     menuPosition: "fixed" as const,
     menuShouldBlockScroll: false,
     blurInputOnSelect: true,
+    onMenuOpen,
   };
 
   return (
