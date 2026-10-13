@@ -35,9 +35,9 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     id: "port_trends",
     name: "Trends por puerto",
     description:
-      "SHIPS y PAX por grupo de naviera y año (desglose a navieras), más % de crecimiento interanual de PAX.",
+      "SHIPS y PAX por grupo de naviera (columnas = años o temporadas), Growth %, y gráfico mensual calls/PAX por naviera.",
     notes:
-      "Requiere puerto. Grupo y naviera opcionales (vacío = todos). Growth en verde/rojo. Misma base PAX transversal. Total al pie de ambos bloques. Exporta PDF / Excel / CSV.",
+      "Requiere puerto. Con filtro de grupo/naviera aparece «Otros». Temporada cambia títulos de columna a Summer/Winter. Exporta PDF / Excel / CSV.",
   },
   {
     id: "solicitudes_port",

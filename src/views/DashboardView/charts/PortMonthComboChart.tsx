@@ -48,6 +48,8 @@ const PORT_COLORS = [
 type PortMonthComboChartProps = {
   data: DashboardByPortMonth;
   mode: "chart" | "table";
+  /** First column / a11y label for each series (default Puerto). */
+  seriesLabel?: string;
 };
 
 function niceCeiling(value: number): number {
@@ -95,6 +97,7 @@ function barLayout(
 export default function PortMonthComboChart({
   data,
   mode,
+  seriesLabel = "Puerto",
 }: PortMonthComboChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const [hiddenPorts, setHiddenPorts] = useState<Set<number>>(() => new Set());
@@ -159,7 +162,7 @@ export default function PortMonthComboChart({
         <table className="w-full min-w-[36rem] border-collapse text-left text-xs">
           <thead>
             <tr className="border-b border-zinc-100 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:border-zinc-800">
-              <th className="py-2 pr-2">Puerto</th>
+              <th className="py-2 pr-2">{seriesLabel}</th>
               {MONTH_SHORT.map((label) => (
                 <th key={label} className="px-1 py-2 text-right">
                   {label}
@@ -314,7 +317,7 @@ export default function PortMonthComboChart({
                 className="block h-full w-full"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label="Pasajeros y calls por mes y puerto"
+                aria-label={`Pasajeros y calls por mes y ${seriesLabel.toLowerCase()}`}
               >
                 {paxTicks.map((tick) => {
                   const y = paxToY(tick);

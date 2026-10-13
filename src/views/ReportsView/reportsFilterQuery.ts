@@ -370,7 +370,8 @@ export function serializeReportsFilters(
   if (
     (filters.tab === "carrier_panorama" ||
       filters.tab === "ports_totals" ||
-      filters.tab === "port_carrier") &&
+      filters.tab === "port_carrier" ||
+      filters.tab === "port_trends") &&
     filters.season !== "natural"
   ) {
     sp.set("season", filters.season);

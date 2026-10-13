@@ -25,6 +25,7 @@ import type {
   PortTrendsMetricRow,
   PortTrendsReport,
 } from "@/services/bookings/bookingService";
+import PortTrendsLineMonthChart from "./PortTrendsLineMonthChart";
 import ReportsEmptyState from "./ReportsEmptyState";
 
 type PaginationProps = {
@@ -127,8 +128,8 @@ function TrendsShipsCells({
 }) {
   return (
     <>
-      {row.by_year.map((cell) => (
-        <Fragment key={`y-${cell.year}`}>
+      {row.by_year.map((cell, idx) => (
+        <Fragment key={`y-${cell.period_key ?? cell.year}-${idx}`}>
           <td className={dataClass(alt, nested, total)}>
             {formatMatrixValue(cell.ships)}
           </td>
@@ -168,7 +169,7 @@ function GrowthCells({
 }) {
   return (
     <>
-      {row.growth.map((cell) => {
+      {row.growth.map((cell, idx) => {
         const pct = cell.pct;
         const tone =
           pct == null
@@ -180,7 +181,7 @@ function GrowthCells({
                 : reportMatrix.growthNeutral;
         return (
           <td
-            key={`g-${cell.year}`}
+            key={`g-${String(cell.year)}-${idx}`}
             className={`${dataClass(alt, nested, total)} ${tone}`}
           >
             {formatGrowthPct(pct)}
@@ -257,16 +258,23 @@ export default function PortTrendsSection({
   }, []);
 
   const groups = data.groups ?? [];
+  const others = data.others ?? null;
   const totals = data.totals;
-  const hasRows = groups.length > 0;
+  const columnLabels = data.column_labels?.length
+    ? data.column_labels
+    : data.years;
+  const hasRows = groups.length > 0 || Boolean(others);
+  const chartLines = data.by_line_month?.lines ?? [];
+  const seasonMode = (data.season ?? "natural") !== "natural";
 
   const groupAlt = useMemo(() => {
     const map = new Map<number, boolean>();
     groups.forEach((group, index) => {
       map.set(group.shipping_line_group_id, index % 2 === 1);
     });
+    if (others) map.set(others.shipping_line_group_id, groups.length % 2 === 1);
     return map;
-  }, [groups]);
+  }, [groups, others]);
 
   if (totalCount === 0 && !hasRows) {
     return (
@@ -355,13 +363,13 @@ export default function PortTrendsSection({
                       <th className={reportMatrix.cornerHeader} rowSpan={2}>
                         Grupo
                       </th>
-                      {data.years.map((year) => (
+                      {columnLabels.map((label) => (
                         <th
-                          key={year}
+                          key={String(label)}
                           className={reportMatrix.monthHeader}
                           colSpan={2}
                         >
-                          {year}
+                          {label}
                         </th>
                       ))}
                       <th className={reportMatrix.totalHeader} colSpan={2}>
@@ -369,8 +377,8 @@ export default function PortTrendsSection({
                       </th>
                     </tr>
                     <tr>
-                      {data.years.map((year) => (
-                        <Fragment key={`sub-${year}`}>
+                      {columnLabels.map((label) => (
+                        <Fragment key={`sub-${String(label)}`}>
                           <th className={reportMatrix.subHeader}>Ships</th>
                           <th className={reportMatrix.subHeader}>PAX</th>
                         </Fragment>
@@ -381,6 +389,7 @@ export default function PortTrendsSection({
                   </thead>
                   <tbody>
                     {groups.map((group) => renderGroupBlock(group, "ships"))}
+                    {others ? renderGroupBlock(others, "ships") : null}
                     {totals ? (
                       <tr>
                         <td className={labelClass(false, false, true)}>
@@ -400,7 +409,11 @@ export default function PortTrendsSection({
       <ViewSection
         icon={TrendingUp}
         title="Growth percentage"
-        description="Variación interanual de PAX por grupo de naviera."
+        description={
+          seasonMode
+            ? "Variación de PAX vs el período anterior, por grupo de naviera."
+            : "Variación interanual de PAX por grupo de naviera."
+        }
         bodyClassName={reportViewSectionBody}
       >
         <div className={reportMatrix.sectionGroup}>
@@ -415,15 +428,19 @@ export default function PortTrendsSection({
                   <thead>
                     <tr>
                       <th className={reportMatrix.cornerHeader}>Grupo</th>
-                      {data.years.map((year) => (
-                        <th key={year} className={reportMatrix.monthHeader}>
-                          {year}
+                      {columnLabels.map((label) => (
+                        <th
+                          key={String(label)}
+                          className={reportMatrix.monthHeader}
+                        >
+                          {label}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {groups.map((group) => renderGroupBlock(group, "growth"))}
+                    {others ? renderGroupBlock(others, "growth") : null}
                     {totals ? (
                       <tr>
                         <td className={labelClass(false, false, true)}>
@@ -439,6 +456,10 @@ export default function PortTrendsSection({
           </div>
         </div>
       </ViewSection>
+
+      {chartLines.length > 0 ? (
+        <PortTrendsLineMonthChart lines={chartLines} />
+      ) : null}
     </div>
   );
 }

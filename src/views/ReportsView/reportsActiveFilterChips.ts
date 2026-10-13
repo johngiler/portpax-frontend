@@ -148,7 +148,8 @@ export function buildReportsActiveFilterChips(input: {
   if (
     (input.tab === "carrier_panorama" ||
       input.tab === "ports_totals" ||
-      input.tab === "port_carrier") &&
+      input.tab === "port_carrier" ||
+      input.tab === "port_trends") &&
     input.season &&
     input.season !== "natural"
   ) {
@@ -212,7 +213,9 @@ export function reportsHasActiveFilters(input: {
   const multiPortTab =
     input.tab === "carrier_panorama" || input.tab === "ports_totals";
   const seasonTab =
-    multiPortTab || input.tab === "port_carrier";
+    multiPortTab ||
+    input.tab === "port_carrier" ||
+    input.tab === "port_trends";
   return (
     input.portFilter > 0 ||
     (multiPortTab && (input.portIds?.length ?? 0) > 0) ||

@@ -400,8 +400,13 @@ export type PortCarrierMatrixReport = {
 } & ReportPagination;
 
 export type PortTrendsMetricRow = {
-  by_year: Array<{ year: number; ships: number; pax: number }>;
-  growth: Array<{ year: number; pct: number | null }>;
+  by_year: Array<{
+    year: number | string;
+    period_key?: string | null;
+    ships: number;
+    pax: number;
+  }>;
+  growth: Array<{ year: number | string; pct: number | null }>;
   total_ships: number;
   total_pax: number;
 };
@@ -417,7 +422,15 @@ export type PortTrendsGroup = PortTrendsMetricRow & {
   shipping_line_group_id: number;
   code: string;
   name: string;
+  is_others?: boolean;
   lines: PortTrendsLine[];
+};
+
+export type PortTrendsLineMonthSeries = {
+  shipping_line_id: number;
+  name: string;
+  code: string;
+  months: Array<{ month: number; calls: number; passengers: number }>;
 };
 
 export type PortTrendsReport = {
@@ -428,9 +441,15 @@ export type PortTrendsReport = {
   date_to: string;
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
   years: number[];
+  /** Display labels for trend columns (calendar years or Summer/Winter). */
+  column_labels?: Array<string | number>;
   groups: PortTrendsGroup[];
+  /** Present when grupo/naviera filters are active. */
+  others?: PortTrendsGroup | null;
   totals: PortTrendsMetricRow;
+  by_line_month?: { lines: PortTrendsLineMonthSeries[] };
   note: string;
 } & ReportPagination;
 
@@ -632,6 +651,7 @@ export async function fetchPortTrendsReport(params: {
   port: number;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
   shipping_lines?: number[];
   shipping_line_groups?: number[];
   page?: number;
@@ -644,6 +664,9 @@ export async function fetchPortTrendsReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.season && params.season !== "natural") {
+    query.set("season", params.season);
   }
   if (params.shipping_lines && params.shipping_lines.length > 0) {
     query.set("shipping_line", params.shipping_lines.join(","));

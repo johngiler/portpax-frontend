@@ -469,7 +469,8 @@ export default function ReportsView() {
             paxBasis !== "planned" ||
             ((tab === "carrier_panorama" ||
               tab === "ports_totals" ||
-              tab === "port_carrier") &&
+              tab === "port_carrier" ||
+              tab === "port_trends") &&
               season !== "natural") ||
             years.length > 0 ||
             tagIds.length > 0 ||
@@ -732,6 +733,7 @@ export default function ReportsView() {
           port: appliedPortFilter,
           without_lta: appliedWithoutLta,
           pax_basis: appliedPaxBasis,
+          season: appliedFilters.season,
           shipping_lines:
             appliedShippingLineIds.length > 0
               ? appliedShippingLineIds
@@ -769,7 +771,8 @@ export default function ReportsView() {
   const showSeasonFilter =
     tab === "ports_totals" ||
     tab === "carrier_panorama" ||
-    tab === "port_carrier";
+    tab === "port_carrier" ||
+    tab === "port_trends";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||

@@ -112,6 +112,7 @@ async function fetchReportPage(
   return fetchPortTrendsReport({
     ...base,
     port: filters.portFilter,
+    season: filters.season,
     shipping_lines: lineIds.length > 0 ? lineIds : undefined,
     shipping_line_groups:
       lineIds.length === 0 && groupIds.length > 0 ? groupIds : undefined,
@@ -143,7 +144,10 @@ function reportPayloadMatchesFilters(
     );
   }
   if (payload.tab === "port_trends") {
-    return payload.data.port.id === filters.portFilter;
+    return (
+      payload.data.port.id === filters.portFilter &&
+      (payload.data.season ?? "natural") === (filters.season ?? "natural")
+    );
   }
   return true;
 }
@@ -181,6 +185,8 @@ function mergeReportPages(pages: ReportPage[]): ReportPayload | null {
       groups: pages.flatMap((page) =>
         page.kind === "port_trends" ? page.groups : [],
       ),
+      others: head.others,
+      by_line_month: head.by_line_month,
       totals: head.totals,
     },
   };
