@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import {
   ltaActivityFilterToApiParams,
   type LtaActivityFilterValue,
@@ -74,7 +75,7 @@ export function useLtaActivityInfinite(
         agreement_id: agreementId,
         ...(agreementId ? {} : apiFilters),
       });
-    });
+    }, swrInfiniteDefaults);
 
   const items = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import type { ApiListResponse } from "@/services/apiClient";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchPorts } from "@/services/catalogs/portService";
@@ -22,7 +23,7 @@ export function usePortsInfinite(search: string, pageSize = DEFAULT_PAGE_SIZE) {
     useSWRInfinite(getKey, (key) => {
       const page = key[key.length - 1] as number;
       return fetchPorts({ page, search, pageSize });
-    });
+    }, swrInfiniteDefaults);
 
   const ports = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

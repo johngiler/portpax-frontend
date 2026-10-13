@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import {
   bookingActivityFilterToApiParams,
   type BookingActivityFilterValue,
@@ -86,7 +87,7 @@ export function useBookingActivityInfinite(
         booking_id: bookingId,
         ...(bookingId ? {} : apiFilters),
       });
-    });
+    }, swrInfiniteDefaults);
 
   const items = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

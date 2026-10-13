@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import { swrKeys } from "@/lib/swr/keys";
 import {
@@ -142,7 +143,7 @@ export function useVesselProximityInfinite(
         page,
         page_size: PROXIMITY_DAYS_BATCH,
       });
-    });
+    }, swrInfiniteDefaults);
 
   const merged = useMemo(
     () =>

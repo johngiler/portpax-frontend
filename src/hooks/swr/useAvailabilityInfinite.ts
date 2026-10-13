@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import { parseIsoDate } from "@/lib/bookingDates";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type { CancellationReason } from "@/types/booking";
@@ -204,7 +205,7 @@ export function useAvailabilityInfinite(
         first_arrival: firstArrival,
         cancellation_reason: cancellationReason,
       });
-    });
+    }, swrInfiniteDefaults);
 
   const merged = useMemo((): AvailabilityReport | null => {
     if (!data?.length) return null;

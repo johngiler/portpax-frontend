@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import type { ApiListResponse } from "@/services/apiClient";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchShippingLines } from "@/services/catalogs/shippingLineService";
@@ -37,7 +38,7 @@ export function useShippingLinesInfinite(
         group: groupId > 0 ? groupId : undefined,
         pageSize,
       });
-    });
+    }, swrInfiniteDefaults);
 
   const lines = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

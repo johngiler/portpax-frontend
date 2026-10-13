@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import {
   userActivityFilterToApiParams,
   type UserActivityFilterValue,
@@ -82,7 +83,7 @@ export function useUserActivityInfinite(
         actor,
         user_id: userId,
       });
-    });
+    }, swrInfiniteDefaults);
 
   const items = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

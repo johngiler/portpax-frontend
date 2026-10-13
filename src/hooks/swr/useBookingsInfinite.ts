@@ -8,6 +8,7 @@ import {
   fetchBookings,
   type FetchBookingsParams,
 } from "@/services/bookings/bookingService";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import { swrKeys } from "@/lib/swr/keys";
 import type { BookingListItem } from "@/types/booking";
 
@@ -65,10 +66,14 @@ export function useBookingsInfinite(
   );
 
   const { data, error, isLoading, isValidating, size, setSize, mutate } =
-    useSWRInfinite(getKey, (key) => {
-      const page = key[key.length - 1] as number;
-      return fetchBookings({ ...params, page, pageSize });
-    });
+    useSWRInfinite(
+      getKey,
+      (key) => {
+        const page = key[key.length - 1] as number;
+        return fetchBookings({ ...params, page, pageSize });
+      },
+      swrInfiniteDefaults,
+    );
 
   const bookings = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

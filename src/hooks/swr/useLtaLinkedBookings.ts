@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import type { ApiListResponse } from "@/services/apiClient";
 import { swrKeys } from "@/lib/swr/keys";
 import { fetchBookings } from "@/services/bookings/bookingService";
@@ -38,7 +39,7 @@ export function useLtaLinkedBookings(
         pageSize,
         ordering: "call_date",
       });
-    });
+    }, swrInfiniteDefaults);
 
   const bookings = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),

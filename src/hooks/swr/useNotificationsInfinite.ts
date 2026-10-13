@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchNotifications,
@@ -36,7 +37,7 @@ export function useNotificationsInfinite(enabled = true) {
         const page = key[key.length - 1] as number;
         return fetchNotifications(page, NOTIFICATION_PAGE_SIZE);
       },
-      { revalidateOnFocus: true },
+      { ...swrInfiniteDefaults, revalidateOnFocus: true },
     );
 
   const items = useMemo(

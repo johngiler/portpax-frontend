@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import { swrKeys } from "@/lib/swr/keys";
 import {
   fetchPortCarrierMatrixReport,
@@ -177,7 +178,7 @@ export function useReportInfinite(filters: ReportFilters, ready = true) {
         const page = key[key.length - 1] as number;
         return fetchReportPage(filters, page);
       },
-      { keepPreviousData: false },
+      { ...swrInfiniteDefaults, keepPreviousData: false },
     );
 
   useEffect(() => {

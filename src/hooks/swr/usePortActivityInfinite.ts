@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
+import { swrInfiniteDefaults } from "@/lib/swr/infiniteDefaults";
 import {
   catalogActivityFilterToApiParams,
   type CatalogActivityFilterValue,
@@ -73,7 +74,7 @@ export function usePortActivityInfinite(
         actor,
         port_id: portId,
       });
-    });
+    }, swrInfiniteDefaults);
 
   const items = useMemo(
     () => (data ? data.flatMap((page) => page.results) : []),
