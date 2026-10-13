@@ -42,16 +42,13 @@ export default function PortsTotalsMatrixSection({
     <ViewSection
       icon={BarChart3}
       title={data.title}
-      description={
-        data.without_lta
-          ? `${data.note} Excluye LTA.`
-          : data.note
-      }
+      description={data.without_lta ? `${data.note} Excluye LTA.` : data.note}
       bodyClassName={reportViewSectionBody}
     >
       <ReportDualMatrix
         monthLabels={data.month_labels}
         sections={data.sections}
+        rowLabelHeader={data.row_label_header ?? "Año"}
       />
       <InfiniteScrollFooter
         hasMore={hasMore}

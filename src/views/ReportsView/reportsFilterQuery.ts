@@ -29,11 +29,11 @@ export type ReportsWorkspaceFilters = {
   dateFrom: string;
   dateTo: string;
   port: number;
-  /** Multi-port scope for Panorama Navieras. Empty = all ports. */
+  /** Multi-port scope for Totals puertos / Panorama. Empty = all ports. */
   portIds: number[];
   withoutLta: boolean;
   paxBasis: ReportPaxBasis;
-  /** Panorama Navieras: natural years vs Summer/Winter period columns. */
+  /** Totals / Panorama / Totals por puerto: natural vs Summer/Winter windows. */
   season: ReportSeason;
   /** Calendar years for resumen (multi) or movimientos / semanal (single). */
   years: number[];
@@ -359,12 +359,18 @@ export function serializeReportsFilters(
     }
   }
   if (filters.port > 0) sp.set("port", String(filters.port));
-  if (filters.tab === "carrier_panorama" && filters.portIds.length) {
+  if (
+    (filters.tab === "carrier_panorama" || filters.tab === "ports_totals") &&
+    filters.portIds.length
+  ) {
     sp.set("ports", filters.portIds.join(","));
   }
   if (filters.withoutLta) sp.set("without_lta", "1");
   if (filters.paxBasis !== "planned") sp.set("pax", filters.paxBasis);
-  if (filters.tab === "carrier_panorama" && filters.season !== "natural") {
+  if (
+    (filters.tab === "carrier_panorama" || filters.tab === "ports_totals") &&
+    filters.season !== "natural"
+  ) {
     sp.set("season", filters.season);
   }
   if (

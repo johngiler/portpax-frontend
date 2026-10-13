@@ -19,17 +19,17 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     id: "ports_totals",
     name: "Totals puertos",
     description:
-      "Matriz año × mes de calls y PAX por puerto (vista consolidada multi-puerto).",
+      "Matriz de calls y PAX por puerto (columnas = meses; filas = años o temporadas).",
     notes:
-      "Exporta PDF, Excel y CSV con el mismo diseño de familia. Opción sin LTA (excluye solo escalas fantasma LTA; CL sí cuenta). Base PAX: planificado o cap. máx. (filtros transversales entre reportes).",
+      "Puertos ordenados por volumen de PAX. En Temporadas las filas se titulan Summer/Winter. Filtros: multi-puerto, Temporada, Base PAX, Sin LTA y fechas. Exporta PDF / Excel / CSV.",
   },
   {
     id: "port_carrier",
     name: "Totals por puerto",
     description:
-      "Misma matriz para un puerto, desglosada por naviera (RCI, NCL, MSC…).",
+      "Matriz de calls y PAX de un puerto, desglosada por naviera (columnas = meses).",
     notes:
-      "Requiere puerto. Conserva fechas, base PAX y sin LTA al cambiar de reporte. Exporta PDF / Excel / CSV.",
+      "Requiere puerto. Navieras ordenadas por volumen de PAX. Con filtro de grupo/naviera aparece «Otros». En Temporadas las filas se titulan Summer/Winter; en año natural, por calendario. Exporta PDF / Excel / CSV.",
   },
   {
     id: "port_trends",

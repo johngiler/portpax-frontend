@@ -156,7 +156,9 @@ export async function fetchBookings(
   params: FetchBookingsParams = {},
 ): Promise<ApiListResponse<BookingListItem>> {
   const qs = bookingsQuery(params).toString();
-  return apiFetch<ApiListResponse<BookingListItem>>(`${BASE}${qs ? `?${qs}` : ""}`);
+  return apiFetch<ApiListResponse<BookingListItem>>(
+    `${BASE}${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export async function exportBookingsReport(
@@ -167,7 +169,9 @@ export async function exportBookingsReport(
   const query = bookingsQuery(params);
   // Do not use query key "format" — DRF content negotiation returns 404 for xlsx.
   query.set("export_format", params.exportFormat);
-  const { blob, filename } = await apiDownload(`${BASE}export/?${query.toString()}`);
+  const { blob, filename } = await apiDownload(
+    `${BASE}export/?${query.toString()}`,
+  );
   const fallback = `reservas.${params.exportFormat}`;
   triggerBrowserDownload(blob, filename || fallback);
 }
@@ -175,23 +179,23 @@ export async function exportBookingsReport(
 export async function fetchAllBookings(
   params: Omit<FetchBookingsParams, "page"> = {},
 ): Promise<BookingListItem[]> {
-  return fetchAllPages((page, pageSize) => fetchBookings({ ...params, page, pageSize }));
+  return fetchAllPages((page, pageSize) =>
+    fetchBookings({ ...params, page, pageSize }),
+  );
 }
 
-export async function exportCalendarReport(
-  params: {
-    ports: number[];
-    call_date_from: string;
-    call_date_to: string;
-    shipping_line?: number;
-    shipping_lines?: number[];
-    shipping_line_group?: number;
+export async function exportCalendarReport(params: {
+  ports: number[];
+  call_date_from: string;
+  call_date_to: string;
+  shipping_line?: number;
+  shipping_lines?: number[];
+  shipping_line_group?: number;
   shipping_line_groups?: number[];
-    status?: BookingListStatusFilter;
-    statuses?: BookingStatusFilterValue[];
-    exportFormat: "xlsx" | "csv";
-  },
-): Promise<void> {
+  status?: BookingListStatusFilter;
+  statuses?: BookingStatusFilterValue[];
+  exportFormat: "xlsx" | "csv";
+}): Promise<void> {
   const query = new URLSearchParams();
   query.set("port", params.ports.join(","));
   query.set("call_date_from", params.call_date_from);
@@ -324,7 +328,8 @@ export type SolicitudesPortReport = {
 };
 
 export type MatrixYearRow = {
-  year: number | "total";
+  /** Calendar year, season label (e.g. "Summer 2026"), or "total". */
+  year: number | string | "total";
   months: number[];
   total: number;
   is_total?: boolean;
@@ -353,8 +358,19 @@ export type PortsTotalsMatrixReport = {
   date_to: string;
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
   month_labels: string[];
   years: number[];
+  periods?: Array<{
+    key: string;
+    kind: string;
+    year: number;
+    label: string;
+    date_from?: string;
+    date_to?: string;
+  }>;
+  /** Corner header for matrix rows: "Año" or "Temporada". */
+  row_label_header?: string;
   sections: MatrixSection[];
   note: string;
 } & ReportPagination;
@@ -367,8 +383,18 @@ export type PortCarrierMatrixReport = {
   date_to: string;
   without_lta: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
   month_labels: string[];
   years: number[];
+  periods?: Array<{
+    key: string;
+    kind: string;
+    year: number;
+    label: string;
+    date_from?: string;
+    date_to?: string;
+  }>;
+  row_label_header?: string;
   sections: MatrixSection[];
   note: string;
 } & ReportPagination;
@@ -535,6 +561,8 @@ export async function fetchPortsTotalsMatrixReport(params: {
   date_to: string;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
+  ports?: number[];
   page?: number;
   page_size?: number;
 }): Promise<PortsTotalsMatrixReport> {
@@ -544,6 +572,12 @@ export async function fetchPortsTotalsMatrixReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.season && params.season !== "natural") {
+    query.set("season", params.season);
+  }
+  if (params.ports?.length) {
+    query.set("ports", params.ports.join(","));
   }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {
@@ -560,6 +594,9 @@ export async function fetchPortCarrierMatrixReport(params: {
   port: number;
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
+  season?: "natural" | "seasons" | "summer" | "winter";
+  shipping_lines?: number[];
+  shipping_line_groups?: number[];
   page?: number;
   page_size?: number;
 }): Promise<PortCarrierMatrixReport> {
@@ -570,6 +607,15 @@ export async function fetchPortCarrierMatrixReport(params: {
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {
     query.set("pax_basis", params.pax_basis);
+  }
+  if (params.season && params.season !== "natural") {
+    query.set("season", params.season);
+  }
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  }
+  if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
+    query.set("shipping_line_group", params.shipping_line_groups.join(","));
   }
   if (params.page != null) query.set("page", String(params.page));
   if (params.page_size != null) {
@@ -896,8 +942,7 @@ export async function exportStructuredReport(params: {
     carrier_panorama: "Panorama Navieras",
     availability: "Availability Chart",
   };
-  const fallbackBase =
-    fallbackNames[params.report_type] ?? params.report_type;
+  const fallbackBase = fallbackNames[params.report_type] ?? params.report_type;
   triggerBrowserDownload(blob, filename || `${fallbackBase}.${format}`);
 }
 
@@ -991,7 +1036,10 @@ export async function previewAssignedPositions(params: {
   return Object.fromEntries(entries);
 }
 
-export async function updateBooking(id: number, payload: BookingUpdatePayload): Promise<Booking> {
+export async function updateBooking(
+  id: number,
+  payload: BookingUpdatePayload,
+): Promise<Booking> {
   const hasFile =
     payload.cancellation_evidence instanceof File ||
     payload.arrival_manifest instanceof File;
@@ -1027,7 +1075,10 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
       form.set("operation_notes", payload.operation_notes);
     }
     if (payload.position !== undefined) {
-      form.set("position", payload.position == null ? "" : String(payload.position));
+      form.set(
+        "position",
+        payload.position == null ? "" : String(payload.position),
+      );
     }
     if (payload.eta !== undefined) form.set("eta", payload.eta ?? "");
     if (payload.etd !== undefined) form.set("etd", payload.etd ?? "");
@@ -1045,7 +1096,8 @@ export async function updateBooking(id: number, payload: BookingUpdatePayload): 
   if (payload.actual_pax !== undefined) body.actual_pax = payload.actual_pax;
   if (payload.actual_crew !== undefined) body.actual_crew = payload.actual_crew;
   if (payload.port !== undefined) body.port = payload.port;
-  if (payload.shipping_line !== undefined) body.shipping_line = payload.shipping_line;
+  if (payload.shipping_line !== undefined)
+    body.shipping_line = payload.shipping_line;
   if (payload.vessel !== undefined) body.vessel = payload.vessel;
   if (payload.call_date !== undefined) body.call_date = payload.call_date;
   if (payload.notes !== undefined) body.notes = payload.notes;
@@ -1097,7 +1149,10 @@ export async function fetchPlannedPaxPreview(params: {
   return apiFetch<PlannedPaxPreview>(`${BASE}planned-pax-preview/?${query}`);
 }
 
-export async function updateBookingStatus(id: number, status: BookingStatus): Promise<Booking> {
+export async function updateBookingStatus(
+  id: number,
+  status: BookingStatus,
+): Promise<Booking> {
   return updateBooking(id, { status });
 }
 
@@ -1125,7 +1180,8 @@ export async function fetchDashboardStats(
   if (params.ports && params.ports.length > 0) {
     query.set("port", params.ports.join(","));
   }
-  if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_line)
+    query.set("shipping_line", String(params.shipping_line));
   if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
     query.set("shipping_line_group", params.shipping_line_groups.join(","));
   } else if (params.shipping_line_group) {

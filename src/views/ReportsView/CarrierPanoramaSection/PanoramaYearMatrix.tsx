@@ -32,7 +32,13 @@ function periodColumns(data: CarrierPanoramaReport): {
 
 function cellMap(
   cells:
-    | { period_key?: string; label?: string; year?: number; calls: number; pax: number }[]
+    | {
+        period_key?: string;
+        label?: string;
+        year?: number;
+        calls: number;
+        pax: number;
+      }[]
     | undefined,
 ): Map<string, { calls: number; pax: number }> {
   const map = new Map<string, { calls: number; pax: number }>();
@@ -43,7 +49,8 @@ function cellMap(
       (cell.year != null ? `year-${cell.year}` : "");
     if (!key) continue;
     map.set(key, { calls: cell.calls, pax: cell.pax });
-    if (cell.label) map.set(`label:${cell.label}`, { calls: cell.calls, pax: cell.pax });
+    if (cell.label)
+      map.set(`label:${cell.label}`, { calls: cell.calls, pax: cell.pax });
   }
   return map;
 }
@@ -92,7 +99,9 @@ export default function PanoramaYearMatrix({ data }: Props) {
                 <tr key={row.port_id}>
                   <th
                     scope="row"
-                    className={alt ? reportMatrix.rowLabelAlt : reportMatrix.rowLabel}
+                    className={
+                      alt ? reportMatrix.rowLabelAlt : reportMatrix.rowLabel
+                    }
                   >
                     <ReportEntityLabel
                       name={row.port_name}
@@ -101,19 +110,28 @@ export default function PanoramaYearMatrix({ data }: Props) {
                     />
                   </th>
                   {columns.map((col) => {
-                    const cell =
-                      byPeriod.get(col.key) ||
-                      byPeriod.get(`label:${col.label}`) ||
-                      { calls: 0, pax: 0 };
+                    const cell = byPeriod.get(col.key) ||
+                      byPeriod.get(`label:${col.label}`) || {
+                        calls: 0,
+                        pax: 0,
+                      };
                     return (
                       <Fragment key={`${row.port_id}-${col.key}`}>
                         <td
-                          className={alt ? reportMatrix.dataCellAlt : reportMatrix.dataCell}
+                          className={
+                            alt
+                              ? reportMatrix.dataCellAlt
+                              : reportMatrix.dataCell
+                          }
                         >
                           {formatNum(cell.calls)}
                         </td>
                         <td
-                          className={alt ? reportMatrix.dataCellAlt : reportMatrix.dataCell}
+                          className={
+                            alt
+                              ? reportMatrix.dataCellAlt
+                              : reportMatrix.dataCell
+                          }
                         >
                           {formatNum(cell.pax)}
                         </td>
@@ -137,10 +155,8 @@ export default function PanoramaYearMatrix({ data }: Props) {
                 const totalsMap = cellMap(
                   data.totals.by_period ?? data.totals.by_year,
                 );
-                const cell =
-                  totalsMap.get(col.key) ||
-                  totalsMap.get(`label:${col.label}`) ||
-                  { calls: 0, pax: 0 };
+                const cell = totalsMap.get(col.key) ||
+                  totalsMap.get(`label:${col.label}`) || { calls: 0, pax: 0 };
                 return (
                   <Fragment key={`total-${col.key}`}>
                     <td className={reportMatrix.totalDataCell}>

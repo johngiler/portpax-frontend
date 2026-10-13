@@ -11,7 +11,7 @@ import {
 } from "./reportMatrixStyles";
 
 export type MatrixYearRow = {
-  year: number | "total";
+  year: number | string | "total";
   months: number[];
   total: number;
   is_total?: boolean;
@@ -162,11 +162,13 @@ export default function ReportMatrixTable({
 type ReportDualMatrixProps = {
   monthLabels: string[];
   sections: MatrixSection[];
+  rowLabelHeader?: string;
 };
 
 export function ReportDualMatrix({
   monthLabels,
   sections,
+  rowLabelHeader = "Año",
 }: ReportDualMatrixProps) {
   return (
     <div className="space-y-6">
@@ -175,12 +177,14 @@ export function ReportDualMatrix({
           <MatrixSectionHeader section={section} />
           <div className={reportMatrix.sectionGroupBody}>
             <ReportMatrixTable
+              rowLabelHeader={rowLabelHeader}
               monthLabels={monthLabels}
               rows={section.calls}
               metric="calls"
               nested
             />
             <ReportMatrixTable
+              rowLabelHeader={rowLabelHeader}
               monthLabels={monthLabels}
               rows={section.pax}
               metric="pax"

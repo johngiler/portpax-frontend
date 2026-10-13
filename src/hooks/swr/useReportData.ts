@@ -14,7 +14,10 @@ import {
   type PortsTotalsMatrixReport,
   type PortTrendsReport,
 } from "@/services/bookings/bookingService";
-import type { ReportTab } from "@/views/ReportsView/reportsFilterQuery";
+import type {
+  ReportSeason,
+  ReportTab,
+} from "@/views/ReportsView/reportsFilterQuery";
 
 export type { ReportTab };
 
@@ -27,6 +30,9 @@ export type ReportFilters = {
   paxBasis: "planned" | "capacity";
   shippingLineGroupIds?: number[];
   shippingLineIds?: number[];
+  /** Multi-port scope (Totals puertos / Panorama). Empty = all. */
+  portIds?: number[];
+  season?: ReportSeason;
 };
 
 function reportParamsKey(filters: ReportFilters): string {
@@ -39,6 +45,8 @@ function reportParamsKey(filters: ReportFilters): string {
     filters.paxBasis,
     (filters.shippingLineGroupIds ?? []).join(","),
     (filters.shippingLineIds ?? []).join(","),
+    (filters.portIds ?? []).join(","),
+    filters.season ?? "natural",
   ].join("|");
 }
 
@@ -78,13 +86,24 @@ async function fetchReportPage(
   if (filters.tab === "ports_totals") {
     return fetchPortsTotalsMatrixReport({
       ...base,
+      ports:
+        filters.portIds && filters.portIds.length > 0
+          ? filters.portIds
+          : undefined,
+      season: filters.season,
       page_size: REPORT_MATRIX_SECTION_PAGE_SIZE,
     });
   }
   if (filters.tab === "port_carrier") {
+    const lineIds = filters.shippingLineIds ?? [];
+    const groupIds = filters.shippingLineGroupIds ?? [];
     return fetchPortCarrierMatrixReport({
       ...base,
       port: filters.portFilter,
+      season: filters.season,
+      shipping_lines: lineIds.length > 0 ? lineIds : undefined,
+      shipping_line_groups:
+        lineIds.length === 0 && groupIds.length > 0 ? groupIds : undefined,
       page_size: REPORT_MATRIX_SECTION_PAGE_SIZE,
     });
   }
@@ -113,6 +132,9 @@ function reportPayloadMatchesFilters(
     (data.pax_basis ?? "planned") !== filters.paxBasis
   ) {
     return false;
+  }
+  if (payload.tab === "ports_totals") {
+    return (payload.data.season ?? "natural") === (filters.season ?? "natural");
   }
   if (payload.tab === "port_carrier" || payload.tab === "port_trends") {
     return payload.data.port.id === filters.portFilter;
@@ -166,7 +188,10 @@ export function useReportInfinite(filters: ReportFilters, ready = true) {
     (pageIndex: number, previousPageData: ReportPage | null) => {
       if (!enabled) return null;
       if (previousPageData && !previousPageData.has_more) return null;
-      return [...swrKeys.reportInfinite(filters.tab, paramsKey), pageIndex + 1] as const;
+      return [
+        ...swrKeys.reportInfinite(filters.tab, paramsKey),
+        pageIndex + 1,
+      ] as const;
     },
     [enabled, filters.tab, paramsKey],
   );

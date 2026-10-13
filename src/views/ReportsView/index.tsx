@@ -157,13 +157,12 @@ export default function ReportsView() {
   const showCarrierFilters =
     tab === "solicitudes_port" ||
     tab === "carrier_panorama" ||
-    tab === "port_trends";
-  const { lines: shippingLines } = useActiveShippingLinesCatalog(
-    showCarrierFilters,
-  );
-  const { groups: shippingLineGroups } = useShippingLineGroupsCatalog(
-    showCarrierFilters,
-  );
+    tab === "port_trends" ||
+    tab === "port_carrier";
+  const { lines: shippingLines } =
+    useActiveShippingLinesCatalog(showCarrierFilters);
+  const { groups: shippingLineGroups } =
+    useShippingLineGroupsCatalog(showCarrierFilters);
   const ready = !portsLoading;
 
   // Derive groups from lines when URL only had shipping_lines.
@@ -197,10 +196,8 @@ export default function ReportsView() {
     totalCount,
   } = useReportInfinite(appliedFilters, ready);
 
-  const portsTotals =
-    payload?.tab === "ports_totals" ? payload.data : null;
-  const portCarrier =
-    payload?.tab === "port_carrier" ? payload.data : null;
+  const portsTotals = payload?.tab === "ports_totals" ? payload.data : null;
+  const portCarrier = payload?.tab === "port_carrier" ? payload.data : null;
   const portTrends = payload?.tab === "port_trends" ? payload.data : null;
 
   useEffect(() => {
@@ -216,9 +213,7 @@ export default function ReportsView() {
     let cancelled = false;
     void suggestBookingTags("", 50).then((rows) => {
       if (cancelled) return;
-      setTagOptions(
-        rows.map((t) => ({ value: t.id, label: t.name })),
-      );
+      setTagOptions(rows.map((t) => ({ value: t.id, label: t.name })));
     });
     return () => {
       cancelled = true;
@@ -356,7 +351,8 @@ export default function ReportsView() {
       buildReportsActiveFilterChips({
         tab: appliedFilters.tab,
         portLabel:
-          appliedFilters.tab === "carrier_panorama"
+          appliedFilters.tab === "carrier_panorama" ||
+          appliedFilters.tab === "ports_totals"
             ? appliedFilters.portIds.length === 0
               ? null
               : appliedFilters.portIds.length === 1
@@ -456,25 +452,29 @@ export default function ReportsView() {
               appliedFilters.paxBasis !== "planned"
             );
           })()
-      : tab === "solicitudes_port"
-        ? portFilter > 0 ||
-          withoutLta ||
-          paxBasis !== "planned" ||
-          years.length > 0 ||
-          tagIds.length > 0 ||
-          shippingLineGroupIds.length > 0 ||
-          shippingLineIds.length > 0
-        : dateFrom !== defaultDateFrom ||
-          dateTo !== defaultDateTo ||
-          portFilter > 0 ||
-          (tab === "carrier_panorama" && portIds.length > 0) ||
-          withoutLta ||
-          paxBasis !== "planned" ||
-          (tab === "carrier_panorama" && season !== "natural") ||
-          years.length > 0 ||
-          tagIds.length > 0 ||
-          shippingLineGroupIds.length > 0 ||
-          shippingLineIds.length > 0;
+        : tab === "solicitudes_port"
+          ? portFilter > 0 ||
+            withoutLta ||
+            paxBasis !== "planned" ||
+            years.length > 0 ||
+            tagIds.length > 0 ||
+            shippingLineGroupIds.length > 0 ||
+            shippingLineIds.length > 0
+          : dateFrom !== defaultDateFrom ||
+            dateTo !== defaultDateTo ||
+            portFilter > 0 ||
+            ((tab === "carrier_panorama" || tab === "ports_totals") &&
+              portIds.length > 0) ||
+            withoutLta ||
+            paxBasis !== "planned" ||
+            ((tab === "carrier_panorama" ||
+              tab === "ports_totals" ||
+              tab === "port_carrier") &&
+              season !== "natural") ||
+            years.length > 0 ||
+            tagIds.length > 0 ||
+            shippingLineGroupIds.length > 0 ||
+            shippingLineIds.length > 0;
 
   const canApplyFilters =
     dateFrom !== appliedFilters.dateFrom ||
@@ -488,7 +488,10 @@ export default function ReportsView() {
     years.join(",") !== appliedFilters.years.join(",") ||
     week !== appliedFilters.week ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
-    !sameNumberList(shippingLineGroupIds, appliedFilters.shippingLineGroupIds) ||
+    !sameNumberList(
+      shippingLineGroupIds,
+      appliedFilters.shippingLineGroupIds,
+    ) ||
     !sameNumberList(shippingLineIds, appliedFilters.shippingLineIds);
 
   // Year-driven tabs: don't treat draft date drift as dirty.
@@ -501,7 +504,10 @@ export default function ReportsView() {
     years.join(",") !== appliedFilters.years.join(",") ||
     week !== appliedFilters.week ||
     tagIds.join(",") !== appliedFilters.tagIds.join(",") ||
-    !sameNumberList(shippingLineGroupIds, appliedFilters.shippingLineGroupIds) ||
+    !sameNumberList(
+      shippingLineGroupIds,
+      appliedFilters.shippingLineGroupIds,
+    ) ||
     !sameNumberList(shippingLineIds, appliedFilters.shippingLineIds);
 
   const canApply =
@@ -598,6 +604,11 @@ export default function ReportsView() {
             date_to: appliedDateTo,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
+            ports:
+              appliedFilters.portIds.length > 0
+                ? appliedFilters.portIds
+                : undefined,
+            season: appliedFilters.season,
             exportFormat: format,
           });
           return;
@@ -614,6 +625,16 @@ export default function ReportsView() {
             port: appliedPortFilter,
             without_lta: appliedWithoutLta,
             pax_basis: appliedPaxBasis,
+            season: appliedFilters.season,
+            shipping_lines:
+              appliedShippingLineIds.length > 0
+                ? appliedShippingLineIds
+                : undefined,
+            shipping_line_groups:
+              appliedShippingLineIds.length === 0 &&
+              appliedShippingLineGroupIds.length > 0
+                ? appliedShippingLineGroupIds
+                : undefined,
             exportFormat: format,
           });
           return;
@@ -627,7 +648,9 @@ export default function ReportsView() {
             !appliedShippingLineIds.length &&
             !appliedShippingLineGroupIds.length
           ) {
-            setError("Selecciona un grupo de naviera o una naviera para exportar.");
+            setError(
+              "Selecciona un grupo de naviera o una naviera para exportar.",
+            );
             return;
           }
           await exportStructuredReport({
@@ -741,6 +764,9 @@ export default function ReportsView() {
     tab !== "booking_movements" &&
     tab !== "weekly_report" &&
     tab !== "carrier_panorama";
+  const showMultiPortFilter =
+    tab === "ports_totals" || tab === "carrier_panorama";
+  const showSeasonFilter = tab === "ports_totals" || tab === "carrier_panorama";
   const portRequired =
     tab === "port_carrier" ||
     tab === "port_trends" ||
@@ -803,9 +829,7 @@ export default function ReportsView() {
             options={portOptions}
             loadOptions={loadPortOptions}
             optionLabel={
-              portRequired
-                ? "Selecciona un puerto"
-                : "Todos los puertos"
+              portRequired ? "Selecciona un puerto" : "Todos los puertos"
             }
             emptyValue={0}
             compact
@@ -813,7 +837,7 @@ export default function ReportsView() {
             logoKind="port"
           />
         ) : null}
-        {tab === "carrier_panorama" ? (
+        {showMultiPortFilter ? (
           <FormFieldMultiSelect<number>
             label="Puerto"
             name="report_ports"
@@ -862,7 +886,7 @@ export default function ReportsView() {
             />
           </>
         ) : null}
-        {tab === "carrier_panorama" ? (
+        {showSeasonFilter ? (
           <FormFieldSelect<ReportSeason>
             label="Temporada"
             name="report_season"
@@ -1071,7 +1095,8 @@ export default function ReportsView() {
           loadedCount={loadedCount}
           totalCount={totalCount}
         />
-      ) : appliedFilters.tab === "port_carrier" && !appliedFilters.portFilter ? (
+      ) : appliedFilters.tab === "port_carrier" &&
+        !appliedFilters.portFilter ? (
         <ReportsEmptyState variant="missing_port_carrier" />
       ) : appliedFilters.tab === "port_carrier" && portCarrier ? (
         <PortCarrierMatrixSection

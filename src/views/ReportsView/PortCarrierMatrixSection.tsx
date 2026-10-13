@@ -54,6 +54,7 @@ export default function PortCarrierMatrixSection({
       <ReportDualMatrix
         monthLabels={data.month_labels}
         sections={data.sections}
+        rowLabelHeader={data.row_label_header ?? "Año"}
       />
       <InfiniteScrollFooter
         hasMore={hasMore}

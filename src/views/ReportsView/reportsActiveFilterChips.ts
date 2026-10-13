@@ -146,7 +146,9 @@ export function buildReportsActiveFilterChips(input: {
   }
 
   if (
-    input.tab === "carrier_panorama" &&
+    (input.tab === "carrier_panorama" ||
+      input.tab === "ports_totals" ||
+      input.tab === "port_carrier") &&
     input.season &&
     input.season !== "natural"
   ) {
@@ -207,13 +209,16 @@ export function reportsHasActiveFilters(input: {
       (input.shippingLineIds?.length ?? 0) > 0
     );
   }
+  const multiPortTab =
+    input.tab === "carrier_panorama" || input.tab === "ports_totals";
+  const seasonTab =
+    multiPortTab || input.tab === "port_carrier";
   return (
     input.portFilter > 0 ||
-    (input.tab === "carrier_panorama" && (input.portIds?.length ?? 0) > 0) ||
+    (multiPortTab && (input.portIds?.length ?? 0) > 0) ||
     input.withoutLta ||
     input.paxBasis !== "planned" ||
-    (input.tab === "carrier_panorama" &&
-      Boolean(input.season && input.season !== "natural")) ||
+    (seasonTab && Boolean(input.season && input.season !== "natural")) ||
     (input.years?.length ?? 0) > 0 ||
     (input.tagIds?.length ?? 0) > 0 ||
     (input.shippingLineIds?.length ?? 0) > 0 ||
