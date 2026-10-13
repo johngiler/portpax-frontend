@@ -1,5 +1,8 @@
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import type { DashboardCarrierFilter } from "@/types/dashboard";
+import {
+  dashboardCarrierIsAll,
+  type DashboardCarrierFilter,
+} from "@/types/dashboard";
 import type { ActiveFilterChip } from "@/views/BookingsView/bookingsActiveFilterChips";
 import type { ReportPaxBasis } from "@/views/ReportsView/reportsFilterQuery";
 
@@ -82,7 +85,7 @@ export function dashboardHasActiveFilters(input: {
 }): boolean {
   return (
     input.portIds.length > 0 ||
-    input.carrier.type !== "all" ||
+    !dashboardCarrierIsAll(input.carrier) ||
     input.dateFrom !== input.defaultDateFrom ||
     input.dateTo !== input.defaultDateTo ||
     Boolean(input.withoutLta) ||
@@ -96,4 +99,21 @@ export function dashboardTitleYear(dateFrom: string, dateTo: string): string {
   if (!fromYear || !toYear) return "";
   if (fromYear === toYear) return String(fromYear);
   return `${fromYear}–${toYear}`;
+}
+
+export function sameNumberList(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const left = [...a].sort((x, y) => x - y);
+  const right = [...b].sort((x, y) => x - y);
+  return left.every((value, index) => value === right[index]);
+}
+
+export function sameCarrierFilter(
+  a: DashboardCarrierFilter,
+  b: DashboardCarrierFilter,
+): boolean {
+  return (
+    sameNumberList(a.groupIds, b.groupIds) &&
+    sameNumberList(a.lineIds, b.lineIds)
+  );
 }

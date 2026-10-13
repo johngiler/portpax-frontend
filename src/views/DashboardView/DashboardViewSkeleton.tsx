@@ -4,6 +4,34 @@ import { LayoutDashboard } from "lucide-react";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import Skeleton from "@/components/ui/Skeleton";
 
+export function DashboardKpiCardsSkeleton() {
+  return (
+    <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Skeleton key={`kpi-${index}`} className="h-[150px] rounded-2xl" />
+      ))}
+    </div>
+  );
+}
+
+export function DashboardBodySkeleton() {
+  return (
+    <>
+      <Skeleton className="mb-6 h-64 w-full rounded-2xl" />
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+      <Skeleton className="mb-6 h-56 w-full rounded-2xl" />
+      <div className="grid gap-5 lg:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={`chart-${index}`} className="h-64 rounded-2xl" />
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function DashboardViewSkeleton({
   title = "Dashboard",
 }: {
@@ -16,21 +44,8 @@ export default function DashboardViewSkeleton({
         title={title}
         description="KPIs operativos del período, arribos de la semana, conflictos y ocupación por puerto."
       />
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Skeleton key={`kpi-${index}`} className="h-[150px] rounded-2xl" />
-        ))}
-      </div>
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-64 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
-      </div>
-      <Skeleton className="mb-6 h-56 w-full rounded-2xl" />
-      <div className="grid gap-5 lg:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={`chart-${index}`} className="h-64 rounded-2xl" />
-        ))}
-      </div>
+      <DashboardKpiCardsSkeleton />
+      <DashboardBodySkeleton />
     </>
   );
 }

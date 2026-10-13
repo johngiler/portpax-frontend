@@ -1195,8 +1195,7 @@ export type FetchDashboardStatsParams = {
   date_from: string;
   date_to: string;
   ports?: number[];
-  shipping_line?: number;
-  shipping_line_group?: number;
+  shipping_lines?: number[];
   shipping_line_groups?: number[];
   without_lta?: boolean;
   pax_basis?: "planned" | "capacity";
@@ -1211,12 +1210,11 @@ export async function fetchDashboardStats(
   if (params.ports && params.ports.length > 0) {
     query.set("port", params.ports.join(","));
   }
-  if (params.shipping_line)
-    query.set("shipping_line", String(params.shipping_line));
+  if (params.shipping_lines && params.shipping_lines.length > 0) {
+    query.set("shipping_line", params.shipping_lines.join(","));
+  }
   if (params.shipping_line_groups && params.shipping_line_groups.length > 0) {
     query.set("shipping_line_group", params.shipping_line_groups.join(","));
-  } else if (params.shipping_line_group) {
-    query.set("shipping_line_group", String(params.shipping_line_group));
   }
   if (params.without_lta) query.set("without_lta", "true");
   if (params.pax_basis && params.pax_basis !== "planned") {

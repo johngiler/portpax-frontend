@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, Gauge, LayoutDashboard, Medal, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardList,
+  Gauge,
+  LayoutDashboard,
+  Medal,
+  Ship,
+  Users,
+} from "lucide-react";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewFilteredBanner from "@/components/layout/ViewFilteredBanner";
@@ -16,19 +24,28 @@ import { useDashboardStats } from "@/hooks/swr/useDashboardStats";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { toIsoDate } from "@/lib/bookingDates";
 import { portDisplayName } from "@/types/catalog";
-import type { DashboardCarrierFilter } from "@/types/dashboard";
+import {
+  EMPTY_DASHBOARD_CARRIER,
+  type DashboardCarrierFilter,
+} from "@/types/dashboard";
 import DashboardCharts from "./DashboardCharts";
 import DashboardFilters from "./DashboardFilters";
 import DashboardOccupancyByPort from "./DashboardOccupancyByPort";
 import DashboardPeakPaxByPortCard from "./DashboardPeakPaxByPortCard";
 import DashboardPendingConfirmCard from "./DashboardPendingConfirmCard";
-import DashboardViewSkeleton from "./DashboardViewSkeleton";
+import DashboardViewSkeleton, {
+  DashboardBodySkeleton,
+  DashboardKpiCardsSkeleton,
+} from "./DashboardViewSkeleton";
 import DashboardWeekArrivalsCard from "./DashboardWeekArrivalsCard";
+import DashboardYearBreakdown from "./DashboardYearBreakdown";
 import DashboardYoyBadge from "./DashboardYoyBadge";
 import {
   buildDashboardActiveFilterChips,
   dashboardHasActiveFilters,
   dashboardTitleYear,
+  sameCarrierFilter,
+  sameNumberList,
 } from "./dashboardActiveFilterChips";
 import { dashboardBookingsHref } from "./dashboardBookingsHref";
 import { formatCompactNumber, formatYoyBadge } from "./formatDashboardKpi";
@@ -42,11 +59,12 @@ function defaultYearRange(): { from: string; to: string } {
   };
 }
 
-function sameNumberList(a: number[], b: number[]): boolean {
-  if (a.length !== b.length) return false;
-  const sortedA = [...a].sort((x, y) => x - y);
-  const sortedB = [...b].sort((x, y) => x - y);
-  return sortedA.every((value, index) => value === sortedB[index]);
+function formatAvgPax(value: number): string {
+  if (!value) return "0";
+  return value.toLocaleString("es", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+  });
 }
 
 export default function DashboardView() {
@@ -65,9 +83,9 @@ export default function DashboardView() {
   const [selectedPortIds, setSelectedPortIds] = useState<number[]>([]);
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
-  const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>({
-    type: "all",
-  });
+  const [carrierFilter, setCarrierFilter] = useState<DashboardCarrierFilter>(
+    EMPTY_DASHBOARD_CARRIER,
+  );
   const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>("planned");
   const [withoutLta, setWithoutLta] = useState(false);
   const [appliedSelectedPortIds, setAppliedSelectedPortIds] = useState<number[]>(
@@ -76,7 +94,7 @@ export default function DashboardView() {
   const [appliedDateFrom, setAppliedDateFrom] = useState(defaults.from);
   const [appliedDateTo, setAppliedDateTo] = useState(defaults.to);
   const [appliedCarrierFilter, setAppliedCarrierFilter] =
-    useState<DashboardCarrierFilter>({ type: "all" });
+    useState<DashboardCarrierFilter>(EMPTY_DASHBOARD_CARRIER);
   const [appliedPaxBasis, setAppliedPaxBasis] =
     useState<ReportPaxBasis>("planned");
   const [appliedWithoutLta, setAppliedWithoutLta] = useState(false);
@@ -124,19 +142,26 @@ export default function DashboardView() {
           ? (portsById.get(appliedSelectedPortIds[0]) ?? null)
           : `${portsById.get(appliedSelectedPortIds[0]) ?? "Puerto"} +${appliedSelectedPortIds.length - 1}`;
 
+    const groupIds = appliedCarrierFilter.groupIds;
+    const lineIds = appliedCarrierFilter.lineIds;
     let shippingLineGroupLabel: string | null = null;
     let carrierLabel: string | null = null;
-    if (appliedCarrierFilter.type === "line") {
-      const line = lines.find((row) => row.id === appliedCarrierFilter.id);
+    if (lineIds.length === 1) {
+      const line = lines.find((row) => row.id === lineIds[0]);
       carrierLabel = line?.name ?? null;
       shippingLineGroupLabel =
         line?.group_name?.trim() ||
         groups.find((group) => group.id === line?.group)?.name ||
         null;
-    } else if (appliedCarrierFilter.type === "group") {
+    } else if (lineIds.length > 1) {
+      const first = lines.find((row) => row.id === lineIds[0]);
+      carrierLabel = `${first?.name ?? "Naviera"} +${lineIds.length - 1}`;
+    } else if (groupIds.length === 1) {
       shippingLineGroupLabel =
-        groups.find((group) => group.id === appliedCarrierFilter.id)?.name ??
-        null;
+        groups.find((group) => group.id === groupIds[0])?.name ?? null;
+    } else if (groupIds.length > 1) {
+      const first = groups.find((group) => group.id === groupIds[0]);
+      shippingLineGroupLabel = `${first?.name ?? "Grupo"} +${groupIds.length - 1}`;
     }
 
     return buildDashboardActiveFilterChips({
@@ -179,10 +204,11 @@ export default function DashboardView() {
     }
   }, [catalogError, statsError]);
 
-  if (!catalogReady || (isLoading && !stats)) {
+  if (!catalogReady) {
     return <DashboardViewSkeleton title={dashboardTitle} />;
   }
 
+  const statsLoading = isLoading || !stats;
   const kpis = stats?.kpis;
   const linkBase = {
     dateFrom: appliedDateFrom,
@@ -210,17 +236,16 @@ export default function DashboardView() {
   }
 
   function clearFilters() {
-    const allCarriers: DashboardCarrierFilter = { type: "all" };
     setSelectedPortIds([]);
     setDateFrom(defaults.from);
     setDateTo(defaults.to);
-    setCarrierFilter(allCarriers);
+    setCarrierFilter(EMPTY_DASHBOARD_CARRIER);
     setPaxBasis("planned");
     setWithoutLta(false);
     setAppliedSelectedPortIds([]);
     setAppliedDateFrom(defaults.from);
     setAppliedDateTo(defaults.to);
-    setAppliedCarrierFilter(allCarriers);
+    setAppliedCarrierFilter(EMPTY_DASHBOARD_CARRIER);
     setAppliedPaxBasis("planned");
     setAppliedWithoutLta(false);
     setViewError(null);
@@ -230,10 +255,7 @@ export default function DashboardView() {
     !sameNumberList(selectedPortIds, appliedSelectedPortIds) ||
     dateFrom !== appliedDateFrom ||
     dateTo !== appliedDateTo ||
-    carrierFilter.type !== appliedCarrierFilter.type ||
-    (carrierFilter.type !== "all" &&
-      appliedCarrierFilter.type !== "all" &&
-      carrierFilter.id !== appliedCarrierFilter.id) ||
+    !sameCarrierFilter(carrierFilter, appliedCarrierFilter) ||
     paxBasis !== appliedPaxBasis ||
     withoutLta !== appliedWithoutLta;
 
@@ -278,8 +300,10 @@ export default function DashboardView() {
         <ViewErrorBanner message={viewError} onDismiss={() => setViewError(null)} />
       )}
 
-      {kpis && stats ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {statsLoading ? <DashboardKpiCardsSkeleton /> : null}
+
+      {!statsLoading && kpis && stats ? (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <ViewStatCard
             label="Ocupación"
             value={`${kpis.occupancy_pct}%`}
@@ -288,7 +312,13 @@ export default function DashboardView() {
             accentColor="#3478b5"
             gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
             badge={
-              stats.yoy.occupancy ? (
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) => `${row.occupancy_pct ?? 0}%`}
+                  yoyKey="occupancy_yoy_pct"
+                />
+              ) : stats.yoy.occupancy ? (
                 <DashboardYoyBadge badge={formatYoyBadge(stats.yoy.occupancy)} />
               ) : undefined
             }
@@ -311,7 +341,17 @@ export default function DashboardView() {
             icon={Users}
             accentColor="#0d9488"
             gradient="linear-gradient(160deg, rgba(13, 148, 136, 0.14) 0%, var(--background) 55%)"
-            badge={<DashboardYoyBadge badge={formatYoyBadge(stats.yoy.planned_pax)} />}
+            badge={
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) => formatCompactNumber(row.planned_pax)}
+                  yoyKey="pax_yoy_pct"
+                />
+              ) : (
+                <DashboardYoyBadge badge={formatYoyBadge(stats.yoy.planned_pax)} />
+              )
+            }
             href={bookingsListHref}
           />
           <ViewStatCard
@@ -325,7 +365,42 @@ export default function DashboardView() {
             icon={ClipboardList}
             accentColor="#3478b5"
             gradient="linear-gradient(160deg, rgba(52, 120, 181, 0.14) 0%, var(--background) 55%)"
-            badge={<DashboardYoyBadge badge={formatYoyBadge(stats.yoy.calls)} />}
+            badge={
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) => row.bookings.toLocaleString("es")}
+                  yoyKey="bookings_yoy_pct"
+                />
+              ) : (
+                <DashboardYoyBadge badge={formatYoyBadge(stats.yoy.calls)} />
+              )
+            }
+            href={bookingsListHref}
+          />
+          <ViewStatCard
+            label="Promedio PAX/arribo"
+            value={formatAvgPax(kpis.avg_pax_per_call ?? 0)}
+            description={
+              appliedPaxBasis === "capacity"
+                ? "Cap. máx. / arribos activos"
+                : "Planificados / arribos activos"
+            }
+            icon={Ship}
+            accentColor="#64748b"
+            gradient="linear-gradient(160deg, rgba(100, 116, 139, 0.14) 0%, var(--background) 55%)"
+            badge={
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) => formatAvgPax(row.avg_pax_per_call)}
+                />
+              ) : stats.yoy.avg_pax_per_call ? (
+                <DashboardYoyBadge
+                  badge={formatYoyBadge(stats.yoy.avg_pax_per_call)}
+                />
+              ) : undefined
+            }
             href={bookingsListHref}
           />
           <ViewStatCard
@@ -342,6 +417,17 @@ export default function DashboardView() {
               firstArrivalsCount > 0
                 ? "linear-gradient(160deg, rgba(202, 138, 4, 0.16) 0%, var(--background) 55%)"
                 : "linear-gradient(160deg, rgba(113, 113, 122, 0.12) 0%, var(--background) 55%)"
+            }
+            badge={
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) =>
+                    (row.first_arrivals ?? 0).toLocaleString("es")
+                  }
+                  yoyKey="first_arrivals_yoy_pct"
+                />
+              ) : undefined
             }
             href={bookingsFirstArrivalHref}
           />
@@ -364,12 +450,25 @@ export default function DashboardView() {
                 ? "linear-gradient(160deg, rgba(217, 119, 6, 0.16) 0%, var(--background) 55%)"
                 : "linear-gradient(160deg, rgba(113, 113, 122, 0.12) 0%, var(--background) 55%)"
             }
+            badge={
+              (kpis.by_year?.length ?? 0) > 1 ? (
+                <DashboardYearBreakdown
+                  years={kpis.by_year ?? []}
+                  formatValue={(row) =>
+                    (row.conflicts ?? 0).toLocaleString("es")
+                  }
+                  yoyKey="conflicts_yoy_pct"
+                />
+              ) : undefined
+            }
             href={bookingsConflictHref}
           />
         </div>
       ) : null}
 
-      {stats ? (
+      {statsLoading ? (
+        <DashboardBodySkeleton />
+      ) : stats ? (
         <>
           <div className="mb-6">
             <DashboardWeekArrivalsCard

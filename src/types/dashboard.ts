@@ -11,9 +11,30 @@ export type DashboardKpis = {
   c: number;
   planned_pax: number;
   actual_pax: number;
+  avg_pax_per_call?: number;
   ports_count: number;
   /** Bookings with first_arrival=True in the period (CO/CL/R debuts). */
   first_arrivals?: number;
+  /** Present when the date range spans more than one calendar year. */
+  by_year?: DashboardKpiYearRow[];
+};
+
+export type DashboardKpiYearRow = {
+  year: number;
+  bookings: number;
+  calls: number;
+  planned_pax: number;
+  avg_pax_per_call: number;
+  occupancy_pct?: number;
+  occupied_slot_days?: number;
+  capacity_slot_days?: number;
+  first_arrivals?: number;
+  conflicts?: number;
+  bookings_yoy_pct: number | null;
+  pax_yoy_pct: number | null;
+  occupancy_yoy_pct?: number | null;
+  first_arrivals_yoy_pct?: number | null;
+  conflicts_yoy_pct?: number | null;
 };
 
 export type DashboardNamedCount = {
@@ -84,6 +105,7 @@ export type DashboardYoy = {
   prior_date_to: string;
   calls: DashboardYoyMetric;
   planned_pax: DashboardYoyMetric;
+  avg_pax_per_call?: DashboardYoyMetric;
   occupancy: DashboardYoyMetric;
 };
 
@@ -243,7 +265,17 @@ export type DashboardStats = {
   status_breakdown: DashboardStatusSlice[];
 };
 
-export type DashboardCarrierFilter =
-  | { type: "all" }
-  | { type: "group"; id: number }
-  | { type: "line"; id: number };
+/** Empty arrays = all carriers. Lines win over groups when both are set. */
+export type DashboardCarrierFilter = {
+  groupIds: number[];
+  lineIds: number[];
+};
+
+export const EMPTY_DASHBOARD_CARRIER: DashboardCarrierFilter = {
+  groupIds: [],
+  lineIds: [],
+};
+
+export function dashboardCarrierIsAll(filter: DashboardCarrierFilter): boolean {
+  return filter.groupIds.length === 0 && filter.lineIds.length === 0;
+}

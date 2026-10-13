@@ -7,7 +7,10 @@ import { FormField, FormFieldMultiSelect, FormFieldSelect } from "@/components/u
 import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import { portDisplayName, type Port } from "@/types/catalog";
 import type { ShippingLine, ShippingLineGroup } from "@/types/cruise";
-import type { DashboardCarrierFilter } from "@/types/dashboard";
+import {
+  dashboardCarrierIsAll,
+  type DashboardCarrierFilter,
+} from "@/types/dashboard";
 import {
   REPORT_PAX_BASIS_OPTIONS,
   type ReportPaxBasis,
@@ -36,21 +39,6 @@ type DashboardFiltersProps = {
   onClear: () => void;
 };
 
-function carrierGroupId(
-  filter: DashboardCarrierFilter,
-  lines: ShippingLine[],
-): number {
-  if (filter.type === "group") return filter.id;
-  if (filter.type === "line") {
-    return lines.find((line) => line.id === filter.id)?.group ?? 0;
-  }
-  return 0;
-}
-
-function carrierLineId(filter: DashboardCarrierFilter): number {
-  return filter.type === "line" ? filter.id : 0;
-}
-
 export default function DashboardFilters({
   ports,
   groups,
@@ -73,9 +61,6 @@ export default function DashboardFilters({
   onApply,
   onClear,
 }: DashboardFiltersProps) {
-  const shippingLineGroupId = carrierGroupId(carrierFilter, lines);
-  const shippingLineId = carrierLineId(carrierFilter);
-
   const portOptions = useMemo(
     () =>
       ports.map((port) => ({
@@ -99,20 +84,21 @@ export default function DashboardFilters({
 
   const lineOptions = useMemo(() => {
     const active = lines.filter((line) => line.is_active);
+    const groupSet = new Set(carrierFilter.groupIds);
     const scoped =
-      shippingLineGroupId > 0
-        ? active.filter((line) => line.group === shippingLineGroupId)
+      groupSet.size > 0
+        ? active.filter((line) => groupSet.has(line.group))
         : active;
     return scoped.map((line) => ({
       value: line.id,
       label: line.name,
       logoUrl: line.logo,
     }));
-  }, [lines, shippingLineGroupId]);
+  }, [lines, carrierFilter.groupIds]);
 
   const canClear =
     selectedPortIds.length > 0 ||
-    carrierFilter.type !== "all" ||
+    !dashboardCarrierIsAll(carrierFilter) ||
     dateFrom !== defaultDateFrom ||
     dateTo !== defaultDateTo ||
     paxBasis !== "planned" ||
@@ -134,24 +120,15 @@ export default function DashboardFilters({
     }
   }
 
-  function handleGroupChange(value: number) {
-    if (value <= 0) {
-      onCarrierChange({ type: "all" });
-      return;
-    }
-    onCarrierChange({ type: "group", id: value });
+  function handleGroupChange(ids: number[]) {
+    onCarrierChange({ groupIds: ids, lineIds: [] });
   }
 
-  function handleLineChange(value: number) {
-    if (value > 0) {
-      onCarrierChange({ type: "line", id: value });
-      return;
-    }
-    if (shippingLineGroupId > 0) {
-      onCarrierChange({ type: "group", id: shippingLineGroupId });
-      return;
-    }
-    onCarrierChange({ type: "all" });
+  function handleLineChange(ids: number[]) {
+    onCarrierChange({
+      groupIds: carrierFilter.groupIds,
+      lineIds: ids,
+    });
   }
 
   return (
@@ -167,32 +144,30 @@ export default function DashboardFilters({
         options={portOptions}
         placeholder="Todos los puertos"
       />
-      <FormFieldSelect<number>
+      <FormFieldMultiSelect<number>
         label="Grupo de naviera"
         name="dashboard_shipping_line_group"
         compact
-        value={shippingLineGroupId}
-        onChange={(v) => handleGroupChange(Number(v))}
+        value={carrierFilter.groupIds}
+        onChange={handleGroupChange}
         options={groupOptions}
-        optionLabel="Todos los grupos"
-        emptyValue={0}
+        placeholder="Todos los grupos"
       />
-      <FormFieldSelect<number>
+      <FormFieldMultiSelect<number>
         label="Naviera"
         name="dashboard_shipping_line"
         compact
         showLogo
         logoKind="shipping_line"
-        value={shippingLineId}
-        onChange={(v) => handleLineChange(Number(v))}
+        value={carrierFilter.lineIds}
+        onChange={handleLineChange}
         options={lineOptions}
-        optionLabel={
-          shippingLineGroupId > 0
-            ? "Todas las navieras"
+        placeholder={
+          carrierFilter.groupIds.length > 0
+            ? "Todas las navieras del grupo"
             : "Elige un grupo primero"
         }
-        emptyValue={0}
-        disabled={shippingLineGroupId <= 0}
+        disabled={carrierFilter.groupIds.length === 0}
       />
       <FormFieldSelect<ReportPaxBasis>
         label="Base PAX"
