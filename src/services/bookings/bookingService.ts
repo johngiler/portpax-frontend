@@ -839,9 +839,17 @@ export type CarrierPanoramaReport = {
     total_pax: number;
     ports_with_calls: number;
     ports_total: number;
+    avg_pax_per_call: number;
+    /** Present when the date range spans more than one calendar year. */
+    by_year?: Array<{
+      year: number;
+      calls: number;
+      pax: number;
+      avg_pax_per_call: number;
+      calls_yoy_pct: number | null;
+      pax_yoy_pct: number | null;
+    }>;
   };
-  /** Set when a carrier filter is applied; market outside the selection. */
-  others?: { total_calls: number; total_pax: number } | null;
   port_share: CarrierPanoramaShare[];
   rows: CarrierPanoramaPortRow[];
   totals: {

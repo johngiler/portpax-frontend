@@ -109,8 +109,8 @@ export function ReportTrendsContentSkeleton() {
 export function CarrierPanoramaContentSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 3 }).map((_, index) => (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
             className="min-h-[130px] rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/80"

@@ -69,6 +69,6 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Arribos y PAX por puerto y año, con KPIs y pastel de participación.",
     notes:
-      "Filtros: puertos (varios; por defecto todos), grupo, naviera, Temporada (año natural / Summer / Winter), Base PAX, Sin LTA y rango de fechas. El pastel reemplaza el KPI de puerto con mayor participación. Exporta PDF / Excel / CSV.",
+      "Filtros: puertos (varios; por defecto todos), grupo, naviera, Temporada (año natural / Summer / Winter), Base PAX, Sin LTA y rango de fechas. Incluye promedio PAX/arribo; si el rango cubre más de un año calendario, desglosa KPIs por año con YoY. Exporta PDF / Excel / CSV.",
   },
 ];
