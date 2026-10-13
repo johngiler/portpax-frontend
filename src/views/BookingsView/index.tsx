@@ -551,15 +551,11 @@ export default function BookingsView() {
       call_dates: availabilityDateAllowlist?.length
         ? availabilityDateAllowlist
         : undefined,
+      // Matched recap rows only — portpax_only stays in the info block, not the list/bulk edit.
       ids: bookingRecap
-        ? (() => {
-            const matchedIds = bookingRecap.matches.map((row) => row.booking_id);
-            const onlyIds = (bookingRecap.portpax_only ?? []).map(
-              (row) => row.booking_id,
-            );
-            const merged = [...matchedIds, ...onlyIds];
-            return merged.length > 0 ? merged : [0];
-          })()
+        ? bookingRecap.matches.length > 0
+          ? bookingRecap.matches.map((row) => row.booking_id)
+          : [0]
         : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
