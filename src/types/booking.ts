@@ -19,6 +19,14 @@ export type BookingListStatusFilter =
 /** Multi-select status filter values (empty array = all statuses). */
 export type BookingStatusFilterValue = Exclude<BookingListStatusFilter, "">;
 
+/** Default list filter: En evaluación, Confirmada, Confirmada LTA, Real. */
+export const DEFAULT_BOOKINGS_LIST_STATUSES: BookingStatusFilterValue[] = [
+  "h",
+  "co",
+  "cl",
+  "r",
+];
+
 export type BookingBadgeStatus = BookingStatus;
 
 export type BookingAuditEntry = {

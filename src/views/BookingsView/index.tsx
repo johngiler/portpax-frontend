@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Plus, Tags } from "lucide-react";
+import { CalendarDays, Plus, Ship, Tags, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
@@ -73,6 +73,7 @@ import { portDisplayName } from "@/types/catalog";
 import {
   bookingDetailHref,
   bookingStatusFiltersEqual,
+  DEFAULT_BOOKINGS_LIST_STATUSES,
   isBookingMassEditable,
   type BookingStatusFilterValue,
   type CancellationReason,
@@ -205,11 +206,11 @@ export default function BookingsView() {
 
   const [tab, setTab] = useState<BookingsTabQuery>("list");
   const [statusFilter, setStatusFilter] = useState<BookingStatusFilterValue[]>(
-    [],
+    () => [...DEFAULT_BOOKINGS_LIST_STATUSES],
   );
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<
     BookingStatusFilterValue[]
-  >([]);
+  >(() => [...DEFAULT_BOOKINGS_LIST_STATUSES]);
   const [conflictFilter, setConflictFilter] = useState<ConflictFilterValue>("");
   const [appliedConflictFilter, setAppliedConflictFilter] =
     useState<ConflictFilterValue>("");
@@ -659,6 +660,7 @@ export default function BookingsView() {
   const {
     bookings,
     totalCount,
+    totalPlannedPax,
     hasMore,
     isLoading: loading,
     loadingMore,
@@ -874,8 +876,8 @@ export default function BookingsView() {
     const tags = [tagId];
     setTagsModalOpen(false);
     setTab("list");
-    setStatusFilter([]);
-    setAppliedStatusFilter([]);
+    setStatusFilter([...DEFAULT_BOOKINGS_LIST_STATUSES]);
+    setAppliedStatusFilter([...DEFAULT_BOOKINGS_LIST_STATUSES]);
     setConflictFilter("");
     setAppliedConflictFilter("");
     setFirstArrival(false);
@@ -911,7 +913,7 @@ export default function BookingsView() {
     setAvailabilityDateAllowlist(null);
     syncToUrl({
       tab: "list",
-      status: [],
+      status: [...DEFAULT_BOOKINGS_LIST_STATUSES],
       search: "",
       ports: [],
       groups: [],
@@ -945,8 +947,8 @@ export default function BookingsView() {
     const y = new Date().getFullYear();
     const m = new Date().getMonth();
     const clearedConflict = "";
-    setStatusFilter([]);
-    setAppliedStatusFilter([]);
+    setStatusFilter([...DEFAULT_BOOKINGS_LIST_STATUSES]);
+    setAppliedStatusFilter([...DEFAULT_BOOKINGS_LIST_STATUSES]);
     setConflictFilter(clearedConflict);
     setAppliedConflictFilter(clearedConflict);
     setFirstArrival(false);
@@ -992,7 +994,7 @@ export default function BookingsView() {
     setAppliedMonthIndex(m);
     syncToUrl({
       tab,
-      status: [],
+      status: [...DEFAULT_BOOKINGS_LIST_STATUSES],
       search: "",
       ports,
       groups: [],
@@ -1036,13 +1038,23 @@ export default function BookingsView() {
   const gapsViewActive =
     tab === "availability" && appliedHeatMode === "availability";
 
+  const statusFilterIsDefault = bookingStatusFiltersEqual(
+    statusFilter,
+    DEFAULT_BOOKINGS_LIST_STATUSES,
+  );
+  const appliedStatusIsDefault = bookingStatusFiltersEqual(
+    appliedStatusFilter,
+    DEFAULT_BOOKINGS_LIST_STATUSES,
+  );
+
   // Banner = filters that affect the *current* view response.
   // Stashed focus (vessel/conflict/…) stays in state on gaps but does not count here.
+  // Default statuses (h/co/cl/r) are the baseline — not “active” filters.
   const hasActiveFilters = gapsViewActive
     ? appliedPortFilter.length > 0 ||
       appliedDatePreset !== "all" ||
       Boolean(availabilityDateAllowlist?.length)
-    : appliedStatusFilter.length > 0 ||
+    : !appliedStatusIsDefault ||
       ((tab === "list" ||
         tab === "proximity" ||
         tab === "calendar" ||
@@ -1067,8 +1079,8 @@ export default function BookingsView() {
 
   const canClearFilters =
     hasActiveFilters ||
-    statusFilter.length > 0 ||
-    appliedStatusFilter.length > 0 ||
+    !statusFilterIsDefault ||
+    !appliedStatusIsDefault ||
     ((tab === "list" ||
       tab === "proximity" ||
       tab === "calendar" ||
@@ -1633,7 +1645,7 @@ export default function BookingsView() {
       vesselLabel: vesselLabel ?? null,
       sizeCategoryLabels,
       tagLabels,
-      statuses: appliedStatusFilter,
+      statuses: appliedStatusIsDefault ? [] : appliedStatusFilter,
       conflict: appliedConflictFilter,
       firstArrival: appliedFirstArrival,
       cancellationReason: appliedCancellationReason,
@@ -1662,6 +1674,7 @@ export default function BookingsView() {
     appliedTagFilter,
     tagOptions,
     appliedStatusFilter,
+    appliedStatusIsDefault,
     appliedConflictFilter,
     appliedFirstArrival,
     appliedCancellationReason,
@@ -1706,7 +1719,7 @@ export default function BookingsView() {
 
   const description =
     tab === "list"
-      ? "Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
+      ? undefined
       : tab === "calendar"
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
         : tab === "proximity"
@@ -1952,6 +1965,38 @@ export default function BookingsView() {
         icon={CalendarDays}
         title="Reservas"
         description={description}
+        stats={
+          tab === "list" ? (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-zinc-600 dark:text-zinc-300">
+              <span className="inline-flex items-center gap-1.5">
+                <Ship
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--admin-accent)]"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <span className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+                  {totalCount.toLocaleString("es-ES")}
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  {totalCount === 1 ? "reserva" : "reservas"}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Users
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--admin-accent)]"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <span className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+                  {totalPlannedPax.toLocaleString("es-ES")}
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  pasajeros
+                </span>
+              </span>
+            </div>
+          ) : undefined
+        }
         actions={
           canWrite ? (
             <div className="flex flex-wrap items-center gap-2">

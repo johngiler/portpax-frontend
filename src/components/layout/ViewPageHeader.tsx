@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 type ViewPageHeaderProps = {
   icon: LucideIcon;
   title: string;
-  description: string;
+  description?: string;
+  /** Optional KPI / counters under the title (e.g. filtered booking totals). */
+  stats?: ReactNode;
   actions?: ReactNode;
 };
 
@@ -12,6 +14,7 @@ export default function ViewPageHeader({
   icon: Icon,
   title,
   description,
+  stats,
   actions,
 }: ViewPageHeaderProps) {
   return (
@@ -25,9 +28,14 @@ export default function ViewPageHeader({
           />
           {title}
         </h1>
-        <p className="mt-1 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-          {description}
-        </p>
+        {description ? (
+          <p className="mt-1 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
+            {description}
+          </p>
+        ) : null}
+        {stats ? (
+          <div className={description ? "mt-2" : "mt-1.5"}>{stats}</div>
+        ) : null}
       </div>
       {actions ? (
         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">

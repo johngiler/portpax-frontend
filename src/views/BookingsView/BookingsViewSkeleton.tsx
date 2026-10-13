@@ -239,7 +239,12 @@ export default function BookingsViewSkeleton({
       <ViewPageHeader
         icon={CalendarDays}
         title="Reservas"
-        description="Busca por código de reserva para abrir la escala y descargar el PDF de confirmación."
+        stats={
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            <div className="h-4 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+          </div>
+        }
       />
       <TabsSkeleton />
       <ListSkeleton />

@@ -15,6 +15,8 @@ export type ApiListResponse<T> = {
   next: string | null;
   previous: string | null;
   results: T[];
+  /** Bookings list: sum of planned_pax for the filtered queryset. */
+  total_planned_pax?: number;
 };
 
 export class ApiError extends Error {

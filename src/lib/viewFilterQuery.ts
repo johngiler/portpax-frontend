@@ -1,5 +1,6 @@
 import {
   CANCELLATION_REASON_OPTIONS,
+  DEFAULT_BOOKINGS_LIST_STATUSES,
   parseBookingStatusFilters,
   serializeBookingStatusFilters,
   type BookingStatusFilterValue,
@@ -212,7 +213,10 @@ export function parseBookingsWorkspaceFilters(
     .split(",")
     .map((p) => parseIntId(p.trim()))
     .filter((id) => id > 0);
-  const status = parseBookingStatusFilters(statusRaw);
+  // No `status` param → default operational set; explicit empty `status=` → all.
+  const status = sp.has("status")
+    ? parseBookingStatusFilters(statusRaw)
+    : [...DEFAULT_BOOKINGS_LIST_STATUSES];
   // Groups + lines as CSV. Legacy `group` / `line` still accepted.
   const groupsCsv = sp.get("groups") || sp.get("group");
   const groups = (groupsCsv ?? "")

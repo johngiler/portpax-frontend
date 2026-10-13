@@ -80,6 +80,7 @@ export function useBookingsInfinite(
     [data],
   );
   const totalCount = data?.[0]?.count ?? 0;
+  const totalPlannedPax = data?.[0]?.total_planned_pax ?? 0;
   const hasMore = bookings.length < totalCount;
   const loadingMore = isValidating && size > 1 && hasMore;
 
@@ -108,6 +109,7 @@ export function useBookingsInfinite(
             : null,
         previous: pageIndex > 0 ? `page=${pageIndex}` : null,
         results: chunk,
+        total_planned_pax: totalPlannedPax,
       });
     }
     if (pages.length === 0) {
@@ -116,12 +118,13 @@ export function useBookingsInfinite(
         next: null,
         previous: null,
         results: [],
+        total_planned_pax: 0,
       });
     }
     await mutate(pages, { revalidate: false });
     await setSize(pages.length);
     return all;
-  }, [enabled, hasMore, bookings, params, pageSize, mutate, setSize]);
+  }, [enabled, hasMore, bookings, params, pageSize, mutate, setSize, totalPlannedPax]);
 
   const refresh = useCallback(async () => {
     await setSize(1);
@@ -131,6 +134,7 @@ export function useBookingsInfinite(
   return {
     bookings,
     totalCount,
+    totalPlannedPax,
     hasMore,
     isLoading: enabled && isLoading && bookings.length === 0,
     isValidating,
