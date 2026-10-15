@@ -207,6 +207,7 @@ export type BookingRecapPortPaxOnly = {
   booking_id: number;
   booking_code: string;
   vessel_name: string;
+  port_id?: number | null;
   port_name: string;
   shipping_line_name: string;
   call_date: string | null;
@@ -223,6 +224,19 @@ export type BookingRecapResponse = {
   unmatched: BookingRecapUnmatched[];
   portpax_only_count?: number;
   portpax_only?: BookingRecapPortPaxOnly[];
+  portpax_only_page?: number;
+  portpax_only_page_size?: number;
+  portpax_only_has_more?: boolean;
+  portpax_only_ports?: number[];
+};
+
+export type BookingRecapPortPaxOnlyPage = {
+  portpax_only: BookingRecapPortPaxOnly[];
+  portpax_only_count: number;
+  portpax_only_page: number;
+  portpax_only_page_size: number;
+  portpax_only_has_more: boolean;
+  portpax_only_ports?: number[];
 };
 
 /** Search delimiters for recap match (group / lines / date range). */
@@ -278,6 +292,37 @@ export async function matchBookingRecapFromPaste(
       date_to: scope?.date_to || undefined,
     }),
   });
+}
+
+/** Next page of PortPax-only rows (recap 「Cargar más」). */
+export async function fetchBookingRecapPortPaxOnlyPage(params: {
+  date_from: string;
+  date_to: string;
+  ports: number[];
+  exclude_ids?: number[];
+  shipping_line_ids?: number[];
+  shipping_line_group_ids?: number[];
+  page: number;
+  page_size?: number;
+}): Promise<BookingRecapPortPaxOnlyPage> {
+  const query = new URLSearchParams();
+  query.set("date_from", params.date_from);
+  query.set("date_to", params.date_to);
+  query.set("port", params.ports.join(","));
+  query.set("page", String(params.page));
+  if (params.page_size) query.set("page_size", String(params.page_size));
+  if (params.exclude_ids?.length) {
+    query.set("exclude", params.exclude_ids.join(","));
+  }
+  if (params.shipping_line_ids?.length) {
+    query.set("shipping_line", params.shipping_line_ids.join(","));
+  }
+  if (params.shipping_line_group_ids?.length) {
+    query.set("shipping_line_group", params.shipping_line_group_ids.join(","));
+  }
+  return apiFetch<BookingRecapPortPaxOnlyPage>(
+    `${BASE}bulk-import/booking-recap/portpax-only/?${query.toString()}`,
+  );
 }
 
 export async function previewAvailabilityListFilterFromPaste(

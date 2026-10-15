@@ -53,6 +53,7 @@ import {
   updateBooking,
 } from "@/services/bookings/bookingService";
 import {
+  fetchBookingRecapPortPaxOnlyPage,
   matchBookingRecap,
   matchBookingRecapFromPaste,
   previewAvailabilityListFilter,
@@ -318,6 +319,9 @@ export default function BookingsView() {
   const [bookingRecap, setBookingRecap] = useState<BookingRecapResponse | null>(
     null,
   );
+  const [bookingRecapScope, setBookingRecapScope] =
+    useState<BookingRecapScope | null>(null);
+  const [portpaxOnlyLoadingMore, setPortpaxOnlyLoadingMore] = useState(false);
   const [recapCreateBusy, setRecapCreateBusy] = useState(false);
   const [recapCreateError, setRecapCreateError] = useState<string | null>(null);
   const recapCreateBridgeRef = useRef(false);
@@ -987,6 +991,8 @@ export default function BookingsView() {
     setAppliedDensity(0);
     setAvailabilityDateAllowlist(null);
     setBookingRecap(null);
+    setBookingRecapScope(null);
+    setPortpaxOnlyLoadingMore(false);
     setWeekAnchor(week);
     setYear(y);
     setMonthIndex(m);
@@ -1376,6 +1382,56 @@ export default function BookingsView() {
     }
   }
 
+  async function handleLoadMorePortPaxOnly() {
+    if (!bookingRecap || portpaxOnlyLoadingMore) return;
+    if (!bookingRecap.portpax_only_has_more) return;
+    const ports = bookingRecap.portpax_only_ports ?? [];
+    const dateFrom =
+      bookingRecapScope?.date_from?.trim() || appliedCustomDateFrom;
+    const dateTo = bookingRecapScope?.date_to?.trim() || appliedCustomDateTo;
+    if (!ports.length || !dateFrom || !dateTo) return;
+
+    const nextPage = (bookingRecap.portpax_only_page ?? 1) + 1;
+    setPortpaxOnlyLoadingMore(true);
+    try {
+      const page = await fetchBookingRecapPortPaxOnlyPage({
+        date_from: dateFrom,
+        date_to: dateTo,
+        ports,
+        exclude_ids: bookingRecap.matches.map((row) => row.booking_id),
+        shipping_line_ids: bookingRecapScope?.shipping_line_ids,
+        shipping_line_group_ids: bookingRecapScope?.shipping_line_group_ids,
+        page: nextPage,
+        page_size: bookingRecap.portpax_only_page_size ?? 10,
+      });
+      setBookingRecap((prev) => {
+        if (!prev) return prev;
+        const seen = new Set(
+          (prev.portpax_only ?? []).map((row) => row.booking_id),
+        );
+        const appended = (page.portpax_only ?? []).filter(
+          (row) => !seen.has(row.booking_id),
+        );
+        return {
+          ...prev,
+          portpax_only: [...(prev.portpax_only ?? []), ...appended],
+          portpax_only_count: page.portpax_only_count,
+          portpax_only_page: page.portpax_only_page,
+          portpax_only_page_size: page.portpax_only_page_size,
+          portpax_only_has_more: page.portpax_only_has_more,
+          portpax_only_ports:
+            page.portpax_only_ports ?? prev.portpax_only_ports,
+        };
+      });
+    } catch (err) {
+      setViewError(
+        getApiErrorMessage(err, "No se pudieron cargar más reservas."),
+      );
+    } finally {
+      setPortpaxOnlyLoadingMore(false);
+    }
+  }
+
   function applyBookingRecap(
     payload: BookingRecapResponse,
     scope?: BookingRecapScope,
@@ -1389,6 +1445,8 @@ export default function BookingsView() {
     const to = hasScopeDates ? scopeTo : defaultCustomTo();
     const datePreset = hasScopeDates ? ("custom" as const) : ("all" as const);
     setBookingRecap(payload);
+    setBookingRecapScope(scope ?? null);
+    setPortpaxOnlyLoadingMore(false);
     setTab("list");
     setSearch("");
     setAppliedSearch("");
@@ -2048,9 +2106,20 @@ export default function BookingsView() {
 
       {tab === "list" &&
       bookingRecap &&
-      (bookingRecap.portpax_only?.length ?? 0) > 0 ? (
+      ((bookingRecap.portpax_only_count ?? 0) > 0 ||
+        (bookingRecap.portpax_only?.length ?? 0) > 0) ? (
         <RecapPortPaxOnlySection
           rows={bookingRecap.portpax_only ?? []}
+          totalCount={
+            bookingRecap.portpax_only_count ??
+            bookingRecap.portpax_only?.length ??
+            0
+          }
+          hasMore={Boolean(bookingRecap.portpax_only_has_more)}
+          loadingMore={portpaxOnlyLoadingMore}
+          onLoadMore={() => {
+            void handleLoadMorePortPaxOnly();
+          }}
           returnTo={bookingsReturnTo()}
         />
       ) : null}
