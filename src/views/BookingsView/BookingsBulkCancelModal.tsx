@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import BookingTagField from "@/components/ui/BookingTagField";
 import Modal from "@/components/ui/Modal";
 import {
   CANCELLATION_REASON_OPTIONS,
   type CancellationReason,
 } from "@/types/booking";
 
+export type BulkCancelConfirmPayload = {
+  reason: CancellationReason;
+  tagName?: string;
+};
+
 type BookingsBulkCancelModalProps = {
   open: boolean;
   count: number;
   saving: boolean;
   onClose: () => void;
-  onConfirm: (reason: CancellationReason) => void;
+  onConfirm: (payload: BulkCancelConfirmPayload) => void;
 };
 
 export default function BookingsBulkCancelModal({
@@ -24,9 +30,13 @@ export default function BookingsBulkCancelModal({
   onConfirm,
 }: BookingsBulkCancelModalProps) {
   const [reason, setReason] = useState<CancellationReason | "">("");
+  const [tagName, setTagName] = useState("");
 
   useEffect(() => {
-    if (!open) setReason("");
+    if (!open) {
+      setReason("");
+      setTagName("");
+    }
   }, [open]);
 
   function handleClose() {
@@ -54,7 +64,10 @@ export default function BookingsBulkCancelModal({
             disabled={saving || !reason}
             onClick={() => {
               if (!reason) return;
-              onConfirm(reason);
+              onConfirm({
+                reason,
+                tagName: tagName.trim() || undefined,
+              });
             }}
           >
             {saving ? "Cancelando…" : "Confirmar cancelación"}
@@ -66,8 +79,16 @@ export default function BookingsBulkCancelModal({
         Se cancelarán {count} reserva{count === 1 ? "" : "s"} con el mismo
         motivo. La evidencia, si aplica, se adjunta después en cada ficha.
       </p>
+      <div className="mt-4">
+        <BookingTagField
+          name="bulk_cancel_tag"
+          value={tagName}
+          onChange={setTagName}
+          disabled={saving}
+        />
+      </div>
       <fieldset className="mt-4 space-y-2">
-        <legend className="mb-1 text-xs font-medium text-zinc-700 dark:text-zinc-200">
+        <legend className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200">
           Motivo de cancelación
         </legend>
         {CANCELLATION_REASON_OPTIONS.map((option) => (

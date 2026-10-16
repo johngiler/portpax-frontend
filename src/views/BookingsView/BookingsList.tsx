@@ -35,15 +35,16 @@ import {
   type BookingListItem,
   type BookingStatus,
   type BookingUpdatePayload,
-  type CancellationReason,
 } from "@/types/booking";
 import BookingsBulkBar from "./BookingsBulkBar";
-import BookingsBulkCancelModal from "./BookingsBulkCancelModal";
+import BookingsBulkCancelModal, {
+  type BulkCancelConfirmPayload,
+} from "./BookingsBulkCancelModal";
 import BookingsEmptyState from "./BookingsEmptyState";
 
 export type BulkStatusPayload = Pick<
   BookingUpdatePayload,
-  "status" | "cancellation_reason"
+  "status" | "cancellation_reason" | "tag_name"
 >;
 
 type BookingsListProps = {
@@ -251,12 +252,13 @@ export default function BookingsList({
     });
   }
 
-  function handleConfirmCancel(reason: CancellationReason) {
+  function handleConfirmCancel(payload: BulkCancelConfirmPayload) {
     if (!onBulkStatus || selectedIds.size === 0) return;
     void runBulk(() =>
       onBulkStatus([...selectedIds], {
         status: "c",
-        cancellation_reason: reason,
+        cancellation_reason: payload.reason,
+        ...(payload.tagName ? { tag_name: payload.tagName } : {}),
       }),
     );
   }
