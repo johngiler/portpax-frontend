@@ -95,8 +95,8 @@ export default function MobileBottomNav() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden"
       aria-label="Navegación principal"
     >
-      <div className="pointer-events-auto relative mx-auto border-t border-zinc-200/90 bg-white/95 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,44,92,0.08)] backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/95">
-        <div className="relative flex h-14 items-stretch px-1">
+      <div className="pointer-events-auto relative mx-auto border-t border-zinc-200/90 bg-white/95 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,44,92,0.08)] backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/95">
+        <div className="relative flex h-12 items-stretch px-1 sm:h-14">
           <div className="flex min-w-0 flex-1 items-stretch">
             {left.map((item) => (
               <NavLink
@@ -125,7 +125,7 @@ export default function MobileBottomNav() {
             <button
               type="button"
               onClick={() => router.push("/bookings/new")}
-              className="absolute left-1/2 top-0 z-10 flex h-14 w-14 -translate-x-1/2 -translate-y-1/3 cursor-pointer items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-[0_8px_20px_rgba(52,120,181,0.45)] ring-4 ring-white transition hover:bg-[var(--admin-accent-hover)] active:scale-95 dark:ring-zinc-900"
+              className="absolute left-1/2 top-0 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/3 cursor-pointer items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-[0_8px_20px_rgba(52,120,181,0.45)] ring-4 ring-white transition hover:bg-[var(--admin-accent-hover)] active:scale-95 dark:ring-zinc-900 sm:h-14 sm:w-14"
               aria-label="Nueva reserva"
               title="Nueva reserva"
             >

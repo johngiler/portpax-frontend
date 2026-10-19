@@ -41,9 +41,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <AppUpdateProvider>
         <NotificationProvider>
           <MainLayoutProvider>
-            <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
+            <div
+              className="flex h-dvh w-full flex-col overflow-hidden"
+              style={{
+                // Header wash fills notch / status bar (viewport-fit=cover).
+                paddingTop: "env(safe-area-inset-top, 0px)",
+                background: "var(--admin-gradient-header)",
+              }}
+            >
               <Header />
-              <LayoutContent>{children}</LayoutContent>
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
+                <LayoutContent>{children}</LayoutContent>
+              </div>
               <MobileBottomNav />
               <AppUpdateBanner />
             </div>

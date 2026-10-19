@@ -33,8 +33,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Match light header wash (mobile is always light).
-  themeColor: "#e8f0fa",
+  // Slightly deeper than pure wash so the system status bar does not read as white.
+  themeColor: "#dce8f7",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
