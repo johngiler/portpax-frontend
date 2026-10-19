@@ -304,7 +304,7 @@ export default function BookingsList({
         onConfirm={handleConfirmCancel}
       />
 
-      <ul className="space-y-3">
+      <ul className="space-y-2 sm:space-y-3">
         {bookings.map((booking) => {
           const positionLabel = booking.position_code || "Sin asignar";
           const detailHref = bookingDetailHref(booking, { returnTo });
@@ -318,10 +318,10 @@ export default function BookingsList({
               <article
                 className={conflictCardClassName(
                   listFrameSeverity,
-                  "group flex flex-col gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900/80",
+                  "group flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white px-2.5 py-2 shadow-[var(--admin-card-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--admin-accent)]/30 hover:shadow-lg sm:flex-row sm:items-start sm:gap-4 sm:rounded-2xl sm:px-4 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900/80",
                 )}
               >
-                <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
+                <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center sm:gap-4">
                   {selectionEnabled ? (
                     <div className="flex h-14 w-5 shrink-0 items-center justify-center">
                       <input

@@ -44,11 +44,11 @@ export default function BookingsTabs({
 }: BookingsTabsProps) {
   return (
     <div
-      className="mb-6 -mx-1 overflow-x-auto overscroll-x-contain px-1"
+      className="mb-3 -mx-0.5 overflow-x-auto overscroll-x-contain px-0.5 sm:mb-6 sm:-mx-1 sm:px-1"
       role="presentation"
     >
       <div
-        className="flex min-w-min flex-nowrap gap-1 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]/50 p-1 dark:bg-zinc-900/40 sm:flex-wrap"
+        className="flex min-w-min flex-nowrap gap-0.5 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]/50 p-0.5 dark:bg-zinc-900/40 sm:flex-wrap sm:gap-1 sm:rounded-xl sm:p-1"
         role="tablist"
         aria-label="Vistas de reservas"
       >
@@ -69,7 +69,7 @@ export default function BookingsTabs({
                   : label
               }
               onClick={() => onChange(id)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
+              className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors sm:gap-2 sm:rounded-lg sm:px-3 sm:py-2 sm:text-sm ${
                 disabled
                   ? "cursor-not-allowed opacity-45"
                   : "cursor-pointer"

@@ -246,22 +246,23 @@ export default function UnifiedCalendarCard({
       icon={CalendarRange}
       title={`${modeLabel} · ${portLabel}`}
       description={description}
+      bodyClassName="p-2 sm:p-4 md:p-5"
     >
-      <div className="px-4 py-4 sm:px-6 sm:py-5">
-        <div className="mb-4">
+      <div>
+        <div className="mb-2 sm:mb-4">
           <CalendarColorLegend
             showCorp
             showTraffic={mode !== "annual"}
           />
         </div>
         {errorMessage ? (
-          <FormErrorAlert message={errorMessage} className="mb-4" />
+          <FormErrorAlert message={errorMessage} className="mb-2 sm:mb-4" />
         ) : null}
         {!isLoading && !hasFocusMatchInView && firstDate ? (
           <FilteredResultsFromHint
             firstDate={firstDate}
             onGoToDate={goToFirstDate}
-            className="mb-4"
+            className="mb-2 sm:mb-4"
           />
         ) : null}
         {showEmpty ? (

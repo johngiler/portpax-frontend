@@ -153,11 +153,11 @@ function AvailabilityStartDateCell({
   }
 
   return (
-    <div className="relative rounded-lg border border-dashed border-zinc-300 px-1 py-0.5 transition hover:border-[var(--admin-accent)] hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800/60">
-      <span className="pointer-events-none block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="relative min-w-0 rounded-lg border border-dashed border-zinc-300 px-1.5 py-1 transition hover:border-[var(--admin-accent)] hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800/60">
+      <span className="pointer-events-none block text-xs font-semibold leading-snug text-zinc-900 sm:text-sm dark:text-zinc-50">
         {formatIsoDateLabel(draft, "short")}
       </span>
-      <span className="pointer-events-none mt-0.5 block font-mono text-[10px] text-zinc-400">
+      <span className="pointer-events-none mt-0.5 hidden font-mono text-[10px] text-zinc-400 sm:block">
         {draft}
       </span>
       <input
@@ -240,7 +240,8 @@ export default function AvailabilityChartSection({
 }: Props) {
   const todayIso = todayIsoLocal();
   const isMobile = useMainLayoutOptional()?.isMobile ?? false;
-  const dateColPx = isMobile ? 96 : 136;
+  // Wide enough for «Lun 19 oct 2026» (nowrap off + wrap on narrow).
+  const dateColPx = isMobile ? 124 : 156;
   const dayColPx = isMobile ? 168 : 208;
   /** Hide carrier identity on cards (photo-safe: only LOA / PAX / schedule readable). */
   const [hideCarrierIdentity, setHideCarrierIdentity] = useState(false);
@@ -344,7 +345,7 @@ export default function AvailabilityChartSection({
                 rowIndex === 0 && Boolean(onStartDateChange);
               return (
                 <tr key={row.date} className="group">
-                  <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-2 py-2.5 align-top group-last:border-b-0 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <td className="sticky left-0 z-20 min-w-0 border-b border-r border-zinc-200 bg-white px-1.5 py-2 align-top group-last:border-b-0 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900">
                     {isFirstEditable ? (
                       <AvailabilityStartDateCell
                         date={row.date}
@@ -352,10 +353,10 @@ export default function AvailabilityChartSection({
                       />
                     ) : (
                       <>
-                        <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                        <span className="block text-xs font-semibold leading-snug text-zinc-900 sm:text-sm dark:text-zinc-50">
                           {formatIsoDateLabel(row.date, "short")}
                         </span>
-                        <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
+                        <span className="mt-0.5 hidden font-mono text-[10px] text-zinc-400 sm:block">
                           {row.date}
                         </span>
                       </>

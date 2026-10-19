@@ -11,6 +11,7 @@ import { MainLayoutProvider, useMainLayoutOptional } from "@/contexts/MainLayout
 import AppUpdateBanner from "./AppUpdateBanner";
 import Header from "./Header";
 import MainWithFilterMargin from "./MainWithFilterMargin";
+import MobileBottomNav from "./MobileBottomNav";
 import PageTransition from "./PageTransition";
 import Sidebar from "./Sidebar";
 import FilterSidebar from "./FilterSidebar";
@@ -43,6 +44,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--admin-gradient-bg)]">
               <Header />
               <LayoutContent>{children}</LayoutContent>
+              <MobileBottomNav />
               <AppUpdateBanner />
             </div>
           </MainLayoutProvider>

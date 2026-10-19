@@ -57,7 +57,7 @@ export default function BookingsVesselProximityPanel({
 }: BookingsVesselProximityPanelProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const isMobile = useMainLayoutOptional()?.isMobile ?? false;
-  const dateColPx = isMobile ? 96 : 136;
+  const dateColPx = isMobile ? 124 : 156;
   const dayColPx = isMobile ? 168 : 208;
   const filtersReady = vesselId > 0;
 
@@ -229,24 +229,24 @@ export default function BookingsVesselProximityPanel({
           </colgroup>
           <thead className="sticky top-0 z-30">
             <tr>
-              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-2 py-2.5 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-950">
-                <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <th className="sticky left-0 z-40 border-b border-r border-zinc-200 bg-zinc-50 px-1.5 py-1.5 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 sm:text-xs">
                   Fecha
                 </span>
               </th>
               {data.ports.map((port) => (
                 <th
                   key={port.id}
-                  className="border-b border-r border-zinc-200 bg-zinc-50 px-2 py-2.5 last:border-r-0 dark:border-zinc-800 dark:bg-zinc-950"
+                  className="border-b border-r border-zinc-200 bg-zinc-50 px-1.5 py-1.5 last:border-r-0 sm:px-2 sm:py-2.5 dark:border-zinc-800 dark:bg-zinc-950"
                 >
-                  <div className="flex flex-col items-start gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  <div className="flex flex-col items-start gap-0.5 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 shadow-sm sm:gap-1 sm:px-2.5 sm:py-2 dark:border-zinc-700 dark:bg-zinc-900">
+                    <span className="text-xs font-semibold text-zinc-900 sm:text-sm dark:text-zinc-50">
                       {port.name}
                     </span>
                     {port.country ? (
                       <CountryLabel
                         country={port.country}
-                        className="text-xs font-normal text-zinc-500 dark:text-zinc-400"
+                        className="text-[10px] font-normal text-zinc-500 sm:text-xs dark:text-zinc-400"
                       />
                     ) : null}
                   </div>
@@ -257,11 +257,11 @@ export default function BookingsVesselProximityPanel({
           <tbody>
             {data.dates.map((isoDate) => (
               <tr key={isoDate} className="group">
-                <td className="sticky left-0 z-20 border-b border-r border-zinc-200 bg-white px-2 py-2.5 align-top group-last:border-b-0 sm:px-3 sm:py-3 dark:border-zinc-800 dark:bg-zinc-900">
-                  <span className="block whitespace-nowrap text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                <td className="sticky left-0 z-20 min-w-0 border-b border-r border-zinc-200 bg-white px-1.5 py-1.5 align-middle group-last:border-b-0 sm:px-3 sm:py-3 sm:align-top dark:border-zinc-800 dark:bg-zinc-900">
+                  <span className="block text-xs font-semibold leading-snug text-zinc-900 sm:text-sm dark:text-zinc-50">
                     {formatIsoDateLabel(isoDate, "short")}
                   </span>
-                  <span className="mt-0.5 block font-mono text-[10px] text-zinc-400">
+                  <span className="mt-0.5 hidden font-mono text-[10px] text-zinc-400 sm:block">
                     {isoDate}
                   </span>
                 </td>
@@ -270,16 +270,16 @@ export default function BookingsVesselProximityPanel({
                   return (
                     <td
                       key={port.id}
-                      className="border-b border-r border-zinc-200 bg-zinc-50/40 p-2 align-top last:border-r-0 group-last:border-b-0 dark:border-zinc-800 dark:bg-zinc-950/30"
+                      className="border-b border-r border-zinc-200 bg-zinc-50/40 p-1 align-top last:border-r-0 group-last:border-b-0 sm:p-2 dark:border-zinc-800 dark:bg-zinc-950/30"
                     >
                       {cells.length === 0 ? null : (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5 sm:space-y-2">
                           {cells.map((cell) => (
                             <ProximityMatrixCallCard
                               key={cell.booking_id}
                               cell={cell}
                               returnTo={returnTo}
-                              spacious={dateRowCount > 3}
+                              spacious={!isMobile && dateRowCount > 3}
                             />
                           ))}
                         </div>

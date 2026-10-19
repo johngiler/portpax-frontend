@@ -138,7 +138,7 @@ export default function MonthGrid({
               return (
                 <div
                   key={iso}
-                  className="flex min-h-[8.5rem] flex-col gap-1 bg-white p-1.5 dark:bg-zinc-900"
+                  className="flex min-h-[5.5rem] flex-col gap-0.5 bg-white p-1 sm:min-h-[8.5rem] sm:gap-1 sm:p-1.5 dark:bg-zinc-900"
                 >
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">

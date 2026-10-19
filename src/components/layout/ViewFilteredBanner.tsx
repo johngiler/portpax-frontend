@@ -62,7 +62,7 @@ export default function ViewFilteredBanner({
 
   return (
     <div
-      className="mb-6 flex flex-col gap-3 rounded-xl border border-[var(--admin-accent)]/25 bg-[var(--admin-accent)]/8 px-3 py-3 text-sm text-zinc-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 dark:text-zinc-200"
+      className="mb-3 flex flex-col gap-2 rounded-lg border border-[var(--admin-accent)]/25 bg-[var(--admin-accent)]/8 px-2.5 py-2 text-xs text-zinc-700 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm dark:text-zinc-200"
       role="status"
     >
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
