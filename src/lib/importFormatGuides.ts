@@ -126,7 +126,7 @@ export const BOOKING_RECAP_IMPORT_GUIDE: ImportFormatGuide = {
       required: true,
       accepted: "Fecha, Arrival Date o Berth Date",
       notes:
-        "12/02/26 · 05/11/2026 · 2026-11-05. Si la escala en PortPax cae ±1 día, igual entra al filtro y el aviso indica la fecha.",
+        "12/02/26 · 05/11/2026 · 2026-11-05. Si la escala en PortPax cae ±4 días (misma ventana de proximidad), igual entra al filtro y el aviso indica la fecha.",
     },
     {
       field: "ETA",

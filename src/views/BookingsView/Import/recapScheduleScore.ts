@@ -112,7 +112,12 @@ export function scoreDraftAgainstRecap(
       clauses.push("la fecha coincide");
     } else {
       points += 0.5;
-      clauses.push("la fecha está a un día (cuenta la mitad)");
+      const ms = Math.abs(draftDate.getTime() - recapDate.getTime());
+      const dayDelta = Math.round(ms / (24 * 60 * 60 * 1000));
+      const dayWord = dayDelta === 1 ? "día" : "días";
+      clauses.push(
+        `la fecha está a ${dayDelta} ${dayWord} (cuenta la mitad)`,
+      );
     }
   }
 
