@@ -67,7 +67,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 overflow-visible px-3 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:h-16 sm:px-6">
+    <header className="relative sticky top-0 z-30 flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] shrink-0 items-center justify-between gap-2 overflow-visible px-3 pt-[env(safe-area-inset-top,0px)] shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:h-[calc(4rem+env(safe-area-inset-top,0px))] sm:px-6">
       <span
         className="pointer-events-none absolute inset-0 -z-10 dark:hidden"
         style={{ background: "var(--admin-gradient-header)" }}
@@ -79,7 +79,7 @@ export default function Header() {
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute right-0 top-0 z-0 h-16 w-24 overflow-hidden sm:w-28"
+        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-24 overflow-hidden sm:w-28"
         aria-hidden
       >
         <span className="header-square header-square-1" />

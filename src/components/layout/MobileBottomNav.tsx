@@ -95,10 +95,7 @@ export default function MobileBottomNav() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden"
       aria-label="Navegación principal"
     >
-      <div
-        className="pointer-events-auto relative mx-auto border-t border-zinc-200/90 bg-white/95 shadow-[0_-8px_24px_rgba(15,44,92,0.08)] backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/95"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
+      <div className="pointer-events-auto relative mx-auto border-t border-zinc-200/90 bg-white/95 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(15,44,92,0.08)] backdrop-blur-xl dark:border-zinc-700/80 dark:bg-zinc-900/95">
         <div className="relative flex h-14 items-stretch px-1">
           <div className="flex min-w-0 flex-1 items-stretch">
             {left.map((item) => (

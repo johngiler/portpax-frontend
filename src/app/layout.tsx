@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "PortPax",
-    statusBarStyle: "default",
+    // Content draws under the status bar so the header gradient fills the notch.
+    statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [
@@ -32,9 +33,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f2c5c",
+  // Match light header wash (mobile is always light).
+  themeColor: "#e8f0fa",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
