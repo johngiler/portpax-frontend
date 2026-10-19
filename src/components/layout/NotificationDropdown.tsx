@@ -143,7 +143,8 @@ export default function NotificationDropdown({
     <DropdownMenu
       open={open}
       onClose={onClose}
-      width="min-w-[22rem] max-w-[24rem] sm:min-w-[24rem]"
+      containToViewport
+      width="sm:min-w-[22rem] sm:max-w-[24rem]"
       panelClassName={NOTIFICATION_PANEL_CLASS}
       trigger={
         <button

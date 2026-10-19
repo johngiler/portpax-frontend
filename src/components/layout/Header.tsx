@@ -34,6 +34,7 @@ export default function Header() {
   const [openMenu, setOpenMenu] = useState<
     "online" | "notifications" | "user" | null
   >(null);
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   const { resolvedTheme, toggleTheme } = useTheme();
   const {
@@ -101,8 +102,25 @@ export default function Header() {
           <PortPaxLogo showSlogan sloganClassName="hidden sm:block" />
         </Link>
       </div>
-      <div className="relative z-10 flex shrink-0 items-center gap-0.5 sm:gap-2">
-        <GlobalSearch />
+      <div
+        className={[
+          "relative z-10 flex items-center gap-0.5 sm:gap-2",
+          searchExpanded ? "min-w-0 flex-1 justify-end" : "shrink-0",
+        ].join(" ")}
+      >
+        <GlobalSearch
+          fillAvailableOnMobile
+          onExpandedChange={(next) => {
+            setSearchExpanded(next);
+            if (next) closeAll();
+          }}
+        />
+        <div
+          className={[
+            "flex items-center gap-0.5 sm:gap-2",
+            searchExpanded ? "hidden md:flex" : "contents md:flex",
+          ].join(" ")}
+        >
         <button
           type="button"
           className={`${iconBtnClass} hidden md:flex`}
@@ -217,6 +235,7 @@ export default function Header() {
             <Filter className="h-5 w-5" strokeWidth={1.5} />
           </button>
         ) : null}
+        </div>
       </div>
     </header>
   );

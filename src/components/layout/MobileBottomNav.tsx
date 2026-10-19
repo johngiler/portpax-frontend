@@ -78,7 +78,7 @@ function NavLink({
   );
 }
 
-/** Mobile-only bottom bar with raised + for new booking. */
+/** Mobile-only bottom bar with raised + (new booking / new LTA). */
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
   const router = useRouter();
@@ -87,7 +87,10 @@ export default function MobileBottomNav() {
   // List only — hide + while already creating / editing a booking.
   const onBookingsList =
     pathname === "/bookings" || pathname === "/bookings/";
-  const showCreateFab = canWriteApp(role) && onBookingsList;
+  const onLtaList = pathname === "/lta" || pathname === "/lta/";
+  const showCreateFab =
+    canWriteApp(role) && (onBookingsList || onLtaList);
+  const createLabel = onLtaList ? "Agregar acuerdo" : "Nueva reserva";
 
   const left = LEFT.filter((item) => canSeeNavItem(role, item.roles));
   const right = RIGHT.filter((item) => canSeeNavItem(role, item.roles));
@@ -126,10 +129,12 @@ export default function MobileBottomNav() {
           {showCreateFab ? (
             <button
               type="button"
-              onClick={() => router.push("/bookings/new")}
+              onClick={() =>
+                router.push(onLtaList ? "/lta?nuevo=1" : "/bookings/new")
+              }
               className="absolute left-1/2 top-0 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/3 cursor-pointer items-center justify-center rounded-full bg-[var(--admin-accent)] text-white shadow-[0_8px_20px_rgba(52,120,181,0.45)] ring-4 ring-white transition hover:bg-[var(--admin-accent-hover)] active:scale-95 dark:ring-zinc-900 sm:h-14 sm:w-14"
-              aria-label="Nueva reserva"
-              title="Nueva reserva"
+              aria-label={createLabel}
+              title={createLabel}
             >
               <Plus className="h-7 w-7" strokeWidth={2.25} aria-hidden />
             </button>

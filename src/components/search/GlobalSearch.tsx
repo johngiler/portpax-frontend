@@ -21,7 +21,8 @@ import type { GlobalSearchResult } from "@/types/search";
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
 const EXPANDED_WIDTH_DESKTOP = 420;
-const EXPANDED_WIDTH_MOBILE_MAX = 280;
+/** Mobile: leave room for hamburger + logo when right icons are hidden. */
+const EXPANDED_WIDTH_MOBILE_GUTTER = 112;
 
 function formatScaleDate(d: string | null): string {
   if (!d) return "—";
@@ -42,7 +43,7 @@ function useSearchPanelWidth(): number {
     const sync = () => {
       const vw = window.innerWidth;
       if (vw < 640) {
-        setWidth(Math.min(EXPANDED_WIDTH_MOBILE_MAX, Math.max(200, vw - 120)));
+        setWidth(Math.max(180, vw - EXPANDED_WIDTH_MOBILE_GUTTER));
       } else {
         setWidth(Math.min(EXPANDED_WIDTH_DESKTOP, vw - 48));
       }
@@ -54,17 +55,40 @@ function useSearchPanelWidth(): number {
   return width;
 }
 
-export default function GlobalSearch() {
+type GlobalSearchProps = {
+  onExpandedChange?: (expanded: boolean) => void;
+  /**
+   * When expanded on narrow headers, fill the parent flex slot instead of a
+   * fixed pixel width (avoids overlapping the logo / menu).
+   */
+  fillAvailableOnMobile?: boolean;
+};
+
+export default function GlobalSearch({
+  onExpandedChange,
+  fillAvailableOnMobile = false,
+}: GlobalSearchProps = {}) {
   const auth = useAuthOptional();
   const showCatalogResults = canBrowseCatalogs(auth?.user?.role);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GlobalSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
   const panelWidth = useSearchPanelWidth();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const sync = () => setIsNarrow(window.innerWidth < 768);
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
+  const fillMobile = fillAvailableOnMobile && isNarrow && expanded;
+  const expandedWidth = fillMobile ? "100%" : panelWidth;
 
   const runSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -98,6 +122,12 @@ export default function GlobalSearch() {
   }, [query, runSearch]);
 
   useEffect(() => {
+    onExpandedChange?.(expanded);
+    // Parent often passes an inline callback; only re-notify on expand changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [expanded]);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         containerRef.current &&
@@ -126,13 +156,19 @@ export default function GlobalSearch() {
       results.scales.length > 0);
 
   return (
-    <div ref={containerRef} className="relative flex items-center">
+    <div
+      ref={containerRef}
+      className={[
+        "relative flex items-center",
+        fillMobile ? "min-w-0 flex-1" : "",
+      ].join(" ")}
+    >
       <div
         className={`relative flex items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out motion-reduce:duration-0 md:duration-200 ${
           expanded ? "border border-zinc-200/60 dark:border-zinc-600/60" : "border-0"
-        }`}
+        } ${fillMobile ? "w-full max-w-full" : ""}`}
         style={{
-          width: expanded ? panelWidth : 40,
+          width: expanded ? expandedWidth : 40,
           background: "transparent",
           boxShadow: expanded ? "0 2px 10px rgba(0,0,0,.06)" : "none",
         }}
@@ -154,8 +190,9 @@ export default function GlobalSearch() {
               ? {
                   position: "absolute",
                   left: 36,
+                  right: 0,
                   top: 0,
-                  width: panelWidth - 36,
+                  width: fillMobile ? undefined : panelWidth - 36,
                   height: 36,
                 }
               : { width: 0, height: 36, overflow: "hidden" }
@@ -196,7 +233,12 @@ export default function GlobalSearch() {
         query.trim().length >= MIN_QUERY_LENGTH &&
         (loading || results !== null) && (
           <div
-            className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-1.5rem,var(--search-panel-w))] overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xl sm:left-0 sm:right-auto dark:border-zinc-700 dark:bg-zinc-900"
+            className={[
+              "z-50 mt-2 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900",
+              isNarrow
+                ? "fixed left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+3.5rem)] w-auto"
+                : "absolute right-0 top-full w-[min(100vw-1.5rem,var(--search-panel-w))] sm:left-0 sm:right-auto",
+            ].join(" ")}
             style={
               {
                 ["--search-panel-w" as string]: `${panelWidth}px`,

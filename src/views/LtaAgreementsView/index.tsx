@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import FilterActions from "@/components/layout/FilterActions";
@@ -38,6 +39,7 @@ import {
   regenerateLongTermAgreementBookings,
   updateLongTermAgreement,
 } from "@/services/bookings/ltaService";
+import LtaAgreementMobileCard from "./LtaAgreementMobileCard";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
 import LtaAgreementsViewSkeleton from "./LtaAgreementsViewSkeleton";
 import LtaDateExceptionsModal from "./LtaDateExceptionsModal";
@@ -51,6 +53,8 @@ const COL_SPAN = 8;
 
 export default function LtaAgreementsView() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const canWrite = canWriteApp(user?.role);
   const canBrowse = canBrowseCatalogs(user?.role);
 
@@ -104,6 +108,13 @@ export default function LtaAgreementsView() {
     setEditing(null);
     setModalOpen(true);
   }
+
+  // Mobile bottom + → /lta?nuevo=1
+  useEffect(() => {
+    if (!canWrite || searchParams.get("nuevo") !== "1") return;
+    openCreate();
+    router.replace("/lta", { scroll: false });
+  }, [canWrite, searchParams, router]);
 
   function openEdit(row: LongTermAgreement) {
     setModalMode("edit");
@@ -274,129 +285,184 @@ export default function LtaAgreementsView() {
         />
       ) : (
         <>
-          <MainTable>
-            <table className="w-full min-w-[48rem]">
-              <MainTableHeader>
-                <MainTableTh>Código</MainTableTh>
-                <MainTableTh>Puerto</MainTableTh>
-                <MainTableTh>Grupo</MainTableTh>
-                <MainTableTh>Días</MainTableTh>
-                <MainTableTh>Ventana</MainTableTh>
-                <MainTableTh>
-                  <span title="Reservas con este acuerdo asignado automáticamente">
-                    Reservas
-                  </span>
-                </MainTableTh>
-                <MainTableTh>Estado</MainTableTh>
-                <MainTableTh className="w-36">Acciones</MainTableTh>
-              </MainTableHeader>
-              <MainTableBody>
-                {rows.map((row) => {
-                  const isExpanded = expandedId === row.id;
-                  return (
-                    <AccordionTableRow
-                      key={row.id}
-                      colSpan={COL_SPAN}
-                      showRowToggle={false}
-                      open={isExpanded}
-                      onOpenChange={(open) =>
-                        setExpandedId(open ? row.id : null)
+          <ul className="space-y-3 md:hidden">
+            {rows.map((row) => {
+              const isExpanded = expandedId === row.id;
+              return (
+                <LtaAgreementMobileCard
+                  key={row.id}
+                  agreement={row}
+                  expanded={isExpanded}
+                  canWrite={canWrite}
+                  onToggleExpand={() =>
+                    setExpandedId(isExpanded ? null : row.id)
+                  }
+                  onEdit={() => openEdit(row)}
+                  onDelete={() => void handleDelete(row)}
+                  detail={
+                    <LtaRowDetail
+                      agreement={row}
+                      active={isExpanded}
+                      canWrite={canWrite}
+                      generateBusy={generateBusyId === row.id}
+                      onGenerate={
+                        canWrite
+                          ? () => void handleGenerate(row, false)
+                          : undefined
                       }
-                      expandContent={
-                        <LtaRowDetail
-                          agreement={row}
-                          active={isExpanded}
-                          canWrite={canWrite}
-                          generateBusy={generateBusyId === row.id}
-                          onGenerate={
-                            canWrite
-                              ? () => void handleGenerate(row, false)
-                              : undefined
-                          }
-                          onRegenerate={
-                            canWrite
-                              ? () => void handleGenerate(row, true)
-                              : undefined
-                          }
-                          onOpenExceptions={
-                            canWrite
-                              ? () => setExceptionsAgreement(row)
-                              : undefined
-                          }
-                        />
+                      onRegenerate={
+                        canWrite
+                          ? () => void handleGenerate(row, true)
+                          : undefined
                       }
-                    >
-                      <MainTableTd>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            canWrite
-                              ? openEdit(row)
-                              : setExpandedId(isExpanded ? null : row.id)
-                          }
-                          className="text-left font-semibold text-[var(--admin-accent)] hover:underline"
-                        >
-                          {row.code}
-                        </button>
-                        <p className="text-xs text-zinc-500">{row.name}</p>
-                      </MainTableTd>
-                      <MainTableTd>{row.port_name}</MainTableTd>
-                      <MainTableTd>{row.shipping_line_group_name}</MainTableTd>
-                      <MainTableTd>
-                        <span className="text-sm">{formatLtaWeekdays(row.weekdays)}</span>
-                        {row.position_codes.length ? (
-                          <p className="text-xs text-zinc-500">
-                            {row.position_codes.join(", ")}
-                          </p>
-                        ) : null}
-                      </MainTableTd>
-                      <MainTableTd>
-                        {row.interval_days != null && row.cadence_anchor
-                          ? `Cada ${row.interval_days} d`
-                          : `${row.advance_months_min}–${row.advance_months_max} m`}
-                      </MainTableTd>
-                      <MainTableTd>
-                        <span
-                          className={
-                            (row.linked_bookings_count ?? 0) > 0
-                              ? "font-medium tabular-nums text-zinc-800 dark:text-zinc-100"
-                              : "tabular-nums text-zinc-400"
-                          }
-                          title={`${(row.linked_bookings_count ?? 0).toLocaleString("es")} reserva${
-                            (row.linked_bookings_count ?? 0) === 1 ? "" : "s"
-                          } con este acuerdo`}
-                        >
-                          {formatCompactCount(row.linked_bookings_count ?? 0)}
-                        </span>
-                      </MainTableTd>
-                      <MainTableTd>
-                        {row.is_active ? (
-                          <span className="text-emerald-700 dark:text-emerald-400">Activo</span>
-                        ) : (
-                          <span className="text-zinc-400">Inactivo</span>
-                        )}
-                      </MainTableTd>
-                      <MainTableTd>
-                        <TableActionButtons
-                          onView={() =>
-                            setExpandedId(isExpanded ? null : row.id)
-                          }
-                          viewActive={isExpanded}
-                          onEdit={canWrite ? () => openEdit(row) : undefined}
-                          onDelete={
-                            canWrite
-                              ? () => void handleDelete(row)
-                              : undefined
-                          }
-                          deleteLabel={`el acuerdo ${row.code}`}
-                        />
-                      </MainTableTd>
-                    </AccordionTableRow>
-                  );
-                })}
-              </MainTableBody>
-            </table>
-          </MainTable>
+                      onOpenExceptions={
+                        canWrite
+                          ? () => setExceptionsAgreement(row)
+                          : undefined
+                      }
+                    />
+                  }
+                />
+              );
+            })}
+          </ul>
+
+          <div className="hidden md:block">
+            <MainTable>
+              <table className="w-full min-w-[48rem]">
+                <MainTableHeader>
+                  <MainTableTh>Código</MainTableTh>
+                  <MainTableTh>Puerto</MainTableTh>
+                  <MainTableTh>Grupo</MainTableTh>
+                  <MainTableTh>Días</MainTableTh>
+                  <MainTableTh>Ventana</MainTableTh>
+                  <MainTableTh>
+                    <span title="Reservas con este acuerdo asignado automáticamente">
+                      Reservas
+                    </span>
+                  </MainTableTh>
+                  <MainTableTh>Estado</MainTableTh>
+                  <MainTableTh className="w-36">Acciones</MainTableTh>
+                </MainTableHeader>
+                <MainTableBody>
+                  {rows.map((row) => {
+                    const isExpanded = expandedId === row.id;
+                    return (
+                      <AccordionTableRow
+                        key={row.id}
+                        colSpan={COL_SPAN}
+                        showRowToggle={false}
+                        open={isExpanded}
+                        onOpenChange={(open) =>
+                          setExpandedId(open ? row.id : null)
+                        }
+                        expandContent={
+                          <LtaRowDetail
+                            agreement={row}
+                            active={isExpanded}
+                            canWrite={canWrite}
+                            generateBusy={generateBusyId === row.id}
+                            onGenerate={
+                              canWrite
+                                ? () => void handleGenerate(row, false)
+                                : undefined
+                            }
+                            onRegenerate={
+                              canWrite
+                                ? () => void handleGenerate(row, true)
+                                : undefined
+                            }
+                            onOpenExceptions={
+                              canWrite
+                                ? () => setExceptionsAgreement(row)
+                                : undefined
+                            }
+                          />
+                        }
+                      >
+                        <MainTableTd>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              canWrite
+                                ? openEdit(row)
+                                : setExpandedId(isExpanded ? null : row.id)
+                            }
+                            className="text-left font-semibold text-[var(--admin-accent)] hover:underline"
+                          >
+                            {row.code}
+                          </button>
+                          <p className="text-xs text-zinc-500">{row.name}</p>
+                        </MainTableTd>
+                        <MainTableTd>{row.port_name}</MainTableTd>
+                        <MainTableTd>
+                          {row.shipping_line_group_name}
+                        </MainTableTd>
+                        <MainTableTd>
+                          <span className="text-sm">
+                            {formatLtaWeekdays(row.weekdays)}
+                          </span>
+                          {row.position_codes.length ? (
+                            <p className="text-xs text-zinc-500">
+                              {row.position_codes.join(", ")}
+                            </p>
+                          ) : null}
+                        </MainTableTd>
+                        <MainTableTd>
+                          {row.interval_days != null && row.cadence_anchor
+                            ? `Cada ${row.interval_days} d`
+                            : `${row.advance_months_min}–${row.advance_months_max} m`}
+                        </MainTableTd>
+                        <MainTableTd>
+                          <span
+                            className={
+                              (row.linked_bookings_count ?? 0) > 0
+                                ? "font-medium tabular-nums text-zinc-800 dark:text-zinc-100"
+                                : "tabular-nums text-zinc-400"
+                            }
+                            title={`${(row.linked_bookings_count ?? 0).toLocaleString("es")} reserva${
+                              (row.linked_bookings_count ?? 0) === 1 ? "" : "s"
+                            } con este acuerdo`}
+                          >
+                            {formatCompactCount(
+                              row.linked_bookings_count ?? 0,
+                            )}
+                          </span>
+                        </MainTableTd>
+                        <MainTableTd>
+                          {row.is_active ? (
+                            <span className="text-emerald-700 dark:text-emerald-400">
+                              Activo
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400">Inactivo</span>
+                          )}
+                        </MainTableTd>
+                        <MainTableTd>
+                          <TableActionButtons
+                            onView={() =>
+                              setExpandedId(isExpanded ? null : row.id)
+                            }
+                            viewActive={isExpanded}
+                            onEdit={
+                              canWrite ? () => openEdit(row) : undefined
+                            }
+                            onDelete={
+                              canWrite
+                                ? () => void handleDelete(row)
+                                : undefined
+                            }
+                            deleteLabel={`el acuerdo ${row.code}`}
+                          />
+                        </MainTableTd>
+                      </AccordionTableRow>
+                    );
+                  })}
+                </MainTableBody>
+              </table>
+            </MainTable>
+          </div>
+
           <TablePagination
             page={page}
             totalCount={totalCount}
