@@ -84,8 +84,10 @@ export default function MobileBottomNav() {
   const router = useRouter();
   const { user } = useAuth();
   const role = user?.role;
-  const onBookings = isActive(pathname, "/bookings");
-  const showCreateFab = canWriteApp(role) && onBookings;
+  // List only — hide + while already creating / editing a booking.
+  const onBookingsList =
+    pathname === "/bookings" || pathname === "/bookings/";
+  const showCreateFab = canWriteApp(role) && onBookingsList;
 
   const left = LEFT.filter((item) => canSeeNavItem(role, item.roles));
   const right = RIGHT.filter((item) => canSeeNavItem(role, item.roles));
