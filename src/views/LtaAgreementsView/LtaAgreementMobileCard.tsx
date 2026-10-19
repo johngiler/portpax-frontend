@@ -63,7 +63,7 @@ export default function LtaAgreementMobileCard({
     <li>
       <article
         className={[
-          "rounded-2xl border bg-white shadow-[var(--admin-card-shadow)] transition-colors dark:bg-zinc-900/80",
+          "min-w-0 max-w-full overflow-hidden rounded-2xl border bg-white shadow-[var(--admin-card-shadow)] transition-colors dark:bg-zinc-900/80",
           expanded
             ? "border-[var(--admin-accent)]/35"
             : "border-zinc-200/80 dark:border-zinc-800",
@@ -137,7 +137,7 @@ export default function LtaAgreementMobileCard({
         </div>
 
         {expanded ? (
-          <div className="border-t border-zinc-100 px-3 py-3 dark:border-zinc-800">
+          <div className="min-w-0 max-w-full overflow-x-hidden border-t border-zinc-100 px-2 py-3 dark:border-zinc-800 sm:px-3">
             {detail}
           </div>
         ) : null}

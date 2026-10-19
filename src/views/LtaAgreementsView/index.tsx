@@ -285,7 +285,7 @@ export default function LtaAgreementsView() {
         />
       ) : (
         <>
-          <ul className="space-y-3 md:hidden">
+          <ul className="min-w-0 max-w-full space-y-3 overflow-x-hidden md:hidden">
             {rows.map((row) => {
               const isExpanded = expandedId === row.id;
               return (

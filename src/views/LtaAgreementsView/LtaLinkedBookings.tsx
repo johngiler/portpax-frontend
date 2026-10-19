@@ -182,28 +182,35 @@ export default function LtaLinkedBookings({
   const linkedCountHint = agreement.linked_bookings_count ?? totalCount;
   const canExport = linkedCountHint > 0 || totalCount > 0;
 
+  const actionBtnClass = [
+    "inline-flex w-full items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all sm:w-auto",
+    "dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
+  ].join(" ");
+
   return (
-    <div className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/30">
-      <div className="mb-4 flex flex-wrap items-start gap-x-3 gap-y-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-700">
-        <div className="min-w-0 flex-1">
+    <div className="mt-4 min-w-0 max-w-full overflow-x-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/40 p-3 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/30">
+      <div className="mb-4 flex min-w-0 flex-col gap-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-700">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Reservas del acuerdo
             <span className="font-medium text-zinc-500">{countLabel}</span>
           </h3>
-          <div className="mt-2 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto">
+          <div className="mt-2 flex min-w-0 flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
             <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
               Se generan a partir del set de reglas:
             </span>
-            <LtaRuleSetChips agreement={agreement} />
+            <div className="min-w-0 max-w-full overflow-x-auto">
+              <LtaRuleSetChips agreement={agreement} />
+            </div>
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-3 sm:ml-auto">
+        <div className="grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-3">
           <button
             type="button"
             disabled={exportBusy || !canExport}
             onClick={() => void handleExport()}
             className={[
-              "inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
+              actionBtnClass,
               exportBusy || !canExport
                 ? "cursor-not-allowed opacity-40 shadow-none"
                 : "cursor-pointer hover:bg-zinc-50 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.35)] dark:hover:bg-zinc-800",
@@ -219,7 +226,7 @@ export default function LtaLinkedBookings({
                 disabled={!onOpenExceptions}
                 onClick={onOpenExceptions}
                 className={[
-                  "inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.18)] transition-all dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
+                  actionBtnClass,
                   !onOpenExceptions
                     ? "cursor-not-allowed opacity-40 shadow-none"
                     : "cursor-pointer hover:bg-zinc-50 hover:shadow-[0_8px_22px_-14px_rgba(15,23,42,0.35)] dark:hover:bg-zinc-800",
@@ -237,6 +244,7 @@ export default function LtaLinkedBookings({
                   type="button"
                   disabled={generateBusy || !onGenerate}
                   onClick={onGenerate}
+                  className="w-full sm:w-auto"
                 >
                   {generateBusy ? "En cola…" : "Generar"}
                 </DefaultButton>
@@ -245,6 +253,7 @@ export default function LtaLinkedBookings({
                   type="button"
                   disabled={generateBusy || !onRegenerate}
                   onClick={onRegenerate}
+                  className="w-full sm:w-auto"
                 >
                   {generateBusy ? "En cola…" : "Regenerar"}
                 </DefaultButton>
@@ -258,7 +267,7 @@ export default function LtaLinkedBookings({
       ) : null}
 
       <div className="mb-4 space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <MetaChip
             icon={CalendarRange}
             label="Vigencia"
@@ -339,7 +348,7 @@ export default function LtaLinkedBookings({
               {hasMore ? " (hay más en el acuerdo)" : ""}
             </p>
           ) : null}
-          <div className="overflow-x-auto">
+          <div className="max-w-full overflow-x-auto overscroll-x-contain">
             <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
               <thead className="sticky top-0 z-[1] bg-white text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
                 <tr className="border-b border-zinc-200/80 dark:border-zinc-700">

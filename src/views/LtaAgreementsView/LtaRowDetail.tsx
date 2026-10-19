@@ -116,7 +116,7 @@ export default function LtaRowDetail({
     : "Sin ancla";
 
   return (
-    <div className="w-full space-y-4 rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
+    <div className="w-full min-w-0 max-w-full space-y-4 overflow-x-hidden rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
         <div className="min-w-0">
           <p className="truncate font-mono text-sm font-semibold text-zinc-900 dark:text-zinc-50">

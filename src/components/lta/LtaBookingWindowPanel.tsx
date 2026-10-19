@@ -112,8 +112,8 @@ export default function LtaBookingWindowPanel({
       <div
         className={
           compact
-            ? "flex gap-2 overflow-x-auto pb-1"
-            : "grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9"
+            ? "flex max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1"
+            : "grid max-w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-9"
         }
       >
         {snapshot.blocks.map((block) => {
