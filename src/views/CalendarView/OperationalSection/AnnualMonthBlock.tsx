@@ -237,7 +237,10 @@ export default function AnnualMonthBlock({
                 >
                   <th
                     className={[
-                      "sticky left-0 z-10 whitespace-nowrap px-2 py-1 text-left text-[10px] font-semibold text-zinc-600 dark:text-zinc-300",
+                      "sticky left-0 z-10 whitespace-nowrap px-2 py-1 text-left text-[10px] font-semibold",
+                      multiPort
+                        ? "uppercase tracking-wide text-[#0f2c5c] dark:text-sky-200"
+                        : "text-zinc-600 dark:text-zinc-300",
                       rowTint,
                     ].join(" ")}
                   >

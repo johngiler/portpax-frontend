@@ -5,7 +5,9 @@ import {
   applyThemeToDocument,
   getResolvedTheme,
   getStoredTheme,
+  isMobileThemeViewport,
   setStoredTheme,
+  THEME_MOBILE_MAX_WIDTH_PX,
   type Theme,
 } from "@/utils/theme";
 
@@ -22,15 +24,26 @@ export function useTheme(): {
     const stored = getStoredTheme();
     applyThemeToDocument(stored);
     setResolvedTheme(getResolvedTheme());
+
+    const mq = window.matchMedia(
+      `(max-width: ${THEME_MOBILE_MAX_WIDTH_PX}px)`,
+    );
+    const onViewportChange = () => {
+      applyThemeToDocument(getStoredTheme());
+      setResolvedTheme(getResolvedTheme());
+    };
+    mq.addEventListener("change", onViewportChange);
+    return () => mq.removeEventListener("change", onViewportChange);
   }, []);
 
   const setTheme = useCallback((theme: Theme) => {
     setStoredTheme(theme);
     applyThemeToDocument(theme);
-    setResolvedTheme(theme);
+    setResolvedTheme(getResolvedTheme());
   }, []);
 
   const toggleTheme = useCallback(() => {
+    if (isMobileThemeViewport()) return;
     setTheme(resolvedTheme === "light" ? "dark" : "light");
   }, [resolvedTheme, setTheme]);
 

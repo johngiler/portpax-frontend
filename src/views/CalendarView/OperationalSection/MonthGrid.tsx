@@ -152,7 +152,7 @@ export default function MonthGrid({
                     {byPort
                       ? byPort.map((group) => (
                           <div key={group.port} className="min-w-0 space-y-0.5">
-                            <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
+                            <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-[#0f2c5c] dark:text-sky-200">
                               {group.port}
                             </p>
                             {group.items.slice(0, 2).map((b) => (

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/layout/AuthLayout";
 import DocumentTitle from "@/components/layout/DocumentTitle";
+import RegisterServiceWorker from "@/components/pwa/RegisterServiceWorker";
 import SwrProvider from "@/lib/swr/SwrProvider";
 import "./globals.css";
 
@@ -14,6 +15,26 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "PortPax",
   description: "Plataforma de gestión de operaciones en puertos de cruceros",
+  applicationName: "PortPax",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "PortPax",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f2c5c",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -26,7 +47,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=localStorage.getItem('portpax-theme');var isDark=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',isDark);document.documentElement.classList.toggle('light',!isDark);}catch(e){}})();`,
+            __html: `(function(){try{var mobile=window.matchMedia('(max-width: 767px)').matches;var s=localStorage.getItem('portpax-theme');var isDark=!mobile&&(s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches));document.documentElement.classList.toggle('dark',isDark);document.documentElement.classList.toggle('light',!isDark);}catch(e){}})();`,
           }}
         />
       </head>
@@ -36,6 +57,7 @@ export default function RootLayout({
         <AuthProvider>
           <SwrProvider>
             <DocumentTitle />
+            <RegisterServiceWorker />
             <AuthLayout>{children}</AuthLayout>
           </SwrProvider>
         </AuthProvider>

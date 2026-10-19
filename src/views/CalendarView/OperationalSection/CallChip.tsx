@@ -78,14 +78,14 @@ export default function CallChip({
       title={`${lineLabel} · ${booking.vessel_name} · ${booking.port_name} · ${positionLabel} · ${bookingStatusLabel(booking.status)}${booking.first_arrival ? " · Primer arribo" : ""}${chipTitle ? ` · ${chipTitle}` : ""}${!focused ? " · vecino" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <span className="flex min-w-0 items-start justify-between gap-1">
-        <span className="min-w-0 truncate font-semibold">
+      <span className="flex min-w-0 flex-col items-stretch gap-0.5 md:flex-row md:items-start md:justify-between md:gap-1">
+        <span className="min-w-0 font-semibold md:truncate">
           {booking.vessel_name}
         </span>
         <BookingStatusBadge
           status={booking.status}
           size="sm"
-          className="shrink-0"
+          className="w-fit shrink-0"
         />
       </span>
       <ShippingLineCaption

@@ -1,5 +1,8 @@
 const STORAGE_KEY = "portpax-theme";
 
+/** Matches sidebar / layout mobile breakpoint (< md). */
+export const THEME_MOBILE_MAX_WIDTH_PX = 767;
+
 export type Theme = "light" | "dark";
 
 export function getStoredTheme(): Theme | null {
@@ -20,13 +23,20 @@ export function setStoredTheme(theme: Theme): void {
   }
 }
 
+export function isMobileThemeViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(`(max-width: ${THEME_MOBILE_MAX_WIDTH_PX}px)`).matches;
+}
+
 export function applyThemeToDocument(theme: Theme | null): void {
   if (typeof document === "undefined" || typeof window === "undefined") return;
   const html = document.documentElement;
+  // Responsive: always light (ops request — Herman).
   const isDark =
-    theme === "dark" ||
-    (theme !== "light" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+    !isMobileThemeViewport() &&
+    (theme === "dark" ||
+      (theme !== "light" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches));
   html.classList.toggle("dark", isDark);
   html.classList.toggle("light", !isDark);
 }

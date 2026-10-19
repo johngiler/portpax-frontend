@@ -209,7 +209,11 @@ export default function WeekGrid({
               ) : (
                 portNames.map((portName) => (
                   <tr key={portName}>
-                    <td className={chrome.side}>{portName}</td>
+                    <td
+                      className={`${chrome.side} uppercase tracking-wide text-[#0f2c5c] dark:text-sky-200`}
+                    >
+                      {portName}
+                    </td>
                     {days.map((iso) => {
                       const cell = bookingsWithFocusNeighbors(
                         bookings.filter(
