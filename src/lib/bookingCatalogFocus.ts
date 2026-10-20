@@ -218,20 +218,31 @@ export function calendarFocusIsActive(focus: BookingCalendarFocus): boolean {
   );
 }
 
+/** Cancelled chips only when the status filter includes Cancelada. */
+export function calendarIncludesCancelled(
+  focus: BookingCalendarFocus | undefined,
+): boolean {
+  return Boolean(focus?.statuses?.includes("c"));
+}
+
 /**
  * Same-day (or same cell group) bookings: keep neighbors only when at least
  * one booking matches the focus. Orphan non-matches are dropped.
+ * Cancelled never appear as occupancy neighbors unless Cancelada is filtered.
  */
 export function bookingsWithFocusNeighbors(
   bookings: BookingListItem[],
   focus: BookingCalendarFocus,
   todayIso = bookingTodayIso(),
 ): BookingListItem[] {
-  if (!calendarFocusIsActive(focus)) return bookings;
+  const pool = calendarIncludesCancelled(focus)
+    ? bookings
+    : bookings.filter((b) => b.status !== "c");
+  if (!calendarFocusIsActive(focus)) return pool;
   if (
-    !bookings.some((b) => bookingMatchesCalendarFocus(b, focus, todayIso))
+    !pool.some((b) => bookingMatchesCalendarFocus(b, focus, todayIso))
   ) {
     return [];
   }
-  return bookings;
+  return pool;
 }

@@ -37,7 +37,7 @@ function bookingsForCell(
   focus: BookingCalendarFocus,
 ): BookingListItem[] {
   const day = bookingsWithFocusNeighbors(
-    bookings.filter((b) => b.call_date === date && b.status !== "c"),
+    bookings.filter((b) => b.call_date === date),
     focus,
   );
   return day.filter((b) => {
@@ -55,9 +55,7 @@ function bookingsForPortDay(
   return bookingsWithFocusNeighbors(
     bookings.filter(
       (b) =>
-        b.call_date === date &&
-        b.status !== "c" &&
-        (b.port_name || "Puerto") === portName,
+        b.call_date === date && (b.port_name || "Puerto") === portName,
     ),
     focus,
   );
