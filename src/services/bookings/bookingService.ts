@@ -89,6 +89,11 @@ export type FetchBookingsParams = {
   first_arrival?: boolean;
   /** Single cancellation reason; only applies with cancelled status. */
   cancellation_reason?: CancellationReason | "";
+  /**
+   * Calendar occupancy fetch: omit cancelled rows (neighbors stay other
+   * occupancy statuses). Ignored when `statuses` already includes `c`.
+   */
+  exclude_cancelled?: boolean;
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -148,6 +153,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.first_arrival === false) query.set("first_arrival", "false");
   if (params.cancellation_reason) {
     query.set("cancellation_reason", params.cancellation_reason);
+  }
+  if (params.exclude_cancelled) {
+    query.set("exclude_cancelled", "true");
   }
   return query;
 }

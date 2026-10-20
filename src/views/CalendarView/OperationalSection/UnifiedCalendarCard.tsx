@@ -116,6 +116,7 @@ export default function UnifiedCalendarCard({
       to: range.to,
       year,
       season,
+      includeCancelled: statuses.includes("c"),
     });
 
   const calendarFocus = useMemo(

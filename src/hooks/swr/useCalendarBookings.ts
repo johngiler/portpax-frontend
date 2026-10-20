@@ -21,6 +21,8 @@ export type CalendarBookingsParams = {
   year: number;
   season?: CalendarSeason;
   search: string;
+  /** When false, API omits cancelled (occupancy neighbors only). */
+  includeCancelled?: boolean;
 };
 
 function calendarParamsKey(p: CalendarBookingsParams): string {
@@ -32,6 +34,7 @@ function calendarParamsKey(p: CalendarBookingsParams): string {
     p.to,
     p.year,
     p.season ?? "natural",
+    p.includeCancelled ? "c" : "occ",
   ].join("|");
 }
 
@@ -44,13 +47,15 @@ type CalendarPayload = {
 async function fetchCalendarPayload(
   params: CalendarBookingsParams,
 ): Promise<CalendarPayload> {
-  // Soft-focus filters (status, vessel, line, conflict, position) stay on the
-  // client so neighbors remain visible in the grids.
+  // Soft-focus (vessel/line/status among occupancy) stays on the client so
+  // same-day neighbors remain visible. Cancelled are not occupancy: drop
+  // them on the API unless the status filter asked for Cancelada.
   const common = {
     ports: params.portIds.length > 0 ? params.portIds : undefined,
     search: params.search.trim() || undefined,
     ordering: "call_date" as const,
     pageSize: 500,
+    exclude_cancelled: params.includeCancelled ? undefined : true,
   };
 
   let bookings: BookingListItem[];
