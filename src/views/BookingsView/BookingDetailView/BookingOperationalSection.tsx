@@ -161,7 +161,11 @@ export default function BookingOperationalSection({
     try {
       const payload: Parameters<typeof updateBooking>[1] = {};
       if (canSchedule) {
-        payload.position = positionId > 0 ? positionId : null;
+        if (positionId <= 0) {
+          setSectionError("Elige una posición.");
+          return;
+        }
+        payload.position = positionId;
         payload.eta = eta || null;
         payload.etd = etd || null;
         payload.acknowledge_combined_red = ackCombinedRed || undefined;
@@ -201,6 +205,16 @@ export default function BookingOperationalSection({
       label: `${position.code}${suffix}`,
     };
   });
+  if (
+    booking.position &&
+    booking.position > 0 &&
+    !positionOptions.some((opt) => opt.value === booking.position)
+  ) {
+    positionOptions.unshift({
+      value: booking.position,
+      label: booking.position_code ?? `Posición ${booking.position}`,
+    });
+  }
 
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
   const ltaTrack =
@@ -278,9 +292,13 @@ export default function BookingOperationalSection({
               value={positionId}
               onChange={setPositionId}
               options={positionOptions}
-              optionLabel={loadingSuggestions ? "Cargando…" : "Sin asignar"}
-              emptyValue={0}
-              disabled={scheduleReadOnly}
+              required
+              error={
+                !loadingSuggestions && positionId <= 0
+                  ? "Elige una posición"
+                  : undefined
+              }
+              disabled={scheduleReadOnly || loadingSuggestions}
             />
             <PositionOccupancyHint
               occupant={
@@ -441,7 +459,7 @@ export default function BookingOperationalSection({
           <DefaultButton
             type="button"
             onClick={() => void performSave()}
-            disabled={saving || !hasChanges}
+            disabled={saving || !hasChanges || (canSchedule && positionId <= 0)}
           >
             {saving ? "Guardando…" : "Guardar operación"}
           </DefaultButton>

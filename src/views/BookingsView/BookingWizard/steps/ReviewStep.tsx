@@ -221,10 +221,7 @@ function DateRowEditors({
   );
 
   function handlePositionChange(nextId: number) {
-    if (nextId <= 0) {
-      onChange({ positionId: null, positionLabel: "" });
-      return;
-    }
+    if (!Number.isFinite(nextId) || nextId <= 0) return;
     const match = suggestions.find((p) => p.id === nextId);
     onChange({
       positionId: nextId,
@@ -292,10 +289,12 @@ function DateRowEditors({
             value={entry.positionId ?? 0}
             onChange={handlePositionChange}
             options={positionOptions}
-            optionLabel={
-              loadingSuggestions ? "Cargando…" : "Auto"
+            required
+            error={
+              !loadingSuggestions && entry.positionId == null
+                ? "Elige una posición"
+                : undefined
             }
-            emptyValue={0}
             compact
             disabled={loadingSuggestions}
           />
@@ -418,7 +417,10 @@ export default function ReviewStep({
           warnings: mergedWarnings,
           by_date: byDate,
         });
-        onBlockingChange?.(false);
+        const missingPosition = callDates.some(
+          (iso) => (dateEntries[iso]?.positionId ?? 0) <= 0,
+        );
+        onBlockingChange?.(missingPosition);
       })
       .catch(() => {
         if (cancelled) return;

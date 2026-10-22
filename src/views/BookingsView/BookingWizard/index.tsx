@@ -57,7 +57,9 @@ function canAdvance(stepId: BookingWizardStepId, form: BookingWizardForm): boole
     case "dates":
       return form.callDates.length > 0;
     case "review":
-      return true;
+      return form.callDates.every(
+        (iso) => (form.dateEntries[iso]?.positionId ?? 0) > 0,
+      );
     default:
       return false;
   }
@@ -336,7 +338,8 @@ export default function BookingWizard() {
       !form.shippingLineId ||
       !form.vesselId ||
       form.callDates.length === 0 ||
-      reviewBlocked
+      reviewBlocked ||
+      !canAdvance("review", form)
     ) {
       return;
     }

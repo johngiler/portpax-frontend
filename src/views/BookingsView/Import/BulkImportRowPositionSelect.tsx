@@ -187,7 +187,7 @@ export default function BulkImportRowPositionSelect({
       name={`bulk_position_${row.id}`}
       value={row.position_id ?? 0}
       emptyValue={0}
-      optionLabel={loading ? "Cargando…" : "Sin posición"}
+      optionLabel={loading ? "Cargando…" : "Auto"}
       compact
       disabled={
         disabled || !row.port_id || !row.vessel_id || !row.call_date

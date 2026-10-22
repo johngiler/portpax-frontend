@@ -78,8 +78,8 @@ export default function WizardCardActions({
         <DefaultButton
           type="button"
           onClick={onSubmit}
-          disabled={submitting || reviewBlocked}
-          aria-disabled={submitting || reviewBlocked}
+          disabled={submitting || reviewBlocked || !canContinue}
+          aria-disabled={submitting || reviewBlocked || !canContinue}
         >
           <span className="inline-flex items-center gap-2">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

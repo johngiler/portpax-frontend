@@ -122,13 +122,17 @@ export default function CalendarOccupancyCard({
 
   async function handlePositionChange(nextId: number) {
     const previousId = booking.position_id ?? 0;
+    if (!Number.isFinite(nextId) || nextId <= 0) {
+      setPositionId(previousId);
+      return;
+    }
     setPositionId(nextId);
     if (nextId === previousId) return;
     setSaving(true);
     setSaveError(null);
     try {
       const updated = await updateBooking(booking.id, {
-        position: nextId > 0 ? nextId : null,
+        position: nextId,
       });
       setPositionId(updated.position ?? 0);
       await onReassigned?.(updated);
@@ -314,10 +318,7 @@ export default function CalendarOccupancyCard({
               value={positionId}
               onChange={(v) => void handlePositionChange(v)}
               options={positionOptions}
-              optionLabel={
-                loadingSuggestions || saving ? "Guardando…" : "Sin asignar"
-              }
-              emptyValue={0}
+              required
               compact
               disabled={saving || loadingSuggestions}
             />
