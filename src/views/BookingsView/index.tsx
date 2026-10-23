@@ -1782,7 +1782,7 @@ export default function BookingsView() {
         ? "Calendario operativo de todos los puertos (o el seleccionado) en una sola vista."
         : tab === "proximity"
           ? "Itinerario multi-puerto del barco seleccionado (filtro de conflicto editable)."
-          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años.";
+          : "Disponibilidad día × posición: un puerto o todos, desde hoy hasta 3 años. El pasado se consulta; no se reserva.";
 
   const calendarPortLabel =
     appliedPortFilter.length === 0

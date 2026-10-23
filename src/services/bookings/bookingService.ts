@@ -1089,6 +1089,9 @@ export async function updateBooking(
     if (payload.cancellation_reason) {
       form.set("cancellation_reason", payload.cancellation_reason);
     }
+    if (payload.cancellation_notes !== undefined) {
+      form.set("cancellation_notes", payload.cancellation_notes);
+    }
     if (payload.cancellation_evidence) {
       form.set("cancellation_evidence", payload.cancellation_evidence);
     }
@@ -1145,6 +1148,9 @@ export async function updateBooking(
   }
   if (payload.cancellation_reason !== undefined) {
     body.cancellation_reason = payload.cancellation_reason;
+  }
+  if (payload.cancellation_notes !== undefined) {
+    body.cancellation_notes = payload.cancellation_notes;
   }
   if (payload.port_operator_override !== undefined) {
     body.port_operator_override = payload.port_operator_override;

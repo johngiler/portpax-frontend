@@ -62,6 +62,7 @@ export default function BookingStatusActions({
 
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
+  const [cancelNotes, setCancelNotes] = useState("");
   const [cancelEvidence, setCancelEvidence] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -145,10 +146,12 @@ export default function BookingStatusActions({
       const updated = await updateBooking(booking.id, {
         status: "c",
         cancellation_reason: cancelReason,
+        cancellation_notes: cancelNotes.trim(),
         cancellation_evidence: cancelEvidence,
       });
       onUpdated(updated);
       setCancelReason("");
+      setCancelNotes("");
       setCancelEvidence(null);
       setPendingAction(null);
     } catch (err) {
@@ -188,13 +191,29 @@ export default function BookingStatusActions({
 
       {booking.status === "c" ? (
         <div className="mt-4 space-y-3">
-          {booking.cancellation_reason_display ? (
-            <p className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
-              Motivo:{" "}
-              <span className="font-medium text-zinc-800 dark:text-zinc-100">
-                {booking.cancellation_reason_display}
-              </span>
-            </p>
+          {booking.cancellation_reason_display || booking.cancellation_notes ? (
+            <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
+              {booking.cancellation_reason_display ? (
+                <p>
+                  Motivo:{" "}
+                  <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                    {booking.cancellation_reason_display}
+                  </span>
+                </p>
+              ) : null}
+              {booking.cancellation_notes ? (
+                <p
+                  className={
+                    booking.cancellation_reason_display ? "mt-2 whitespace-pre-wrap" : "whitespace-pre-wrap"
+                  }
+                >
+                  Comentarios:{" "}
+                  <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                    {booking.cancellation_notes}
+                  </span>
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {booking.cancellation_evidence_url ? (
             <a
@@ -416,6 +435,7 @@ export default function BookingStatusActions({
         onClose={() => {
           setPendingAction(null);
           setCancelReason("");
+          setCancelNotes("");
           setCancelEvidence(null);
           setModalError(null);
         }}
@@ -427,6 +447,7 @@ export default function BookingStatusActions({
               onClick={() => {
                 setPendingAction(null);
                 setCancelReason("");
+                setCancelNotes("");
                 setCancelEvidence(null);
                 setModalError(null);
               }}
@@ -472,6 +493,24 @@ export default function BookingStatusActions({
             </label>
           ))}
         </fieldset>
+        <div className="mt-4">
+          <label
+            htmlFor="cancellation_notes"
+            className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-300"
+          >
+            Comentarios (opcional)
+          </label>
+          <textarea
+            id="cancellation_notes"
+            name="cancellation_notes"
+            rows={3}
+            value={cancelNotes}
+            onChange={(e) => setCancelNotes(e.target.value)}
+            disabled={saving}
+            maxLength={2000}
+            className="w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-2.5 text-sm text-zinc-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100"
+          />
+        </div>
         <div className="mt-4">
           <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-300">
             Evidencia (opcional)

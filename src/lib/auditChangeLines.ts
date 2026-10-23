@@ -46,6 +46,7 @@ const FIELD_LABELS: Record<string, string> = {
   password: "Contraseña",
   status: "Estado",
   cancellation_reason: "Motivo de cancelación",
+  cancellation_notes: "Comentario de cancelación",
   position_id: "Posición",
   eta: "ETA",
   etd: "ETD",

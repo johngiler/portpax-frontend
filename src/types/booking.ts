@@ -96,6 +96,7 @@ export type Booking = BookingListItem & {
   conflict_snapshot?: BookingConflictItem[];
   cancellation_reason: CancellationReason | "";
   cancellation_reason_display: string;
+  cancellation_notes: string;
   cancellation_evidence_url: string | null;
   confirmation_pdf_url: string | null;
   arrival_manifest_url: string | null;
@@ -221,6 +222,7 @@ export type BookingUpdatePayload = {
   operation_notes?: string;
   arrival_manifest?: File | null;
   cancellation_reason?: CancellationReason | null;
+  cancellation_notes?: string;
   cancellation_evidence?: File | null;
   port_operator_override?: boolean;
   acknowledge_combined_red?: boolean;

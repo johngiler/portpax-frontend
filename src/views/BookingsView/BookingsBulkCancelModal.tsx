@@ -11,6 +11,7 @@ import {
 
 export type BulkCancelConfirmPayload = {
   reason: CancellationReason;
+  notes?: string;
   tagName?: string;
 };
 
@@ -30,11 +31,13 @@ export default function BookingsBulkCancelModal({
   onConfirm,
 }: BookingsBulkCancelModalProps) {
   const [reason, setReason] = useState<CancellationReason | "">("");
+  const [notes, setNotes] = useState("");
   const [tagName, setTagName] = useState("");
 
   useEffect(() => {
     if (!open) {
       setReason("");
+      setNotes("");
       setTagName("");
     }
   }, [open]);
@@ -66,6 +69,7 @@ export default function BookingsBulkCancelModal({
               if (!reason) return;
               onConfirm({
                 reason,
+                notes: notes.trim() || undefined,
                 tagName: tagName.trim() || undefined,
               });
             }}
@@ -109,6 +113,24 @@ export default function BookingsBulkCancelModal({
           </label>
         ))}
       </fieldset>
+      <div className="mt-4">
+        <label
+          htmlFor="bulk_cancellation_notes"
+          className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-200"
+        >
+          Comentarios (opcional)
+        </label>
+        <textarea
+          id="bulk_cancellation_notes"
+          name="bulk_cancellation_notes"
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          disabled={saving}
+          maxLength={2000}
+          className="w-full rounded-md border border-[var(--admin-border)] bg-gradient-to-b from-white to-[var(--admin-surface-muted)] px-4 py-2.5 text-sm text-zinc-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] focus:border-[var(--admin-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--admin-accent)]/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/70 dark:from-zinc-900 dark:to-zinc-800 dark:text-zinc-100"
+        />
+      </div>
     </Modal>
   );
 }

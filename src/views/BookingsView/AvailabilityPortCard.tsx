@@ -49,12 +49,18 @@ function rowHasOccupancy(
   return row.cells.some((calls) => calls.length > 0);
 }
 
-/** Hide ports with no pier/anchorage columns or no free future slots in the loaded window. */
+/**
+ * Availability (gaps) visibility:
+ * - Forward window (today+): hide ports with no free slot from today — primary bookable view.
+ * - Loaded past days: always show (consultation). Empty cells stay "Pasado", not bookable.
+ */
 function shouldShowAvailabilityPort(
   report: AvailabilityReport,
   todayIso: string,
 ): boolean {
-  if (report.columns.length === 0) return false;
+  if (report.columns.length === 0 || report.rows.length === 0) return false;
+  const hasPastRow = report.rows.some((row) => row.date < todayIso);
+  if (hasPastRow) return true;
   return report.rows.some(
     (row) =>
       row.date >= todayIso &&

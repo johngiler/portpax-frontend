@@ -43,7 +43,7 @@ import BookingsEmptyState from "./BookingsEmptyState";
 
 export type BulkStatusPayload = Pick<
   BookingUpdatePayload,
-  "status" | "cancellation_reason" | "tag_name"
+  "status" | "cancellation_reason" | "cancellation_notes" | "tag_name"
 >;
 
 type BookingsListProps = {
@@ -263,6 +263,7 @@ export default function BookingsList({
       onBulkStatus([...selectedIds], {
         status: "c",
         cancellation_reason: payload.reason,
+        ...(payload.notes ? { cancellation_notes: payload.notes } : {}),
         ...(payload.tagName ? { tag_name: payload.tagName } : {}),
       }),
     );
