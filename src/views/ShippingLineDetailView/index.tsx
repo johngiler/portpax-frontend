@@ -26,6 +26,9 @@ export default function ShippingLineDetailView() {
   const canWrite = canWriteApp(user?.role);
   const searchParams = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
+  const vesselParam = Number(searchParams.get("vessel") ?? "");
+  const highlightVesselId =
+    Number.isFinite(vesselParam) && vesselParam > 0 ? vesselParam : null;
 
   const [line, setLine] = useState<ShippingLineDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,7 +109,12 @@ export default function ShippingLineDetailView() {
 
       <div className="mt-6 space-y-6">
         <ShippingLineDetailsSection line={line} />
-        <ShippingLineVesselsSection line={line} onChange={loadLine} canWrite={canWrite} />
+        <ShippingLineVesselsSection
+          line={line}
+          onChange={loadLine}
+          canWrite={canWrite}
+          highlightVesselId={highlightVesselId}
+        />
 
         <ShippingLineDetailAuditSection shippingLineId={line.id} />
       </div>

@@ -4,56 +4,20 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import ViewSection from "@/components/layout/ViewSection";
-import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
-import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import { formatIsoDateLabel, toIsoDate } from "@/lib/bookingDates";
-import { formatTimeShort } from "@/lib/bookingDisplay";
-import { cardPaxTitle, formatCardPax } from "@/lib/bookingPaxDisplay";
-import { CalendarRange, CheckCircle2, Clock3, Ruler, Users } from "lucide-react";
-import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
-import {
-  conflictCallCardFrameSeverity,
-  conflictChipTitle,
-  conflictChipsFromApi,
-  conflictHighlightsFromApi,
-} from "@/lib/conflictDisplayFromApi";
-import {
-  conflictCardClassName,
-  conflictFieldHighlightClassName,
-} from "@/lib/bookingConflictStyle";
-import type { BookingConflictSeverity } from "@/types/booking";
+import { CalendarRange, CheckCircle2, Ruler } from "lucide-react";
 import type { AvailabilityReport } from "@/services/bookings/bookingService";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
   newBookingHref,
-  type BookingBadgeStatus,
   type CancellationReason,
 } from "@/types/booking";
-import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
-import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import AvailabilityColorLegend from "./AvailabilityColorLegend";
+import AvailabilityOccupiedCallCard from "./AvailabilityOccupiedCallCard";
 import {
   availabilityCallMatchesFocus,
-  availabilityFocusNeighborTitle,
+  occupiedCallHidesCarrierIdentity,
 } from "./availabilityCallFilter";
-
-const BOOKING_BADGE_STATUSES = new Set<string>([
-  "nr",
-  "h",
-  "co",
-  "cl",
-  "lta",
-  "ltd",
-  "r",
-  "c",
-]);
-
-function asBadgeStatus(value: string | undefined): BookingBadgeStatus | null {
-  if (!value || !BOOKING_BADGE_STATUSES.has(value)) return null;
-  return value as BookingBadgeStatus;
-}
 
 type Props = {
   data: AvailabilityReport;
@@ -243,7 +207,7 @@ export default function AvailabilityChartSection({
   // Wide enough for «Lun 19 oct 2026» (nowrap off + wrap on narrow).
   const dateColPx = isMobile ? 124 : 156;
   const dayColPx = isMobile ? 168 : 208;
-  /** Hide carrier identity on cards (photo-safe: only LOA / PAX / schedule readable). */
+  /** Hide names as «Posición asignada»; focused naviera/grupo/barco stay visible. */
   const [hideCarrierIdentity, setHideCarrierIdentity] = useState(false);
   const focus = {
     statuses: statusFilter,
@@ -399,168 +363,44 @@ export default function AvailabilityChartSection({
                         ) : relatedOnly ? (
                           <UnavailableSlot
                             reason={
-                              calls.length === 1
-                                ? `Ocupada por ${calls[0].vessel_name} (${calls[0].booking_code})`
-                                : `Ocupada por componentes relacionados (${calls
-                                    .map((c) => c.vessel_name)
-                                    .join(", ")})`
+                              calls.every((call) =>
+                                occupiedCallHidesCarrierIdentity(
+                                  hideCarrierIdentity,
+                                  call,
+                                  focus,
+                                ),
+                              )
+                                ? "Posición ocupada"
+                                : calls.length === 1
+                                  ? `Ocupada por ${calls[0].vessel_name} (${calls[0].booking_code})`
+                                  : `Ocupada por componentes relacionados (${calls
+                                      .map((c) => c.vessel_name)
+                                      .join(", ")})`
                             }
                           />
                         ) : (
                           <div className="space-y-2">
-                            {homeCalls.map((call) => {
-                              const badgeStatus = asBadgeStatus(call.status);
-                              const matchesFilter = availabilityCallMatchesFocus(
-                                call,
-                                row.date,
-                                focus,
-                                todayIso,
-                              );
-                              const highlights = conflictHighlightsFromApi(call);
-                              const chips = conflictChipsFromApi(call);
-                              const frameSeverity = conflictCallCardFrameSeverity(
-                                highlights,
-                              );
-                              const chipTitle = conflictChipTitle(chips);
-                              return (
-                              <Link
+                            {homeCalls.map((call) => (
+                              <AvailabilityOccupiedCallCard
                                 key={call.booking_code}
-                                href={bookingDetailHref(
-                                  { booking_code: call.booking_code },
-                                  { returnTo },
+                                call={call}
+                                hideCarrierIdentity={occupiedCallHidesCarrierIdentity(
+                                  hideCarrierIdentity,
+                                  call,
+                                  focus,
                                 )}
-                                {...BOOKING_DETAIL_LINK_PROPS}
-                                className={[
-                                  conflictCardClassName(
-                                    frameSeverity,
-                                    "block rounded-lg border bg-white p-2.5 shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-accent)] dark:bg-zinc-900",
-                                  ),
-                                  matchesFilter
-                                    ? "border-zinc-200 hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 dark:border-zinc-700 dark:hover:border-[var(--admin-accent)]/50"
-                                    : "border-zinc-200/80 opacity-55 hover:opacity-80 dark:border-zinc-700/80",
-                                ].join(" ")}
-                                title={
-                                  hideCarrierIdentity
-                                    ? undefined
-                                    : matchesFilter
-                                      ? `Editar ${call.booking_code}${chipTitle ? ` · ${chipTitle}` : ""}`
-                                      : availabilityFocusNeighborTitle(
-                                          call,
-                                          row.date,
-                                          focus,
-                                          todayIso,
-                                        )
-                                }
-                                aria-label={
-                                  hideCarrierIdentity
-                                    ? "Abrir reserva"
-                                    : `Abrir reserva ${call.booking_code}`
-                                }
-                              >
-                                <div
-                                  className={[
-                                    "flex min-w-0 items-start gap-2",
-                                    hideCarrierIdentity
-                                      ? "pointer-events-none select-none blur-[6px]"
-                                      : "",
-                                  ].join(" ")}
-                                  aria-hidden={hideCarrierIdentity || undefined}
-                                >
-                                  <CatalogLogoThumb
-                                    src={call.vessel_logo}
-                                    alt=""
-                                    size="sm"
-                                    kind="vessel"
-                                  />
-                                  <div className="min-w-0">
-                                    <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                                      <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-50">
-                                        {call.vessel_name}
-                                      </p>
-                                      {badgeStatus ? (
-                                        <BookingStatusBadge
-                                          status={badgeStatus}
-                                          size="sm"
-                                        />
-                                      ) : null}
-                                      {call.first_arrival ? (
-                                        <FirstArrivalBadge compact />
-                                      ) : null}
-                                      <ConflictTypeChips chips={chips} />
-                                    </div>
-                                    <ShippingLineCaption
-                                      name={call.shipping_line_name}
-                                      groupName={call.shipping_line_group_name}
-                                      nameClassName="truncate text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
-                                      groupClassName="truncate text-[11px] text-zinc-500 dark:text-zinc-400"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="mt-2 space-y-1.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                                    {call.loa_m ? (
-                                      <span
-                                        className={[
-                                          "inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
-                                          highlights.highlight_loa
-                                            ? conflictFieldHighlightClassName(
-                                                (highlights.loa_severity as BookingConflictSeverity) ??
-                                                  "yellow",
-                                              )
-                                            : "",
-                                        ].join(" ")}
-                                      >
-                                        <Ruler
-                                          className="h-3.5 w-3.5 shrink-0"
-                                          aria-hidden
-                                        />
-                                        {Number(call.loa_m).toLocaleString(
-                                          "es-MX",
-                                        )}{" "}
-                                        m
-                                      </span>
-                                    ) : (
-                                      <span />
-                                    )}
-                                    <span
-                                      className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400"
-                                      title={cardPaxTitle(
-                                        call.actual_pax,
-                                        call.planned_pax,
-                                      )}
-                                    >
-                                      <Users
-                                        className="h-3.5 w-3.5 shrink-0"
-                                        aria-hidden
-                                      />
-                                      {formatCardPax(
-                                        call.actual_pax,
-                                        call.planned_pax,
-                                      )}
-                                    </span>
-                                    <p
-                                      className={[
-                                        "inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400",
-                                        highlights.highlight_schedule
-                                          ? conflictFieldHighlightClassName(
-                                              (highlights.schedule_severity as BookingConflictSeverity) ??
-                                                "yellow",
-                                            )
-                                          : "",
-                                      ].join(" ")}
-                                    >
-                                      <Clock3
-                                        className="h-3.5 w-3.5 shrink-0"
-                                        aria-hidden
-                                      />
-                                      {formatTimeShort(call.eta)}–
-                                      {formatTimeShort(call.etd)}
-                                    </p>
-                                  </div>
-                                </div>
-                              </Link>
-                              );
-                            })}
+                                matchesFilter={availabilityCallMatchesFocus(
+                                  call,
+                                  row.date,
+                                  focus,
+                                  todayIso,
+                                )}
+                                returnTo={returnTo}
+                                rowDate={row.date}
+                                todayIso={todayIso}
+                                focus={focus}
+                              />
+                            ))}
                           </div>
                         )}
                       </td>

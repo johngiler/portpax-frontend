@@ -46,6 +46,7 @@ const HEAT_MODES = new Set<AvailabilityHeatModeQuery>([
   "availability",
   "occupancy",
 ]);
+const PAX_BASES = new Set<"planned" | "capacity">(["planned", "capacity"]);
 
 function parseIntId(raw: string | null): number {
   if (!raw) return 0;
@@ -101,6 +102,11 @@ export type BookingsWorkspaceFilters = {
   cancellationReason: CancellationReason | "";
   /** Booking tag IDs (multi). Empty = all tags. */
   tags: number[];
+  /**
+   * List passenger KPI basis (same as reports Base PAX).
+   * Real always wins when set; otherwise planned or vessel max capacity.
+   */
+  paxBasis: "planned" | "capacity";
   /** Availability: discrete dates from Excel/paste import (ISO YYYY-MM-DD). */
   importedDates: string[];
 };
@@ -206,6 +212,7 @@ export function parseBookingsWorkspaceFilters(
   const conflict = parseConflictFilter(
     sp.get("conflict") ?? sp.get("has_conflict"),
   );
+  const paxRaw = sp.get("pax");
 
   // `ports=1,2` preferred; legacy `port=1` still accepted.
   const portsCsv = sp.get("ports") || sp.get("port");
@@ -269,6 +276,10 @@ export function parseBookingsWorkspaceFilters(
       .split(",")
       .map((p) => parseIntId(p.trim()))
       .filter((id) => id > 0),
+    paxBasis:
+      paxRaw && PAX_BASES.has(paxRaw as "planned" | "capacity")
+        ? (paxRaw as "planned" | "capacity")
+        : "planned",
     importedDates: parseImportedIsoDates(
       sp.getAll("idates").join(",") || sp.get("idates"),
     ),
@@ -327,6 +338,7 @@ export function buildBookingsWorkspaceQuery(
   // Availability criterion/density: stash across tabs (only occupancy consumes density).
   if (state.heat === "occupancy") sp.set("heat", "occupancy");
   if (state.density >= 1) sp.set("density", String(state.density));
+  if (state.paxBasis === "capacity") sp.set("pax", "capacity");
   if (state.importedDates.length > 0) {
     sp.set("idates", state.importedDates.join(","));
   }

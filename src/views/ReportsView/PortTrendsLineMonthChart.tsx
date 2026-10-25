@@ -3,14 +3,20 @@
 import { useMemo, useState } from "react";
 import ChartCard from "@/views/DashboardView/charts/ChartCard";
 import PortMonthComboChart from "@/views/DashboardView/charts/PortMonthComboChart";
-import type { PortTrendsLineMonthSeries } from "@/services/bookings/bookingService";
+import type { PortTrendsLinePeriodSeries } from "@/services/bookings/bookingService";
 import { ChartLine, Table2 } from "lucide-react";
 
 type Props = {
-  lines: PortTrendsLineMonthSeries[];
+  lines: PortTrendsLinePeriodSeries[];
+  labels: string[];
+  seasonMode: boolean;
 };
 
-export default function PortTrendsLineMonthChart({ lines }: Props) {
+export default function PortTrendsLineMonthChart({
+  lines,
+  labels,
+  seasonMode,
+}: Props) {
   const [mode, setMode] = useState<"chart" | "table">("chart");
   const data = useMemo(
     () => ({
@@ -18,7 +24,11 @@ export default function PortTrendsLineMonthChart({ lines }: Props) {
         port_id: line.shipping_line_id,
         name: line.name,
         code: line.code,
-        months: line.months,
+        months: line.points.map((point, index) => ({
+          month: index + 1,
+          calls: point.calls,
+          passengers: point.passengers,
+        })),
       })),
     }),
     [lines],
@@ -28,8 +38,11 @@ export default function PortTrendsLineMonthChart({ lines }: Props) {
 
   return (
     <ChartCard
-      title="Pasajeros por mes y naviera"
-      description="Líneas = PAX (eje izq.) · barras = calls (eje der.)."
+      title={
+        seasonMode
+          ? "Pasajeros y escalas por temporada"
+          : "Pasajeros y escalas por año"
+      }
       accent="#3478b5"
       actions={
         <div className="flex items-center gap-1 rounded-lg border border-zinc-200/80 bg-white/80 p-0.5 dark:border-zinc-700 dark:bg-zinc-900/80">
@@ -62,7 +75,12 @@ export default function PortTrendsLineMonthChart({ lines }: Props) {
         </div>
       }
     >
-      <PortMonthComboChart data={data} mode={mode} seriesLabel="Naviera" />
+      <PortMonthComboChart
+        data={data}
+        mode={mode}
+        seriesLabel="Naviera"
+        categoryLabels={labels}
+      />
     </ChartCard>
   );
 }

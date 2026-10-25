@@ -14,6 +14,15 @@ export function isAdminRole(role: UserRole | null | undefined): boolean {
   return role === "admin";
 }
 
+/** Campanita in-app. Admin-only until per-role leveling is defined. */
+export const IN_APP_NOTIFICATION_ROLES: readonly UserRole[] = ["admin"];
+
+export function canSeeInAppNotifications(
+  role: UserRole | null | undefined,
+): boolean {
+  return role != null && IN_APP_NOTIFICATION_ROLES.includes(role);
+}
+
 export function isViewerRole(role: UserRole | null | undefined): boolean {
   return role === "viewer";
 }

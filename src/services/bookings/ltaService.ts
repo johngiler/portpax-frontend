@@ -22,6 +22,7 @@ export type FetchLtaParams = {
   shipping_line_group?: number;
   shipping_line?: number;
   is_active?: boolean;
+  pax_basis?: "planned" | "capacity";
 };
 
 function appendScalar(form: FormData, key: string, value: unknown) {
@@ -110,6 +111,9 @@ export async function fetchLongTermAgreements(
   }
   if (params.shipping_line) query.set("shipping_line", String(params.shipping_line));
   if (params.is_active != null) query.set("is_active", String(params.is_active));
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   const qs = query.toString();
   return apiFetch<ApiListResponse<LongTermAgreement>>(`${BASE}${qs ? `?${qs}` : ""}`);
 }

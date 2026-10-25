@@ -21,7 +21,7 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Matriz de calls y PAX por puerto (columnas = meses; filas = años o temporadas).",
     notes:
-      "Puertos ordenados por volumen de PAX. En Temporadas las filas se titulan Summer/Winter. Filtros: multi-puerto, Temporada, Base PAX, Sin LTA y fechas. Exporta PDF / Excel / CSV.",
+      "Puertos ordenados por volumen de PAX. En Temporadas hay una fila por año crucero (may–abr, p. ej. 2025/2026) y las columnas van de MAY a ABR. En año natural, filas por calendario y columnas ene–dic. Filtros: multi-puerto, Temporada, Base PAX, Sin LTA y fechas. Exporta PDF / Excel / CSV.",
   },
   {
     id: "port_carrier",
@@ -29,7 +29,7 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Matriz de calls y PAX de un puerto, desglosada por naviera (columnas = meses).",
     notes:
-      "Requiere puerto. Navieras ordenadas por volumen de PAX. Con filtro de grupo/naviera aparece «Otros». En Temporadas las filas se titulan Summer/Winter; en año natural, por calendario. Exporta PDF / Excel / CSV.",
+      "Requiere puerto. Navieras ordenadas por volumen de PAX. Con filtro de grupo/naviera aparece «Otros». En Temporadas hay una fila por año crucero (may–abr) y columnas MAY–ABR; en año natural, filas por calendario y columnas ene–dic. Exporta PDF / Excel / CSV.",
   },
   {
     id: "port_trends",
@@ -37,7 +37,7 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "SHIPS y PAX por grupo de naviera (columnas = años o temporadas), Growth %, y gráfico mensual calls/PAX por naviera.",
     notes:
-      "Requiere puerto. Con filtro de grupo/naviera aparece «Otros». Temporada cambia títulos de columna a Summer/Winter. Exporta PDF / Excel / CSV.",
+      "Requiere puerto. Con filtro de grupo/naviera aparece «Otros». Temporada cambia títulos de columna a Summer/Winter. Growth compara Summer vs Summer y Winter vs Winter. Gráfica de PAX/escalas por año o temporada, y escalas por día. Exporta PDF / Excel / CSV.",
   },
   {
     id: "solicitudes_port",
@@ -69,6 +69,6 @@ export const REPORT_GUIDE: ReportGuideRow[] = [
     description:
       "Arribos y PAX por puerto y año, con KPIs y pastel de participación.",
     notes:
-      "Filtros: puertos (varios; por defecto todos), grupo, naviera, Temporada (año natural / Summer / Winter), Base PAX, Sin LTA y rango de fechas. Incluye promedio PAX/arribo; si el rango cubre más de un año calendario, desglosa KPIs por año con YoY. Exporta PDF / Excel / CSV.",
+      "Filtros: puertos (varios; por defecto todos), grupo, naviera, Temporada (año natural / Summer / Winter), Base PAX, Sin LTA y rango de fechas. Puertos ordenados por volumen de PAX. Incluye barco principal (más escalas) por puerto y promedio PAX/arribo. El export no incluye el detalle de filtros ni el desglose anual de KPIs. Exporta PDF / Excel / CSV.",
   },
 ];

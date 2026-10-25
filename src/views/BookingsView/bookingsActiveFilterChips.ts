@@ -42,7 +42,8 @@ export type ActiveFilterChipIcon =
   | "calendar"
   | "lta"
   | "tag"
-  | "size";
+  | "size"
+  | "pax";
 
 export type ActiveFilterChip = {
   id: string;
@@ -70,6 +71,7 @@ export type BookingsActiveFilterChipInput = {
   heatMode: AvailabilityHeatModeQuery;
   density: number;
   calendarModeLabel?: string | null;
+  paxBasis?: "planned" | "capacity";
 };
 
 /** Short chips for the “Vista filtrada” banner (only filters that affect this tab). */
@@ -125,6 +127,13 @@ export function buildBookingsActiveFilterChips(
           id: `size-${index}`,
           label,
           icon: "size",
+        });
+      }
+      if (input.paxBasis === "capacity") {
+        chips.push({
+          id: "pax-basis",
+          label: "Base PAX: Cap. máx.",
+          icon: "pax",
         });
       }
     }

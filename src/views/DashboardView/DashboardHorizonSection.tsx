@@ -2,7 +2,9 @@
 
 import { CalendarClock, CalendarRange } from "lucide-react";
 import ViewSection from "@/components/layout/ViewSection";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
+import { portDetailHref } from "@/types/catalog";
 
 type HorizonPortRow = {
   port_id: number;
@@ -54,14 +56,18 @@ export default function DashboardHorizonSection({
               key={row.port_id}
               className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
             >
-              <div className="min-w-0">
+              <CatalogEntityLink
+                href={portDetailHref(row.code)}
+                className="min-w-0 hover:text-[var(--admin-accent)]"
+                ariaLabel={`Ver puerto ${row.name}`}
+              >
                 <p className="truncate font-medium text-zinc-900 dark:text-zinc-50">
                   {row.name}
                 </p>
                 <p className="text-[11px] uppercase tracking-wide text-zinc-400">
                   {row.code}
                 </p>
-              </div>
+              </CatalogEntityLink>
               <div className="shrink-0 text-right text-sm">
                 <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
                   {row.calls.toLocaleString("es")} calls

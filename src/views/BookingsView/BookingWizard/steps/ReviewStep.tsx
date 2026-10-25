@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import {
   Anchor,
   CalendarDays,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import IdentitySummaryCard from "@/components/ui/IdentitySummaryCard";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
 import PositionOccupancyHint from "@/components/booking/PositionOccupancyHint";
@@ -34,8 +34,9 @@ import type {
 } from "@/types/booking";
 import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import type { Port } from "@/types/catalog";
-import { portDisplayName } from "@/types/catalog";
+import { portDetailHref, portDisplayName } from "@/types/catalog";
 import type { ShippingLine, Vessel } from "@/types/cruise";
+import { shippingLineDetailHref } from "@/types/cruise";
 import type { WizardCreateStatus, WizardDateEntry } from "../wizardTypes";
 
 /** Align with backend `LTA_SOFT_FAIL_CODES` — do not hard-block create. */
@@ -94,30 +95,6 @@ type ReviewStepProps = {
   /** Reports blocking validation (errors) so Create can be disabled. */
   onBlockingChange?: (blocked: boolean) => void;
 };
-
-type SummaryItemProps = {
-  icon: typeof MapPin;
-  label: string;
-  children: ReactNode;
-};
-
-function SummaryItem({ icon: Icon, label, children }: SummaryItemProps) {
-  return (
-    <div className="flex gap-3 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-        <Icon className="h-5 w-5" strokeWidth={2} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-          {label}
-        </p>
-        <div className="mt-0.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 type DateRowEditorsProps = {
   iso: string;
@@ -433,6 +410,13 @@ export default function ReviewStep({
     };
   }, [port, vessel, callDates, dateEntries, onBlockingChange]);
 
+  const portHref = port?.code ? portDetailHref(port.code) : null;
+  const lineHref = line?.code ? shippingLineDetailHref({ code: line.code }) : null;
+  const vesselHref =
+    line?.code && vessel?.id
+      ? shippingLineDetailHref({ code: line.code }, { vesselId: vessel.id })
+      : null;
+
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <div className="border-b border-zinc-200/80 bg-gradient-to-r from-[var(--admin-accent)]/12 via-[var(--admin-accent)]/5 to-transparent px-5 py-4 dark:border-zinc-800">
@@ -453,7 +437,12 @@ export default function ReviewStep({
       </div>
 
       <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryItem icon={MapPin} label="Puerto">
+        <IdentitySummaryCard
+          icon={MapPin}
+          label="Puerto"
+          href={portHref}
+          hrefLabel={port ? `Ver puerto ${portDisplayName(port)}` : undefined}
+        >
           <div className="flex items-center gap-2">
             <CatalogLogoThumb src={port?.logo} alt="" size="xs" kind="port" />
             <span className="truncate">
@@ -466,8 +455,13 @@ export default function ReviewStep({
               className="mt-1 text-xs font-normal text-zinc-500 dark:text-zinc-400"
             />
           ) : null}
-        </SummaryItem>
-        <SummaryItem icon={Anchor} label="Naviera">
+        </IdentitySummaryCard>
+        <IdentitySummaryCard
+          icon={Anchor}
+          label="Naviera"
+          href={lineHref}
+          hrefLabel={line ? `Ver naviera ${line.name}` : undefined}
+        >
           <ShippingLineCaption
             name={line?.name ?? "—"}
             groupName={line?.group_name}
@@ -475,8 +469,13 @@ export default function ReviewStep({
             showLogo
             nameClassName="truncate font-semibold text-zinc-900 dark:text-zinc-50"
           />
-        </SummaryItem>
-        <SummaryItem icon={Ship} label="Barco">
+        </IdentitySummaryCard>
+        <IdentitySummaryCard
+          icon={Ship}
+          label="Barco"
+          href={vesselHref}
+          hrefLabel={vessel ? `Ver barco ${vessel.name}` : undefined}
+        >
           <div className="flex items-center gap-2">
             <CatalogLogoThumb
               src={vessel?.logo}
@@ -491,8 +490,8 @@ export default function ReviewStep({
               LOA {vessel.loa_m} m
             </p>
           ) : null}
-        </SummaryItem>
-        <SummaryItem icon={CalendarDays} label="Fechas">
+        </IdentitySummaryCard>
+        <IdentitySummaryCard icon={CalendarDays} label="Fechas">
           {callDates.length === 0 ? (
             <span>—</span>
           ) : callDates.length === 1 ? (
@@ -531,7 +530,7 @@ export default function ReviewStep({
               </ul>
             </details>
           )}
-        </SummaryItem>
+        </IdentitySummaryCard>
       </div>
 
       {validation &&

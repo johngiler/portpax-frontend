@@ -394,6 +394,7 @@ export default function DashboardView() {
                 <DashboardYearBreakdown
                   years={kpis.by_year ?? []}
                   formatValue={(row) => formatAvgPax(row.avg_pax_per_call)}
+                  yoyKey="avg_pax_yoy_pct"
                 />
               ) : stats.yoy.avg_pax_per_call ? (
                 <DashboardYoyBadge
@@ -425,7 +426,6 @@ export default function DashboardView() {
                   formatValue={(row) =>
                     (row.first_arrivals ?? 0).toLocaleString("es")
                   }
-                  yoyKey="first_arrivals_yoy_pct"
                 />
               ) : undefined
             }
@@ -457,7 +457,6 @@ export default function DashboardView() {
                   formatValue={(row) =>
                     (row.conflicts ?? 0).toLocaleString("es")
                   }
-                  yoyKey="conflicts_yoy_pct"
                 />
               ) : undefined
             }

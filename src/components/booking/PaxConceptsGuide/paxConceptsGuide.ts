@@ -23,7 +23,7 @@ export const PAX_CONCEPTS_GUIDE: PaxConceptGuideRow[] = [
   },
 ];
 
-/** Reports-only: how Base PAX feeds PASSENGER matrices. */
+/** How Base PAX feeds passenger totals (list KPI + report matrices). */
 export const PAX_REPORTS_BASIS_GUIDE: PaxConceptGuideRow = {
   id: "reports",
   name: "Base PAX",

@@ -9,8 +9,11 @@ import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
 import { conflictChipsFromApi } from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import type { Booking } from "@/types/booking";
+import { portDetailHref } from "@/types/catalog";
+import { shippingLineDetailHref } from "@/types/cruise";
 import { useActiveShippingLinesCatalog } from "@/hooks/swr/useCatalogs";
 
 type BookingDetailHeroProps = {
@@ -30,6 +33,20 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
     booking.shipping_line_group_name?.trim() ||
     lines.find((line) => line.id === booking.shipping_line)?.group_name?.trim() ||
     "";
+  const portHref = booking.port_code ? portDetailHref(booking.port_code) : null;
+  const lineHref = booking.shipping_line_code
+    ? shippingLineDetailHref({ code: booking.shipping_line_code })
+    : null;
+  const vesselHref = booking.shipping_line_code
+    ? shippingLineDetailHref(
+        { code: booking.shipping_line_code },
+        { vesselId: booking.vessel },
+      )
+    : null;
+  const lineLabel = shippingLineWithGroupLabel(
+    booking.shipping_line_name,
+    groupName,
+  );
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -52,13 +69,14 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
                 />
                 Acuerdo LTA
               </p>
-              <Link
+              <CatalogEntityLink
                 href="/lta"
                 className="mt-0.5 block truncate text-[11px] font-medium text-zinc-600 underline-offset-2 hover:text-[var(--admin-accent)] hover:underline dark:text-zinc-300"
                 title={ltaCode}
+                ariaLabel={`Ver acuerdos LTA (${ltaCode})`}
               >
                 {ltaCode}
-              </Link>
+              </CatalogEntityLink>
             </div>
           ) : null}
         </div>
@@ -72,11 +90,27 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
           </span>
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {booking.vessel_name}
+          <CatalogEntityLink
+            href={vesselHref}
+            ariaLabel={`Ver barco ${booking.vessel_name}`}
+          >
+            {booking.vessel_name}
+          </CatalogEntityLink>
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-          {booking.port_name} ·{" "}
-          {shippingLineWithGroupLabel(booking.shipping_line_name, groupName)}
+          <CatalogEntityLink
+            href={portHref}
+            ariaLabel={`Ver puerto ${booking.port_name}`}
+          >
+            {booking.port_name}
+          </CatalogEntityLink>
+          {" · "}
+          <CatalogEntityLink
+            href={lineHref}
+            ariaLabel={`Ver naviera ${booking.shipping_line_name}`}
+          >
+            {lineLabel}
+          </CatalogEntityLink>
         </p>
 
         <BookingCodeRef

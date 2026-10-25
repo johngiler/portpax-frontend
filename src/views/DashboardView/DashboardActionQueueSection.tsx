@@ -3,7 +3,9 @@
 import { CirclePause } from "lucide-react";
 import Link from "next/link";
 import ViewSection from "@/components/layout/ViewSection";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import type { DashboardActionQueue } from "@/types/dashboard";
+import { portDetailHref } from "@/types/catalog";
 
 type DashboardActionQueueSectionProps = {
   data: DashboardActionQueue;
@@ -38,14 +40,18 @@ export default function DashboardActionQueueSection({
                 key={row.port_id}
                 className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
               >
-                <div className="min-w-0">
+                <CatalogEntityLink
+                  href={portDetailHref(row.code)}
+                  className="min-w-0 hover:text-[var(--admin-accent)]"
+                  ariaLabel={`Ver puerto ${row.name}`}
+                >
                   <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
                     {row.name}
                   </p>
                   <p className="text-[11px] uppercase tracking-wide text-zinc-400">
                     {row.code}
                   </p>
-                </div>
+                </CatalogEntityLink>
                 <div className="flex shrink-0 gap-4 text-right text-sm">
                   <div>
                     <p className="text-[10px] font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">

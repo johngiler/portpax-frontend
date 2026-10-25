@@ -1,7 +1,11 @@
 "use client";
 
+import { Fragment } from "react";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import LtaBookingWindowPanel from "@/components/lta/LtaBookingWindowPanel";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
+import { portDetailHref } from "@/types/catalog";
+import { shippingLineDetailHref } from "@/types/cruise";
 import {
   LTA_BOOKING_POLICY_OPTIONS,
   formatLtaWeekdays,
@@ -93,11 +97,46 @@ export default function LtaRowDetail({
   onRegenerate,
   onOpenExceptions,
 }: LtaRowDetailProps) {
-  const vesselsLabel = agreement.all_vessels
-    ? "Todos los barcos del grupo"
-    : agreement.vessel_names.length
-      ? agreement.vessel_names.join(", ")
-      : "—";
+  const lineHref = agreement.shipping_line_code
+    ? shippingLineDetailHref({ code: agreement.shipping_line_code })
+    : null;
+  const portHref = agreement.port_code
+    ? portDetailHref(agreement.port_code)
+    : null;
+
+  const vesselsContent = agreement.all_vessels ? (
+    <CatalogEntityLink
+      href={lineHref}
+      ariaLabel={`Ver naviera ${agreement.shipping_line_name}`}
+    >
+      Todos los barcos del grupo
+    </CatalogEntityLink>
+  ) : agreement.vessel_names.length ? (
+    <span className="flex flex-wrap gap-x-1">
+      {agreement.vessel_names.map((name, index) => {
+        const vesselId = agreement.vessel_ids[index];
+        const vesselHref = agreement.shipping_line_code
+          ? shippingLineDetailHref(
+              { code: agreement.shipping_line_code },
+              { vesselId },
+            )
+          : null;
+        return (
+          <Fragment key={`${vesselId ?? name}-${index}`}>
+            {index > 0 ? <span className="text-zinc-400">,</span> : null}
+            <CatalogEntityLink
+              href={vesselHref}
+              ariaLabel={`Ver barco ${name}`}
+            >
+              {name}
+            </CatalogEntityLink>
+          </Fragment>
+        );
+      })}
+    </span>
+  ) : (
+    "—"
+  );
 
   const positionsLabel = agreement.position_codes.length
     ? agreement.position_codes.join(", ")
@@ -150,7 +189,12 @@ export default function LtaRowDetail({
             {depth} {depth === 1 ? "bloque" : "bloques"}
           </OverviewField>
           <OverviewField label="Puerto">
-            {agreement.port_name}
+            <CatalogEntityLink
+              href={portHref}
+              ariaLabel={`Ver puerto ${agreement.port_name}`}
+            >
+              {agreement.port_name}
+            </CatalogEntityLink>
             <span className="mt-0.5 block text-xs font-normal text-zinc-500">
               {agreement.port_code}
             </span>
@@ -161,7 +205,7 @@ export default function LtaRowDetail({
               {agreement.shipping_line_group_code}
             </span>
           </OverviewField>
-          <OverviewField label="Barcos">{vesselsLabel}</OverviewField>
+          <OverviewField label="Barcos">{vesselsContent}</OverviewField>
           <OverviewField label="Posiciones">{positionsLabel}</OverviewField>
           <OverviewField label="Días de la semana">
             {formatLtaWeekdays(agreement.weekdays)}

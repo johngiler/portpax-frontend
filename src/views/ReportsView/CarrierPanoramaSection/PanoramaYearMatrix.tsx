@@ -67,6 +67,9 @@ export default function PanoramaYearMatrix({ data }: Props) {
               <th rowSpan={2} className={reportMatrix.cornerHeader}>
                 Puerto
               </th>
+              <th rowSpan={2} className={reportMatrix.monthHeader}>
+                Barco principal
+              </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -109,6 +112,13 @@ export default function PanoramaYearMatrix({ data }: Props) {
                       logoKind="port"
                     />
                   </th>
+                  <td
+                    className={`${
+                      alt ? reportMatrix.dataCellAlt : reportMatrix.dataCell
+                    } text-left`}
+                  >
+                    {row.main_vessel?.name || "—"}
+                  </td>
                   {columns.map((col) => {
                     const cell = byPeriod.get(col.key) ||
                       byPeriod.get(`label:${col.label}`) || {
@@ -151,6 +161,9 @@ export default function PanoramaYearMatrix({ data }: Props) {
               <th scope="row" className={reportMatrix.totalRowLabel}>
                 Total
               </th>
+              <td className={`${reportMatrix.totalDataCell} text-left`}>
+                —
+              </td>
               {columns.map((col) => {
                 const totalsMap = cellMap(
                   data.totals.by_period ?? data.totals.by_year,

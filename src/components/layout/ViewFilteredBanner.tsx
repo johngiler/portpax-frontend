@@ -13,6 +13,7 @@ import {
   Search,
   Ship,
   Tag,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
@@ -36,6 +37,7 @@ const CHIP_ICONS: Record<ActiveFilterChipIcon, LucideIcon> = {
   lta: Tag,
   tag: Tag,
   size: Scaling,
+  pax: Users,
 };
 
 type ViewFilteredBannerProps = {

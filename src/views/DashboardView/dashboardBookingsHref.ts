@@ -49,6 +49,7 @@ export function dashboardBookingsHref(
     density: 0,
     conflict: overrides?.conflict ?? "",
     tags: [],
+    paxBasis: "planned",
     importedDates: [],
     firstArrival: overrides?.firstArrival ?? false,
     cancellationReason: "",

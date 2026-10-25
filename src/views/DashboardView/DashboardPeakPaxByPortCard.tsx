@@ -3,7 +3,9 @@
 import { Users } from "lucide-react";
 import Link from "next/link";
 import ViewSection from "@/components/layout/ViewSection";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import { portDetailHref } from "@/types/catalog";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import type { DashboardPeakPaxPortRow } from "@/types/dashboard";
 import {
@@ -63,14 +65,18 @@ export default function DashboardPeakPaxByPortCard({
                         kind="port"
                         size="sm"
                       />
-                      <div className="min-w-0">
+                      <CatalogEntityLink
+                        href={portDetailHref(row.code)}
+                        className="min-w-0 hover:text-[var(--admin-accent)]"
+                        ariaLabel={`Ver puerto ${row.name}`}
+                      >
                         <p className="font-medium text-zinc-900 dark:text-zinc-50">
                           {row.name}
                         </p>
                         <p className="text-[11px] uppercase tracking-wide text-zinc-400">
                           {row.code}
                         </p>
-                      </div>
+                      </CatalogEntityLink>
                     </div>
                   </td>
                   <td className="px-2 py-2.5 tabular-nums text-zinc-700 dark:text-zinc-200">

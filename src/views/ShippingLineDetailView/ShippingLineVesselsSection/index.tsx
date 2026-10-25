@@ -1,7 +1,7 @@
 "use client";
 
 import { Ship } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SectionAddButton from "@/components/buttons/SectionAddButton";
 import ViewSection from "@/components/layout/ViewSection";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
@@ -16,12 +16,14 @@ type ShippingLineVesselsSectionProps = {
   line: ShippingLineDetail;
   onChange: () => Promise<void>;
   canWrite?: boolean;
+  highlightVesselId?: number | null;
 };
 
 export default function ShippingLineVesselsSection({
   line,
   onChange,
   canWrite = true,
+  highlightVesselId = null,
 }: ShippingLineVesselsSectionProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<VesselFormMode>("create");
@@ -35,6 +37,16 @@ export default function ShippingLineVesselsSection({
     if (!withoutArrivals) return all;
     return all.filter((v) => !(v.arrived_ports && v.arrived_ports.length > 0));
   }, [line.vessels, withoutArrivals]);
+
+  useEffect(() => {
+    if (highlightVesselId) setWithoutArrivals(false);
+  }, [highlightVesselId]);
+
+  useEffect(() => {
+    if (!highlightVesselId) return;
+    const el = document.getElementById(`vessel-${highlightVesselId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightVesselId, vessels]);
 
   function openCreate() {
     setFormMode("create");
@@ -113,6 +125,7 @@ export default function ShippingLineVesselsSection({
                 key={vessel.id}
                 vessel={vessel}
                 canWrite={canWrite}
+                highlighted={highlightVesselId === vessel.id}
                 onEdit={() => openEdit(vessel)}
                 onDelete={() => handleDelete(vessel)}
               />

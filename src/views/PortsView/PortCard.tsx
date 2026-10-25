@@ -4,14 +4,14 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import CountryLabel from "@/components/ui/CountryLabel";
 import type { Port } from "@/types/catalog";
-import { portDisplayName, portStatusLabel } from "@/types/catalog";
+import { portDetailHref, portDisplayName, portStatusLabel } from "@/types/catalog";
 
 type PortCardProps = {
   port: Port;
 };
 
 export default function PortCard({ port }: PortCardProps) {
-  const href = `/ports/detail?code=${encodeURIComponent(port.code)}`;
+  const href = portDetailHref(port.code);
 
   return (
     <Link

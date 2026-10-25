@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Ship } from "lucide-react";
 import TableActionButtons from "@/components/tables/TableActionButtons";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ImageViewer from "@/components/ui/ImageViewer";
+import { portDetailHref } from "@/types/catalog";
 import type { Vessel } from "@/types/cruise";
 
 type VesselCardProps = {
@@ -12,6 +14,7 @@ type VesselCardProps = {
   onEdit: () => void;
   onDelete: () => void;
   canWrite?: boolean;
+  highlighted?: boolean;
 };
 
 export default function VesselCard({
@@ -19,14 +22,19 @@ export default function VesselCard({
   onEdit,
   onDelete,
   canWrite = true,
+  highlighted = false,
 }: VesselCardProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const arrivedPorts = vessel.arrived_ports ?? [];
 
   return (
     <article
+      id={`vessel-${vessel.id}`}
       className={[
-        "overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950/40",
+        "overflow-hidden rounded-xl border bg-white dark:bg-zinc-950/40",
+        highlighted
+          ? "border-[var(--admin-accent)]/50 ring-2 ring-[var(--admin-accent)]/25"
+          : "border-zinc-200/80 dark:border-zinc-800",
         !vessel.is_active ? "opacity-60" : "",
       ].join(" ")}
     >
@@ -52,10 +60,13 @@ export default function VesselCard({
       {arrivedPorts.length > 0 ? (
         <div className="flex flex-wrap gap-1.5 border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
           {arrivedPorts.map((port) => (
-            <span
+            <CatalogEntityLink
               key={port.id}
-              className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 dark:border-zinc-700 dark:bg-zinc-900"
+              href={port.code ? portDetailHref(port.code) : null}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 transition-colors hover:border-[var(--admin-accent)]/40 hover:bg-[var(--admin-accent)]/5 dark:border-zinc-700 dark:bg-zinc-900"
+              fallbackClassName="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 dark:border-zinc-700 dark:bg-zinc-900"
               title={`${port.name}${port.country ? ` · ${port.country}` : ""}`}
+              ariaLabel={`Ver puerto ${port.name}`}
             >
               <CatalogLogoThumb
                 src={port.logo}
@@ -66,7 +77,7 @@ export default function VesselCard({
               <span className="max-w-[5.5rem] truncate text-[10px] font-medium text-zinc-600 dark:text-zinc-300">
                 {port.name}
               </span>
-            </span>
+            </CatalogEntityLink>
           ))}
         </div>
       ) : null}

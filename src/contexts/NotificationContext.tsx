@@ -12,6 +12,7 @@ import {
 } from "react";
 import useSWR, { mutate } from "swr";
 import { useAuthOptional } from "@/contexts/AuthContext";
+import { canSeeInAppNotifications } from "@/lib/navAccess";
 import { useAppUpdateOptional } from "@/contexts/AppUpdateContext";
 import {
   useNotificationsInfinite,
@@ -63,6 +64,9 @@ function patchNotificationPages(
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const auth = useAuthOptional();
   const isAuthenticated = auth?.isAuthenticated ?? false;
+  const canSeeNotifications = canSeeInAppNotifications(auth?.user?.role);
+  const canSeeNotificationsRef = useRef(canSeeNotifications);
+  canSeeNotificationsRef.current = canSeeNotifications;
   const appUpdate = useAppUpdateOptional();
   const notifyRemoteBuild = appUpdate?.notifyRemoteBuild;
   const wsRef = useRef<WebSocket | null>(null);
@@ -90,15 +94,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     refresh: refreshList,
     mutate: mutateList,
     setSize,
-  } = useNotificationsInfinite(isAuthenticated);
+  } = useNotificationsInfinite(isAuthenticated && canSeeNotifications);
 
   const { data: unreadCount = 0, mutate: mutateUnread } = useSWR(
-    isAuthenticated ? swrKeys.notificationUnreadCount : null,
+    isAuthenticated && canSeeNotifications
+      ? swrKeys.notificationUnreadCount
+      : null,
     fetchNotificationUnreadCount,
     { refreshInterval: 60_000 },
   );
 
   const notifications = useMemo(() => {
+    if (!canSeeNotifications) return [];
     const seen = new Set<number>();
     const merged: AppNotification[] = [];
     for (const item of [...liveItems, ...baseNotifications]) {
@@ -110,7 +117,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
-  }, [liveItems, baseNotifications]);
+  }, [canSeeNotifications, liveItems, baseNotifications]);
 
   const refresh = useCallback(() => {
     void refreshList();
@@ -225,6 +232,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             return;
           }
           if (data.type !== "notification" || !data.payload) return;
+          if (!canSeeNotificationsRef.current) return;
           const payload = data.payload as AppNotification;
           setLiveItems((prev) => {
             const without = prev.filter((item) => item.id !== payload.id);

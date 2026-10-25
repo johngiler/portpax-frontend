@@ -1,4 +1,8 @@
-import { apiFetch } from "@/services/apiClient";
+import {
+  apiDownload,
+  apiFetch,
+  triggerBrowserDownload,
+} from "@/services/apiClient";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type {
   BookingConflictHighlights,
@@ -9,6 +13,7 @@ import type {
 import { serializeBookingStatusFilters } from "@/types/booking";
 
 const BASE = "api/bookings/vessel-proximity-matrix/";
+const EXPORT_BASE = "api/bookings/vessel-proximity-export/";
 
 export type VesselProximityMatrixIssue = {
   severity: string;
@@ -87,6 +92,17 @@ export type FetchVesselProximityMatrixParams = {
 export async function fetchVesselProximityMatrix(
   params: FetchVesselProximityMatrixParams,
 ): Promise<VesselProximityMatrixResponse> {
+  const query = proximityQuery(params);
+  if (params.page != null && params.page >= 1) {
+    query.set("page", String(params.page));
+  }
+  if (params.page_size != null && params.page_size >= 1) {
+    query.set("page_size", String(params.page_size));
+  }
+  return apiFetch<VesselProximityMatrixResponse>(`${BASE}?${query.toString()}`);
+}
+
+function proximityQuery(params: FetchVesselProximityMatrixParams): URLSearchParams {
   const query = new URLSearchParams();
   query.set("vessel", String(params.vessel));
   if (params.call_date_from) query.set("call_date_from", params.call_date_from);
@@ -113,11 +129,26 @@ export async function fetchVesselProximityMatrix(
   if (params.call_dates && params.call_dates.length > 0) {
     query.set("call_dates", params.call_dates.join(","));
   }
-  if (params.page != null && params.page >= 1) {
-    query.set("page", String(params.page));
-  }
-  if (params.page_size != null && params.page_size >= 1) {
-    query.set("page_size", String(params.page_size));
-  }
-  return apiFetch<VesselProximityMatrixResponse>(`${BASE}?${query.toString()}`);
+  return query;
+}
+
+export async function exportVesselProximityReport(
+  params: FetchVesselProximityMatrixParams & {
+    exportFormat?: "pdf" | "xlsx";
+  },
+): Promise<void> {
+  const format = params.exportFormat ?? "pdf";
+  const query = proximityQuery(params);
+  query.set("export_format", format);
+  const { blob, filename } = await apiDownload(
+    `${EXPORT_BASE}?${query.toString()}`,
+  );
+  triggerBrowserDownload(blob, filename || `Proximidad.${format}`);
+}
+
+/** @deprecated Use exportVesselProximityReport */
+export async function exportVesselProximityPdf(
+  params: FetchVesselProximityMatrixParams,
+): Promise<void> {
+  return exportVesselProximityReport({ ...params, exportFormat: "pdf" });
 }

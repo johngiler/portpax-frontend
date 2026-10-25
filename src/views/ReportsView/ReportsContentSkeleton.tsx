@@ -102,6 +102,15 @@ export function ReportTrendsContentSkeleton() {
           </div>
         </div>
       </ViewSection>
+
+      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/90">
+        <Skeleton className="h-4 w-56 rounded" />
+        <Skeleton className="mt-4 h-56 w-full rounded-xl" />
+      </div>
+      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/90">
+        <Skeleton className="h-4 w-40 rounded" />
+        <Skeleton className="mt-4 h-44 w-full rounded-xl" />
+      </div>
     </div>
   );
 }

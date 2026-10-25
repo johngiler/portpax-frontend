@@ -94,6 +94,8 @@ export type FetchBookingsParams = {
    * occupancy statuses). Ignored when `statuses` already includes `c`.
    */
   exclude_cancelled?: boolean;
+  /** List KPI: planned | capacity. Real always wins when set. */
+  pax_basis?: "planned" | "capacity";
 };
 
 function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
@@ -157,6 +159,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.exclude_cancelled) {
     query.set("exclude_cancelled", "true");
   }
+  if (params.pax_basis && params.pax_basis !== "planned") {
+    query.set("pax_basis", params.pax_basis);
+  }
   return query;
 }
 
@@ -171,7 +176,7 @@ export async function fetchBookings(
 
 export async function exportBookingsReport(
   params: Omit<FetchBookingsParams, "page" | "pageSize"> & {
-    exportFormat: "xlsx" | "csv";
+    exportFormat: "xlsx" | "csv" | "pdf";
   },
 ): Promise<void> {
   const query = bookingsQuery(params);
@@ -196,19 +201,21 @@ export async function exportCalendarReport(params: {
   ports: number[];
   call_date_from: string;
   call_date_to: string;
+  calendar_mode?: "weekly" | "monthly" | "annual";
   shipping_line?: number;
   shipping_lines?: number[];
   shipping_line_group?: number;
   shipping_line_groups?: number[];
   status?: BookingListStatusFilter;
   statuses?: BookingStatusFilterValue[];
-  exportFormat: "xlsx" | "csv";
+  exportFormat: "xlsx" | "csv" | "pdf";
 }): Promise<void> {
   const query = new URLSearchParams();
   query.set("port", params.ports.join(","));
   query.set("call_date_from", params.call_date_from);
   query.set("call_date_to", params.call_date_to);
   query.set("export_format", params.exportFormat);
+  if (params.calendar_mode) query.set("calendar_mode", params.calendar_mode);
   if (params.shipping_lines && params.shipping_lines.length > 0) {
     query.set("shipping_line", params.shipping_lines.join(","));
   } else if (params.shipping_line) {
@@ -336,7 +343,7 @@ export type SolicitudesPortReport = {
 };
 
 export type MatrixYearRow = {
-  /** Calendar year, season label (e.g. "Summer 2026"), or "total". */
+  /** Calendar year, cruise-year label (e.g. "2025/2026"), or "total". */
   year: number | string | "total";
   months: number[];
   total: number;
@@ -434,11 +441,21 @@ export type PortTrendsGroup = PortTrendsMetricRow & {
   lines: PortTrendsLine[];
 };
 
-export type PortTrendsLineMonthSeries = {
+export type PortTrendsLinePeriodSeries = {
   shipping_line_id: number;
   name: string;
   code: string;
-  months: Array<{ month: number; calls: number; passengers: number }>;
+  points: Array<{
+    key: string | number;
+    label: string;
+    calls: number;
+    passengers: number;
+  }>;
+};
+
+export type PortTrendsDailyCall = {
+  date: string;
+  calls: number;
 };
 
 export type PortTrendsReport = {
@@ -457,7 +474,11 @@ export type PortTrendsReport = {
   /** Present when grupo/naviera filters are active. */
   others?: PortTrendsGroup | null;
   totals: PortTrendsMetricRow;
-  by_line_month?: { lines: PortTrendsLineMonthSeries[] };
+  by_line_period?: {
+    labels: string[];
+    lines: PortTrendsLinePeriodSeries[];
+  };
+  daily_calls?: { days: PortTrendsDailyCall[] };
   note: string;
 } & ReportPagination;
 
@@ -815,6 +836,7 @@ export type CarrierPanoramaPortRow = {
   port_id: number;
   port_name: string;
   logo?: string | null;
+  main_vessel?: { id: number; name: string } | null;
   by_period?: CarrierPanoramaPeriodCell[];
   by_year: CarrierPanoramaYearCell[];
   total_calls: number;

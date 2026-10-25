@@ -52,6 +52,7 @@ import {
   exportStructuredReport,
   updateBooking,
 } from "@/services/bookings/bookingService";
+import { exportVesselProximityReport } from "@/services/bookings/vesselProximityMatrixService";
 import {
   fetchBookingRecapPortPaxOnlyPage,
   matchBookingRecap,
@@ -88,6 +89,7 @@ import {
 } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 import OperationalSection from "@/views/CalendarView/OperationalSection";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
+import type { ReportPaxBasis } from "@/views/ReportsView/reportsFilterQuery";
 import BookingFilters from "./BookingFilters";
 import BookingsAvailabilityPanel from "./BookingsAvailabilityPanel";
 import BookingsHistoryModal from "./BookingsHistoryModal";
@@ -281,6 +283,9 @@ export default function BookingsView() {
     useState<AvailabilityHeatModeQuery>("availability");
   const [density, setDensity] = useState(0);
   const [appliedDensity, setAppliedDensity] = useState(0);
+  const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>("planned");
+  const [appliedPaxBasis, setAppliedPaxBasis] =
+    useState<ReportPaxBasis>("planned");
 
   const [positionOptions, setPositionOptions] = useState<
     { value: number; label: string }[]
@@ -381,6 +386,7 @@ export default function BookingsView() {
       conflict: appliedConflictFilter,
       firstArrival: appliedFirstArrival,
       cancellationReason: appliedCancellationReason,
+      paxBasis: appliedPaxBasis,
       importedDates: availabilityDateAllowlist ?? [],
       ...overrides,
     };
@@ -456,6 +462,8 @@ export default function BookingsView() {
     setAppliedHeatMode(parsed.heat);
     setDensity(parsed.density);
     setAppliedDensity(parsed.density);
+    setPaxBasis(parsed.paxBasis);
+    setAppliedPaxBasis(parsed.paxBasis);
     setWeekAnchor(parsed.week);
     setYear(parsed.year);
     setMonthIndex(parsed.month);
@@ -564,6 +572,7 @@ export default function BookingsView() {
         : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
+      pax_basis: appliedPaxBasis,
     };
   }, [
     appliedSearch,
@@ -583,6 +592,7 @@ export default function BookingsView() {
     appliedCustomDateTo,
     availabilityDateAllowlist,
     bookingRecap,
+    appliedPaxBasis,
   ]);
 
   const proximityDateRange = useMemo(() => {
@@ -808,6 +818,7 @@ export default function BookingsView() {
     setAppliedHeatMode(heatMode);
     // Stash density across criteria; panel only sends ships_per_day in occupancy.
     setAppliedDensity(density);
+    setAppliedPaxBasis(tab === "list" ? paxBasis : appliedPaxBasis);
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
       nextWeek = toIsoDate(year, monthIndex, 1);
@@ -834,6 +845,7 @@ export default function BookingsView() {
         week: nextWeek,
         heat: heatMode,
         density,
+        paxBasis: tab === "list" ? paxBasis : appliedPaxBasis,
         conflict: nextConflict,
         firstArrival: nextFirstArrival,
         cancellationReason: nextCancellationReason,
@@ -914,6 +926,8 @@ export default function BookingsView() {
     setAppliedHeatMode("availability");
     setDensity(0);
     setAppliedDensity(0);
+    setPaxBasis("planned");
+    setAppliedPaxBasis("planned");
     setAvailabilityDateAllowlist(null);
     syncToUrl({
       tab: "list",
@@ -939,6 +953,7 @@ export default function BookingsView() {
       conflict: "",
       firstArrival: false,
       cancellationReason: "",
+      paxBasis: "planned",
       importedDates: [],
     });
   }
@@ -989,6 +1004,8 @@ export default function BookingsView() {
     setAppliedHeatMode("availability");
     setDensity(0);
     setAppliedDensity(0);
+    setPaxBasis("planned");
+    setAppliedPaxBasis("planned");
     setAvailabilityDateAllowlist(null);
     setBookingRecap(null);
     setBookingRecapScope(null);
@@ -1022,6 +1039,7 @@ export default function BookingsView() {
       conflict: clearedConflict,
       firstArrival: false,
       cancellationReason: "",
+      paxBasis: "planned",
       importedDates: [],
     });
   }
@@ -1081,7 +1099,8 @@ export default function BookingsView() {
       (tab === "list" && Boolean(bookingRecap)) ||
       (tab === "availability" && appliedHeatMode !== "availability") ||
       (tab === "availability" && appliedDensity > 0) ||
-      (tab === "calendar" && appliedCalendarMode !== "monthly");
+      (tab === "calendar" && appliedCalendarMode !== "monthly") ||
+      (tab === "list" && appliedPaxBasis !== "planned");
 
   const canClearFilters =
     hasActiveFilters ||
@@ -1121,7 +1140,9 @@ export default function BookingsView() {
     density > 0 ||
     appliedDensity > 0 ||
     (tab === "calendar" && calendarMode !== "monthly") ||
-    appliedCalendarMode !== "monthly";
+    appliedCalendarMode !== "monthly" ||
+    (tab === "list" &&
+      (paxBasis !== "planned" || appliedPaxBasis !== "planned"));
 
   const canApplyFilters =
     !bookingStatusFiltersEqual(statusFilter, appliedStatusFilter) ||
@@ -1148,12 +1169,13 @@ export default function BookingsView() {
     calendarSeason !== appliedCalendarSeason ||
     positionFilter !== appliedPositionFilter ||
     heatMode !== appliedHeatMode ||
-    density !== appliedDensity;
+    density !== appliedDensity ||
+    (tab === "list" && paxBasis !== appliedPaxBasis);
 
   const handleExport = useCallback(
     async (format: DataExportFormat) => {
       setViewError(null);
-      if (format !== "xlsx" && format !== "csv") return;
+      if (format !== "xlsx" && format !== "csv" && format !== "pdf") return;
       try {
         if (tab === "list") {
           await exportBookingsReport({
@@ -1186,18 +1208,42 @@ export default function BookingsView() {
           });
           return;
         }
-        if (tab === "availability") {
-          if (appliedPortFilter.length !== 1) {
-            setViewError(
-              "Selecciona un solo puerto para exportar disponibilidad.",
-            );
+        if (tab === "proximity") {
+          if (appliedVesselFilter <= 0) {
+            setViewError("Selecciona un barco para exportar proximidad.");
             return;
           }
+          await exportVesselProximityReport({
+            vessel: appliedVesselFilter,
+            call_date_from: proximityDateRange.from,
+            call_date_to: proximityDateRange.to,
+            statuses:
+              appliedStatusFilter.length > 0
+                ? appliedStatusFilter
+                : undefined,
+            ...conflictFilterToApiParams(appliedConflictFilter),
+            ...(appliedFirstArrival ? { first_arrival: true as const } : {}),
+            ...(appliedCancellationReason
+              ? { cancellation_reason: appliedCancellationReason }
+              : {}),
+            call_dates: availabilityDateAllowlist?.length
+              ? availabilityDateAllowlist
+              : undefined,
+            exportFormat: format === "csv" ? "xlsx" : format,
+          });
+          return;
+        }
+        if (tab === "availability") {
           await exportStructuredReport({
             report_type: "availability",
             date_from: availabilityRange.from,
             date_to: availabilityRange.to,
-            port: appliedPortFilter[0],
+            port:
+              appliedPortFilter.length === 1
+                ? appliedPortFilter[0]
+                : undefined,
+            ports:
+              appliedPortFilter.length > 1 ? appliedPortFilter : undefined,
             shipping_lines:
               appliedShippingLineFilter.length > 0
                 ? appliedShippingLineFilter
@@ -1247,6 +1293,7 @@ export default function BookingsView() {
           ports: exportPorts,
           call_date_from: from,
           call_date_to: to,
+          calendar_mode: appliedCalendarMode,
           shipping_lines:
             appliedShippingLineFilter.length > 0
               ? appliedShippingLineFilter
@@ -1283,13 +1330,21 @@ export default function BookingsView() {
       appliedPositionFilter,
       appliedStatusFilter,
       portOptions,
+      proximityDateRange,
+      appliedConflictFilter,
+      appliedFirstArrival,
+      appliedCancellationReason,
+      availabilityDateAllowlist,
     ],
   );
 
   useEffect(() => {
-    setDataExportHandler(handleExport);
+    setDataExportHandler(handleExport, {
+      formats:
+        tab === "proximity" ? ["xlsx", "pdf"] : ["xlsx", "csv", "pdf"],
+    });
     return () => setDataExportHandler(null);
-  }, [handleExport]);
+  }, [handleExport, tab]);
 
   useEffect(() => {
     if (searchParams.get("openHistory") !== "1") return;
@@ -1715,6 +1770,7 @@ export default function BookingsView() {
       heatMode: appliedHeatMode,
       density: appliedDensity,
       calendarModeLabel,
+      paxBasis: appliedPaxBasis,
     });
   }, [
     tab,
@@ -1743,6 +1799,7 @@ export default function BookingsView() {
     appliedHeatMode,
     appliedDensity,
     appliedCalendarMode,
+    appliedPaxBasis,
   ]);
 
   const recapSchedule = useMemo(() => {
@@ -1962,6 +2019,7 @@ export default function BookingsView() {
           positionFilter={positionFilter}
           heatMode={heatMode}
           density={density}
+          paxBasis={paxBasis}
           portOptions={portOptions}
           shippingLineGroupOptions={shippingLineGroupOptions}
           shippingLineOptions={shippingLineOptions}
@@ -2000,6 +2058,7 @@ export default function BookingsView() {
           onPositionFilterChange={setPositionFilter}
           onHeatModeChange={setHeatMode}
           onDensityChange={setDensity}
+          onPaxBasisChange={setPaxBasis}
           importedDatesCount={availabilityDateAllowlist?.length ?? 0}
           recapImportedCount={
             tab === "list" ? (bookingRecap?.imported_count ?? 0) : 0

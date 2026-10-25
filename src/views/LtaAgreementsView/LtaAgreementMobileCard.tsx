@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import { formatCompactCount } from "@/lib/formatCompactCount";
+import LtaFulfillmentBar from "./LtaFulfillmentBar";
 import {
   LTA_WEEKDAY_OPTIONS,
   type LongTermAgreement,
@@ -47,6 +48,7 @@ export default function LtaAgreementMobileCard({
   onDelete,
 }: LtaAgreementMobileCardProps) {
   const linked = agreement.linked_bookings_count ?? 0;
+  const totalPax = agreement.total_pax ?? 0;
   const metaParts = [
     agreement.port_name,
     agreement.shipping_line_group_name,
@@ -113,6 +115,9 @@ export default function LtaAgreementMobileCard({
               >
                 {formatCompactCount(linked)}{" "}
                 {linked === 1 ? "reserva" : "reservas"}
+                {totalPax > 0
+                  ? ` · ${totalPax.toLocaleString("es")} PAX`
+                  : ""}
               </span>
               <ChevronDown
                 className={[
@@ -121,6 +126,13 @@ export default function LtaAgreementMobileCard({
                 ].join(" ")}
                 strokeWidth={2}
                 aria-hidden
+              />
+            </div>
+            <div className="mt-2">
+              <LtaFulfillmentBar
+                compact
+                confirmed={agreement.confirmed_bookings_count ?? 0}
+                pending={agreement.pending_lta_bookings_count ?? 0}
               />
             </div>
           </button>

@@ -20,8 +20,7 @@ type Props = {
     | "bookings_yoy_pct"
     | "pax_yoy_pct"
     | "occupancy_yoy_pct"
-    | "first_arrivals_yoy_pct"
-    | "conflicts_yoy_pct";
+    | "avg_pax_yoy_pct";
 };
 
 /** Compact per-year lines inside a KPI card (multi-year ranges). */

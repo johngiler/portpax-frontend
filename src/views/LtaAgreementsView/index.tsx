@@ -4,9 +4,11 @@ import { FileText, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
 import FilterActions from "@/components/layout/FilterActions";
 import { FilterSidebarContent } from "@/components/layout/FilterSidebar";
 import FilterSuggestField from "@/components/layout/FilterSuggestField";
+import { FormFieldSelect } from "@/components/ui/FormField";
 import ViewErrorBanner from "@/components/layout/ViewErrorBanner";
 import ViewPageHeader from "@/components/layout/ViewPageHeader";
 import ViewSuccessBanner from "@/components/layout/ViewSuccessBanner";
@@ -19,6 +21,7 @@ import MainTable, {
 } from "@/components/tables/MainTable";
 import TableActionButtons from "@/components/tables/TableActionButtons";
 import TablePagination from "@/components/tables/TablePagination";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import EmptyState from "@/components/ui/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -43,13 +46,19 @@ import LtaAgreementMobileCard from "./LtaAgreementMobileCard";
 import LtaFormModal, { type LtaFormMode, type LtaFormSubmitData } from "./LtaFormModal";
 import LtaAgreementsViewSkeleton from "./LtaAgreementsViewSkeleton";
 import LtaDateExceptionsModal from "./LtaDateExceptionsModal";
+import LtaFulfillmentBar from "./LtaFulfillmentBar";
 import LtaHistoryModal from "./LtaHistoryModal";
 import LtaRowDetail from "./LtaRowDetail";
+import { portDetailHref } from "@/types/catalog";
 import type { LongTermAgreement } from "@/types/lta";
 import { formatLtaWeekdays } from "@/types/lta";
+import {
+  REPORT_PAX_BASIS_OPTIONS,
+  type ReportPaxBasis,
+} from "@/views/ReportsView/reportsFilterQuery";
 
 const PAGE_SIZE = 20;
-const COL_SPAN = 8;
+const COL_SPAN = 10;
 
 export default function LtaAgreementsView() {
   const { user } = useAuth();
@@ -61,6 +70,9 @@ export default function LtaAgreementsView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [paxBasis, setPaxBasis] = useState<ReportPaxBasis>("planned");
+  const [appliedPaxBasis, setAppliedPaxBasis] =
+    useState<ReportPaxBasis>("planned");
   const [viewError, setViewError] = useState<string | null>(null);
   const [viewSuccess, setViewSuccess] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -82,6 +94,7 @@ export default function LtaAgreementsView() {
     appliedSearch,
     canBrowse,
     PAGE_SIZE,
+    appliedPaxBasis,
   );
 
   useEffect(() => {
@@ -94,7 +107,7 @@ export default function LtaAgreementsView() {
 
   useEffect(() => {
     setExpandedId(null);
-  }, [page, appliedSearch]);
+  }, [page, appliedSearch, appliedPaxBasis]);
 
   useEffect(() => {
     setDataActivityHandler(() => {
@@ -219,22 +232,41 @@ export default function LtaAgreementsView() {
           loadSuggestions={suggestLtaAgreements}
           placeholder="Código, nombre, puerto, naviera…"
         />
+        <FormFieldSelect<ReportPaxBasis>
+          label="Base PAX"
+          name="lta_pax_basis"
+          compact
+          value={paxBasis}
+          onChange={setPaxBasis}
+          options={REPORT_PAX_BASIS_OPTIONS}
+          labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
+        />
         <FilterActions
           onApply={() => {
             setPage(1);
             setAppliedSearch(search);
+            setAppliedPaxBasis(paxBasis);
             setViewError(null);
             setViewSuccess(null);
           }}
           onClear={() => {
             setSearch("");
             setAppliedSearch("");
+            setPaxBasis("planned");
+            setAppliedPaxBasis("planned");
             setPage(1);
             setViewError(null);
             setViewSuccess(null);
           }}
-          canClear={Boolean(search.trim()) || Boolean(appliedSearch)}
-          canApply={search.trim() !== appliedSearch}
+          canClear={
+            Boolean(search.trim()) ||
+            Boolean(appliedSearch) ||
+            paxBasis !== "planned" ||
+            appliedPaxBasis !== "planned"
+          }
+          canApply={
+            search.trim() !== appliedSearch || paxBasis !== appliedPaxBasis
+          }
         />
       </FilterSidebarContent>
 
@@ -329,7 +361,7 @@ export default function LtaAgreementsView() {
 
           <div className="hidden md:block">
             <MainTable>
-              <table className="w-full min-w-[48rem]">
+              <table className="w-full min-w-[56rem]">
                 <MainTableHeader>
                   <MainTableTh>Código</MainTableTh>
                   <MainTableTh>Puerto</MainTableTh>
@@ -341,6 +373,8 @@ export default function LtaAgreementsView() {
                       Reservas
                     </span>
                   </MainTableTh>
+                  <MainTableTh>PAX</MainTableTh>
+                  <MainTableTh>Cumplimiento</MainTableTh>
                   <MainTableTh>Estado</MainTableTh>
                   <MainTableTh className="w-36">Acciones</MainTableTh>
                 </MainTableHeader>
@@ -394,7 +428,18 @@ export default function LtaAgreementsView() {
                           </button>
                           <p className="text-xs text-zinc-500">{row.name}</p>
                         </MainTableTd>
-                        <MainTableTd>{row.port_name}</MainTableTd>
+                        <MainTableTd>
+                          <CatalogEntityLink
+                            href={
+                              row.port_code
+                                ? portDetailHref(row.port_code)
+                                : null
+                            }
+                            ariaLabel={`Ver puerto ${row.port_name}`}
+                          >
+                            {row.port_name}
+                          </CatalogEntityLink>
+                        </MainTableTd>
                         <MainTableTd>
                           {row.shipping_line_group_name}
                         </MainTableTd>
@@ -428,6 +473,23 @@ export default function LtaAgreementsView() {
                               row.linked_bookings_count ?? 0,
                             )}
                           </span>
+                        </MainTableTd>
+                        <MainTableTd>
+                          <span
+                            className={
+                              (row.total_pax ?? 0) > 0
+                                ? "font-medium tabular-nums text-zinc-800 dark:text-zinc-100"
+                                : "tabular-nums text-zinc-400"
+                            }
+                          >
+                            {(row.total_pax ?? 0).toLocaleString("es")}
+                          </span>
+                        </MainTableTd>
+                        <MainTableTd>
+                          <LtaFulfillmentBar
+                            confirmed={row.confirmed_bookings_count ?? 0}
+                            pending={row.pending_lta_bookings_count ?? 0}
+                          />
                         </MainTableTd>
                         <MainTableTd>
                           {row.is_active ? (

@@ -33,8 +33,7 @@ export type DashboardKpiYearRow = {
   bookings_yoy_pct: number | null;
   pax_yoy_pct: number | null;
   occupancy_yoy_pct?: number | null;
-  first_arrivals_yoy_pct?: number | null;
-  conflicts_yoy_pct?: number | null;
+  avg_pax_yoy_pct?: number | null;
 };
 
 export type DashboardNamedCount = {

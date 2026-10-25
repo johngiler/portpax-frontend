@@ -62,6 +62,10 @@ export function portDisplayName(port: Pick<Port, "name" | "commercial_name">): s
   return port.name;
 }
 
+export function portDetailHref(code: string): string {
+  return `/ports/detail?code=${encodeURIComponent(code)}`;
+}
+
 export type BollardType =
   | "standard"
   | "t_head"

@@ -67,6 +67,7 @@ export type Vessel = {
   /** Ports with ≥1 CO/CL/R booking (insignias). */
   arrived_ports?: {
     id: number;
+    code: string;
     name: string;
     country: string;
     logo: string | null;
@@ -135,8 +136,20 @@ export function shippingLineDisplayName(line: ShippingLine): string {
   return line.name;
 }
 
-export function shippingLineDetailHref(line: Pick<ShippingLine, "code">): string {
-  return `/shipping-lines/detail?code=${encodeURIComponent(line.code)}`;
+export function shippingLineDetailHref(
+  line: Pick<ShippingLine, "code">,
+  options?: { vesselId?: number | null },
+): string {
+  const params = new URLSearchParams();
+  params.set("code", line.code);
+  if (
+    options?.vesselId != null &&
+    Number.isFinite(options.vesselId) &&
+    options.vesselId > 0
+  ) {
+    params.set("vessel", String(options.vesselId));
+  }
+  return `/shipping-lines/detail?${params.toString()}`;
 }
 
 export function shippingLineStatusLabel(isActive: boolean): string {

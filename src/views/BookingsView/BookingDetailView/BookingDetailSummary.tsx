@@ -1,13 +1,14 @@
 "use client";
 
 import { Anchor, CalendarDays, MapPin, Pencil, Ship, Tag } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ValidationIssuesAlert from "@/components/booking/ValidationIssuesAlert";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import CountryLabel from "@/components/ui/CountryLabel";
+import IdentitySummaryCard from "@/components/ui/IdentitySummaryCard";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
 import { FormField, FormFieldSelect } from "@/components/ui/FormField";
@@ -27,31 +28,8 @@ import {
   validateBookings,
 } from "@/services/bookings/bookingService";
 import { bookingDetailHref, type Booking, type BookingValidationIssue } from "@/types/booking";
-import { portDisplayName } from "@/types/catalog";
-
-type SummaryItemProps = {
-  icon: typeof MapPin;
-  label: string;
-  children: ReactNode;
-};
-
-function SummaryItem({ icon: Icon, label, children }: SummaryItemProps) {
-  return (
-    <div className="flex gap-3 rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-accent)]/10 text-[var(--admin-accent)]">
-        <Icon className="h-5 w-5" strokeWidth={2} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-          {label}
-        </p>
-        <div className="mt-0.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { portDetailHref, portDisplayName } from "@/types/catalog";
+import { shippingLineDetailHref } from "@/types/cruise";
 
 type BookingDetailSummaryProps = {
   booking: Booking;
@@ -96,6 +74,16 @@ export default function BookingDetailSummary({
       ? lines.find((line) => line.group === groupId)?.group_name?.trim()
       : "") ||
     "";
+  const portHref = booking.port_code ? portDetailHref(booking.port_code) : null;
+  const lineHref = booking.shipping_line_code
+    ? shippingLineDetailHref({ code: booking.shipping_line_code })
+    : null;
+  const vesselHref = booking.shipping_line_code
+    ? shippingLineDetailHref(
+        { code: booking.shipping_line_code },
+        { vesselId: booking.vessel },
+      )
+    : null;
   const readOnly =
     !canWrite ||
     booking.status === "c" ||
@@ -394,7 +382,12 @@ export default function BookingDetailSummary({
       ) : (
         <>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <SummaryItem icon={MapPin} label="Puerto">
+            <IdentitySummaryCard
+              icon={MapPin}
+              label="Puerto"
+              href={portHref}
+              hrefLabel={`Ver puerto ${booking.port_name}`}
+            >
               <div className="flex items-center gap-2">
                 <CatalogLogoThumb
                   src={booking.port_logo}
@@ -412,8 +405,13 @@ export default function BookingDetailSummary({
                   className="mt-0.5 text-xs font-normal text-zinc-500 dark:text-zinc-400"
                 />
               ) : null}
-            </SummaryItem>
-            <SummaryItem icon={Anchor} label="Naviera">
+            </IdentitySummaryCard>
+            <IdentitySummaryCard
+              icon={Anchor}
+              label="Naviera"
+              href={lineHref}
+              hrefLabel={`Ver naviera ${booking.shipping_line_name}`}
+            >
               <ShippingLineCaption
                 name={booking.shipping_line_name}
                 groupName={shippingLineGroupName}
@@ -421,8 +419,13 @@ export default function BookingDetailSummary({
                 showLogo
                 nameClassName="truncate font-semibold text-zinc-900 dark:text-zinc-50"
               />
-            </SummaryItem>
-            <SummaryItem icon={Ship} label="Barco">
+            </IdentitySummaryCard>
+            <IdentitySummaryCard
+              icon={Ship}
+              label="Barco"
+              href={vesselHref}
+              hrefLabel={`Ver barco ${booking.vessel_name}`}
+            >
               <div className="flex items-center gap-2">
                 <CatalogLogoThumb
                   src={booking.vessel_logo}
@@ -437,15 +440,15 @@ export default function BookingDetailSummary({
                   {Number(booking.vessel_loa_m).toLocaleString("es-MX")} m
                 </p>
               ) : null}
-            </SummaryItem>
-            <SummaryItem icon={CalendarDays} label="Fecha de escala">
+            </IdentitySummaryCard>
+            <IdentitySummaryCard icon={CalendarDays} label="Fecha de escala">
               <span>{formatIsoDateLabel(booking.call_date, "long")}</span>
               {booking.position_code ? (
                 <p className="mt-0.5 text-xs font-normal text-zinc-500">
                   Posición {booking.position_code}
                 </p>
               ) : null}
-            </SummaryItem>
+            </IdentitySummaryCard>
           </div>
 
           {booking.notes ? (
@@ -461,9 +464,9 @@ export default function BookingDetailSummary({
 
           {booking.tag_name ? (
             <div className="mt-3">
-              <SummaryItem icon={Tag} label="Tag">
+              <IdentitySummaryCard icon={Tag} label="Tag">
                 <span className="truncate">{booking.tag_name}</span>
-              </SummaryItem>
+              </IdentitySummaryCard>
             </div>
           ) : null}
         </>

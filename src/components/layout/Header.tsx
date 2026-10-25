@@ -19,7 +19,7 @@ import EntityThumb from "@/components/ui/EntityThumb";
 import GlobalSearch from "@/components/search/GlobalSearch";
 import { userRoleLabel } from "@/types/accounts";
 import { userDisplayName } from "@/types/auth";
-import { roleHomePath } from "@/lib/navAccess";
+import { canSeeInAppNotifications, roleHomePath } from "@/lib/navAccess";
 import { HEADER_MOBILE_FILTERS_ID } from "@/components/layout/filterSidebarIds";
 import NotificationDropdown from "./NotificationDropdown";
 import OnlineUsersDropdown from "./OnlineUsersDropdown";
@@ -47,6 +47,7 @@ export default function Header() {
   } = useMainLayout();
   const hasFilterSidebar = filterContent != null;
   const homeHref = roleHomePath(user?.role);
+  const showNotifications = canSeeInAppNotifications(user?.role);
   const closeAll = () => setOpenMenu(null);
   const toggle = (key: "online" | "notifications" | "user") =>
     setOpenMenu((prev) => (prev === key ? null : key));
@@ -143,11 +144,13 @@ export default function Header() {
             onClose={closeAll}
           />
         </div>
-        <NotificationDropdown
-          open={openMenu === "notifications"}
-          onToggle={() => toggle("notifications")}
-          onClose={closeAll}
-        />
+        {showNotifications ? (
+          <NotificationDropdown
+            open={openMenu === "notifications"}
+            onToggle={() => toggle("notifications")}
+            onClose={closeAll}
+          />
+        ) : null}
 
         <div
           className="ml-1 h-4 w-px bg-zinc-300/60 dark:bg-zinc-600/60 sm:h-5"

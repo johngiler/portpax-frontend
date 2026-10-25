@@ -64,6 +64,12 @@ export type LongTermAgreement = {
   notes: string;
   /** Bookings with this agreement FK (match / link result). */
   linked_bookings_count: number;
+  /** Confirmada + Confirmada CL linked to this agreement. */
+  confirmed_bookings_count: number;
+  /** Still in LTA status (pending confirmation). */
+  pending_lta_bookings_count: number;
+  /** Passenger total of non-cancelled linked bookings (Base PAX). */
+  total_pax: number;
   contract_file_url: string | null;
   contract_file_name: string | null;
   created_at: string;

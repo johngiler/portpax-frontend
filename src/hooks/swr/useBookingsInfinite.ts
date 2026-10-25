@@ -46,6 +46,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
     (params.ids ?? []).join(","),
     params.ordering ?? "",
     params.pageSize ?? 20,
+    params.pax_basis ?? "planned",
   ].join("|");
 }
 

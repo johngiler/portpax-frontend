@@ -27,6 +27,11 @@ import {
   type CancellationReason,
 } from "@/types/booking";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
+import PaxConceptsGuideButton from "@/components/booking/PaxConceptsGuide";
+import {
+  REPORT_PAX_BASIS_OPTIONS,
+  type ReportPaxBasis,
+} from "@/views/ReportsView/reportsFilterQuery";
 import BookingsDateFilters, { type BookingsDatePreset } from "./BookingsDateFilters";
 
 const STATUS_OPTIONS = BOOKING_STATUS_MULTI_OPTIONS;
@@ -107,6 +112,7 @@ type BookingFiltersProps = {
   positionFilter: number;
   heatMode: AvailabilityHeatModeQuery;
   density: number;
+  paxBasis: ReportPaxBasis;
   portOptions: FilterOption[];
   shippingLineGroupOptions: FilterOption[];
   shippingLineOptions: FilterOption[];
@@ -135,6 +141,7 @@ type BookingFiltersProps = {
   onPositionFilterChange: (positionId: number) => void;
   onHeatModeChange: (mode: AvailabilityHeatModeQuery) => void;
   onDensityChange: (density: number) => void;
+  onPaxBasisChange: (value: ReportPaxBasis) => void;
   importedDatesCount?: number;
   recapImportedCount?: number;
   onApply: () => void;
@@ -167,6 +174,7 @@ export default function BookingFilters({
   positionFilter,
   heatMode,
   density,
+  paxBasis,
   portOptions,
   shippingLineGroupOptions,
   shippingLineOptions,
@@ -195,6 +203,7 @@ export default function BookingFilters({
   onPositionFilterChange,
   onHeatModeChange,
   onDensityChange,
+  onPaxBasisChange,
   importedDatesCount = 0,
   recapImportedCount = 0,
   onApply,
@@ -486,6 +495,19 @@ export default function BookingFilters({
     />
   ) : null;
 
+  const paxBasisField =
+    tab === "list" ? (
+      <FormFieldSelect<ReportPaxBasis>
+        label="Base PAX"
+        name="booking_pax_basis"
+        compact
+        value={paxBasis}
+        onChange={onPaxBasisChange}
+        options={REPORT_PAX_BASIS_OPTIONS}
+        labelEnd={<PaxConceptsGuideButton includeReportsBasis />}
+      />
+    ) : null;
+
   const sizeCategoryField = showSizeCategory ? (
     <FormFieldMultiSelect<VesselSizeCategory>
       label="Tamaño"
@@ -639,14 +661,15 @@ export default function BookingFilters({
       {positionField}
       {groupField}
       {lineField}
-      {vesselField}
-      {sizeCategoryField}
-      {tagsField}
-      {statusField}
-      {conflictField}
-      {datesField}
-      {importedDatesNotice}
-      {actions}
+        {vesselField}
+        {sizeCategoryField}
+        {paxBasisField}
+        {tagsField}
+        {statusField}
+        {conflictField}
+        {datesField}
+        {importedDatesNotice}
+        {actions}
     </>
   );
 }

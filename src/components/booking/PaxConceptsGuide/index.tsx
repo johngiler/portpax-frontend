@@ -36,7 +36,7 @@ export function PaxConceptsGuideToggle({
 type PaxConceptsGuideModalProps = {
   open: boolean;
   onClose: () => void;
-  /** Include Base PAX row (reports filter only). */
+  /** Include Base PAX row (list KPI + reports). */
   includeReportsBasis?: boolean;
 };
 

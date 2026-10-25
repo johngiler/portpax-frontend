@@ -186,7 +186,8 @@ function mergeReportPages(pages: ReportPage[]): ReportPayload | null {
         page.kind === "port_trends" ? page.groups : [],
       ),
       others: head.others,
-      by_line_month: head.by_line_month,
+      by_line_period: head.by_line_period,
+      daily_calls: head.daily_calls,
       totals: head.totals,
     },
   };

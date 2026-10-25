@@ -50,6 +50,10 @@ type PortMonthComboChartProps = {
   mode: "chart" | "table";
   /** First column / a11y label for each series (default Puerto). */
   seriesLabel?: string;
+  /** X-axis labels. Defaults to calendar months; index-aligned with `months`. */
+  categoryLabels?: string[];
+  /** Tooltip titles. Defaults to long month names, or `categoryLabels`. */
+  categoryTooltipLabels?: string[];
 };
 
 function niceCeiling(value: number): number {
@@ -98,12 +102,17 @@ export default function PortMonthComboChart({
   data,
   mode,
   seriesLabel = "Puerto",
+  categoryLabels,
+  categoryTooltipLabels,
 }: PortMonthComboChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const [hiddenPorts, setHiddenPorts] = useState<Set<number>>(() => new Set());
   const [showPax, setShowPax] = useState(true);
   const [showCalls, setShowCalls] = useState(true);
   const ports = data.ports ?? [];
+  const axisLabels = categoryLabels ?? MONTH_SHORT;
+  const tooltipLabels = categoryTooltipLabels ?? categoryLabels ?? MONTH_LABELS;
+  const axisCount = Math.max(axisLabels.length, 1);
 
   const series = useMemo(
     () =>
@@ -163,7 +172,7 @@ export default function PortMonthComboChart({
           <thead>
             <tr className="border-b border-zinc-100 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:border-zinc-800">
               <th className="py-2 pr-2">{seriesLabel}</th>
-              {MONTH_SHORT.map((label) => (
+              {axisLabels.map((label) => (
                 <th key={label} className="px-1 py-2 text-right">
                   {label}
                 </th>
@@ -212,7 +221,7 @@ export default function PortMonthComboChart({
   const padTop = 8;
   const padBottom = 4;
   const svgH = chartH + padTop + padBottom;
-  const groupW = chartW / 12;
+  const groupW = chartW / axisCount;
   const visibleCount = Math.max(visibleSeries.length, 1);
 
   const paxToY = (pax: number) =>
@@ -317,7 +326,7 @@ export default function PortMonthComboChart({
                 className="block h-full w-full"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label={`Pasajeros y calls por mes y ${seriesLabel.toLowerCase()}`}
+                aria-label={`Pasajeros y escalas por ${seriesLabel.toLowerCase()}`}
               >
                 {paxTicks.map((tick) => {
                   const y = paxToY(tick);
@@ -335,30 +344,26 @@ export default function PortMonthComboChart({
                   );
                 })}
 
-                {MONTH_LABELS.map((label, monthIdx) => {
-                  const month = monthIdx + 1;
+                {axisLabels.map((label, monthIdx) => {
                   const gx = monthIdx * groupW;
                   return (
-                    <g key={label}>
+                    <g key={`${label}-${monthIdx}`}>
                       <rect
                         x={gx}
                         y={padTop}
                         width={groupW}
                         height={chartH}
                         fill={
-                          hovered === month
+                          hovered === monthIdx
                             ? "rgba(24,24,27,0.04)"
                             : "transparent"
                         }
-                        onMouseEnter={() => setHovered(month)}
+                        onMouseEnter={() => setHovered(monthIdx)}
                         onMouseLeave={() => setHovered(null)}
                       />
                       {showCalls
                         ? visibleSeries.map(({ port, color }, si) => {
-                            const point = port.months.find(
-                              (m) => m.month === month,
-                            );
-                            const calls = point?.calls ?? 0;
+                            const calls = port.months[monthIdx]?.calls ?? 0;
                             const barH = callsToBarH(calls);
                             const { bx, bw } = barLayout(
                               gx,
@@ -376,7 +381,7 @@ export default function PortMonthComboChart({
                                 rx={1.5}
                                 fill={color}
                                 opacity={
-                                  hovered === null || hovered === month
+                                  hovered === null || hovered === monthIdx
                                     ? 0.45
                                     : 0.18
                                 }
@@ -463,10 +468,15 @@ export default function PortMonthComboChart({
           {/* Months under plot — short labels so inclined text stays separated */}
           <div className="mt-5 flex gap-1 pt-2">
             <div className="w-12 shrink-0 sm:w-14" aria-hidden />
-            <div className="grid h-14 min-w-0 flex-1 grid-cols-12 gap-0">
-              {MONTH_SHORT.map((label) => (
+            <div
+              className="grid h-14 min-w-0 flex-1 gap-0"
+              style={{
+                gridTemplateColumns: `repeat(${axisCount}, minmax(0, 1fr))`,
+              }}
+            >
+              {axisLabels.map((label, idx) => (
                 <div
-                  key={label}
+                  key={`${label}-${idx}`}
                   className="relative flex items-start justify-center overflow-visible"
                 >
                   <span
@@ -488,10 +498,10 @@ export default function PortMonthComboChart({
         {hovered != null ? (
           <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2">
             <ChartTooltip
-              title={MONTH_LABELS[hovered - 1]}
+              title={tooltipLabels[hovered] ?? axisLabels[hovered] ?? ""}
               subtitle="Pax (línea) · Calls (barra)"
               rows={visibleSeries.flatMap(({ port, color }) => {
-                const point = port.months.find((m) => m.month === hovered);
+                const point = port.months[hovered];
                 const rows = [];
                 if (showPax) {
                   rows.push({

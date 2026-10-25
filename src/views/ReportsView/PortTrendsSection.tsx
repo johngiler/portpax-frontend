@@ -11,7 +11,9 @@ import {
 } from "react";
 import ViewSection from "@/components/layout/ViewSection";
 import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
+import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
+import { portDetailHref } from "@/types/catalog";
 import ReportEntityLabel from "@/components/reports/ReportEntityLabel";
 import {
   formatGrowthPct,
@@ -25,6 +27,7 @@ import type {
   PortTrendsMetricRow,
   PortTrendsReport,
 } from "@/services/bookings/bookingService";
+import PortTrendsDailyCallsChart from "./PortTrendsDailyCallsChart";
 import PortTrendsLineMonthChart from "./PortTrendsLineMonthChart";
 import ReportsEmptyState from "./ReportsEmptyState";
 
@@ -44,7 +47,12 @@ type Props = PaginationProps & {
 
 function PortContextHeader({ port }: { port: PortTrendsReport["port"] }) {
   return (
-    <div className={reportMatrix.sectionGroupHeader}>
+    <CatalogEntityLink
+      href={port.code ? portDetailHref(port.code) : null}
+      className={`${reportMatrix.sectionGroupHeader} hover:text-[var(--admin-accent)]`}
+      fallbackClassName={reportMatrix.sectionGroupHeader}
+      ariaLabel={`Ver puerto ${port.name}`}
+    >
       <CatalogLogoThumb
         src={port.logo}
         alt={port.name}
@@ -55,7 +63,7 @@ function PortContextHeader({ port }: { port: PortTrendsReport["port"] }) {
         <p className={reportMatrix.sectionGroupKicker}>Puerto</p>
         <p className={reportMatrix.sectionGroupTitle}>{port.name}</p>
       </div>
-    </div>
+    </CatalogEntityLink>
   );
 }
 
@@ -264,7 +272,9 @@ export default function PortTrendsSection({
     ? data.column_labels
     : data.years;
   const hasRows = groups.length > 0 || Boolean(others);
-  const chartLines = data.by_line_month?.lines ?? [];
+  const chartLines = data.by_line_period?.lines ?? [];
+  const chartLabels = data.by_line_period?.labels ?? [];
+  const dailyDays = data.daily_calls?.days ?? [];
   const seasonMode = (data.season ?? "natural") !== "natural";
 
   const groupAlt = useMemo(() => {
@@ -411,7 +421,7 @@ export default function PortTrendsSection({
         title="Growth percentage"
         description={
           seasonMode
-            ? "Variación de PAX vs el período anterior, por grupo de naviera."
+            ? "Variación de PAX: Summer vs Summer y Winter vs Winter."
             : "Variación interanual de PAX por grupo de naviera."
         }
         bodyClassName={reportViewSectionBody}
@@ -458,7 +468,14 @@ export default function PortTrendsSection({
       </ViewSection>
 
       {chartLines.length > 0 ? (
-        <PortTrendsLineMonthChart lines={chartLines} />
+        <PortTrendsLineMonthChart
+          lines={chartLines}
+          labels={chartLabels}
+          seasonMode={seasonMode}
+        />
+      ) : null}
+      {dailyDays.length > 0 ? (
+        <PortTrendsDailyCallsChart days={dailyDays} />
       ) : null}
     </div>
   );

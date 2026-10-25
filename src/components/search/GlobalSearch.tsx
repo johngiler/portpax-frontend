@@ -16,6 +16,8 @@ import {
   BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
 } from "@/types/booking";
+import { portDetailHref } from "@/types/catalog";
+import { shippingLineDetailHref } from "@/types/cruise";
 import type { GlobalSearchResult } from "@/types/search";
 
 const DEBOUNCE_MS = 300;
@@ -266,7 +268,10 @@ export default function GlobalSearch({
                       {results!.ships.map((s) => (
                         <Link
                           key={s.id}
-                          href={`/shipping-lines/detail?code=${encodeURIComponent(s.shipping_line_code)}`}
+                          href={shippingLineDetailHref(
+                            { code: s.shipping_line_code },
+                            { vesselId: s.id },
+                          )}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -296,7 +301,7 @@ export default function GlobalSearch({
                       {results!.shipping_lines.map((sl) => (
                         <Link
                           key={sl.id}
-                          href={`/shipping-lines/detail?code=${encodeURIComponent(sl.code)}`}
+                          href={shippingLineDetailHref({ code: sl.code })}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -321,7 +326,7 @@ export default function GlobalSearch({
                       {results!.ports.map((p) => (
                         <Link
                           key={p.id}
-                          href={`/ports/detail?code=${encodeURIComponent(p.code)}`}
+                          href={portDetailHref(p.code)}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >

@@ -261,6 +261,30 @@ export function availabilityFocusNeighborTitle(
   return call.booking_code;
 }
 
+/**
+ * Occupancy checkbox «Navieras»: hide vessel/line names as «Posición asignada».
+ * If a naviera, grupo or barco filter is on, matching calls stay visible.
+ */
+export function occupiedCallHidesCarrierIdentity(
+  hideCarrierIdentity: boolean,
+  call: Pick<
+    AvailabilityCall,
+    "vessel_id" | "shipping_line_id" | "shipping_line_group_id"
+  >,
+  focus: AvailabilityFocusFilters,
+): boolean {
+  if (!hideCarrierIdentity) return false;
+  const vesselId = focus.vesselId && focus.vesselId > 0 ? focus.vesselId : 0;
+  const lineIds = focusLineIds(focus);
+  const groupIds = focusGroupIds(focus);
+  if (vesselId <= 0 && lineIds.length === 0 && groupIds.length === 0) {
+    return true;
+  }
+  if (vesselId > 0) return (call.vessel_id ?? 0) !== vesselId;
+  if (lineIds.length > 0) return !lineIds.includes(call.shipping_line_id ?? 0);
+  return !groupIds.includes(call.shipping_line_group_id ?? 0);
+}
+
 /** True when any availability soft-focus filter is active. */
 export function availabilityFocusIsActive(
   focus: AvailabilityFocusFilters,

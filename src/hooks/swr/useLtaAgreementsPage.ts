@@ -11,14 +11,16 @@ export function useLtaAgreementsPage(
   search: string,
   enabled = true,
   pageSize = DEFAULT_PAGE_SIZE,
+  paxBasis: "planned" | "capacity" = "planned",
 ) {
   const { data, error, isLoading, isValidating, mutate } = useSWR(
-    enabled ? swrKeys.ltaAgreementsPage(page, search, pageSize) : null,
+    enabled ? swrKeys.ltaAgreementsPage(page, search, pageSize, paxBasis) : null,
     () =>
       fetchLongTermAgreements({
         page,
         pageSize,
         search,
+        pax_basis: paxBasis,
       }),
   );
 
