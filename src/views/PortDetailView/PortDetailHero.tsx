@@ -7,6 +7,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import CountryLabel from "@/components/ui/CountryLabel";
+import {
+  STICKY_COLLAPSE_BLEED,
+  STICKY_COLLAPSE_TOP,
+  useStickyCollapse,
+} from "@/hooks/useStickyCollapse";
 import { useMotionTransition } from "@/lib/motionPresets";
 import type { PortDetail } from "@/types/catalog";
 import { formatLargestVessel, portDisplayName, portStatusLabel } from "@/types/catalog";
@@ -35,19 +40,6 @@ function clampLogoSize(textHeight: number, stuck: boolean): number {
   return Math.min(Math.max(Math.round(scaled), min), max);
 }
 
-function getScrollParent(node: HTMLElement | null): HTMLElement | null {
-  if (!node) return null;
-  let parent = node.parentElement;
-  while (parent) {
-    const { overflowY, overflow } = getComputedStyle(parent);
-    if (overflowY === "auto" || overflowY === "scroll" || overflow === "auto" || overflow === "scroll") {
-      return parent;
-    }
-    parent = parent.parentElement;
-  }
-  return null;
-}
-
 export default function PortDetailHero({
   port,
   onEdit,
@@ -60,7 +52,7 @@ export default function PortDetailHero({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prevStuckRef = useRef(false);
   const [logoSize, setLogoSize] = useState(LOGO_SIZE_MIN_EXPANDED);
-  const [isStuck, setIsStuck] = useState(false);
+  const isStuck = useStickyCollapse(sentinelRef, port.id);
   const [animateSticky, setAnimateSticky] = useState(false);
   const shellTransition = useMotionTransition(0.15);
   const fadeTransition = useMotionTransition(0.12);
@@ -99,39 +91,16 @@ export default function PortDetailHero({
     largestVessel,
   ]);
 
-  useLayoutEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const scrollRoot = getScrollParent(sentinel);
-    if (!scrollRoot) return;
-
-    const updateStuck = () => {
-      const rootTop = scrollRoot.getBoundingClientRect().top;
-      const sentinelTop = sentinel.getBoundingClientRect().top;
-      setIsStuck(sentinelTop < rootTop - 1);
-    };
-
-    updateStuck();
-    scrollRoot.addEventListener("scroll", updateStuck, { passive: true });
-    window.addEventListener("resize", updateStuck);
-
-    return () => {
-      scrollRoot.removeEventListener("scroll", updateStuck);
-      window.removeEventListener("resize", updateStuck);
-    };
-  }, [port.id]);
-
   return (
     <>
       <div ref={sentinelRef} className="h-px w-full" aria-hidden />
       <div
         className={[
-          "sticky z-20",
-          isStuck ? "-top-4 sm:-top-6 lg:-top-8" : "top-0",
+          "sticky z-20 min-w-0 max-w-full",
+          isStuck ? STICKY_COLLAPSE_TOP : "top-0",
         ].join(" ")}
       >
-        <div className={isStuck ? "-mx-4 sm:-mx-6 lg:-mx-8" : ""}>
+        <div className={isStuck ? STICKY_COLLAPSE_BLEED : ""}>
           <motion.div
             className={[
               CARD_BASE_CLASS,

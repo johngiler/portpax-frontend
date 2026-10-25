@@ -82,7 +82,7 @@ export default function BookingWizardChrome({
         className={[
           "sticky z-20 mb-6 transition-[padding] duration-150 ease-in-out",
           isStuck
-            ? "-top-4 -mx-4 border-b border-zinc-200/80 px-4 pb-3 pt-7 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:-top-6 sm:-mx-6 sm:px-6 sm:pt-9 lg:-top-8 lg:-mx-8 lg:px-8 lg:pt-11 dark:border-zinc-800"
+            ? "-top-2.5 -mx-2.5 border-b border-zinc-200/80 px-2.5 pb-3 pt-7 shadow-[var(--admin-card-shadow)] backdrop-blur-md sm:-top-6 sm:-mx-6 sm:px-6 sm:pt-9 lg:-top-8 lg:-mx-8 lg:px-8 lg:pt-11 dark:border-zinc-800"
             : "top-0",
         ].join(" ")}
         style={
