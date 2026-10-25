@@ -33,7 +33,7 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { setDataActivityHandler } from "@/lib/dataActivityStore";
 import { suggestLtaAgreements } from "@/lib/filterSuggestions";
 import { formatCompactCount } from "@/lib/formatCompactCount";
-import { canBrowseCatalogs, canWriteApp } from "@/lib/navAccess";
+import { canSeeLtaAgreements, canWriteApp } from "@/lib/navAccess";
 import { revalidateLtaAgreements, revalidateLtaLinkedBookings } from "@/lib/swr/mutateHelpers";
 import {
   createLongTermAgreement,
@@ -65,7 +65,7 @@ export default function LtaAgreementsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const canWrite = canWriteApp(user?.role);
-  const canBrowse = canBrowseCatalogs(user?.role);
+  const canBrowse = canSeeLtaAgreements(user?.role);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");

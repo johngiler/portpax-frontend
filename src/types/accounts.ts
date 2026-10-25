@@ -62,13 +62,13 @@ export const USER_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 /** Spanish UI — role purpose from PORT_PAX_FUNCIONALIDADES / SPEC (MVP roles only). */
 export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   admin:
-    "Acceso total al sistema. Crea y asigna usuarios a puertos; gestiona tarifas, muelles y reglas de negocio.",
+    "Acceso total al sistema. Crea y asigna usuarios a puertos; gestiona tarifas, muelles, reglas de negocio y acuerdos LTA.",
   booking_operator:
     "Rol principal de trabajo diario: registra y gestiona calls (crea NR, cambia status, asigna muelles). Acceso por uno o varios puertos.",
   port_operator:
     "Autoriza excepciones operativas (mover un call CL, eslora combinada, fuerza mayor). Cierra la ventana operativa del call en Real (R): datos reales de la escala.",
   viewer:
-    "Solo lectura: consulta la información sin capacidad de modificar nada.",
+    "Solo lectura: consulta catálogos y reservas del mercado abierto (período actual + open booking). No ve acuerdos LTA ni escalas de zona LTA.",
 };
 
 export type UserRoleGuideRow = {

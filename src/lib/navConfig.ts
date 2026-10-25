@@ -63,7 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
         href: "/lta",
         label: "Acuerdos LTA",
         icon: FileText,
-        roles: CATALOG_ROLES,
+        roles: ADMIN_ONLY,
         countKey: "lta_agreements",
       },
     ],

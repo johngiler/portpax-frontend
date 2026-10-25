@@ -15,6 +15,8 @@ import type { Booking } from "@/types/booking";
 import { portDetailHref } from "@/types/catalog";
 import { shippingLineDetailHref } from "@/types/cruise";
 import { useActiveShippingLinesCatalog } from "@/hooks/swr/useCatalogs";
+import { useAuth } from "@/contexts/AuthContext";
+import { canSeeLtaAgreements } from "@/lib/navAccess";
 
 type BookingDetailHeroProps = {
   booking: Booking;
@@ -26,7 +28,9 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
   const backHref = returnTo ?? "/bookings";
   const backLabel = returnToLabel(returnTo);
   const chips = conflictChipsFromApi(booking);
+  const { user } = useAuth();
   const ltaCode = booking.long_term_agreement_code?.trim() || null;
+  const ltaHref = canSeeLtaAgreements(user?.role) ? "/lta" : "";
   const needsGroup = !booking.shipping_line_group_name?.trim();
   const { lines } = useActiveShippingLinesCatalog(needsGroup);
   const groupName =
@@ -70,7 +74,7 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
                 Acuerdo LTA
               </p>
               <CatalogEntityLink
-                href="/lta"
+                href={ltaHref}
                 className="mt-0.5 block truncate text-[11px] font-medium text-zinc-600 underline-offset-2 hover:text-[var(--admin-accent)] hover:underline dark:text-zinc-300"
                 title={ltaCode}
                 ariaLabel={`Ver acuerdos LTA (${ltaCode})`}

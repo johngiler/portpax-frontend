@@ -55,6 +55,11 @@ export function canBrowseCatalogs(role: UserRole | null | undefined): boolean {
   return role != null && (CATALOG_BROWSER_ROLES as readonly string[]).includes(role);
 }
 
+/** Acuerdos LTA: administrador only. */
+export function canSeeLtaAgreements(role: UserRole | null | undefined): boolean {
+  return role === "admin";
+}
+
 export function canSeeNavItem(
   role: UserRole | null | undefined,
   allowedRoles?: readonly UserRole[],
@@ -81,7 +86,7 @@ export function roleHomePath(role: UserRole | null | undefined): string {
 /**
  * Frontend route access by MVP role.
  * - admin: full app
- * - viewer: full app except user management (/users); writes blocked in UI
+ * - viewer: catalogs + bookings in open booking; no users, no LTA
  * - booking_operator / port_operator: bookings (incl. calendar/availability tabs), profile only
  */
 export function canAccessPath(
@@ -96,6 +101,10 @@ export function canAccessPath(
 
   if (isAdminRole(role)) {
     return true;
+  }
+
+  if (path === "/lta" || path.startsWith("/lta/")) {
+    return false;
   }
 
   if (isViewerRole(role)) {

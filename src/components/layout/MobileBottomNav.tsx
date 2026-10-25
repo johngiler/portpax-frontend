@@ -38,7 +38,7 @@ const RIGHT: NavSlot[] = [
     href: "/lta",
     label: "Acuerdos",
     icon: FileText,
-    roles: CATALOG_ROLES,
+    roles: ["admin"],
   },
 ];
 
