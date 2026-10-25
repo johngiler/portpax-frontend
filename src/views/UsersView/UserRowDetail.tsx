@@ -57,7 +57,7 @@ export default function UserRowDetail({
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
 
   return (
-    <div className="w-full rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
+    <div className="w-full min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-[var(--admin-accent)]/15 bg-gradient-to-br from-white via-white to-[var(--admin-accent)]/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:from-zinc-900 dark:via-zinc-900 dark:to-[var(--admin-accent)]/[0.08] sm:p-5">
       <div className="flex flex-col gap-6 sm:gap-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         <div className="flex min-w-0 items-center gap-4">

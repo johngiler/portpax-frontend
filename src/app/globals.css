@@ -634,6 +634,10 @@ html.dark .main-waves-top::before {
 .table-accordion-expand-wrapper {
   display: grid;
   grid-template-rows: 0fr;
+  /* Stay at current table width; do not let detail content widen the table. */
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
   transition: grid-template-rows 0.28s ease-out;
 }
 .table-accordion-detail-row[data-open="true"] .table-accordion-expand-wrapper {
@@ -642,6 +646,8 @@ html.dark .main-waves-top::before {
 .table-accordion-expand-inner {
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 .table-accordion-expand-content {
   padding: 0.85rem 1.1rem 1.1rem;
@@ -652,6 +658,9 @@ html.dark .main-waves-top::before {
   );
   border-top: 1px solid color-mix(in srgb, var(--admin-accent) 12%, var(--admin-border));
   display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
   .table-accordion-expand-wrapper {

@@ -39,12 +39,12 @@ function ChangeChip({ label, text }: { label: string; text: string }) {
   const [from, to] = arrowSplit ? text.split(" → ") : [null, text];
 
   return (
-    <div className="w-fit max-w-full rounded-lg border border-zinc-200/80 bg-zinc-50/80 px-2.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-950/50">
+    <div className="w-fit max-w-full min-w-0 rounded-lg border border-zinc-200/80 bg-zinc-50/80 px-2.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-950/50">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {label}
       </p>
       {arrowSplit && from != null ? (
-        <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-zinc-700 dark:text-zinc-200">
+        <p className="mt-0.5 flex max-w-full flex-wrap items-center gap-1 break-words text-xs text-zinc-700 dark:text-zinc-200">
           <span className="text-zinc-500 line-through decoration-zinc-300 dark:text-zinc-400">
             {from}
           </span>
@@ -56,7 +56,7 @@ function ChangeChip({ label, text }: { label: string; text: string }) {
           <span className="font-medium text-zinc-900 dark:text-zinc-50">{to}</span>
         </p>
       ) : (
-        <p className="mt-0.5 text-xs font-medium text-zinc-800 dark:text-zinc-100">
+        <p className="mt-0.5 break-words text-xs font-medium text-zinc-800 dark:text-zinc-100">
           {text}
         </p>
       )}

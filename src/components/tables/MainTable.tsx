@@ -14,7 +14,7 @@ type MainTableProps = {
 export default function MainTable({ children, className = "" }: MainTableProps) {
   return (
     <div
-      className={`min-w-0 overflow-x-auto rounded-xl border border-[var(--admin-border)]/65 bg-[var(--admin-surface)] shadow-[var(--admin-card-shadow)] ${className}`}
+      className={`min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-xl border border-[var(--admin-border)]/65 bg-[var(--admin-surface)] shadow-[var(--admin-card-shadow)] ${className}`}
     >
       {children}
     </div>
