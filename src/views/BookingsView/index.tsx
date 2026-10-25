@@ -1207,6 +1207,10 @@ export default function BookingsView() {
             call_date_to: listParams.call_date_to,
             ids: listParams.ids,
             ordering: listParams.ordering,
+            pax_basis: listParams.pax_basis,
+            cancellation_reason: listParams.cancellation_reason,
+            first_arrival: listParams.first_arrival,
+            ...conflictFilterToApiParams(appliedConflictFilter),
           });
           return;
         }
