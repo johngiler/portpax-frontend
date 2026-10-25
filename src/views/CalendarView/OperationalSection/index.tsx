@@ -40,6 +40,9 @@ type OperationalSectionProps = {
   onMonthChange: (monthIndex: number) => void;
   season: CalendarSeason;
   onSeasonChange: (season: CalendarSeason) => void;
+  monthIndexes?: number[];
+  onMonthIndexesChange?: (monthIndexes: number[]) => void;
+  onSelectMonth?: (monthIndex: number) => void;
   onClearFilters?: () => void;
 };
 
@@ -65,6 +68,9 @@ export default function OperationalSection({
   onMonthChange,
   season,
   onSeasonChange,
+  monthIndexes = [],
+  onMonthIndexesChange,
+  onSelectMonth,
   onClearFilters,
 }: OperationalSectionProps) {
   const hasFilters =
@@ -77,6 +83,7 @@ export default function OperationalSection({
     Boolean(search.trim()) ||
     portIds.length > 0 ||
     Boolean(callDates?.length) ||
+    monthIndexes.length > 0 ||
     conflictFilters.has_conflict !== undefined ||
     Boolean(conflictFilters.conflict_severity) ||
     Boolean(conflictFilters.conflict_type) ||
@@ -108,6 +115,9 @@ export default function OperationalSection({
       onMonthChange={onMonthChange}
       season={season}
       onSeasonChange={onSeasonChange}
+      monthIndexes={monthIndexes}
+      onMonthIndexesChange={onMonthIndexesChange}
+      onSelectMonth={onSelectMonth}
     />
   );
 }

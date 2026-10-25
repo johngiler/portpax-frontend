@@ -32,6 +32,7 @@ import {
   REPORT_PAX_BASIS_OPTIONS,
   type ReportPaxBasis,
 } from "@/views/ReportsView/reportsFilterQuery";
+import { normalizeMonthIndexes } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 import BookingsDateFilters, { type BookingsDatePreset } from "./BookingsDateFilters";
 
 const STATUS_OPTIONS = BOOKING_STATUS_MULTI_OPTIONS;
@@ -108,6 +109,7 @@ type BookingFiltersProps = {
   calendarMode: CalendarViewModeQuery;
   calendarYear: number;
   calendarMonthIndex: number;
+  calendarMonths: number[];
   calendarSeason: CalendarSeasonQuery;
   positionFilter: number;
   heatMode: AvailabilityHeatModeQuery;
@@ -137,6 +139,7 @@ type BookingFiltersProps = {
   onCalendarModeChange: (mode: CalendarViewModeQuery) => void;
   onCalendarYearChange: (year: number) => void;
   onCalendarMonthChange: (monthIndex: number) => void;
+  onCalendarMonthsChange: (monthIndexes: number[]) => void;
   onCalendarSeasonChange: (season: CalendarSeasonQuery) => void;
   onPositionFilterChange: (positionId: number) => void;
   onHeatModeChange: (mode: AvailabilityHeatModeQuery) => void;
@@ -170,6 +173,7 @@ export default function BookingFilters({
   calendarMode,
   calendarYear,
   calendarMonthIndex,
+  calendarMonths,
   calendarSeason,
   positionFilter,
   heatMode,
@@ -199,6 +203,7 @@ export default function BookingFilters({
   onCalendarModeChange,
   onCalendarYearChange,
   onCalendarMonthChange,
+  onCalendarMonthsChange,
   onCalendarSeasonChange,
   onPositionFilterChange,
   onHeatModeChange,
@@ -231,7 +236,8 @@ export default function BookingFilters({
     isOccupancyHeat;
   const showSearch = tab === "list" || tab === "calendar" || isOccupancyHeat;
   const searchCatalogOnly = tab === "calendar" || isOccupancyHeat;
-  const showDates = tab === "list" || tab === "availability" || tab === "proximity";
+  const showDates =
+    tab === "list" || tab === "availability" || tab === "proximity";
   const showCalendarMode = tab === "calendar";
   const showHeatMode = isAvailabilityTab;
   const showPosition =
@@ -366,7 +372,13 @@ export default function BookingFilters({
         label="Vista calendario"
         name="booking_calendar_mode"
         value={calendarMode}
-        onChange={onCalendarModeChange}
+        onChange={(next) => {
+          onCalendarModeChange(next);
+          if (next !== "annual" && calendarMonths.length > 0) {
+            onCalendarMonthChange(calendarMonths[0]);
+            onCalendarMonthsChange([]);
+          }
+        }}
         options={MODE_OPTIONS}
         compact
       />
@@ -378,22 +390,37 @@ export default function BookingFilters({
         options={YEAR_OPTIONS}
         compact
       />
-      {calendarMode !== "annual" ? (
+      {calendarMode === "annual" ? (
+        <>
+          <FormFieldMultiSelect<number>
+            label="Meses"
+            name="booking_calendar_months"
+            value={calendarMonths}
+            onChange={(next) =>
+              onCalendarMonthsChange(normalizeMonthIndexes(next))
+            }
+            options={MONTH_OPTIONS}
+            placeholder="Todos los meses"
+            compact
+          />
+          {calendarMonths.length === 0 ? (
+            <FormFieldSelect<CalendarSeasonQuery>
+              label="Temporada"
+              name="booking_calendar_season"
+              value={calendarSeason}
+              onChange={onCalendarSeasonChange}
+              options={SEASON_OPTIONS}
+              compact
+            />
+          ) : null}
+        </>
+      ) : (
         <FormFieldSelect<number>
           label="Mes"
           name="booking_calendar_month"
           value={calendarMonthIndex}
           onChange={onCalendarMonthChange}
           options={MONTH_OPTIONS}
-          compact
-        />
-      ) : (
-        <FormFieldSelect<CalendarSeasonQuery>
-          label="Temporada"
-          name="booking_calendar_season"
-          value={calendarSeason}
-          onChange={onCalendarSeasonChange}
-          options={SEASON_OPTIONS}
           compact
         />
       )}

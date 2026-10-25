@@ -31,6 +31,7 @@ import MonthGrid from "./MonthGrid";
 import WeekGrid from "./WeekGrid";
 import {
   monthBounds,
+  monthIndexesBounds,
   seasonBounds,
   weekDatesFrom,
   type CalendarSeason,
@@ -70,6 +71,11 @@ type UnifiedCalendarCardProps = {
   onMonthChange: (monthIndex: number) => void;
   season: CalendarSeason;
   onSeasonChange: (season: CalendarSeason) => void;
+  /** Annual: selected months (0–11). Empty = season / full year. */
+  monthIndexes?: number[];
+  onMonthIndexesChange?: (monthIndexes: number[]) => void;
+  /** Annual grid month click → monthly of that month. */
+  onSelectMonth?: (monthIndex: number) => void;
 };
 
 export default function UnifiedCalendarCard({
@@ -96,6 +102,9 @@ export default function UnifiedCalendarCard({
   onMonthChange,
   season,
   onSeasonChange,
+  monthIndexes = [],
+  onMonthIndexesChange,
+  onSelectMonth,
 }: UnifiedCalendarCardProps) {
   const compact = useCompactLayout();
   const multiPort = portIds.length !== 1;
@@ -105,9 +114,13 @@ export default function UnifiedCalendarCard({
       const days = weekDatesFrom(weekAnchor);
       return { from: days[0], to: days[6] };
     }
-    if (mode === "annual") return seasonBounds(year, season);
+    if (mode === "annual") {
+      return (
+        monthIndexesBounds(year, monthIndexes) ?? seasonBounds(year, season)
+      );
+    }
     return monthBounds(year, monthIndex);
-  }, [mode, weekAnchor, year, monthIndex, season]);
+  }, [mode, weekAnchor, year, monthIndex, season, monthIndexes]);
 
   const { bookings, previousYearBookings, positions, isLoading, error } =
     useCalendarBookings({
@@ -206,6 +219,9 @@ export default function UnifiedCalendarCard({
     }
     if (mode === "annual") {
       onYearChange(y);
+      if (monthIndexes.length > 0 && !monthIndexes.includes(m)) {
+        onMonthIndexesChange?.([...monthIndexes, m]);
+      }
       return;
     }
     onYearChange(y);
@@ -228,9 +244,13 @@ export default function UnifiedCalendarCard({
         ? multiPort
           ? "Mes completo: todos los puertos en un mismo calendario, organizados por día y puerto."
           : "Mes completo con calls por día y totales."
-        : multiPort
-          ? "Año / temporada por puerto (filas). Selecciona un puerto para ver posiciones."
-          : "Barcos por posición · totales ships y PAX · Summer / Winter.";
+        : monthIndexes.length > 0
+          ? multiPort
+            ? "Meses seleccionados por puerto."
+            : "Meses seleccionados · barcos por posición."
+          : multiPort
+            ? "Año / temporada por puerto (filas). Selecciona un puerto para ver posiciones."
+            : "Barcos por posición · totales ships y PAX · Summer / Winter.";
 
   const effectivePositionId = multiPort ? 0 : positionId;
   const errorMessage = error
@@ -311,7 +331,12 @@ export default function UnifiedCalendarCard({
             multiPort={multiPort}
             loading={isLoading}
             focus={calendarFocus}
+            monthIndexes={monthIndexes}
             onSelectMonth={(m) => {
+              if (onSelectMonth) {
+                onSelectMonth(m);
+                return;
+              }
               onMonthChange(m);
               onModeChange("monthly");
             }}

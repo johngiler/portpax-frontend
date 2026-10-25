@@ -202,6 +202,8 @@ export async function exportCalendarReport(params: {
   call_date_from: string;
   call_date_to: string;
   calendar_mode?: "weekly" | "monthly" | "annual";
+  /** 1-based months for annual export (gaps omitted). */
+  months?: number[];
   shipping_line?: number;
   shipping_lines?: number[];
   shipping_line_group?: number;
@@ -217,6 +219,9 @@ export async function exportCalendarReport(params: {
   query.set("call_date_to", params.call_date_to);
   query.set("export_format", params.exportFormat);
   if (params.calendar_mode) query.set("calendar_mode", params.calendar_mode);
+  if (params.months && params.months.length > 0) {
+    query.set("months", params.months.join(","));
+  }
   if (params.pax_basis) query.set("pax_basis", params.pax_basis);
   if (params.shipping_lines && params.shipping_lines.length > 0) {
     query.set("shipping_line", params.shipping_lines.join(","));

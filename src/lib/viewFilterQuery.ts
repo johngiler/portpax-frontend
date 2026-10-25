@@ -12,6 +12,7 @@ import {
 } from "@/types/cruise";
 
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
+import { parseIsoDate } from "@/lib/bookingDates";
 
 export type BookingsDatePresetQuery =
   | "all"
@@ -82,6 +83,8 @@ export type BookingsWorkspaceFilters = {
   week: string;
   year: number;
   month: number; // 0-11
+  /** Annual view: selected months (0–11). Empty = use season / full year. */
+  months: number[];
   /** Disponibilidad vs ocupación (availability tab only). */
   heat: AvailabilityHeatModeQuery;
   /**
@@ -147,6 +150,24 @@ function parseConflictFilter(raw: string | null): ConflictFilterValue {
 }
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Query `months=1,3,6` (1-based) → unique sorted 0–11 indexes. */
+function parseMonthIndexes(raw: string | null): number[] {
+  if (!raw) return [];
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const part of raw.split(",")) {
+    const n = Number(part.trim());
+    if (!Number.isFinite(n)) continue;
+    const index = Math.trunc(n) - 1;
+    if (index < 0 || index > 11 || seen.has(index)) continue;
+    seen.add(index);
+    out.push(index);
+  }
+  out.sort((a, b) => a - b);
+  if (out.length === 12) return [];
+  return out;
+}
+
 /** Discrete imported availability dates from `idates` query param. */
 export function parseImportedIsoDates(raw: string | null | undefined): string[] {
   if (!raw) return [];
@@ -191,8 +212,22 @@ export function parseBookingsWorkspaceFilters(
   const densityRaw = sp.get("density");
   const yearRaw = sp.get("year");
   const monthRaw = sp.get("month");
-  const year = yearRaw ? Number(yearRaw) : defaults.year;
+  const modeRawResolved =
+    modeRaw && MODES.has(modeRaw as CalendarViewModeQuery)
+      ? (modeRaw as CalendarViewModeQuery)
+      : "monthly";
+  const week = sp.get("week") || defaults.week;
+  let year = yearRaw ? Number(yearRaw) : defaults.year;
   const monthNum = monthRaw ? Number(monthRaw) : defaults.month + 1;
+  let monthIndex =
+    Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12
+      ? Math.trunc(monthNum) - 1
+      : defaults.month;
+  if (modeRawResolved === "weekly" && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
+    const parsedWeek = parseIsoDate(week);
+    year = parsedWeek.year;
+    monthIndex = parsedWeek.monthIndex;
+  }
   const heat: AvailabilityHeatModeQuery =
     heatRaw && HEAT_MODES.has(heatRaw as AvailabilityHeatModeQuery)
       ? (heatRaw as AvailabilityHeatModeQuery)
@@ -248,21 +283,17 @@ export function parseBookingsWorkspaceFilters(
     datePreset: isDatePreset(dateRaw) ? dateRaw : "all",
     customFrom: sp.get("from") || defaults.customFrom,
     customTo: sp.get("to") || defaults.customTo,
-    mode:
-      modeRaw && MODES.has(modeRaw as CalendarViewModeQuery)
-        ? (modeRaw as CalendarViewModeQuery)
-        : "monthly",
+    mode: modeRawResolved,
     season:
       seasonRaw && SEASONS.has(seasonRaw as CalendarSeasonQuery)
         ? (seasonRaw as CalendarSeasonQuery)
         : "natural",
     position: parseIntId(sp.get("position")),
-    week: sp.get("week") || defaults.week,
+    week,
     year: Number.isFinite(year) && year >= 2000 ? Math.trunc(year) : defaults.year,
-    month:
-      Number.isFinite(monthNum) && monthNum >= 1 && monthNum <= 12
-        ? Math.trunc(monthNum) - 1
-        : defaults.month,
+    month: monthIndex,
+    months:
+      modeRawResolved === "annual" ? parseMonthIndexes(sp.get("months")) : [],
     heat,
     density,
     conflict,
@@ -331,7 +362,16 @@ export function buildBookingsWorkspaceQuery(
   if (state.mode === "monthly") {
     sp.set("month", String(state.month + 1));
   }
-  if (state.mode === "annual" && state.season !== "natural") {
+  if (state.mode === "annual" && state.months.length > 0) {
+    sp.set(
+      "months",
+      state.months
+        .filter((index) => index >= 0 && index <= 11)
+        .sort((a, b) => a - b)
+        .map((index) => index + 1)
+        .join(","),
+    );
+  } else if (state.mode === "annual" && state.season !== "natural") {
     sp.set("season", state.season);
   }
   if (state.position > 0) sp.set("position", String(state.position));

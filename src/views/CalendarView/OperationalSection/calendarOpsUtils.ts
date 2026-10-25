@@ -1,4 +1,4 @@
-import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
+import { getMonthOptions, parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 
@@ -45,12 +45,100 @@ export function monthBounds(year: number, monthIndex: number): { from: string; t
   };
 }
 
+export function monthsInIsoRange(
+  from: string,
+  to: string,
+): { year: number; monthIndex: number }[] {
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  const out: { year: number; monthIndex: number }[] = [];
+  let y = start.year;
+  let m = start.monthIndex;
+  while (y < end.year || (y === end.year && m <= end.monthIndex)) {
+    out.push({ year: y, monthIndex: m });
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+export function shiftIsoRangeYears(
+  range: { from: string; to: string },
+  deltaYears: number,
+): { from: string; to: string } {
+  const shift = (iso: string) => {
+    const { year, monthIndex, day } = parseIsoDate(iso);
+    return toIsoDate(year + deltaYears, monthIndex, day);
+  };
+  return { from: shift(range.from), to: shift(range.to) };
+}
+
 /** Inclusive calendar year (Jan 1 – Dec 31). */
 export function yearBounds(year: number): { from: string; to: string } {
   return {
     from: toIsoDate(year, 0, 1),
     to: toIsoDate(year, 11, 31),
   };
+}
+
+export function normalizeMonthIndexes(months: number[]): number[] {
+  const unique = [...new Set(months.filter((m) => m >= 0 && m <= 11))];
+  unique.sort((a, b) => a - b);
+  // All 12 months = full year (same as empty / Temporada).
+  if (unique.length === 12) return [];
+  return unique;
+}
+
+/** Keep the current week if it already sits in that year-month; else week of day 1. */
+export function weekAnchorForYearMonth(
+  year: number,
+  monthIndex: number,
+  currentWeek?: string,
+): string {
+  if (currentWeek && /^\d{4}-\d{2}-\d{2}$/.test(currentWeek)) {
+    const parsed = parseIsoDate(currentWeek);
+    if (parsed.year === year && parsed.monthIndex === monthIndex) {
+      return startOfWeekMonday(currentWeek);
+    }
+  }
+  return startOfWeekMonday(toIsoDate(year, monthIndex, 1));
+}
+
+export function monthIndexesShortLabel(monthIndexes: number[]): string {
+  const options = getMonthOptions();
+  return normalizeMonthIndexes(monthIndexes)
+    .map((index) => {
+      const label = options[index]?.label ?? "";
+      return label ? label.charAt(0).toUpperCase() + label.slice(1, 3) : "";
+    })
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** First day of earliest month → last day of latest month in `year`. */
+export function monthIndexesBounds(
+  year: number,
+  monthIndexes: number[],
+): { from: string; to: string } | null {
+  const months = normalizeMonthIndexes(monthIndexes);
+  if (months.length === 0) return null;
+  return {
+    from: monthBounds(year, months[0]).from,
+    to: monthBounds(year, months[months.length - 1]).to,
+  };
+}
+
+export function yearMonthsFromIndexes(
+  year: number,
+  monthIndexes: number[],
+): { year: number; monthIndex: number }[] {
+  return normalizeMonthIndexes(monthIndexes).map((monthIndex) => ({
+    year,
+    monthIndex,
+  }));
 }
 
 /** Calendar season for annual view (Fernanda / Excel ops). */
@@ -92,20 +180,7 @@ export function monthsInSeason(
   season: CalendarSeason,
 ): { year: number; monthIndex: number }[] {
   const { from, to } = seasonBounds(year, season);
-  const start = parseIsoDate(from);
-  const end = parseIsoDate(to);
-  const out: { year: number; monthIndex: number }[] = [];
-  let y = start.year;
-  let m = start.monthIndex;
-  while (y < end.year || (y === end.year && m <= end.monthIndex)) {
-    out.push({ year: y, monthIndex: m });
-    m += 1;
-    if (m > 11) {
-      m = 0;
-      y += 1;
-    }
-  }
-  return out;
+  return monthsInIsoRange(from, to);
 }
 
 export function summarizeMonth(
@@ -139,6 +214,20 @@ export function summarizeYear(bookings: BookingListItem[], year: number): {
     plannedPax += b.planned_pax ?? 0;
   }
   return { calls, plannedPax };
+}
+
+export function summarizeMonths(
+  bookings: BookingListItem[],
+  months: { year: number; monthIndex: number }[],
+): { ships: number; plannedPax: number } {
+  let ships = 0;
+  let plannedPax = 0;
+  for (const { year, monthIndex } of months) {
+    const part = summarizeMonth(bookings, year, monthIndex);
+    ships += part.ships;
+    plannedPax += part.plannedPax;
+  }
+  return { ships, plannedPax };
 }
 
 /** Aggregate ships + PAX for an arbitrary inclusive ISO range. */

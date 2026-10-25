@@ -10,10 +10,14 @@ import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
 import AnnualMonthBlock from "./AnnualMonthBlock";
 import {
   activePierPositions,
+  monthIndexesShortLabel,
   monthsInSeason,
   seasonBounds,
   seasonLabel,
+  shiftIsoRangeYears,
+  summarizeMonths,
   summarizeRange,
+  yearMonthsFromIndexes,
   type CalendarSeason,
 } from "./calendarOpsUtils";
 
@@ -22,6 +26,8 @@ type AnnualGridProps = {
   onYearChange: (year: number) => void;
   season: CalendarSeason;
   onSeasonChange?: (season: CalendarSeason) => void;
+  /** When set, ignore season and render only these months (0–11) of `year`. */
+  monthIndexes?: number[];
   bookings: BookingListItem[];
   previousYearBookings: BookingListItem[];
   positions: Position[];
@@ -38,6 +44,7 @@ export default function AnnualGrid({
   onYearChange,
   season,
   onSeasonChange,
+  monthIndexes = [],
   bookings,
   previousYearBookings,
   positions,
@@ -48,19 +55,36 @@ export default function AnnualGrid({
 }: AnnualGridProps) {
   const [availabilityCheck, setAvailabilityCheck] = useState(false);
   const monthOptions = getMonthOptions();
-  const months = useMemo(() => monthsInSeason(year, season), [year, season]);
-  const range = useMemo(() => seasonBounds(year, season), [year, season]);
-  const totals = useMemo(
-    () => summarizeRange(bookings, range.from, range.to),
-    [bookings, range],
+  const selectedMonths = monthIndexes.length > 0;
+  const months = useMemo(
+    () =>
+      selectedMonths
+        ? yearMonthsFromIndexes(year, monthIndexes)
+        : monthsInSeason(year, season),
+    [selectedMonths, monthIndexes, year, season],
   );
-  const prevRange = useMemo(
-    () => seasonBounds(year - 1, season),
+  const range = useMemo(
+    () => seasonBounds(year, season),
     [year, season],
   );
+  const totals = useMemo(
+    () =>
+      selectedMonths
+        ? summarizeMonths(bookings, months)
+        : summarizeRange(bookings, range.from, range.to),
+    [selectedMonths, bookings, months, range],
+  );
+  const prevMonths = useMemo(
+    () => months.map((item) => ({ ...item, year: item.year - 1 })),
+    [months],
+  );
+  const prevRange = useMemo(() => shiftIsoRangeYears(range, -1), [range]);
   const prevTotals = useMemo(
-    () => summarizeRange(previousYearBookings, prevRange.from, prevRange.to),
-    [previousYearBookings, prevRange],
+    () =>
+      selectedMonths
+        ? summarizeMonths(previousYearBookings, prevMonths)
+        : summarizeRange(previousYearBookings, prevRange.from, prevRange.to),
+    [selectedMonths, previousYearBookings, prevMonths, prevRange],
   );
 
   const pierRows = activePierPositions(positions);
@@ -92,7 +116,9 @@ export default function AnnualGrid({
             <ChevronLeft className="h-4 w-4" />
           </button>
           <p className="min-w-[9rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-            {seasonNavLabel}
+            {selectedMonths
+              ? `${monthIndexesShortLabel(monthIndexes)} ${year}`
+              : seasonNavLabel}
           </p>
           <button
             type="button"
@@ -103,7 +129,7 @@ export default function AnnualGrid({
             <ChevronRight className="h-4 w-4" />
           </button>
 
-          {onSeasonChange ? (
+          {onSeasonChange && !selectedMonths ? (
             <div className="ml-1 flex rounded-xl border border-zinc-200/80 p-0.5 dark:border-zinc-700">
               {(
                 [

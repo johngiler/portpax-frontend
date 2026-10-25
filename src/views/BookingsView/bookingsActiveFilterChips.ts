@@ -1,4 +1,5 @@
 import { BOOKINGS_DATE_PRESET_LABELS } from "@/views/BookingsView/BookingsDateFilters";
+import { monthIndexesShortLabel } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 import type { BookingsDatePreset } from "@/views/BookingsView/BookingsDateFilters";
 import type {
   AvailabilityHeatModeQuery,
@@ -66,6 +67,7 @@ export type BookingsActiveFilterChipInput = {
   cancellationReason?: CancellationReason | "";
   search: string;
   datePreset: BookingsDatePreset;
+  calendarMonths?: number[];
   importedDatesCount: number;
   recapImportedCount?: number;
   heatMode: AvailabilityHeatModeQuery;
@@ -203,6 +205,12 @@ export function buildBookingsActiveFilterChips(
     chips.push({
       id: "imported-dates",
       label: `${input.importedDatesCount} fecha${input.importedDatesCount === 1 ? "" : "s"} importada${input.importedDatesCount === 1 ? "" : "s"}`,
+      icon: "dates",
+    });
+  } else if (tab === "calendar" && (input.calendarMonths?.length ?? 0) > 0) {
+    chips.push({
+      id: "calendar-months",
+      label: monthIndexesShortLabel(input.calendarMonths ?? []),
       icon: "dates",
     });
   } else if (tab !== "calendar" && input.datePreset !== "all") {

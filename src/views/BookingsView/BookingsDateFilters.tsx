@@ -163,7 +163,9 @@ export default function BookingsDateFilters({
             </div>
           </div>
         )}
-        {!hasImportedDates && !recapOwnsDates && datePreset !== "custom" ? (
+        {!hasImportedDates &&
+        !recapOwnsDates &&
+        datePreset !== "custom" ? (
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             {datePreset === "all" && !showAllRangeHint
               ? `${formatIsoAsDmy(timeRange.date_from)} → …`

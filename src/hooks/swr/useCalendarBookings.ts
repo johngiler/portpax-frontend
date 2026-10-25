@@ -8,7 +8,7 @@ import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
 import type { CalendarViewModeQuery } from "@/lib/viewFilterQuery";
 import {
-  seasonBounds,
+  shiftIsoRangeYears,
   type CalendarSeason,
 } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 
@@ -62,8 +62,7 @@ async function fetchCalendarPayload(
   let previousYearBookings: BookingListItem[] = [];
 
   if (params.mode === "annual") {
-    const season = params.season ?? "natural";
-    const prev = seasonBounds(params.year - 1, season);
+    const prev = shiftIsoRangeYears({ from: params.from, to: params.to }, -1);
     const [currentRows, prevRows] = await Promise.all([
       fetchAllBookings({
         ...common,

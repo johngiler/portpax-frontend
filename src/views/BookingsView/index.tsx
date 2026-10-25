@@ -85,8 +85,11 @@ import type { VesselSizeCategory } from "@/types/cruise";
 import {
   addDaysIso,
   monthBounds,
+  monthIndexesBounds,
+  normalizeMonthIndexes,
+  seasonBounds,
+  weekAnchorForYearMonth,
   weekDatesFrom,
-  yearBounds,
 } from "@/views/CalendarView/OperationalSection/calendarOpsUtils";
 import OperationalSection from "@/views/CalendarView/OperationalSection";
 import { getTimeRange, availabilityDefaultRange } from "@/utils/timeRange";
@@ -275,6 +278,10 @@ export default function BookingsView() {
   const [monthIndex, setMonthIndex] = useState(navDefaults.month);
   const [appliedYear, setAppliedYear] = useState(navDefaults.year);
   const [appliedMonthIndex, setAppliedMonthIndex] = useState(navDefaults.month);
+  const [calendarMonths, setCalendarMonths] = useState<number[]>([]);
+  const [appliedCalendarMonths, setAppliedCalendarMonths] = useState<number[]>(
+    [],
+  );
   const [calendarSeason, setCalendarSeason] =
     useState<CalendarSeasonQuery>("natural");
   const [appliedCalendarSeason, setAppliedCalendarSeason] =
@@ -383,6 +390,7 @@ export default function BookingsView() {
       week: weekAnchor,
       year: appliedYear,
       month: appliedMonthIndex,
+      months: appliedCalendarMonths,
       heat: appliedHeatMode,
       density: appliedDensity,
       conflict: appliedConflictFilter,
@@ -471,6 +479,8 @@ export default function BookingsView() {
     setMonthIndex(parsed.month);
     setAppliedYear(parsed.year);
     setAppliedMonthIndex(parsed.month);
+    setCalendarMonths(parsed.months);
+    setAppliedCalendarMonths(parsed.months);
     setAvailabilityDateAllowlist(
       parsed.importedDates.length ? parsed.importedDates : null,
     );
@@ -809,21 +819,37 @@ export default function BookingsView() {
     setAppliedVesselFilter(vesselFilter);
     setAppliedSizeCategoryFilter(sizeCategoryFilter);
     setAppliedTagFilter(tagFilter);
-    setAppliedDatePreset(datePreset);
-    setAppliedCustomDateFrom(customDateFrom);
-    setAppliedCustomDateTo(customDateTo);
     setAppliedCalendarMode(calendarMode);
     setAppliedPositionFilter(nextPosition);
-    setAppliedYear(year);
-    setAppliedMonthIndex(monthIndex);
-    setAppliedCalendarSeason(calendarSeason);
+    let nextYear = year;
+    let nextMonth = monthIndex;
+    const nextCustomFrom = customDateFrom;
+    const nextCustomTo = customDateTo;
+    let nextSeason = calendarSeason;
+    const nextDatePreset = datePreset;
+    const nextMonths =
+      tab === "calendar" && calendarMode === "annual"
+        ? normalizeMonthIndexes(calendarMonths)
+        : [];
+    if (nextMonths.length > 0) {
+      nextSeason = "natural";
+      setCalendarSeason("natural");
+    }
+    setCalendarMonths(nextMonths);
+    setAppliedCalendarMonths(nextMonths);
+    setAppliedDatePreset(nextDatePreset);
+    setAppliedCustomDateFrom(nextCustomFrom);
+    setAppliedCustomDateTo(nextCustomTo);
+    setAppliedYear(nextYear);
+    setAppliedMonthIndex(nextMonth);
+    setAppliedCalendarSeason(nextSeason);
     setAppliedHeatMode(heatMode);
     // Stash density across criteria; panel only sends ships_per_day in occupancy.
     setAppliedDensity(density);
     setAppliedPaxBasis(tab === "list" ? paxBasis : appliedPaxBasis);
     let nextWeek = weekAnchor;
     if (calendarMode === "weekly") {
-      nextWeek = toIsoDate(year, monthIndex, 1);
+      nextWeek = weekAnchorForYearMonth(nextYear, nextMonth, weekAnchor);
       setWeekAnchor(nextWeek);
     }
     syncToUrl(
@@ -836,14 +862,15 @@ export default function BookingsView() {
         vessel: vesselFilter,
         sizeCategories: sizeCategoryFilter,
         tags: tagFilter,
-        datePreset,
-        customFrom: customDateFrom,
-        customTo: customDateTo,
+        datePreset: nextDatePreset,
+        customFrom: nextCustomFrom,
+        customTo: nextCustomTo,
         mode: calendarMode,
-        season: calendarSeason,
+        season: nextSeason,
+        months: nextMonths,
         position: nextPosition,
-        year,
-        month: monthIndex,
+        year: nextYear,
+        month: nextMonth,
         week: nextWeek,
         heat: heatMode,
         density,
@@ -950,6 +977,7 @@ export default function BookingsView() {
       week,
       year: appliedYear,
       month: appliedMonthIndex,
+      months: [],
       heat: "availability",
       density: 0,
       conflict: "",
@@ -1000,6 +1028,8 @@ export default function BookingsView() {
     setAppliedCalendarMode("monthly");
     setCalendarSeason("natural");
     setAppliedCalendarSeason("natural");
+    setCalendarMonths([]);
+    setAppliedCalendarMonths([]);
     setPositionFilter(0);
     setAppliedPositionFilter(0);
     setHeatMode("availability");
@@ -1036,6 +1066,7 @@ export default function BookingsView() {
       week,
       year: y,
       month: m,
+      months: [],
       heat: "availability",
       density: 0,
       conflict: clearedConflict,
@@ -1096,7 +1127,9 @@ export default function BookingsView() {
       (tab === "list" && appliedSizeCategoryFilter.length > 0) ||
       appliedTagFilter.length > 0 ||
       (tab !== "proximity" && appliedPositionFilter > 0) ||
-      appliedDatePreset !== "all" ||
+      (tab === "calendar"
+        ? appliedCalendarMonths.length > 0
+        : appliedDatePreset !== "all") ||
       Boolean(availabilityDateAllowlist?.length) ||
       (tab === "list" && Boolean(bookingRecap)) ||
       (tab === "availability" && appliedHeatMode !== "availability") ||
@@ -1135,6 +1168,8 @@ export default function BookingsView() {
     appliedPositionFilter > 0 ||
     datePreset !== "all" ||
     appliedDatePreset !== "all" ||
+    (tab === "calendar" &&
+      (calendarMonths.length > 0 || appliedCalendarMonths.length > 0)) ||
     Boolean(availabilityDateAllowlist?.length) ||
     Boolean(bookingRecap) ||
     (tab === "availability" && heatMode !== "availability") ||
@@ -1168,6 +1203,7 @@ export default function BookingsView() {
     calendarMode !== appliedCalendarMode ||
     year !== appliedYear ||
     monthIndex !== appliedMonthIndex ||
+    !sameNumberList(calendarMonths, appliedCalendarMonths) ||
     calendarSeason !== appliedCalendarSeason ||
     positionFilter !== appliedPositionFilter ||
     heatMode !== appliedHeatMode ||
@@ -1274,12 +1310,18 @@ export default function BookingsView() {
         // calendar
         let from = weekAnchor;
         let to = weekAnchor;
-        if (appliedCalendarMode === "weekly") {
+        const selectedMonths =
+          appliedCalendarMode === "annual" ? appliedCalendarMonths : [];
+        const monthSpan = monthIndexesBounds(appliedYear, selectedMonths);
+        if (monthSpan) {
+          from = monthSpan.from;
+          to = monthSpan.to;
+        } else if (appliedCalendarMode === "weekly") {
           const days = weekDatesFrom(weekAnchor);
           from = days[0];
           to = days[6];
         } else if (appliedCalendarMode === "annual") {
-          const b = yearBounds(appliedYear);
+          const b = seasonBounds(appliedYear, appliedCalendarSeason);
           from = b.from;
           to = b.to;
         } else {
@@ -1314,6 +1356,10 @@ export default function BookingsView() {
               ? appliedStatusFilter
               : undefined,
           pax_basis: appliedPaxBasis,
+          months:
+            selectedMonths.length > 0
+              ? selectedMonths.map((index) => index + 1)
+              : undefined,
           exportFormat: format,
         });
       } catch (err) {
@@ -1326,6 +1372,11 @@ export default function BookingsView() {
       appliedPortFilter,
       availabilityRange,
       appliedCalendarMode,
+      appliedCalendarSeason,
+      appliedCalendarMonths,
+      appliedDatePreset,
+      appliedCustomDateFrom,
+      appliedCustomDateTo,
       weekAnchor,
       appliedYear,
       appliedMonthIndex,
@@ -1749,7 +1800,13 @@ export default function BookingsView() {
         ? appliedCalendarMode === "weekly"
           ? "Vista semanal"
           : appliedCalendarMode === "annual"
-            ? "Vista anual"
+            ? appliedCalendarMonths.length > 0
+              ? "Vista anual"
+              : appliedCalendarSeason === "summer"
+                ? "Vista anual · Summer"
+                : appliedCalendarSeason === "winter"
+                  ? "Vista anual · Winter"
+                  : "Vista anual"
             : null
         : null;
     return buildBookingsActiveFilterChips({
@@ -1771,7 +1828,11 @@ export default function BookingsView() {
       firstArrival: appliedFirstArrival,
       cancellationReason: appliedCancellationReason,
       search: appliedSearch,
-      datePreset: appliedDatePreset,
+      datePreset: tab === "calendar" ? "all" : appliedDatePreset,
+      calendarMonths:
+        tab === "calendar" && appliedCalendarMode === "annual"
+          ? appliedCalendarMonths
+          : [],
       importedDatesCount: availabilityDateAllowlist?.length ?? 0,
       recapImportedCount:
         tab === "list" ? (bookingRecap?.imported_count ?? 0) : 0,
@@ -1807,6 +1868,8 @@ export default function BookingsView() {
     appliedHeatMode,
     appliedDensity,
     appliedCalendarMode,
+    appliedCalendarSeason,
+    appliedCalendarMonths,
     appliedPaxBasis,
   ]);
 
@@ -2023,6 +2086,7 @@ export default function BookingsView() {
           calendarMode={calendarMode}
           calendarYear={year}
           calendarMonthIndex={monthIndex}
+          calendarMonths={calendarMonths}
           calendarSeason={calendarSeason}
           positionFilter={positionFilter}
           heatMode={heatMode}
@@ -2062,6 +2126,7 @@ export default function BookingsView() {
           onCalendarModeChange={setCalendarMode}
           onCalendarYearChange={setYear}
           onCalendarMonthChange={setMonthIndex}
+          onCalendarMonthsChange={setCalendarMonths}
           onCalendarSeasonChange={setCalendarSeason}
           onPositionFilterChange={setPositionFilter}
           onHeatModeChange={setHeatMode}
@@ -2288,7 +2353,53 @@ export default function BookingsView() {
           onModeChange={(next) => {
             setCalendarMode(next);
             setAppliedCalendarMode(next);
-            syncToUrl(workspaceState({ mode: next }));
+            const fromMonths = appliedCalendarMonths;
+            const nextMonth =
+              next !== "annual" && fromMonths.length > 0
+                ? fromMonths[0]
+                : appliedMonthIndex;
+            if (next !== "annual") {
+              setCalendarMonths([]);
+              setAppliedCalendarMonths([]);
+            }
+            if (nextMonth !== appliedMonthIndex) {
+              setMonthIndex(nextMonth);
+              setAppliedMonthIndex(nextMonth);
+            }
+            let nextWeek = weekAnchor;
+            if (next === "weekly") {
+              nextWeek = weekAnchorForYearMonth(
+                appliedYear,
+                nextMonth,
+                weekAnchor,
+              );
+              setWeekAnchor(nextWeek);
+            }
+            syncToUrl(
+              workspaceState({
+                mode: next,
+                month: nextMonth,
+                months: next === "annual" ? appliedCalendarMonths : [],
+                week: nextWeek,
+              }),
+            );
+          }}
+          onSelectMonth={(m) => {
+            setMonthIndex(m);
+            setAppliedMonthIndex(m);
+            setCalendarMode("monthly");
+            setAppliedCalendarMode("monthly");
+            setCalendarMonths([]);
+            setAppliedCalendarMonths([]);
+            syncToUrl(
+              workspaceState({ mode: "monthly", month: m, months: [] }),
+            );
+          }}
+          onMonthIndexesChange={(next) => {
+            const months = normalizeMonthIndexes(next);
+            setCalendarMonths(months);
+            setAppliedCalendarMonths(months);
+            syncToUrl(workspaceState({ months }));
           }}
           portIds={appliedPortFilter}
           portLabel={calendarPortLabel}
@@ -2303,8 +2414,19 @@ export default function BookingsView() {
           callDates={availabilityDateAllowlist}
           weekAnchor={weekAnchor}
           onWeekAnchorChange={(iso) => {
+            const parsed = parseIsoDate(iso);
             setWeekAnchor(iso);
-            syncToUrl(workspaceState({ week: iso }));
+            setYear(parsed.year);
+            setAppliedYear(parsed.year);
+            setMonthIndex(parsed.monthIndex);
+            setAppliedMonthIndex(parsed.monthIndex);
+            syncToUrl(
+              workspaceState({
+                week: iso,
+                year: parsed.year,
+                month: parsed.monthIndex,
+              }),
+            );
           }}
           year={appliedYear}
           onYearChange={(y) => {
@@ -2324,6 +2446,9 @@ export default function BookingsView() {
             setAppliedCalendarSeason(next);
             syncToUrl(workspaceState({ season: next }));
           }}
+          monthIndexes={
+            appliedCalendarMode === "annual" ? appliedCalendarMonths : []
+          }
           onClearFilters={handleClearFilters}
         />
       ) : null}

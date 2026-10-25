@@ -45,6 +45,7 @@ export function dashboardBookingsHref(
     week: dateFrom,
     year,
     month: Math.max(0, Number(dateFrom.slice(5, 7)) - 1) || 0,
+    months: [],
     heat: "availability",
     density: 0,
     conflict: overrides?.conflict ?? "",
