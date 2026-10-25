@@ -1309,6 +1309,7 @@ export default function BookingsView() {
             appliedStatusFilter.length > 0
               ? appliedStatusFilter
               : undefined,
+          pax_basis: appliedPaxBasis,
           exportFormat: format,
         });
       } catch (err) {
@@ -1331,6 +1332,7 @@ export default function BookingsView() {
       appliedTagFilter,
       appliedPositionFilter,
       appliedStatusFilter,
+      appliedPaxBasis,
       portOptions,
       proximityDateRange,
       appliedConflictFilter,

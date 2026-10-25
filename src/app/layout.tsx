@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/layout/AuthLayout";
 import DocumentTitle from "@/components/layout/DocumentTitle";
+import LockAppZoom from "@/components/pwa/LockAppZoom";
 import RegisterServiceWorker from "@/components/pwa/RegisterServiceWorker";
 import SwrProvider from "@/lib/swr/SwrProvider";
 import "./globals.css";
@@ -37,6 +38,8 @@ export const viewport: Viewport = {
   themeColor: "#dce8f7",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -60,6 +63,7 @@ export default function RootLayout({
         <AuthProvider>
           <SwrProvider>
             <DocumentTitle />
+            <LockAppZoom />
             <RegisterServiceWorker />
             <AuthLayout>{children}</AuthLayout>
           </SwrProvider>

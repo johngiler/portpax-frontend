@@ -13,6 +13,7 @@ import {
   calendarFocusIsActive,
 } from "@/lib/bookingCatalogFocus";
 import { parseIsoDate } from "@/lib/bookingDates";
+import { useCompactLayout } from "@/lib/inAppNav";
 import type { ConflictTypeFilterValue } from "@/lib/bookingConflictLabels";
 import type {
   BookingStatusFilterValue,
@@ -96,6 +97,7 @@ export default function UnifiedCalendarCard({
   season,
   onSeasonChange,
 }: UnifiedCalendarCardProps) {
+  const compact = useCompactLayout();
   const multiPort = portIds.length !== 1;
 
   const range = useMemo(() => {
@@ -252,7 +254,7 @@ export default function UnifiedCalendarCard({
       <div>
         <div className="mb-2 sm:mb-4">
           <CalendarColorLegend
-            showCorp
+            showCorp={!compact || mode === "annual"}
             showTraffic={mode !== "annual"}
           />
         </div>

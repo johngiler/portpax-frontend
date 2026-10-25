@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { sanitizeReturnTo } from "@/lib/safeReturnTo";
 
@@ -45,6 +51,23 @@ export function prefersSameTabNav(): boolean {
     return true;
   }
   return isStandaloneDisplay() || isLikelyWebView();
+}
+
+const COMPACT_MQ = `(max-width: ${COMPACT_LAYOUT_BREAKPOINT_PX - 1}px)`;
+
+function subscribeCompact(onChange: () => void): () => void {
+  const mq = window.matchMedia(COMPACT_MQ);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+function compactSnapshot(): boolean {
+  return window.matchMedia(COMPACT_MQ).matches;
+}
+
+/** Viewport compact layout (`< 768px`). SSR assumes compact to avoid a table flash on phones. */
+export function useCompactLayout(): boolean {
+  return useSyncExternalStore(subscribeCompact, compactSnapshot, () => true);
 }
 
 export function useSameTabNav(): boolean {

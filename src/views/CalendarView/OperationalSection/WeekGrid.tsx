@@ -10,7 +10,9 @@ import {
   bookingMatchesCalendarFocus,
   bookingsWithFocusNeighbors,
 } from "@/lib/bookingCatalogFocus";
+import { useCompactLayout } from "@/lib/inAppNav";
 import CallChip from "./CallChip";
+import MobileWeekAgenda from "./MobileWeekAgenda";
 import {
   TRAFFIC_DOT,
   activePierPositions,
@@ -102,6 +104,7 @@ export default function WeekGrid({
   readOnly = false,
   embedded = false,
 }: WeekGridProps) {
+  const compact = useCompactLayout();
   const days = weekDatesFrom(weekAnchor);
   const pierRows = activePierPositions(positions);
   const chrome = weekChrome(embedded);
@@ -119,7 +122,7 @@ export default function WeekGrid({
     <div className="space-y-3">
       {!readOnly ? (
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2">
             <button
               type="button"
               aria-label="Semana anterior"
@@ -128,7 +131,7 @@ export default function WeekGrid({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <p className="min-w-[12rem] text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            <p className="min-w-0 flex-1 text-center text-sm font-semibold leading-snug text-zinc-800 sm:min-w-[12rem] sm:flex-none dark:text-zinc-100">
               {formatIsoDateLabel(days[0], "short")} –{" "}
               {formatIsoDateLabel(days[6], "short")}
             </p>
@@ -158,6 +161,15 @@ export default function WeekGrid({
 
       {loading ? (
         <BookingsViewSkeleton variant="calendar" calendarMode="weekly" />
+      ) : compact ? (
+        <MobileWeekAgenda
+          days={days}
+          bookings={bookings}
+          positions={positions}
+          multiPort={multiPort}
+          focus={focus}
+          scrollToToday={!readOnly && !embedded}
+        />
       ) : multiPort ? (
         <div className={chrome.scroll}>
           <table className={chrome.table}>

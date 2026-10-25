@@ -65,60 +65,97 @@ function ListSkeleton() {
 
 function MonthlyCalendarSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-      <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <Skeleton
-            key={`h-${i}`}
-            className="h-8 rounded-none bg-zinc-50 dark:bg-zinc-900"
-          />
-        ))}
-        {Array.from({ length: 35 }).map((_, i) => (
-          <div
-            key={`c-${i}`}
-            className="min-h-[7rem] space-y-2 bg-white p-2 dark:bg-zinc-900"
-          >
-            <Skeleton className="h-4 w-6 rounded" />
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-10 w-3/4 rounded-md" />
-          </div>
-        ))}
+    <>
+      <div className="overflow-hidden rounded-xl border border-zinc-200 md:hidden dark:border-zinc-700">
+        <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton
+              key={`mh-${i}`}
+              className="h-8 rounded-none bg-zinc-50 dark:bg-zinc-900"
+            />
+          ))}
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div
+              key={`mc-${i}`}
+              className="flex min-h-12 flex-col items-center justify-center gap-1 bg-white p-1 dark:bg-zinc-900"
+            >
+              <Skeleton className="h-3 w-4 rounded" />
+              <Skeleton className="h-1.5 w-1.5 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 md:block dark:border-zinc-700">
+        <div className="grid grid-cols-7 gap-px bg-zinc-200 dark:bg-zinc-700">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton
+              key={`h-${i}`}
+              className="h-8 rounded-none bg-zinc-50 dark:bg-zinc-900"
+            />
+          ))}
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div
+              key={`c-${i}`}
+              className="min-h-[7rem] space-y-2 bg-white p-2 dark:bg-zinc-900"
+            >
+              <Skeleton className="h-4 w-6 rounded" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-3/4 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
 function WeeklyCalendarSkeleton() {
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[48rem] overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <div className="grid grid-cols-[7rem_repeat(7,minmax(0,1fr))] gap-px bg-zinc-200 dark:bg-zinc-700">
-          <Skeleton className="h-12 rounded-none bg-zinc-50 dark:bg-zinc-900" />
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton
-              key={`wd-${i}`}
-              className="h-12 rounded-none bg-zinc-50 dark:bg-zinc-900"
-            />
-          ))}
-          {Array.from({ length: 4 }).map((_, row) => (
-            <div key={`row-${row}`} className="contents">
-              <div className="bg-white p-2 dark:bg-zinc-900">
-                <Skeleton className="h-5 w-14 rounded" />
-              </div>
-              {Array.from({ length: 7 }).map((_, col) => (
-                <div
-                  key={`cell-${row}-${col}`}
-                  className="min-h-[5.5rem] space-y-2 bg-white p-2 dark:bg-zinc-900"
-                >
-                  <Skeleton className="h-9 w-full rounded-md" />
-                  <Skeleton className="h-9 w-2/3 rounded-md" />
-                </div>
-              ))}
+    <>
+      <div className="space-y-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={`wd-${i}`}
+            className="space-y-2 rounded-2xl border border-zinc-200/80 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/60"
+          >
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-28 rounded" />
+              <Skeleton className="h-2.5 w-2.5 rounded-full" />
             </div>
-          ))}
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
+        <div className="min-w-[48rem] overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+          <div className="grid grid-cols-[7rem_repeat(7,minmax(0,1fr))] gap-px bg-zinc-200 dark:bg-zinc-700">
+            <Skeleton className="h-12 rounded-none bg-zinc-50 dark:bg-zinc-900" />
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton
+                key={`wdh-${i}`}
+                className="h-12 rounded-none bg-zinc-50 dark:bg-zinc-900"
+              />
+            ))}
+            {Array.from({ length: 4 }).map((_, row) => (
+              <div key={`row-${row}`} className="contents">
+                <div className="bg-white p-2 dark:bg-zinc-900">
+                  <Skeleton className="h-5 w-14 rounded" />
+                </div>
+                {Array.from({ length: 7 }).map((_, col) => (
+                  <div
+                    key={`cell-${row}-${col}`}
+                    className="min-h-[5.5rem] space-y-2 bg-white p-2 dark:bg-zinc-900"
+                  >
+                    <Skeleton className="h-9 w-full rounded-md" />
+                    <Skeleton className="h-9 w-2/3 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

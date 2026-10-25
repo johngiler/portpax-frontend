@@ -146,6 +146,12 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* WebView / PWA: scroll yes, pinch-zoom of the page no. */
+html.app-no-zoom,
+html.app-no-zoom body {
+  touch-action: pan-x pan-y;
+}
+
 .btn-primary-gradient {
   background: linear-gradient(
     to bottom,

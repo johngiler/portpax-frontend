@@ -5,7 +5,9 @@ import { getMonthMatrix, getMonthOptions, toIsoDate } from "@/lib/bookingDates";
 import BookingsViewSkeleton from "@/views/BookingsView/BookingsViewSkeleton";
 import type { BookingListItem } from "@/types/booking";
 import type { Position } from "@/types/catalog";
+import { useCompactLayout } from "@/lib/inAppNav";
 import CallChip from "./CallChip";
+import MobileMonthHeatmap from "./MobileMonthHeatmap";
 import type { BookingCalendarFocus } from "@/lib/bookingCatalogFocus";
 import {
   bookingMatchesCalendarFocus,
@@ -55,6 +57,7 @@ export default function MonthGrid({
   loading = false,
   focus = {},
 }: MonthGridProps) {
+  const compact = useCompactLayout();
   const matrix = getMonthMatrix(year, monthIndex);
   const pierCount = activePierPositions(positions).length;
   const monthOptions = getMonthOptions();
@@ -93,6 +96,16 @@ export default function MonthGrid({
 
       {loading ? (
         <BookingsViewSkeleton variant="calendar" calendarMode="monthly" />
+      ) : compact ? (
+        <MobileMonthHeatmap
+          year={year}
+          monthIndex={monthIndex}
+          matrix={matrix}
+          bookings={bookings}
+          positions={positions}
+          multiPort={multiPort}
+          focus={focus}
+        />
       ) : (
       <div className="overflow-x-auto">
         <div className="min-w-[52rem] grid grid-cols-7 gap-px rounded-xl border border-zinc-200 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-700">

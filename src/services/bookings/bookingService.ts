@@ -208,6 +208,7 @@ export async function exportCalendarReport(params: {
   shipping_line_groups?: number[];
   status?: BookingListStatusFilter;
   statuses?: BookingStatusFilterValue[];
+  pax_basis?: "planned" | "capacity";
   exportFormat: "xlsx" | "csv" | "pdf";
 }): Promise<void> {
   const query = new URLSearchParams();
@@ -216,6 +217,7 @@ export async function exportCalendarReport(params: {
   query.set("call_date_to", params.call_date_to);
   query.set("export_format", params.exportFormat);
   if (params.calendar_mode) query.set("calendar_mode", params.calendar_mode);
+  if (params.pax_basis) query.set("pax_basis", params.pax_basis);
   if (params.shipping_lines && params.shipping_lines.length > 0) {
     query.set("shipping_line", params.shipping_lines.join(","));
   } else if (params.shipping_line) {
