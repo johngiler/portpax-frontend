@@ -1,10 +1,9 @@
 "use client";
 
+import InAppLink from "@/components/ui/InAppLink";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import type { PositionOccupant } from "@/types/booking";
-import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
-} from "@/types/booking";
+import { bookingDetailHref } from "@/types/booking";
 import {
   occupantDateLabel,
   positionOccupancyHintFromOccupant,
@@ -28,6 +27,7 @@ export default function PositionOccupancyHint({
   callDate = null,
   className = "",
 }: PositionOccupancyHintProps) {
+  const returnTo = useCurrentReturnTo();
   if (!occupant && !message) return null;
 
   const posLabel = occupant?.position_code || positionCode || null;
@@ -39,7 +39,10 @@ export default function PositionOccupancyHint({
         occupant.status.toUpperCase()
       : null;
     const href = occupant?.booking_code
-      ? bookingDetailHref({ booking_code: occupant.booking_code })
+      ? bookingDetailHref(
+          { booking_code: occupant.booking_code },
+          { returnTo },
+        )
       : null;
     return (
       <p
@@ -76,13 +79,12 @@ export default function PositionOccupancyHint({
           <>
             {" · "}
             {href ? (
-              <a
+              <InAppLink
                 href={href}
-                {...BOOKING_DETAIL_LINK_PROPS}
                 className="font-semibold underline underline-offset-2 hover:opacity-90"
               >
                 {occupant.booking_code}
-              </a>
+              </InAppLink>
             ) : (
               <span className="font-semibold">{occupant.booking_code}</span>
             )}

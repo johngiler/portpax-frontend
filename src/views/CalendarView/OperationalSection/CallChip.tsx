@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import InAppLink from "@/components/ui/InAppLink";
 import { usePathname, useSearchParams } from "next/navigation";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/conflictDisplayFromApi";
 import { currentReturnTo } from "@/lib/safeReturnTo";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   bookingStatusLabel,
   type BookingListItem,
@@ -60,11 +59,10 @@ export default function CallChip({
   const frameSeverity = conflictCallCardFrameSeverity(highlights);
 
   return (
-    <Link
+    <InAppLink
       href={bookingDetailHref(booking, {
         returnTo: currentReturnTo(pathname, searchParams),
       })}
-      {...BOOKING_DETAIL_LINK_PROPS}
       className={[
         "block min-w-0 rounded-md px-1.5 py-1 text-left text-[10px] leading-tight shadow-sm transition hover:opacity-90 sm:text-[11px]",
         CORP_CHIP_CLASS[corp],
@@ -125,6 +123,6 @@ export default function CallChip({
         highlightPosition={highlights.highlight_position}
         positionHighlightSeverity={highlights.position_severity}
       />
-    </Link>
+    </InAppLink>
   );
 }

@@ -214,7 +214,11 @@ export default function BookingsVesselProximityPanel({
       title="Proximidad barco / puerto"
       description={`${data.vessel_name} · ${data.cells.length} escala${data.cells.length === 1 ? "" : "s"} · ${rangeLabel}`}
     >
-      <div ref={scrollRootRef} className={matrixScrollClassName}>
+      <div
+        ref={scrollRootRef}
+        data-app-scroll="proximity"
+        className={matrixScrollClassName}
+      >
         <table
           className="w-full table-fixed border-separate border-spacing-0 text-left"
           style={{

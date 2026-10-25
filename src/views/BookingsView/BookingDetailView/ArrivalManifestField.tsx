@@ -6,6 +6,7 @@ import ConfirmDeleteButton from "@/components/buttons/ConfirmDeleteButton";
 import ImageDropZone from "@/components/ui/ImageDropZone";
 import ImageViewer from "@/components/ui/ImageViewer";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { InAppAnchor } from "@/components/ui/InAppLink";
 import { IMAGE_FILE_REJECT_MESSAGES } from "@/lib/imageFiles";
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif)(\?|#|$)/i;
@@ -134,15 +135,13 @@ export default function ArrivalManifestField({
 
       {showSavedPdf || showSavedNonImage ? (
         <div className="mb-2">
-          <a
+          <InAppAnchor
             href={savedUrl!}
-            target="_blank"
-            rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--admin-accent)] hover:underline"
           >
             <FileText className="h-3.5 w-3.5" aria-hidden />
             Ver manifiesto adjunto
-          </a>
+          </InAppAnchor>
         </div>
       ) : null}
 

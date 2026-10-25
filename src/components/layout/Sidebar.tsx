@@ -9,11 +9,11 @@ import { useMainLayoutOptional } from "@/contexts/MainLayoutContext";
 import { useNavCounts } from "@/hooks/useNavCounts";
 import { formatCompactCount } from "@/lib/formatCompactCount";
 import { canSeeNavItem, roleHomePath } from "@/lib/navAccess";
+import { COMPACT_LAYOUT_BREAKPOINT_PX } from "@/lib/inAppNav";
 import { NAV_SECTIONS, type NavItem } from "@/lib/navConfig";
 import type { NavCounts } from "@/services/core/navCountsService";
 import PortPaxLogo from "./PortPaxLogo";
 
-const MOBILE_BREAKPOINT = 768;
 const SIDEBAR_COLLAPSED_KEY = "portpax_sidebar_collapsed";
 
 function getStoredCollapsed(): boolean | null {
@@ -45,7 +45,9 @@ export default function Sidebar() {
   const navCounts = useNavCounts(Boolean(user));
 
   useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${MOBILE_BREAKPOINT}px)`);
+    const mq = window.matchMedia(
+      `(min-width: ${COMPACT_LAYOUT_BREAKPOINT_PX}px)`,
+    );
     const sync = () => {
       const mobile = !mq.matches;
       setIsMobile(mobile);

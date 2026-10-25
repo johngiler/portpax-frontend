@@ -1,8 +1,9 @@
 "use client";
 
 import { Anchor, Check } from "lucide-react";
+import InAppLink from "@/components/ui/InAppLink";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   BOOKING_STATUS_LABELS,
   type BookingStatus,
@@ -33,8 +34,12 @@ export default function BulkImportLtaClaimCard({
   disabled = false,
   onClaim,
 }: BulkImportLtaClaimCardProps) {
+  const returnTo = useCurrentReturnTo();
   const href = candidate.booking_code
-    ? bookingDetailHref({ booking_code: candidate.booking_code })
+    ? bookingDetailHref(
+        { booking_code: candidate.booking_code },
+        { returnTo },
+      )
     : null;
   const dateLabel = occupantDateLabel(callDate);
   const statusLabel = candidate.status
@@ -129,13 +134,12 @@ export default function BulkImportLtaClaimCard({
               <dt className="text-sky-700/70 dark:text-sky-400/70">Reserva</dt>
               <dd className="min-w-0 break-all">
                 {href ? (
-                  <a
+                  <InAppLink
                     href={href}
-                    {...BOOKING_DETAIL_LINK_PROPS}
                     className="font-semibold underline underline-offset-2 hover:opacity-90"
                   >
                     {candidate.booking_code}
-                  </a>
+                  </InAppLink>
                 ) : (
                   <span className="font-semibold">{candidate.booking_code}</span>
                 )}

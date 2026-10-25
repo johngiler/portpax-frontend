@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppBackLink from "@/components/ui/AppBackLink";
 import { ArrowLeft, MapPin, Pencil, Ship, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -150,7 +150,7 @@ export default function PortDetailHero({
               ].join(" ")}
             >
               <div className={isStuck ? "flex min-w-0 items-center gap-3" : "flex min-w-0 items-start gap-5"}>
-                <Link
+                <AppBackLink
                   href="/ports"
                   className={[
                     "flex shrink-0 cursor-pointer items-center justify-center self-center rounded-lg border border-zinc-200/80 bg-white/80 text-zinc-600 transition-colors hover:text-[var(--admin-accent)] dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300",
@@ -159,7 +159,7 @@ export default function PortDetailHero({
                   aria-label="Volver a puertos"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                </Link>
+                </AppBackLink>
                 <div className="flex min-w-0 items-stretch gap-3 sm:gap-4">
                   <div
                     className={[

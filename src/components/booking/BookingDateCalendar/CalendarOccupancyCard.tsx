@@ -23,6 +23,7 @@ import {
   suggestBookingPositions,
   updateBooking,
 } from "@/services/bookings/bookingService";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import { bookingDetailHref, type Booking, type PositionSuggestion } from "@/types/booking";
 import type { CalendarDayBooking } from "./types";
 
@@ -61,6 +62,7 @@ export default function CalendarOccupancyCard({
   onReassigned,
   onSavingChange,
 }: CalendarOccupancyCardProps) {
+  const returnTo = useCurrentReturnTo();
   const reassignable =
     canReassign &&
     booking.isCurrentPort &&
@@ -201,7 +203,7 @@ export default function CalendarOccupancyCard({
   }, [suggestions, booking.position_id, booking.position_code]);
 
   const etaEtdLabel = `${formatTimeShort(booking.eta)}–${formatTimeShort(booking.etd)}`;
-  const detailHref = bookingDetailHref(booking);
+  const detailHref = bookingDetailHref(booking, { returnTo });
   const selectedSuggestion = suggestions.find((p) => p.id === positionId);
   const occupancyHint = positionOccupancyHint(selectedSuggestion);
 

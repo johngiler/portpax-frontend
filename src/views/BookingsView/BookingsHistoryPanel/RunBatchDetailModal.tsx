@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import InAppLink from "@/components/ui/InAppLink";
 import { usePathname, useSearchParams } from "next/navigation";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import BookingTagField from "@/components/ui/BookingTagField";
@@ -12,10 +12,7 @@ import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { currentReturnTo } from "@/lib/safeReturnTo";
-import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
-} from "@/types/booking";
+import { bookingDetailHref } from "@/types/booking";
 import {
   BATCH_BOOKINGS_PAGE_SIZE,
   fetchRunBatchDetail,
@@ -290,14 +287,13 @@ export default function RunBatchDetailModal({
                             className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/60"
                           >
                             <td className="max-w-[14rem] px-3 py-1 align-middle lg:max-w-xs">
-                              <Link
+                              <InAppLink
                                 href={bookingDetailHref(row, { returnTo })}
-                                {...BOOKING_DETAIL_LINK_PROPS}
                                 className="break-all text-[11px] leading-snug text-[var(--admin-accent)] hover:underline"
                                 onClick={onClose}
                               >
                                 {row.booking_code}
-                              </Link>
+                              </InAppLink>
                             </td>
                             <td className="whitespace-nowrap px-3 py-1 text-xs text-zinc-800 dark:text-zinc-100">
                               {row.call_date
@@ -341,14 +337,13 @@ export default function RunBatchDetailModal({
                               className="bg-white hover:bg-zinc-50/80 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/60"
                             >
                               <td className="max-w-[20rem] px-3 py-1 align-middle lg:max-w-xl">
-                                <Link
+                                <InAppLink
                                   href={bookingDetailHref(row, { returnTo })}
-                                  {...BOOKING_DETAIL_LINK_PROPS}
                                   className="break-all text-[11px] leading-snug text-[var(--admin-accent)] hover:underline"
                                   onClick={onClose}
                                 >
                                   {row.booking_code}
-                                </Link>
+                                </InAppLink>
                               </td>
                               <td className="px-3 py-1 align-middle text-xs text-zinc-700 dark:text-zinc-200">
                                 {changes.length === 0 ? (

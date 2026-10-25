@@ -377,6 +377,7 @@ export default function BookingWizard() {
     return (
       <BookingWizardSuccess
         bookings={createdBookings}
+        returnTo={cancelHref}
         onViewAll={() => router.push(returnTo ?? "/bookings")}
         onNewBooking={() => {
           setForm(emptyBookingWizardForm());

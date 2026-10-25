@@ -9,7 +9,7 @@ import {
   Gauge,
   Scale,
 } from "lucide-react";
-import Link from "next/link";
+import InAppLink from "@/components/ui/InAppLink";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import { FormFieldSelect } from "@/components/ui/FormField";
@@ -20,7 +20,6 @@ import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { getApiErrorMessage } from "@/lib/apiFormErrors";
 import { exportLongTermAgreementBookings } from "@/services/bookings/ltaService";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingListItem,
 } from "@/types/booking";
@@ -370,11 +369,10 @@ export default function LtaLinkedBookings({
                       className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
                     >
                       <td className="px-1.5 py-2.5 align-middle">
-                        <Link
+                        <InAppLink
                           href={bookingDetailHref(booking, {
                             returnTo: RETURN_TO,
                           })}
-                          {...BOOKING_DETAIL_LINK_PROPS}
                           className="group inline-flex min-w-0 max-w-[16rem] items-center gap-1.5 font-semibold text-[var(--admin-accent)] hover:underline"
                         >
                           <span className="truncate">{booking.booking_code}</span>
@@ -382,7 +380,7 @@ export default function LtaLinkedBookings({
                             className="h-3 w-3 shrink-0 opacity-60"
                             strokeWidth={2}
                           />
-                        </Link>
+                        </InAppLink>
                       </td>
                       <td
                         className={`whitespace-nowrap px-1.5 py-2.5 align-middle ${

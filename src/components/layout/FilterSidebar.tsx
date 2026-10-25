@@ -126,7 +126,10 @@ export default function FilterSidebar({ children }: FilterSidebarProps) {
     "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-xs text-zinc-600 transition-colors hover:bg-white/10 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200";
 
   const filterBody = (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1">
+    <div
+      data-app-scroll="filters"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pt-1"
+    >
       <div className="flex flex-col gap-3 [&>*]:!mb-0">{children}</div>
 
       <div className="mt-4 border-t border-[var(--admin-border)] pt-4">

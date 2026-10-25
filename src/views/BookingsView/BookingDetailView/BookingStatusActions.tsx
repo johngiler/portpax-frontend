@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import NoticeAlert from "@/components/ui/NoticeAlert";
 import FormErrorAlert from "@/components/ui/FormErrorAlert";
+import { InAppAnchor } from "@/components/ui/InAppLink";
 import ModalFormError from "@/components/ui/ModalFormError";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import BookingStatusGuideModal from "@/components/booking/BookingStatusGuideModal";
@@ -216,14 +217,12 @@ export default function BookingStatusActions({
             </div>
           ) : null}
           {booking.cancellation_evidence_url ? (
-            <a
+            <InAppAnchor
               href={booking.cancellation_evidence_url}
-              target="_blank"
-              rel="noreferrer"
               className="inline-flex text-sm font-medium text-[var(--admin-accent)] hover:underline"
             >
               Ver evidencia de cancelación
-            </a>
+            </InAppAnchor>
           ) : null}
         </div>
       ) : null}

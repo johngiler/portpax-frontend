@@ -2,12 +2,18 @@ import type { BookingActivityFilterValue } from "@/lib/bookingActivityTaxonomy";
 import { bookingDetailHref } from "@/types/booking";
 import type { AppNotification } from "@/types/notification";
 
-export function notificationHref(notification: AppNotification): string {
+export function notificationHref(
+  notification: AppNotification,
+  options?: { returnTo?: string | null },
+): string {
   if (
     notification.target === "booking_detail" &&
     notification.booking_code
   ) {
-    return bookingDetailHref({ booking_code: notification.booking_code });
+    return bookingDetailHref(
+      { booking_code: notification.booking_code },
+      { returnTo: options?.returnTo },
+    );
   }
 
   const params = new URLSearchParams();

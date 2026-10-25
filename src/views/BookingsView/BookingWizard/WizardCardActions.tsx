@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
+import AppBackLink from "@/components/ui/AppBackLink";
 import DefaultButton from "@/components/buttons/DefaultButton";
 import type { BookingWizardStepId } from "./wizardTypes";
 
@@ -40,13 +40,13 @@ export default function WizardCardActions({
   return (
     <div className={shell}>
       <div className="flex gap-2">
-        <Link
+        <AppBackLink
           href={cancelHref}
           className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           <X className="h-4 w-4" />
           Cancelar
-        </Link>
+        </AppBackLink>
         {step !== "port" && (
           <button
             type="button"

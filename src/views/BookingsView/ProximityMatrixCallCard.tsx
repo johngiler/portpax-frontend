@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import InAppLink from "@/components/ui/InAppLink";
 import { Clock3, Ruler, Users } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
@@ -19,7 +19,6 @@ import {
 } from "@/lib/bookingConflictStyle";
 import type { VesselProximityMatrixCell } from "@/services/bookings/vesselProximityMatrixService";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingBadgeStatus,
   type BookingConflictSeverity,
@@ -59,12 +58,11 @@ export default function ProximityMatrixCallCard({
   const conflictTitle = conflictChipTitle(cell.conflict_chips);
 
   return (
-    <Link
+    <InAppLink
       href={bookingDetailHref(
         { booking_code: cell.booking_code },
         { returnTo },
       )}
-      {...BOOKING_DETAIL_LINK_PROPS}
       className={conflictCardClassName(
         frameSeverity,
         [
@@ -144,6 +142,6 @@ export default function ProximityMatrixCallCard({
           </p>
         </div>
       </div>
-    </Link>
+    </InAppLink>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, FileSignature } from "lucide-react";
 import BookingCodeRef from "@/components/booking/BookingCodeRef";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
 import ConflictTypeChips from "@/components/booking/ConflictTypeChips";
+import AppBackLink from "@/components/ui/AppBackLink";
 import { conflictChipsFromApi } from "@/lib/conflictDisplayFromApi";
 import { returnToLabel, sanitizeReturnTo } from "@/lib/safeReturnTo";
 import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
@@ -56,13 +56,13 @@ export default function BookingDetailHero({ booking }: BookingDetailHeroProps) {
     <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
       <div className="border-b border-zinc-200/80 bg-gradient-to-r from-[var(--admin-accent)]/12 via-[var(--admin-accent)]/5 to-transparent px-5 py-4 dark:border-zinc-800">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-          <Link
+          <AppBackLink
             href={backHref}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-[var(--admin-accent)] dark:text-zinc-400"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2} aria-hidden />
             {backLabel}
-          </Link>
+          </AppBackLink>
           {ltaCode ? (
             <div className="max-w-full min-w-0 text-right sm:max-w-[min(100%,22rem)]">
               <p className="inline-flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">

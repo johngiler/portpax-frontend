@@ -8,6 +8,7 @@ import InfiniteScrollFooter from "@/components/ui/InfiniteScrollFooter";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { formatNotificationTimestamp } from "@/lib/notificationDates";
 import { notificationMessageParts } from "@/lib/notificationMessage";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import { notificationHref } from "@/lib/notificationNavigation";
 import type { AppNotification } from "@/types/notification";
 
@@ -109,6 +110,7 @@ export default function NotificationDropdown({
   onClose,
 }: NotificationDropdownProps) {
   const router = useRouter();
+  const returnTo = useCurrentReturnTo();
   const scrollRef = useRef<HTMLDivElement>(null);
   const {
     notifications,
@@ -131,7 +133,7 @@ export default function NotificationDropdown({
       await markRead(item.id);
     }
     onClose();
-    router.push(notificationHref(item));
+    router.push(notificationHref(item, { returnTo }));
   }
 
   async function handleMarkAll() {

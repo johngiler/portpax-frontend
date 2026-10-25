@@ -1,6 +1,7 @@
 "use client";
 
 import { FileDown } from "lucide-react";
+import { InAppAnchor } from "@/components/ui/InAppLink";
 
 type ConfirmationPdfButtonProps = {
   href: string;
@@ -18,10 +19,8 @@ export default function ConfirmationPdfButton({
   className = "",
 }: ConfirmationPdfButtonProps) {
   return (
-    <a
+    <InAppAnchor
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       className={[
         "inline-flex cursor-pointer items-center font-semibold text-[var(--admin-accent)] transition-colors hover:underline",
@@ -41,6 +40,6 @@ export default function ConfirmationPdfButton({
         aria-hidden
       />
       {iconOnly ? null : compact ? "PDF" : "Descargar confirmación PDF"}
-    </a>
+    </InAppAnchor>
   );
 }

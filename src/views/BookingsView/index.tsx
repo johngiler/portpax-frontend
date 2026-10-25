@@ -24,6 +24,7 @@ import { parseIsoDate, toIsoDate } from "@/lib/bookingDates";
 import type { BookingActivityFilterValue } from "@/lib/bookingActivityTaxonomy";
 import { parseHistoryTypeParam } from "@/lib/notificationNavigation";
 import { BULK_BOOKING_PASTE_COLUMNS } from "@/lib/importFormatGuides";
+import { useOpenInApp } from "@/lib/inAppNav";
 import { canWriteApp } from "@/lib/navAccess";
 import type {
   AvailabilityHeatModeQuery,
@@ -163,6 +164,7 @@ function daysInclusive(from: string, to: string): number {
 export default function BookingsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const openInApp = useOpenInApp();
   const { user } = useAuth();
   const setFilterOpen = useSetFilterOpen();
   const canWrite = canWriteApp(user?.role);
@@ -2066,13 +2068,11 @@ export default function BookingsView() {
           onApply={applyFilters}
           onClear={handleClearFilters}
           onBookingCodePick={(bookingCode) => {
-            window.open(
+            openInApp(
               bookingDetailHref(
                 { booking_code: bookingCode },
                 { returnTo: bookingsReturnTo() },
               ),
-              "_blank",
-              "noopener,noreferrer",
             );
           }}
         />

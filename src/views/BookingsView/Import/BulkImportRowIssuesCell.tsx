@@ -5,9 +5,10 @@ import { AlertTriangle, Check, Loader2, RefreshCw, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import NoticeAlert from "@/components/ui/NoticeAlert";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
+import InAppLink from "@/components/ui/InAppLink";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import {
   BOOKING_STATUS_LABELS,
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingStatus,
 } from "@/types/booking";
@@ -49,6 +50,7 @@ export default function BulkImportRowIssuesCell({
   const [refreshing, setRefreshing] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const refreshingRef = useRef(false);
+  const returnTo = useCurrentReturnTo();
 
   const ltaCandidate = row.lta_space_candidate ?? null;
   const claimPending = Boolean(ltaCandidate && !row.claim_lta_space);
@@ -117,7 +119,10 @@ export default function BulkImportRowIssuesCell({
       occupant.status.toUpperCase()
     : null;
   const bookingHref = occupant?.booking_code
-    ? bookingDetailHref({ booking_code: occupant.booking_code })
+    ? bookingDetailHref(
+        { booking_code: occupant.booking_code },
+        { returnTo },
+      )
     : null;
   const dateLabel = occupantDateLabel(occupant?.call_date || row.call_date);
   const busyRefresh = refreshing || revalidating;
@@ -305,13 +310,12 @@ export default function BulkImportRowIssuesCell({
                         </dt>
                         <dd className="min-w-0 break-all">
                           {bookingHref ? (
-                            <a
+                            <InAppLink
                               href={bookingHref}
-                              {...BOOKING_DETAIL_LINK_PROPS}
                               className="font-semibold underline underline-offset-2 hover:opacity-90"
                             >
                               {occupant.booking_code}
-                            </a>
+                            </InAppLink>
                           ) : (
                             <span className="font-semibold">
                               {occupant.booking_code}

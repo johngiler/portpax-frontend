@@ -13,8 +13,10 @@ import {
   HEADER_MOBILE_FILTERS_ID,
   MOBILE_FILTER_DRAWER_ID,
 } from "@/components/layout/filterSidebarIds";
-
-const SIDEBAR_MOBILE_BREAKPOINT = 768;
+import {
+  COMPACT_LAYOUT_BREAKPOINT_PX,
+  useAppScrollMemory,
+} from "@/lib/inAppNav";
 
 type MainLayoutContextValue = {
   filterOpen: boolean;
@@ -45,10 +47,11 @@ export function MainLayoutProvider({ children }: { children: React.ReactNode }) 
   );
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  useAppScrollMemory();
 
   useEffect(() => {
     const mq = window.matchMedia(
-      `(max-width: ${SIDEBAR_MOBILE_BREAKPOINT - 1}px)`,
+      `(max-width: ${COMPACT_LAYOUT_BREAKPOINT_PX - 1}px)`,
     );
     const sync = () => setIsMobile(mq.matches);
     sync();
@@ -78,7 +81,7 @@ export function MainLayoutProvider({ children }: { children: React.ReactNode }) 
     setSidebarMobileOpen(false);
     if (
       typeof window !== "undefined" &&
-      window.innerWidth < SIDEBAR_MOBILE_BREAKPOINT
+      window.innerWidth < COMPACT_LAYOUT_BREAKPOINT_PX
     ) {
       setFilterOpenSafe(false);
     }

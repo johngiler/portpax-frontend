@@ -472,12 +472,7 @@ export function canBulkDeleteBookings(
   return bookings.length > 0 && bookings.every((b) => b.status === "c");
 }
 
-/** Use on `<Link>` / `<a>` that open booking detail in a new tab. */
-export const BOOKING_DETAIL_LINK_PROPS = {
-  target: "_blank",
-  rel: "noopener noreferrer",
-} as const;
-
+/** Detail URL. Always pass `returnTo`; open it with `<InAppLink>`. */
 export function bookingDetailHref(
   booking: Pick<Booking, "booking_code">,
   options?: { returnTo?: string | null },

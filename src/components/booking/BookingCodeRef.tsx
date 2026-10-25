@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, ClipboardCopy, FileDown, Hash } from "lucide-react";
-import { BOOKING_DETAIL_LINK_PROPS } from "@/types/booking";
+import InAppLink, { InAppAnchor } from "@/components/ui/InAppLink";
 
 type BookingCodeRefProps = {
   code: string;
@@ -51,14 +51,13 @@ export default function BookingCodeRef({
           aria-hidden
         />
         {href ? (
-          <a
+          <InAppLink
             href={href}
-            {...BOOKING_DETAIL_LINK_PROPS}
             className={`${codeClassName} cursor-pointer underline-offset-2 hover:underline`}
             title="Abrir detalle de la reserva"
           >
             {code}
-          </a>
+          </InAppLink>
         ) : (
           <code className={codeClassName}>{code}</code>
         )}
@@ -76,17 +75,15 @@ export default function BookingCodeRef({
           )}
         </button>
         {pdfHref ? (
-          <a
+          <InAppAnchor
             href={pdfHref}
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-[var(--admin-accent)]/15"
             title="Descargar confirmación PDF"
             aria-label="Descargar confirmación PDF"
           >
             <FileDown className="h-4 w-4" strokeWidth={2} aria-hidden />
             <span className="hidden sm:inline">PDF</span>
-          </a>
+          </InAppAnchor>
         ) : null}
       </div>
     </div>

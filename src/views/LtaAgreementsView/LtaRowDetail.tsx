@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 import CatalogEntityLink from "@/components/ui/CatalogEntityLink";
+import { InAppAnchor } from "@/components/ui/InAppLink";
 import LtaBookingWindowPanel from "@/components/lta/LtaBookingWindowPanel";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
 import { portDetailHref } from "@/types/catalog";
@@ -219,14 +220,12 @@ export default function LtaRowDetail({
           </OverviewField>
           <OverviewField label="Archivo">
             {agreement.contract_file_url ? (
-              <a
+              <InAppAnchor
                 href={agreement.contract_file_url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="font-medium text-[var(--admin-accent)] hover:underline"
               >
                 {agreement.contract_file_name || "Ver contrato"}
-              </a>
+              </InAppAnchor>
             ) : (
               <span className="font-normal text-zinc-400">Sin archivo</span>
             )}

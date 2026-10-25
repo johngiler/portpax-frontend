@@ -15,6 +15,7 @@ import {
 import FormSection from "@/components/ui/FormSection";
 import Modal from "@/components/ui/Modal";
 import ModalFormError from "@/components/ui/ModalFormError";
+import { InAppAnchor } from "@/components/ui/InAppLink";
 import { submitModalForm } from "@/lib/apiFormErrors";
 import { positionShortCode } from "@/lib/positionCode";
 import { fetchPositions } from "@/services/catalogs/positionService";
@@ -470,14 +471,12 @@ export default function LtaFormModal({
               </label>
               {initial?.contract_file_url && !removeContract && !contractFile ? (
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-                  <a
+                  <InAppAnchor
                     href={initial.contract_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--admin-accent)] hover:underline"
                   >
                     {initial.contract_file_name ?? "Ver contrato"}
-                  </a>
+                  </InAppAnchor>
                   <ConfirmDeleteButton
                     deleteLabel="el archivo del contrato"
                     onDelete={() => setRemoveContract(true)}

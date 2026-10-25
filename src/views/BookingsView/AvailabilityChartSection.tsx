@@ -257,6 +257,7 @@ export default function AvailabilityChartSection({
       <AvailabilityColorLegend />
       <div
         ref={scrollRootRef}
+        data-app-scroll={`availability-${data.port_id}`}
         className="max-h-[min(42rem,85vh)] overflow-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800"
       >
         <table

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, MapPin } from "lucide-react";
+import InAppLink from "@/components/ui/InAppLink";
 import BookingMetaRow from "@/components/booking/BookingMetaRow";
 import BookingStatusBadge from "@/components/booking/BookingStatusBadge";
 import FirstArrivalBadge from "@/components/booking/FirstArrivalBadge";
@@ -24,7 +24,6 @@ import { currentReturnTo } from "@/lib/safeReturnTo";
 import { formatIsoWeekdayShort, parseIsoDate } from "@/lib/bookingDates";
 import { shippingLineWithGroupLabel } from "@/components/ui/ShippingLineCaption";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   bookingStatusLabel,
   canBulkDeleteBookings,
@@ -96,9 +95,8 @@ function CodeActions({
   detailHref: string;
 }) {
   return (
-    <Link
+    <InAppLink
       href={detailHref}
-      {...BOOKING_DETAIL_LINK_PROPS}
       className="flex w-full max-w-full items-center gap-2 rounded-lg px-0.5 py-0.5 text-zinc-400 transition-colors hover:text-[var(--admin-accent)] sm:justify-end sm:rounded-none sm:px-0 sm:py-0"
       aria-label={`Abrir reserva ${booking.booking_code}`}
     >
@@ -113,7 +111,7 @@ function CodeActions({
         strokeWidth={2}
         aria-hidden
       />
-    </Link>
+    </InAppLink>
   );
 }
 
@@ -347,24 +345,22 @@ export default function BookingsList({
                     </div>
                   ) : null}
 
-                  <Link
+                  <InAppLink
                     href={detailHref}
-                    {...BOOKING_DETAIL_LINK_PROPS}
                     className="shrink-0 cursor-pointer"
                   >
                     <DateBadge callDate={booking.call_date} />
-                  </Link>
+                  </InAppLink>
 
                   <div className="min-w-0 flex-1">
                     {/* Mobile: name full width, then status row */}
                     <div className="flex flex-col gap-1.5 sm:hidden">
-                      <Link
+                      <InAppLink
                         href={detailHref}
-                        {...BOOKING_DETAIL_LINK_PROPS}
                         className="truncate pr-1 text-base font-semibold leading-snug text-zinc-900 hover:text-[var(--admin-accent)] dark:text-zinc-50"
                       >
                         {booking.vessel_name}
-                      </Link>
+                      </InAppLink>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <BookingStatusBadge
                           status={getBookingBadgeStatus(booking)}
@@ -373,9 +369,8 @@ export default function BookingsList({
                         {booking.first_arrival ? <FirstArrivalBadge /> : null}
                         <ConflictTypeChips chips={chips} />
                       </div>
-                      <Link
+                      <InAppLink
                         href={detailHref}
-                        {...BOOKING_DETAIL_LINK_PROPS}
                         className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug text-zinc-600 dark:text-zinc-300"
                       >
                         <span className="flex min-w-0 items-center gap-1">
@@ -390,28 +385,26 @@ export default function BookingsList({
                         <span className="truncate pl-5 text-zinc-500">
                           {lineLabel}
                         </span>
-                      </Link>
+                      </InAppLink>
                     </div>
 
                     {/* Desktop: original compact header */}
                     <div className="hidden space-y-1 sm:block">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <Link
+                        <InAppLink
                           href={detailHref}
-                          {...BOOKING_DETAIL_LINK_PROPS}
                           className="min-w-0 truncate text-sm font-semibold text-zinc-900 hover:text-[var(--admin-accent)] dark:text-zinc-50"
                         >
                           {booking.vessel_name}
-                        </Link>
+                        </InAppLink>
                         <BookingStatusBadge
                           status={getBookingBadgeStatus(booking)}
                         />
                         {booking.first_arrival ? <FirstArrivalBadge /> : null}
                         <ConflictTypeChips chips={chips} />
                       </div>
-                      <Link
+                      <InAppLink
                         href={detailHref}
-                        {...BOOKING_DETAIL_LINK_PROPS}
                         className="flex min-w-0 cursor-pointer items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300"
                       >
                         <MapPin
@@ -423,7 +416,7 @@ export default function BookingsList({
                           <span className="text-zinc-400"> · </span>
                           {lineLabel}
                         </span>
-                      </Link>
+                      </InAppLink>
                     </div>
                   </div>
                 </div>

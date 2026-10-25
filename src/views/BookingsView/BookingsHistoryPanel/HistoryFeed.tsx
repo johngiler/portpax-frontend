@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
@@ -17,8 +16,8 @@ import {
 import { bookingActivityBadges } from "@/lib/bookingActivityTaxonomy";
 import { formatAuditActorDisplay } from "@/lib/auditActor";
 import { currentReturnTo } from "@/lib/safeReturnTo";
+import InAppLink from "@/components/ui/InAppLink";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
 } from "@/types/booking";
 import type { BookingActivityItem } from "@/services/bookings/bookingActivityService";
@@ -383,16 +382,15 @@ export default function HistoryFeed({
         if (item.booking_code) {
           return (
             <li key={key}>
-              <Link
+              <InAppLink
                 href={bookingDetailHref(
                   { booking_code: item.booking_code },
                   { returnTo },
                 )}
-                {...BOOKING_DETAIL_LINK_PROPS}
                 className={`block ${cardClass}`}
               >
                 {body}
-              </Link>
+              </InAppLink>
             </li>
           );
         }

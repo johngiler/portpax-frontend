@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import InAppLink from "@/components/ui/InAppLink";
 import { Anchor, Clock3, Ruler, Users } from "lucide-react";
 import CatalogLogoThumb from "@/components/ui/CatalogLogoThumb";
 import ShippingLineCaption from "@/components/ui/ShippingLineCaption";
@@ -20,7 +20,6 @@ import {
 import type { BookingConflictSeverity } from "@/types/booking";
 import type { AvailabilityBookingCall } from "@/services/bookings/bookingService";
 import {
-  BOOKING_DETAIL_LINK_PROPS,
   bookingDetailHref,
   type BookingBadgeStatus,
 } from "@/types/booking";
@@ -76,9 +75,8 @@ export default function AvailabilityOccupiedCallCard({
     : null;
 
   return (
-    <Link
+    <InAppLink
       href={bookingDetailHref({ booking_code: call.booking_code }, { returnTo })}
-      {...BOOKING_DETAIL_LINK_PROPS}
       className={[
         conflictCardClassName(
           frameSeverity,
@@ -189,6 +187,6 @@ export default function AvailabilityOccupiedCallCard({
           </p>
         </div>
       </div>
-    </Link>
+    </InAppLink>
   );
 }

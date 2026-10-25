@@ -1,9 +1,8 @@
-import Link from "next/link";
+"use client";
+
 import { Fragment, type ReactNode } from "react";
-import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
-} from "@/types/booking";
+import InAppLink from "@/components/ui/InAppLink";
+import { bookingDetailHref } from "@/types/booking";
 
 /** PortPax operational booking_code (…-YYYYMMDD). */
 export const BOOKING_CODE_IN_TEXT_RE =
@@ -35,14 +34,13 @@ export function renderTextWithBookingCodeLinks(
       parts.push(text.slice(lastIndex, start));
     }
     parts.push(
-      <Link
+      <InAppLink
         key={`${code}-${start}`}
         href={bookingDetailHref({ booking_code: code }, { returnTo })}
-        {...BOOKING_DETAIL_LINK_PROPS}
         className={linkClassName}
       >
         {code}
-      </Link>,
+      </InAppLink>,
     );
     lastIndex = start + match[0].length;
   }

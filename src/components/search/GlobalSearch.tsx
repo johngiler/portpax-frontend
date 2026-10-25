@@ -9,13 +9,12 @@ import {
 } from "react";
 import Link from "next/link";
 import { Anchor, Building2, CalendarDays, Search, Ship } from "lucide-react";
+import InAppLink from "@/components/ui/InAppLink";
+import { useCurrentReturnTo } from "@/lib/inAppNav";
 import { useAuthOptional } from "@/contexts/AuthContext";
 import { canBrowseCatalogs } from "@/lib/navAccess";
 import { globalSearch } from "@/services/searchService";
-import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
-} from "@/types/booking";
+import { bookingDetailHref } from "@/types/booking";
 import { portDetailHref } from "@/types/catalog";
 import { shippingLineDetailHref } from "@/types/cruise";
 import type { GlobalSearchResult } from "@/types/search";
@@ -71,6 +70,7 @@ export default function GlobalSearch({
   fillAvailableOnMobile = false,
 }: GlobalSearchProps = {}) {
   const auth = useAuthOptional();
+  const returnTo = useCurrentReturnTo();
   const showCatalogResults = canBrowseCatalogs(auth?.user?.role);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GlobalSearchResult | null>(null);
@@ -342,10 +342,12 @@ export default function GlobalSearch({
                         Códigos de reserva
                       </p>
                       {results!.scales.map((sc) => (
-                        <Link
+                        <InAppLink
                           key={sc.id}
-                          href={bookingDetailHref({ booking_code: sc.booking_code })}
-                          {...BOOKING_DETAIL_LINK_PROPS}
+                          href={bookingDetailHref(
+                            { booking_code: sc.booking_code },
+                            { returnTo },
+                          )}
                           className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-[var(--admin-accent)]/10 dark:text-zinc-300 dark:hover:bg-[var(--admin-accent)]/15"
                           onClick={() => setExpanded(false)}
                         >
@@ -359,7 +361,7 @@ export default function GlobalSearch({
                           <span className="ml-auto shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
                             {formatScaleDate(sc.date)}
                           </span>
-                        </Link>
+                        </InAppLink>
                       ))}
                     </div>
                   )}

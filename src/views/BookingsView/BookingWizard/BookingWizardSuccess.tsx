@@ -1,24 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import DefaultButton from "@/components/buttons/DefaultButton";
+import InAppLink from "@/components/ui/InAppLink";
 import { formatIsoDateLabel } from "@/lib/bookingDates";
-import {
-  BOOKING_DETAIL_LINK_PROPS,
-  bookingDetailHref,
-  type BookingListItem,
-} from "@/types/booking";
+import { bookingDetailHref, type BookingListItem } from "@/types/booking";
 
 type BookingWizardSuccessProps = {
   bookings: BookingListItem[];
   onNewBooking: () => void;
   onViewAll: () => void;
+  returnTo?: string | null;
 };
 
 export default function BookingWizardSuccess({
   bookings,
   onNewBooking,
   onViewAll,
+  returnTo = null,
 }: BookingWizardSuccessProps) {
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-zinc-200/80 bg-white p-8 shadow-[var(--admin-card-shadow)] dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -36,9 +34,8 @@ export default function BookingWizardSuccess({
       <ul className="mt-6 space-y-2">
         {bookings.map((booking) => (
           <li key={booking.id}>
-            <Link
-              href={bookingDetailHref(booking)}
-              {...BOOKING_DETAIL_LINK_PROPS}
+            <InAppLink
+              href={bookingDetailHref(booking, { returnTo })}
               className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-zinc-200/80 px-4 py-3 text-sm transition-colors hover:border-[var(--admin-accent)]/30 hover:bg-[var(--admin-accent)]/[0.04] dark:border-zinc-700 dark:hover:bg-[var(--admin-accent)]/10"
             >
               <span className="font-medium text-zinc-800 dark:text-zinc-200">
@@ -47,7 +44,7 @@ export default function BookingWizardSuccess({
               <code className="text-xs font-semibold text-[var(--admin-accent)]">
                 {booking.booking_code}
               </code>
-            </Link>
+            </InAppLink>
           </li>
         ))}
       </ul>
