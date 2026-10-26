@@ -64,6 +64,7 @@ export default function BookingsAvailabilityPanel({
       0,
     filters.vessel ?? 0,
     filters.position ?? 0,
+    (filters.tags ?? []).join(","),
     (filters.statuses ?? []).join(","),
     filters.has_conflict === true
       ? "1"
@@ -72,6 +73,12 @@ export default function BookingsAvailabilityPanel({
         : "",
     filters.conflict_severity ?? "",
     filters.conflict_type ?? "",
+    filters.first_arrival === true
+      ? "1"
+      : filters.first_arrival === false
+        ? "0"
+        : "",
+    filters.cancellation_reason ?? "",
     heatMode,
     density,
   ].join("|");
@@ -94,10 +101,13 @@ export default function BookingsAvailabilityPanel({
     Boolean(filters.shipping_line_group) ||
     Boolean(filters.vessel) ||
     Boolean(filters.position) ||
+    Boolean(filters.tags?.length) ||
     Boolean(filters.statuses?.length) ||
     filters.has_conflict !== undefined ||
     Boolean(filters.conflict_severity) ||
     Boolean(filters.conflict_type) ||
+    filters.first_arrival !== undefined ||
+    Boolean(filters.cancellation_reason) ||
     density > 0 ||
     Boolean(dateAllowlist?.length) ||
     selectedPortIds.length > 0 ||
@@ -118,7 +128,9 @@ export default function BookingsAvailabilityPanel({
     (id) => portStates[id] && portStates[id] !== "loading",
   );
   const anyVisible = targetIds.some((id) => portStates[id] === "visible");
-  const showFilteredEmpty = allResolved && !anyVisible;
+  const anyError = targetIds.some((id) => portStates[id] === "error");
+  // API errors must stay visible; do not mask them as "no matching calls".
+  const showFilteredEmpty = allResolved && !anyVisible && !anyError;
 
   return (
     <div className="space-y-6">
