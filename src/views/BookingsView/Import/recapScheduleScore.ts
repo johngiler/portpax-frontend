@@ -7,6 +7,8 @@ export type RecapScheduleRef = {
   call_date: string | null;
   eta: string | null;
   etd: string | null;
+  /** Backend score before the draft row is loaded or edited. */
+  matchPercent?: number;
 };
 
 export type RecapScheduleScore = {
@@ -155,4 +157,24 @@ export function scoreDraftAgainstRecap(
     matchReason: `${matchPercent}% porque ${because}.`,
     avisos,
   };
+}
+
+/** Live draft score when the row is loaded; otherwise the recap's backend percent. */
+export function recapDraftMatchPercent(
+  draft:
+    | {
+        call_date: string | null;
+        eta: string | null;
+        etd: string | null;
+      }
+    | null
+    | undefined,
+  recap: RecapScheduleRef | null | undefined,
+): number | null {
+  if (!recap) return null;
+  if (draft) {
+    const live = scoreDraftAgainstRecap(draft, recap);
+    if (live) return live.matchPercent;
+  }
+  return typeof recap.matchPercent === "number" ? recap.matchPercent : null;
 }

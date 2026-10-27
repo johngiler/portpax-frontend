@@ -9,7 +9,17 @@ export default function BulkBookingsEditSkeleton() {
   return (
     <div className="space-y-3" aria-busy="true" aria-label="Cargando reservas">
       <Skeleton className="h-3 w-80 max-w-full rounded" />
-      <Skeleton className="h-4 w-44 rounded" />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Skeleton className="h-4 w-44 rounded" />
+        <div className="flex flex-wrap items-end justify-end gap-3">
+          <div className="w-44 space-y-1.5 sm:w-52">
+            <Skeleton className="ml-auto h-3 w-32 rounded" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
+            <Skeleton className="ml-auto h-3 w-28 rounded" />
+          </div>
+          <Skeleton className="h-9 w-72 max-w-full rounded-md" />
+        </div>
+      </div>
       <div className="max-h-[min(60vh,32rem)] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
         <table className="min-w-full text-left text-xs">
           <thead className="bg-zinc-50 dark:bg-zinc-900">

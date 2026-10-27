@@ -34,6 +34,7 @@ import BulkImportRowPositionSelect from "./BulkImportRowPositionSelect";
 import BulkBookingsEditSkeleton from "./BulkBookingsEditSkeleton";
 import BulkEtaEtdInputs from "./BulkEtaEtdInputs";
 import type { BulkImportPreviewRow } from "@/services/bookings/bulkImportService";
+import BulkEditRecapMatchHeader from "./BulkEditRecapMatchHeader";
 import {
   scoreDraftAgainstRecap,
   type RecapScheduleRef,
@@ -460,11 +461,14 @@ export default function BulkBookingsEditModal({
   onClose,
   onSaved,
 }: BulkBookingsEditModalProps) {
+  const [mismatchOnly, setMismatchOnly] = useState(false);
   const {
     page,
     setPage,
     pageSize,
     totalCount,
+    displayCount,
+    recapMatch,
     pageRows,
     pageReady,
     allRows,
@@ -481,7 +485,12 @@ export default function BulkBookingsEditModal({
     ensureSelectedLoaded,
     ensureAllLoaded,
     loadedCount,
-  } = useBulkEditPagedRows({ open, bookingIds, recapSchedule });
+  } = useBulkEditPagedRows({
+    open,
+    bookingIds,
+    recapSchedule,
+    mismatchOnly,
+  });
 
   const [saving, setSaving] = useState(false);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
@@ -492,6 +501,7 @@ export default function BulkBookingsEditModal({
     if (!open) return;
     setTagName("");
     setRowErrors({});
+    setMismatchOnly(false);
   }, [open, bookingIds]);
 
   useNavigationLock(
@@ -656,46 +666,58 @@ export default function BulkBookingsEditModal({
               : ""
           }. Los avisos no bloquean el guardado salvo cambio de grupo naviera u otros errores de identidad.`}
         </p>
-        <div className="flex justify-end">
-          <div className="w-full min-w-[12rem] max-w-xs sm:w-72">
-            <BookingTagField
-              name="bulk_edit_tag"
-              value={tagName}
-              onChange={setTagName}
-              disabled={saving || loadingPage}
-              compact
-            />
+        <div className="mb-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 pb-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allValidSelected}
+                disabled={tableBusy || totalCount === 0}
+                onChange={(e) => void handleToggleSelectAllValid(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-zinc-300"
+              />
+              Seleccionar todas las válidas
+            </label>
+            {claimableLtaRows.length > 0 ? (
+              <label className="inline-flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={allLtaClaimed}
+                  disabled={tableBusy}
+                  onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  ref={(el) => {
+                    if (el) el.indeterminate = someLtaClaimed && !allLtaClaimed;
+                  }}
+                />
+                {claimingAllLta
+                  ? "Actualizando reclamos LTA…"
+                  : `Reclamar todos los espacios LTA (${claimableLtaRows.length})`}
+              </label>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-3">
+            {recapMatch ? (
+              <BulkEditRecapMatchHeader
+                perfect={recapMatch.perfect}
+                total={recapMatch.total}
+                mismatchOnly={mismatchOnly}
+                disabled={tableBusy}
+                onMismatchOnlyChange={setMismatchOnly}
+              />
+            ) : null}
+            <div className="w-72 max-w-full shrink-0">
+              <BookingTagField
+                name="bulk_edit_tag"
+                value={tagName}
+                onChange={setTagName}
+                disabled={saving || loadingPage}
+                compact
+              />
+            </div>
           </div>
         </div>
         <ModalFormError message={error} />
-        <div className="mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
-        <label className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600">
-          <input
-            type="checkbox"
-            checked={allValidSelected}
-            disabled={tableBusy || totalCount === 0}
-            onChange={(e) => void handleToggleSelectAllValid(e.target.checked)}
-          />
-          Seleccionar todas las válidas
-        </label>
-        {claimableLtaRows.length > 0 ? (
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={allLtaClaimed}
-              disabled={tableBusy}
-              onChange={(e) => void toggleAllLtaClaims(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
-              ref={(el) => {
-                if (el) el.indeterminate = someLtaClaimed && !allLtaClaimed;
-              }}
-            />
-            {claimingAllLta
-              ? "Actualizando reclamos LTA…"
-              : `Reclamar todos los espacios LTA (${claimableLtaRows.length})`}
-          </label>
-        ) : null}
-        </div>
         <div className="max-h-[min(60vh,32rem)] overflow-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
           <table className="min-w-full text-left text-xs">
             <thead className="sticky top-0 bg-zinc-50 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:bg-zinc-900">
@@ -767,14 +789,16 @@ export default function BulkBookingsEditModal({
           </table>
           {pageRows.length === 0 ? (
             <p className="px-4 py-6 text-sm text-zinc-500">
-              No hay reservas editables en esta página.
+              {mismatchOnly && recapMatch && recapMatch.perfect >= recapMatch.total
+                ? "Todas coinciden al 100%."
+                : "No hay reservas editables en esta página."}
             </p>
           ) : null}
         </div>
-        {totalCount > pageSize ? (
+        {displayCount > pageSize ? (
           <TablePagination
             page={page}
-            totalCount={totalCount}
+            totalCount={displayCount}
             pageSize={pageSize}
             onPageChange={setPage}
             label="reservas"

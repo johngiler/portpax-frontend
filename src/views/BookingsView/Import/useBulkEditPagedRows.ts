@@ -7,6 +7,7 @@ import {
   type BulkEditRow,
 } from "@/services/bookings/bulkEditService";
 import {
+  recapDraftMatchPercent,
   scoreDraftAgainstRecap,
   type RecapScheduleRef,
 } from "./recapScheduleScore";
@@ -55,12 +56,15 @@ type UseBulkEditPagedRowsArgs = {
   open: boolean;
   bookingIds: number[];
   recapSchedule?: Record<number, RecapScheduleRef>;
+  /** When recap is present, show only rows below 100% match. */
+  mismatchOnly?: boolean;
 };
 
 export function useBulkEditPagedRows({
   open,
   bookingIds,
   recapSchedule,
+  mismatchOnly = false,
 }: UseBulkEditPagedRowsArgs) {
   const idsKey = bookingIds.join(",");
   const stableIds = useMemo(
@@ -83,12 +87,39 @@ export function useBulkEditPagedRows({
   const hydratingRef = useRef(false);
 
   const totalCount = stableIds.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / BULK_EDIT_PAGE_SIZE));
+
+  const recapMatch = useMemo(() => {
+    if (!recapSchedule) return null;
+    let total = 0;
+    let perfect = 0;
+    for (const id of stableIds) {
+      const recap = recapSchedule[id];
+      if (!recap) continue;
+      total += 1;
+      const percent = recapDraftMatchPercent(rowsById[id], recap);
+      if (percent != null && percent >= 100) perfect += 1;
+    }
+    if (total === 0) return null;
+    return { perfect, total };
+  }, [recapSchedule, stableIds, rowsById]);
+
+  const displayIds = useMemo(() => {
+    if (!mismatchOnly || !recapSchedule) return stableIds;
+    return stableIds.filter((id) => {
+      const recap = recapSchedule[id];
+      if (!recap) return true;
+      const percent = recapDraftMatchPercent(rowsById[id], recap);
+      return percent == null || percent < 100;
+    });
+  }, [mismatchOnly, recapSchedule, stableIds, rowsById]);
+
+  const displayCount = displayIds.length;
+  const totalPages = Math.max(1, Math.ceil(displayCount / BULK_EDIT_PAGE_SIZE));
 
   const pageIds = useMemo(() => {
     const start = (page - 1) * BULK_EDIT_PAGE_SIZE;
-    return stableIds.slice(start, start + BULK_EDIT_PAGE_SIZE);
-  }, [stableIds, page]);
+    return displayIds.slice(start, start + BULK_EDIT_PAGE_SIZE);
+  }, [displayIds, page]);
 
   const mergeRows = useCallback(
     (incoming: BulkEditRow[], opts?: { selectNew?: boolean }) => {
@@ -226,7 +257,7 @@ export function useBulkEditPagedRows({
     const nextPage = page + 1;
     if (nextPage > totalPages) return;
     const start = (nextPage - 1) * BULK_EDIT_PAGE_SIZE;
-    const nextIds = stableIds.slice(start, start + BULK_EDIT_PAGE_SIZE);
+    const nextIds = displayIds.slice(start, start + BULK_EDIT_PAGE_SIZE);
     const missing = nextIds.filter((id) => !loadedIdSetRef.current.has(id));
     if (missing.length === 0) return;
     let cancelled = false;
@@ -241,7 +272,15 @@ export function useBulkEditPagedRows({
     return () => {
       cancelled = true;
     };
-  }, [open, page, totalPages, stableIds, mergeRows]);
+  }, [open, page, totalPages, displayIds, mergeRows]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [mismatchOnly]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const pageReady =
     pageIds.length === 0 || pageIds.every((id) => loadedIdSet.has(id));
@@ -380,6 +419,8 @@ export function useBulkEditPagedRows({
     setPage,
     pageSize: BULK_EDIT_PAGE_SIZE,
     totalCount,
+    displayCount,
+    recapMatch,
     totalPages,
     pageRows,
     pageReady,

@@ -1888,13 +1888,19 @@ export default function BookingsView() {
               call_date: row.recap_call_date ?? null,
               eta: row.recap_eta ?? null,
               etd: row.recap_etd ?? null,
+              matchPercent: row.match_percent,
             },
           ] as const,
       );
     if (entries.length === 0) return undefined;
     return Object.fromEntries(entries) as Record<
       number,
-      { call_date: string | null; eta: string | null; etd: string | null }
+      {
+        call_date: string | null;
+        eta: string | null;
+        etd: string | null;
+        matchPercent?: number;
+      }
     >;
   }, [bookingRecap]);
 
