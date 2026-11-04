@@ -15,10 +15,10 @@ function toWsScheme(url: string): string {
 /**
  * WebSocket base URL.
  *
- * LOCAL: REST on :8000 (runserver), Daphne on :8001 — set NEXT_PUBLIC_WS_URL
- * or we default ws://localhost:8001 when API is localhost:8000.
+ * LOCAL: REST on :8000 (runserver), Daphne on :9000 — set NEXT_PUBLIC_WS_URL
+ * or we default ws://localhost:9000 when API is localhost:8000.
  *
- * DEV/PROD: same host as API; nginx routes /ws/ to Daphne.
+ * DEV/PROD: same host as API; nginx routes /ws/ to Daphne (:8001 en servidor).
  */
 export function getWsBase(): string {
   if (typeof window !== "undefined" && window.location?.hostname === "itm.portpax.com") {
@@ -36,7 +36,7 @@ export function getWsBase(): string {
   );
 
   if (/^https?:\/\/(localhost|127\.0\.0\.1):8000$/i.test(api)) {
-    return "ws://localhost:8001";
+    return "ws://localhost:9000";
   }
 
   return toWsScheme(api);
