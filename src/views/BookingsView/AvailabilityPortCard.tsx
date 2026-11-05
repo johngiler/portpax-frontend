@@ -50,9 +50,10 @@ function rowHasOccupancy(
 }
 
 /**
- * Availability (gaps) visibility:
- * - Forward window (today+): hide ports with no free slot from today — primary bookable view.
- * - Loaded past days: always show (consultation). Empty cells stay "Pasado", not bookable.
+ * Availability (gaps) visibility for the open window:
+ * - Forward days: hide a port with no free slot — the bookable view.
+ * - Loaded past days: always show. Empty cells stay "Pasado", not bookable.
+ * Imported dates skip this: those days stay visible even when every berth is taken.
  */
 function shouldShowAvailabilityPort(
   report: AvailabilityReport,
@@ -247,9 +248,10 @@ export default function AvailabilityPortCard({
   const hidden = useMemo(() => {
     if (!displayData) return false;
     if (stillLoadingFocus) return false;
-    // Occupancy / soft-focus only return days with matching focus calls —
-    // do not require a free slot (availability default).
-    if (isOccupancy || focusActive) {
+    // Occupancy, soft-focus, and imported dates show the requested days
+    // even when every berth is taken. The open gap window still hides a
+    // port that has no free slot.
+    if (isOccupancy || focusActive || allowSet) {
       return (
         displayData.columns.length === 0 ||
         (displayData.rows.length === 0 && !hasMore)
@@ -262,6 +264,7 @@ export default function AvailabilityPortCard({
     stillLoadingFocus,
     isOccupancy,
     focusActive,
+    allowSet,
     hasMore,
   ]);
 
