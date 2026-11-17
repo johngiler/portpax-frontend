@@ -10,6 +10,10 @@
 #   2. Install nginx site for portpax.itmgroup.mx (listen 80 only; no Certbot)
 #      ALB health check expects HTTP 200 on /
 #   3. nginx -t && systemctl reload nginx
+#   4. Ops tmux (nginx logs + btop):
+#        cp scripts/systemd/tmux.service /etc/systemd/system/tmux.service
+#        systemctl daemon-reload && systemctl enable --now tmux.service
+#      Attach: sudo -u git tmux attach -t portpax-fe-ops
 #
 # DEV bootstrap: ./scripts/setup-dev.sh
 #
@@ -98,6 +102,9 @@ fi
 ln -sfn /etc/nginx/sites-available/portpax.itmgroup.mx.conf \
   /etc/nginx/sites-enabled/portpax.itmgroup.mx.conf
 
+echo "[setup-prod] Creating nginx log files..."
+"$SCRIPT_DIR/ensure_nginx_logs.sh"
+
 nginx -t
 systemctl enable nginx
 systemctl restart nginx
@@ -105,4 +112,23 @@ systemctl restart nginx
 systemctl enable fail2ban
 systemctl restart fail2ban
 
+if [[ -f "${SCRIPT_DIR}/systemd/tmux.service" && -f "${SCRIPT_DIR}/tmux_ops.sh" ]]; then
+  echo "[setup-prod] Installing tmux.service (nginx logs + btop)..."
+  mkdir -p "${APP_ROOT}/scripts/systemd"
+  install -m 0755 "${SCRIPT_DIR}/tmux_ops.sh" "${APP_ROOT}/scripts/tmux_ops.sh"
+  if [[ -f "${SCRIPT_DIR}/btop.conf" ]]; then
+    install -m 0644 "${SCRIPT_DIR}/btop.conf" "${APP_ROOT}/scripts/btop.conf"
+  fi
+  chown -R git:git "${APP_ROOT}/scripts"
+  # git needs read on nginx logs for the ops pane
+  usermod -aG adm git 2>/dev/null || true
+  install -m 0644 "${SCRIPT_DIR}/systemd/tmux.service" /etc/systemd/system/tmux.service
+  systemctl daemon-reload
+  systemctl enable --now tmux.service
+else
+  echo "[setup-prod] WARN: tmux_ops / systemd unit missing — skip ops dashboard."
+fi
+
+
 echo "[setup-prod] Done. Nginx serving ${OUT_DIR} on :80."
+echo "[setup-prod] Ops: sudo -u git tmux attach -t portpax-fe-ops"

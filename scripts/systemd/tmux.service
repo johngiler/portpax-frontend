@@ -1,0 +1,25 @@
+[Unit]
+Description=PortPax frontend ops tmux (nginx logs + btop)
+Documentation=file:///home/git/frontend/scripts/tmux_ops.sh
+After=network.target nginx.service
+Wants=nginx.service
+
+[Service]
+Type=simple
+User=git
+Group=git
+WorkingDirectory=/home/git/frontend
+Environment=HOME=/home/git
+Environment=TERM=xterm-256color
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/git/frontend/scripts/tmux_ops.sh run
+ExecStop=/home/git/frontend/scripts/tmux_ops.sh stop
+StartLimitIntervalSec=60
+StartLimitBurst=5
+Restart=always
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
