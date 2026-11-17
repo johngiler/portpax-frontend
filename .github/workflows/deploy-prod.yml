@@ -1,0 +1,125 @@
+# PRODUCTION deploy (ITM) — build static export and publish via S3 + SSM.
+# Requires IAM role (OIDC) portpax-prod-deploy-frontend, trusted for this repo main only.
+#
+# GitHub → Settings → Secrets and variables → Actions:
+#   FRONTEND_BUILD_PUBLISH_TOKEN  (same value as backend)
+# Optional variable:
+#   PROD_FRONTEND_INSTANCE_ID     (default below)
+
+name: Deploy production frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::040105284691:role/portpax-prod-deploy-frontend
+  RELEASES_BUCKET: itm-portpax-prod-releases-040105284691
+  NEXT_PUBLIC_API_URL: https://api.portpax.itmgroup.mx
+  # Frontend EC2 (override with repo variable PROD_FRONTEND_INSTANCE_ID if needed)
+  PROD_FRONTEND_INSTANCE_ID: ${{ vars.PROD_FRONTEND_INSTANCE_ID || 'i-086d65d99ee070a1c' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write .env.production
+        env:
+          FRONTEND_BUILD_PUBLISH_TOKEN: ${{ secrets.FRONTEND_BUILD_PUBLISH_TOKEN }}
+        run: |
+          {
+            echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
+            echo "FRONTEND_BUILD_PUBLISH_TOKEN=${FRONTEND_BUILD_PUBLISH_TOKEN}"
+          } > .env.production
+
+      - name: Build static export
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload release to S3
+        id: upload
+        run: |
+          SHA="${GITHUB_SHA}"
+          PREFIX="frontend/${SHA}"
+          DEST="s3://${RELEASES_BUCKET}/${PREFIX}/"
+          aws s3 sync out/ "$DEST" --delete
+          # Also refresh "latest" pointer for ops
+          aws s3 sync out/ "s3://${RELEASES_BUCKET}/frontend/latest/" --delete
+          echo "s3_uri=${DEST}" >> "$GITHUB_OUTPUT"
+          echo "prefix=${PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy on EC2 via Session Manager
+        env:
+          S3_URI: ${{ steps.upload.outputs.s3_uri }}
+          INSTANCE_ID: ${{ env.PROD_FRONTEND_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "PortPax frontend deploy ${GITHUB_SHA}" \
+            --parameters "commands=[
+              \"set -euo pipefail\",
+              \"if [[ -x /home/git/frontend/scripts/deploy-prod-from-s3.sh ]]; then\",
+              \"  /home/git/frontend/scripts/deploy-prod-from-s3.sh '${S3_URI}'\",
+              \"else\",
+              \"  mkdir -p /home/git/frontend/out /tmp/ppx-fe\",
+              \"  aws s3 sync '${S3_URI}' /tmp/ppx-fe --delete --region us-east-1\",
+              \"  rsync -a --delete /tmp/ppx-fe/ /home/git/frontend/out/\",
+              \"  chown -R git:git /home/git/frontend\",
+              \"  chmod -R a+rX /home/git/frontend/out\",
+              \"  rm -rf /tmp/ppx-fe\",
+              \"fi\"
+            ]" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM CommandId=${COMMAND_ID}"
+          for i in $(seq 1 36); do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text)
+            echo "status=${STATUS}"
+            case "$STATUS" in
+              Success) exit 0 ;;
+              Failed|Cancelled|TimedOut)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                  --output text || true
+                exit 1
+                ;;
+            esac
+            sleep 5
+          done
+          echo "Timed out waiting for SSM command"
+          exit 1
