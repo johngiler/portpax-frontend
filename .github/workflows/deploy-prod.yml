@@ -88,23 +88,27 @@ jobs:
           INSTANCE_ID: ${{ env.PROD_FRONTEND_INSTANCE_ID }}
         run: |
           set -euo pipefail
+          # AWS-RunShellScript uses /bin/sh (dash); wrap remote body in bash -lc.
+          PARAMS=$(jq -nc --arg uri "$S3_URI" '
+            ($uri | @sh) as $uq
+            | (
+                "set -euo pipefail; "
+                + "S=/home/git/frontend/scripts/deploy-prod-from-s3.sh; "
+                + "if [ -x \"$" + "S\" ]; then \"$" + "S\" " + $uq + "; "
+                + "else mkdir -p /home/git/frontend/out /tmp/ppx-fe; "
+                + "aws s3 sync " + $uq + " /tmp/ppx-fe --delete --region us-east-1; "
+                + "rsync -a --delete /tmp/ppx-fe/ /home/git/frontend/out/; "
+                + "chown -R git:git /home/git/frontend; "
+                + "chmod -R a+rX /home/git/frontend/out; "
+                + "rm -rf /tmp/ppx-fe; fi"
+              ) as $body
+            | {commands: ["bash -lc " + ($body | @sh)]}
+          ')
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "PortPax frontend deploy ${GITHUB_SHA}" \
-            --parameters "commands=[
-              \"set -euo pipefail\",
-              \"if [[ -x /home/git/frontend/scripts/deploy-prod-from-s3.sh ]]; then\",
-              \"  /home/git/frontend/scripts/deploy-prod-from-s3.sh '${S3_URI}'\",
-              \"else\",
-              \"  mkdir -p /home/git/frontend/out /tmp/ppx-fe\",
-              \"  aws s3 sync '${S3_URI}' /tmp/ppx-fe --delete --region us-east-1\",
-              \"  rsync -a --delete /tmp/ppx-fe/ /home/git/frontend/out/\",
-              \"  chown -R git:git /home/git/frontend\",
-              \"  chmod -R a+rX /home/git/frontend/out\",
-              \"  rm -rf /tmp/ppx-fe\",
-              \"fi\"
-            ]" \
+            --parameters "$PARAMS" \
             --query "Command.CommandId" \
             --output text)
 
