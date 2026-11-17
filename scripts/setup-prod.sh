@@ -78,6 +78,9 @@ echo "[setup-prod] Removing default nginx site (if present)..."
 rm -f /etc/nginx/sites-enabled/default
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "[setup-prod] Creating nginx log files..."
+"$SCRIPT_DIR/ensure_nginx_logs.sh"
+
 NGINX_SRC="${SCRIPT_DIR}/nginx/portpax.itmgroup.mx.conf"
 if [[ -f "$NGINX_SRC" ]]; then
   install -m 0644 "$NGINX_SRC" /etc/nginx/sites-available/portpax.itmgroup.mx.conf

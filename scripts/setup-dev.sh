@@ -49,6 +49,9 @@ chown -R www-data:www-data /var/www/letsencrypt
 echo "[setup-dev] Removing default nginx site (if present)..."
 rm -f /etc/nginx/sites-enabled/default
 
+echo "[setup-dev] Creating nginx log files..."
+"$SCRIPT_DIR/ensure_nginx_logs.sh"
+
 NGINX_SRC="${SCRIPT_DIR}/nginx/itm.portpax.com.conf"
 if [[ -f "$NGINX_SRC" ]]; then
   install -m 0644 "$NGINX_SRC" /etc/nginx/sites-available/itm.portpax.com.conf
