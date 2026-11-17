@@ -182,6 +182,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
+    const listMutateTimer: { current: ReturnType<typeof setTimeout> | null } = {
+      current: null,
+    };
 
     function connect() {
       const token = getStoredAccessToken();
@@ -241,7 +244,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           void mutateUnread((count) => (typeof count === "number" ? count + 1 : 1), {
             revalidate: false,
           });
-          void mutateList();
+          // Debounce list refetch: mass ops can push many WS events; liveItems
+          // already show each payload without N× GET page=1.
+          if (listMutateTimer.current) {
+            clearTimeout(listMutateTimer.current);
+          }
+          listMutateTimer.current = setTimeout(() => {
+            listMutateTimer.current = null;
+            void mutateList();
+          }, 400);
         } catch {
           // ignore malformed payloads
         }
@@ -261,6 +272,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       setWsReady(false);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (listMutateTimer.current) clearTimeout(listMutateTimer.current);
       const socket = wsRef.current;
       wsRef.current = null;
       if (!socket) return;
