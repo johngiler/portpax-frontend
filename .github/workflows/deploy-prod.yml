@@ -1,5 +1,6 @@
 # PRODUCTION deploy (ITM) — build static export and publish via S3 + SSM.
-# Requires IAM role (OIDC) portpax-prod-deploy-frontend, trusted for this repo main only.
+# Runs only on itmgroup-mx/portpax-frontend (skipped on johngiler BCT mirror).
+# Requires IAM role (OIDC) portpax-prod-deploy-frontend, trusted for ITM main only.
 #
 # GitHub → Settings → Secrets and variables → Actions:
 #   FRONTEND_BUILD_PUBLISH_TOKEN  (same value as backend)
@@ -26,6 +27,7 @@ env:
 
 jobs:
   deploy:
+    if: github.repository == 'itmgroup-mx/portpax-frontend'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
