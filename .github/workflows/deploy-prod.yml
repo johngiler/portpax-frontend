@@ -3,8 +3,6 @@
 #
 # GitHub → Settings → Secrets and variables → Actions:
 #   FRONTEND_BUILD_PUBLISH_TOKEN  (same value as backend)
-# Optional variable:
-#   PROD_FRONTEND_INSTANCE_ID     (default below)
 
 name: Deploy production frontend
 
@@ -22,13 +20,11 @@ env:
   AWS_ROLE_ARN: arn:aws:iam::040105284691:role/portpax-prod-deploy-frontend
   RELEASES_BUCKET: itm-portpax-prod-releases-040105284691
   NEXT_PUBLIC_API_URL: https://api.portpax.itmgroup.mx
-  # Frontend EC2 (override with repo variable PROD_FRONTEND_INSTANCE_ID if needed)
-  PROD_FRONTEND_INSTANCE_ID: ${{ vars.PROD_FRONTEND_INSTANCE_ID || 'i-086d65d99ee070a1c' }}
+  PROD_FRONTEND_INSTANCE_ID: i-086d65d99ee070a1c
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
