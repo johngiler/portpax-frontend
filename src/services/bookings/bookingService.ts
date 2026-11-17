@@ -75,8 +75,10 @@ export type FetchBookingsParams = {
   call_date_to?: string;
   /** Discrete ISO dates (imported list); intersects with from/to when both set. */
   call_dates?: string[];
-  /** Recap (or other) explicit booking ids. */
+  /** Recap (or other) explicit booking ids (short lists only — prefer id_filter). */
   ids?: number[];
+  /** Staged id list key from stageBookingIdFilter (short URL for large recaps). */
+  id_filter?: string;
   ordering?: string;
   pageSize?: number;
   /** true = only conflicted; false = only clean; omit = all */
@@ -138,7 +140,9 @@ function bookingsQuery(params: FetchBookingsParams = {}): URLSearchParams {
   if (params.call_dates && params.call_dates.length > 0) {
     query.set("call_dates", params.call_dates.join(","));
   }
-  if (params.ids) {
+  if (params.id_filter) {
+    query.set("id_filter", params.id_filter);
+  } else if (params.ids) {
     query.set("ids", params.ids.join(","));
   }
   if (params.ordering) query.set("ordering", params.ordering);
@@ -171,6 +175,19 @@ export async function fetchBookings(
   const qs = bookingsQuery(params).toString();
   return apiFetch<ApiListResponse<BookingListItem>>(
     `${BASE}${qs ? `?${qs}` : ""}`,
+  );
+}
+
+/** POST ids once; use returned id_filter on list/export GET (avoids huge query strings). */
+export async function stageBookingIdFilter(
+  ids: number[],
+): Promise<{ id_filter: string; count: number }> {
+  return apiFetch<{ id_filter: string; count: number }>(
+    `${BASE}stage-id-filter/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    },
   );
 }
 

@@ -51,6 +51,7 @@ import {
   exportBookingsReport,
   exportCalendarReport,
   exportStructuredReport,
+  stageBookingIdFilter,
   updateBooking,
 } from "@/services/bookings/bookingService";
 import { exportVesselProximityReport } from "@/services/bookings/vesselProximityMatrixService";
@@ -333,6 +334,8 @@ export default function BookingsView() {
   const [bookingRecap, setBookingRecap] = useState<BookingRecapResponse | null>(
     null,
   );
+  /** Staged via POST stage-id-filter — list uses ?id_filter= (not hundreds of ids=). */
+  const [recapIdFilter, setRecapIdFilter] = useState<string | null>(null);
   const [bookingRecapScope, setBookingRecapScope] =
     useState<BookingRecapScope | null>(null);
   const [portpaxOnlyLoadingMore, setPortpaxOnlyLoadingMore] = useState(false);
@@ -576,12 +579,14 @@ export default function BookingsView() {
       call_dates: availabilityDateAllowlist?.length
         ? availabilityDateAllowlist
         : undefined,
-      // Matched recap rows only — portpax_only stays in the info block, not the list/bulk edit.
-      ids: bookingRecap
-        ? bookingRecap.matches.length > 0
-          ? bookingRecap.matches.map((row) => row.booking_id)
-          : [0]
-        : undefined,
+      // Matched recap rows: id_filter from POST stage (never dump hundreds of ids in GET).
+      id_filter: bookingRecap && recapIdFilter ? recapIdFilter : undefined,
+      ids:
+        bookingRecap && !recapIdFilter
+          ? bookingRecap.matches.length > 0
+            ? undefined
+            : [0]
+          : undefined,
       ordering: "call_date_proximity" as const,
       pageSize: BATCH_SIZE,
       pax_basis: appliedPaxBasis,
@@ -604,6 +609,7 @@ export default function BookingsView() {
     appliedCustomDateTo,
     availabilityDateAllowlist,
     bookingRecap,
+    recapIdFilter,
     appliedPaxBasis,
   ]);
 
@@ -1040,6 +1046,7 @@ export default function BookingsView() {
     setAppliedPaxBasis("planned");
     setAvailabilityDateAllowlist(null);
     setBookingRecap(null);
+    setRecapIdFilter(null);
     setBookingRecapScope(null);
     setPortpaxOnlyLoadingMore(false);
     setWeekAnchor(week);
@@ -1242,6 +1249,7 @@ export default function BookingsView() {
             call_date_from: listParams.call_date_from,
             call_date_to: listParams.call_date_to,
             ids: listParams.ids,
+            id_filter: listParams.id_filter,
             ordering: listParams.ordering,
             pax_basis: listParams.pax_basis,
             cancellation_reason: listParams.cancellation_reason,
@@ -1546,10 +1554,26 @@ export default function BookingsView() {
     }
   }
 
-  function applyBookingRecap(
+  async function applyBookingRecap(
     payload: BookingRecapResponse,
     scope?: BookingRecapScope,
   ) {
+    const matchIds = payload.matches.map((row) => row.booking_id);
+    let idFilter: string | null = null;
+    if (matchIds.length > 0) {
+      try {
+        const staged = await stageBookingIdFilter(matchIds);
+        idFilter = staged.id_filter;
+      } catch (err) {
+        setViewError(
+          getApiErrorMessage(
+            err,
+            "No se pudo preparar el filtro del recap.",
+          ),
+        );
+        return;
+      }
+    }
     const scopeGroups = scope?.shipping_line_group_ids ?? [];
     const scopeLines = scope?.shipping_line_ids ?? [];
     const scopeFrom = (scope?.date_from ?? "").trim();
@@ -1559,6 +1583,7 @@ export default function BookingsView() {
     const to = hasScopeDates ? scopeTo : defaultCustomTo();
     const datePreset = hasScopeDates ? ("custom" as const) : ("all" as const);
     setBookingRecap(payload);
+    setRecapIdFilter(idFilter);
     setBookingRecapScope(scope ?? null);
     setPortpaxOnlyLoadingMore(false);
     setTab("list");
@@ -1664,7 +1689,7 @@ export default function BookingsView() {
       }
       if (optionId === "booking_recap") {
         const payload = await matchBookingRecap(file);
-        applyBookingRecap(payload);
+        await applyBookingRecap(payload);
         setBulkImportFileName("");
         return;
       }
@@ -1707,7 +1732,7 @@ export default function BookingsView() {
       }
       if (optionId === "booking_recap") {
         const payload = await matchBookingRecapFromPaste(text, scope);
-        applyBookingRecap(payload, scope);
+        await applyBookingRecap(payload, scope);
         setBulkImportFileName("");
         return;
       }

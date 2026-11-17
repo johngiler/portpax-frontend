@@ -44,6 +44,7 @@ function listParamsKey(params: BookingsListFilterParams): string {
     params.call_date_from ?? "",
     params.call_date_to ?? "",
     (params.ids ?? []).join(","),
+    params.id_filter ?? "",
     params.ordering ?? "",
     params.pageSize ?? 20,
     params.pax_basis ?? "planned",
