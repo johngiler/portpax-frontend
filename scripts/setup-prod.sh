@@ -83,6 +83,20 @@ rm -f /etc/nginx/sites-enabled/default
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+echo "[setup-prod] Creating nginx log files..."
+"$SCRIPT_DIR/ensure_nginx_logs.sh"
+
+# Same BCT hardening as DEV itm.portpax.com (maps + probe-drops snippet).
+install -d -m 0755 /etc/nginx/snippets /etc/nginx/conf.d
+if [[ -f "${SCRIPT_DIR}/nginx/conf.d/webapp-maps.conf" ]]; then
+  install -m 0644 "${SCRIPT_DIR}/nginx/conf.d/webapp-maps.conf" \
+    /etc/nginx/conf.d/webapp-maps.conf
+fi
+if [[ -f "${SCRIPT_DIR}/nginx/snippets/bct-probe-drops.conf" ]]; then
+  install -m 0644 "${SCRIPT_DIR}/nginx/snippets/bct-probe-drops.conf" \
+    /etc/nginx/snippets/bct-probe-drops.conf
+fi
+
 NGINX_SRC="${SCRIPT_DIR}/nginx/portpax.itmgroup.mx.conf"
 if [[ -f "$NGINX_SRC" ]]; then
   install -m 0644 "$NGINX_SRC" /etc/nginx/sites-available/portpax.itmgroup.mx.conf
@@ -95,6 +109,7 @@ server {
     server_name portpax.itmgroup.mx _;
     root ${OUT_DIR};
     index index.html;
+    include /etc/nginx/snippets/bct-probe-drops.conf;
     location / { try_files \$uri \$uri.html \$uri/ /index.html =404; }
 }
 EOF
@@ -102,8 +117,6 @@ fi
 ln -sfn /etc/nginx/sites-available/portpax.itmgroup.mx.conf \
   /etc/nginx/sites-enabled/portpax.itmgroup.mx.conf
 
-echo "[setup-prod] Creating nginx log files..."
-"$SCRIPT_DIR/ensure_nginx_logs.sh"
 
 nginx -t
 systemctl enable nginx

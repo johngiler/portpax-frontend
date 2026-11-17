@@ -52,6 +52,17 @@ rm -f /etc/nginx/sites-enabled/default
 echo "[setup-dev] Creating nginx log files..."
 "$SCRIPT_DIR/ensure_nginx_logs.sh"
 
+# BCT probe drops (same as Ubintrack webapp; formerly installed by hand on DEV).
+install -d -m 0755 /etc/nginx/snippets /etc/nginx/conf.d
+if [[ -f "${SCRIPT_DIR}/nginx/conf.d/webapp-maps.conf" ]]; then
+  install -m 0644 "${SCRIPT_DIR}/nginx/conf.d/webapp-maps.conf" \
+    /etc/nginx/conf.d/webapp-maps.conf
+fi
+if [[ -f "${SCRIPT_DIR}/nginx/snippets/bct-probe-drops.conf" ]]; then
+  install -m 0644 "${SCRIPT_DIR}/nginx/snippets/bct-probe-drops.conf" \
+    /etc/nginx/snippets/bct-probe-drops.conf
+fi
+
 NGINX_SRC="${SCRIPT_DIR}/nginx/itm.portpax.com.conf"
 if [[ -f "$NGINX_SRC" ]]; then
   install -m 0644 "$NGINX_SRC" /etc/nginx/sites-available/itm.portpax.com.conf
@@ -63,6 +74,7 @@ if [[ -f "$NGINX_SRC" ]]; then
 else
   echo "[setup-dev] WARN: ${NGINX_SRC} missing — install nginx site manually."
 fi
+
 
 systemctl enable fail2ban
 systemctl restart fail2ban
