@@ -1,0 +1,15 @@
+# Fail2ban jail — PortPax frontend (nginx behind ALB).
+# Install via: sudo ./scripts/fail2ban/install.sh
+#
+# Requires nginx real_ip (same VPC CIDR as API) so access.log is not the ALB IP.
+
+[portpax-nginx]
+enabled  = true
+filter   = portpax-nginx
+logpath  = /var/log/nginx/access.log
+backend  = auto
+port     = http,https
+maxretry = 8
+findtime = 10m
+bantime  = 1h
+ignoreip = 127.0.0.1/8 ::1 10.20.0.0/16
